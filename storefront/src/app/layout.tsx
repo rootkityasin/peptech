@@ -6,6 +6,8 @@ import { CartDrawer } from "@/components/cart/CartDrawer"
 import { ResearchDisclaimerModal } from "@/components/compliance/ResearchDisclaimerModal"
 import { TopMarquee } from "@/components/layout/TopMarquee"
 import { Header } from "@/components/layout/Header"
+import { TrustRibbon } from "@/components/layout/TrustRibbon"
+import { MobileStickyBar } from "@/components/layout/MobileStickyBar"
 import { Footer } from "@/components/layout/Footer"
 
 const geistSans = Geist({
@@ -34,7 +36,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <ResearchDisclaimerModal />
           <TopMarquee />
           <Header />
+          <TrustRibbon />
           <div className="flex-1">{children}</div>
+          <MobileStickyBar />
           <Footer />
           <CartDrawer />
         </CartProvider>

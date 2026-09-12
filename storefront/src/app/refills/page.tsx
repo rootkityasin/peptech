@@ -1,33 +1,115 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import Link from "next/link"
 import catalog from "@/data/catalog.json"
 import { useCart } from "@/components/cart/CartContext"
+import { getProductsByCategory, getProductPrice, StoreProduct } from "@/lib/medusa"
 
 export default function RefillsPage() {
-  const { addItem } = useCart()
-  const [subscriptionState, setSubscriptionState] = useState<Record<string, boolean>>({
-    "refill-retatrutide-10": true,
-    "refill-tirzepatide-15": true,
-  })
+  const { addItem, setIsDrawerOpen } = useCart()
+  const [subscriptionState, setSubscriptionState] = useState<Record<string, boolean>>({})
+  const [selectedTiers, setSelectedTiers] = useState<Record<string, 1 | 2 | 3>>({})
+  const [medusaProducts, setMedusaProducts] = useState<StoreProduct[]>([])
+  const [isLive, setIsLive] = useState(false)
+
+  useEffect(() => {
+    getProductsByCategory("refill-cartridges")
+      .then((products) => {
+        if (products && products.length > 0) {
+          setMedusaProducts(products)
+          setIsLive(true)
+          const initialSubs: Record<string, boolean> = {}
+          products.forEach((p) => {
+            initialSubs[p.id] = true
+          })
+          setSubscriptionState(initialSubs)
+        } else {
+          setSubscriptionState({
+            "refill-retatrutide-10": true,
+            "refill-tirzepatide-15": true,
+          })
+        }
+      })
+      .catch((err) => {
+        console.error("Error fetching refills from Medusa:", err)
+        setSubscriptionState({
+          "refill-retatrutide-10": true,
+          "refill-tirzepatide-15": true,
+        })
+      })
+  }, [])
 
   const toggleSub = (id: string, isSub: boolean) => {
     setSubscriptionState((prev) => ({ ...prev, [id]: isSub }))
+  }
+
+  const setTier = (id: string, tier: 1 | 2 | 3) => {
+    setSelectedTiers((prev) => ({ ...prev, [id]: tier }))
+  }
+
+  const refills =
+    isLive && medusaProducts.length > 0
+      ? medusaProducts.map((p) => {
+          const v = p.variants?.[0]
+          const oneTime = getProductPrice(v, "gbp")
+          const sub = Number((oneTime * 0.9).toFixed(2))
+          const meta = p.metadata || {}
+          return {
+            id: p.id,
+            title: p.title,
+            strength: (meta.strength as string) || v?.title || "Standard Cartridge",
+            priceOneTime: oneTime > 0 ? oneTime : 24.0,
+            priceSubscription: sub > 0 ? sub : 21.6,
+            currency: "GBP",
+            sku: v?.sku || "REF-RT-10",
+            batch: (meta.batch as string) || "RT-2609A",
+            compatibility: (meta.compatibility as string) || "Compatible exclusively with the PEPTECH Reusable Pen",
+            matchingPenSetSku: (meta.matchingPenSetSku as string) || "PEN-RT-10",
+          }
+        })
+      : catalog.sampleRefills
+
+  const handleAddToCart = (refill: any) => {
+    const isSub = subscriptionState[refill.id] ?? true
+    const tier = selectedTiers[refill.id] || 2
+    const qty = tier === 1 ? 1 : tier === 2 ? 2 : 3
+    const unitPrice = isSub ? refill.priceSubscription : refill.priceOneTime
+
+    for (let i = 0; i < qty; i++) {
+      addItem({
+        id: refill.id,
+        title: refill.title,
+        format: "refill",
+        strength: refill.strength,
+        price: refill.priceOneTime,
+        isSubscription: isSub,
+        subscriptionIntervalDays: isSub ? 28 : undefined,
+        discountPercent: isSub ? 10 : undefined,
+        sku: refill.sku,
+        batch: refill.batch,
+      })
+    }
+    setIsDrawerOpen(true)
   }
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12">
       
       {/* Category Header */}
-      <div className="space-y-4 max-w-3xl">
-        <div className="flex items-center gap-2">
+      <div className="space-y-3 max-w-3xl">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-[var(--color-brand-teal)]/10 text-[var(--color-brand-teal)] uppercase tracking-wider">
             Category 2 • Existing Pen Owners
           </span>
           <span className="text-xs text-zinc-500 font-mono">Subscribe &amp; Save 10% (28 Days)</span>
+          {isLive && (
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+              ● Live Medusa 2.0 Catalog
+            </span>
+          )}
         </div>
-        <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">
+        <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-zinc-900 dark:text-zinc-50">
           Refill Cartridges
         </h1>
         <p className="text-sm sm:text-base text-zinc-600 dark:text-zinc-300 leading-relaxed">
@@ -36,17 +118,17 @@ export default function RefillsPage() {
       </div>
 
       {/* Cross-Link Banner for First-Time Customers */}
-      <div className="p-4 sm:p-5 rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-200 dark:border-indigo-900/60 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <span className="text-2xl">🖊️</span>
+      <div className="p-5 rounded-3xl bg-indigo-50/60 dark:bg-indigo-950/20 border border-indigo-200 dark:border-indigo-900/60 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xs">
+        <div className="flex items-center gap-3.5">
+          <span className="text-3xl">🖊️</span>
           <div>
-            <h4 className="font-bold text-xs sm:text-sm text-indigo-900 dark:text-indigo-200">Do you need the reusable PEPTECH pen?</h4>
-            <p className="text-xs text-indigo-700/80 dark:text-indigo-300/70">These cartridges require the PEPTECH precision pen to operate. If you do not own the pen, purchase the Complete Pen Set first.</p>
+            <h4 className="font-bold text-sm text-indigo-950 dark:text-indigo-200">Do you need the reusable PEPTECH pen?</h4>
+            <p className="text-xs text-indigo-800/80 dark:text-indigo-300/70">These cartridges require the PEPTECH precision pen to operate. If you do not own the pen, purchase the Complete Pen Set first.</p>
           </div>
         </div>
         <Link
           href="/pen-sets"
-          className="px-4 py-2 rounded-xl bg-[var(--color-brand-navy)] hover:bg-[var(--color-brand-slate)] text-white text-xs font-bold transition-colors whitespace-nowrap shadow-xs"
+          className="px-5 py-2.5 rounded-xl bg-[var(--color-brand-navy)] hover:bg-[var(--color-brand-slate)] text-white text-xs font-bold transition-colors whitespace-nowrap shadow-xs"
         >
           View Complete Pen Sets →
         </Link>
@@ -54,22 +136,29 @@ export default function RefillsPage() {
 
       {/* Refill Cartridges Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {catalog.sampleRefills.map((refill) => {
+        {refills.map((refill) => {
           const isSub = subscriptionState[refill.id] ?? true
-          const currentPrice = isSub ? refill.priceSubscription : refill.priceOneTime
+          const tier = selectedTiers[refill.id] || 2
+          const qty = tier === 1 ? 1 : tier === 2 ? 2 : 3
+          const baseUnit = isSub ? refill.priceSubscription : refill.priceOneTime
+          const totalPrice = Number((baseUnit * qty).toFixed(2))
 
           return (
             <div
               key={refill.id}
-              className="rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm overflow-hidden flex flex-col justify-between"
+              className="rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-md hover:shadow-lg transition-all overflow-hidden flex flex-col justify-between"
             >
-              {/* Card Header & Badge */}
+              {/* Header & Badges */}
               <div className="p-6 pb-0 space-y-3">
                 <div className="flex justify-between items-center text-xs">
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[var(--color-brand-teal)]/10 text-[var(--color-brand-teal)] border border-[var(--color-brand-teal)]/20 uppercase tracking-wide">
                     {refill.compatibility}
                   </span>
                   <span className="font-mono text-[11px] text-zinc-400">{refill.sku}</span>
+                </div>
+
+                <div className="aspect-16/10 rounded-2xl bg-zinc-50 dark:bg-zinc-800/80 flex items-center justify-center text-5xl border border-zinc-100 dark:border-zinc-800">
+                  🔄
                 </div>
 
                 <h3 className="font-extrabold text-xl text-zinc-900 dark:text-zinc-100">{refill.title}</h3>
@@ -83,10 +172,12 @@ export default function RefillsPage() {
 
               {/* Purchase Selector: One-Time vs 28-Day Subscription */}
               <div className="p-6 space-y-4">
+                
+                {/* One-time vs Sub Toggle */}
                 <div className="grid grid-cols-2 gap-2 bg-zinc-100 dark:bg-zinc-800/80 p-1 rounded-xl text-xs font-bold">
                   <button
                     onClick={() => toggleSub(refill.id, false)}
-                    className={`py-2 px-2 rounded-lg text-center transition-all ${
+                    className={`py-2 px-2 rounded-lg text-center transition-all cursor-pointer ${
                       !isSub
                         ? "bg-white dark:bg-zinc-900 text-zinc-950 dark:text-white shadow-xs"
                         : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
@@ -96,7 +187,7 @@ export default function RefillsPage() {
                   </button>
                   <button
                     onClick={() => toggleSub(refill.id, true)}
-                    className={`py-2 px-2 rounded-lg text-center transition-all relative ${
+                    className={`py-2 px-2 rounded-lg text-center transition-all relative cursor-pointer ${
                       isSub
                         ? "bg-[var(--color-brand-teal)] text-white shadow-xs"
                         : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
@@ -118,12 +209,50 @@ export default function RefillsPage() {
                   </div>
                 )}
 
+                {/* Quantity Tier Selector */}
+                <div className="space-y-1.5 pt-1">
+                  <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Choose Quantity:</div>
+                  <div className="grid grid-cols-3 gap-1.5 text-center text-xs">
+                    <button
+                      onClick={() => setTier(refill.id, 1)}
+                      className={`p-2 rounded-xl border transition-all cursor-pointer ${
+                        tier === 1
+                          ? "border-[var(--color-brand-teal)] bg-[var(--color-brand-surface)] dark:bg-zinc-800 font-bold"
+                          : "border-zinc-200 dark:border-zinc-700 text-zinc-500 hover:bg-zinc-50"
+                      }`}
+                    >
+                      <div className="font-bold">1 Unit</div>
+                    </button>
+                    <button
+                      onClick={() => setTier(refill.id, 2)}
+                      className={`p-2 rounded-xl border transition-all cursor-pointer ${
+                        tier === 2
+                          ? "border-[var(--color-brand-orange)] bg-[var(--color-brand-orange-light)]/30 dark:bg-zinc-800 font-bold ring-1 ring-[var(--color-brand-orange)]"
+                          : "border-zinc-200 dark:border-zinc-700 text-zinc-500 hover:bg-zinc-50"
+                      }`}
+                    >
+                      <div className="font-bold">2 Units</div>
+                      <div className="text-[10px] text-[var(--color-brand-orange)] font-bold">POPULAR</div>
+                    </button>
+                    <button
+                      onClick={() => setTier(refill.id, 3)}
+                      className={`p-2 rounded-xl border transition-all cursor-pointer ${
+                        tier === 3
+                          ? "border-[var(--color-brand-teal)] bg-[var(--color-brand-surface)] dark:bg-zinc-800 font-bold"
+                          : "border-zinc-200 dark:border-zinc-700 text-zinc-500 hover:bg-zinc-50"
+                      }`}
+                    >
+                      <div className="font-bold">3 Units</div>
+                    </button>
+                  </div>
+                </div>
+
                 {/* Pricing & Add to Cart */}
                 <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800 space-y-3">
                   <div className="flex justify-between items-baseline">
                     <div>
                       <span className="text-2xl font-black font-mono text-[var(--color-brand-navy)] dark:text-zinc-100">
-                        £{currentPrice.toFixed(2)}
+                        £{totalPrice.toFixed(2)}
                       </span>
                       <span className="text-xs text-zinc-400 ml-1">GBP</span>
                     </div>
@@ -133,23 +262,10 @@ export default function RefillsPage() {
                   </div>
 
                   <button
-                    onClick={() =>
-                      addItem({
-                        id: refill.id,
-                        title: refill.title,
-                        format: "refill",
-                        strength: refill.strength,
-                        price: refill.priceOneTime,
-                        isSubscription: isSub,
-                        subscriptionIntervalDays: isSub ? 28 : undefined,
-                        discountPercent: isSub ? 10 : undefined,
-                        sku: refill.sku,
-                        batch: refill.batch,
-                      })
-                    }
-                    className="w-full py-3 rounded-xl bg-[var(--color-brand-teal)] hover:bg-[var(--color-brand-teal-hover)] text-white font-bold text-xs sm:text-sm transition-all shadow-md flex items-center justify-center gap-2"
+                    onClick={() => handleAddToCart(refill)}
+                    className="w-full py-3 rounded-2xl bg-[var(--color-brand-teal)] hover:bg-[var(--color-brand-teal-hover)] text-white font-extrabold text-xs sm:text-sm transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
                   >
-                    <span>{isSub ? "Subscribe & Save (Every 28 Days)" : "Add Refill Cartridge to Order"}</span>
+                    <span>{isSub ? `Subscribe & Save (${qty} units / 28d)` : `Add to Order (${qty} units)`}</span>
                     <span>+</span>
                   </button>
 
@@ -162,6 +278,7 @@ export default function RefillsPage() {
                     </Link>
                   </div>
                 </div>
+
               </div>
             </div>
           )

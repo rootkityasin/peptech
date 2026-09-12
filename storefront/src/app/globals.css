@@ -2,36 +2,88 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #0F172A;
+  --foreground: #0B1F3A;
+  --brand-navy: #0B1F3A;
+  --brand-navy-dark: #061224;
   --brand-teal: #00C5A0;
-  --brand-teal-hover: #0FB5BA;
-  --brand-slate: #1F3044;
-  --brand-slate-dark: #172F50;
+  --brand-teal-hover: #16A6A3;
+  --brand-teal-dark: #0F8F8C;
+  --brand-slate: #1B365D;
+  --brand-slate-dark: #10243E;
   --brand-surface: #F6F9FF;
+  --brand-surface-subtle: #EDF2F7;
+  --brand-orange: #FF7A00;
+  --brand-orange-light: #FFF4EC;
+  --brand-border: #E2E8F0;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-brand-navy: var(--brand-navy);
+  --color-brand-navy-dark: var(--brand-navy-dark);
   --color-brand-teal: var(--brand-teal);
   --color-brand-teal-hover: var(--brand-teal-hover);
+  --color-brand-teal-dark: var(--brand-teal-dark);
   --color-brand-slate: var(--brand-slate);
   --color-brand-slate-dark: var(--brand-slate-dark);
   --color-brand-surface: var(--brand-surface);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-brand-surface-subtle: var(--brand-surface-subtle);
+  --color-brand-orange: var(--brand-orange);
+  --color-brand-orange-light: var(--brand-orange-light);
+  --color-brand-border: var(--brand-border);
+  --font-sans: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: var(--font-geist-mono), monospace;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0B192C;
+    --background: #061224;
     --foreground: #F8FAFC;
-    --brand-surface: #111E33;
+    --brand-surface: #0B1C33;
+    --brand-surface-subtle: #0F2542;
+    --brand-border: #1E3352;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  display: flex;
+  width: 200%;
+  animation: marquee 35s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+/* Custom scrollbar for clinical feel */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(11, 31, 58, 0.2);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 197, 160, 0.5);
 }
