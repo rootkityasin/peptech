@@ -1,0 +1,21 @@
+{
+  "name": "peptech",
+  "version": "1.0.0",
+  "private": true,
+  "description": "PEPTECH Custom Storefront & Medusa 2.0 Admin Backend",
+  "scripts": {
+    "dev:backend": "npm run dev --prefix backend",
+    "dev:storefront": "npm run dev --prefix storefront",
+    "build:backend": "npm run build --prefix backend",
+    "build:storefront": "npm run build --prefix storefront"
+  },
+  "keywords": [
+    "peptech",
+    "ecommerce",
+    "medusa",
+    "nextjs",
+    "stripe"
+  ],
+  "author": "rootkityasin",
+  "license": "UNLICENSED"
+}

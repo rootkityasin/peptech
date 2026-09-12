@@ -1,0 +1,144 @@
+{
+  "categories": [
+    {
+      "id": "complete-pen-sets",
+      "slug": "complete-pen-sets",
+      "title": "Complete Pen Sets",
+      "subtitle": "First-time purchase with reusable pen, prefilled cartridge, needles & device passport",
+      "description": "Each set includes the medical-grade reusable PEPTECH precision pen, a compatible prefilled cartridge, quick-start instructions, device passport, 31G 5mm needles, and alcohol pads.",
+      "purchaseType": "one-time",
+      "badge": "Step 1: First Purchase"
+    },
+    {
+      "id": "refill-cartridges",
+      "slug": "refill-cartridges",
+      "title": "Refill Cartridges",
+      "subtitle": "Compatible refill cartridges for your reusable PEPTECH pen",
+      "description": "Designed exclusively for the PEPTECH reusable pen system. Keep your pen and simply order fresh, batch-certified cartridges as needed.",
+      "purchaseType": "both",
+      "subscriptionDiscount": 10,
+      "subscriptionIntervalDays": 28,
+      "badge": "Step 2: Reorder Refills"
+    },
+    {
+      "id": "freeze-dried-vials",
+      "slug": "freeze-dried-vials",
+      "title": "Freeze-Dried Vials",
+      "subtitle": "High-purity lyophilised vials for laboratory & scientific research",
+      "description": "Individually vacuum-sealed, lyophilised peptide vials with verifiable HPLC & Mass Spectrometry lab reports. One-time or 28-day subscription available.",
+      "purchaseType": "both",
+      "subscriptionDiscount": 10,
+      "subscriptionIntervalDays": 28,
+      "badge": "Laboratory Vials"
+    }
+  ],
+  "samplePenSets": [
+    {
+      "id": "pen-retatrutide-10",
+      "title": "PEPTECH Reusable Pen Set — Retatrutide",
+      "category": "complete-pen-sets",
+      "strength": "10mg Cartridge",
+      "price": 45.00,
+      "currency": "GBP",
+      "sku": "PEN-RT-10",
+      "batch": "RT-2609A",
+      "labReportUrl": "/lab-reports/RT-2609A.pdf",
+      "inStock": true,
+      "included": [
+        "1x Premium Reusable PEPTECH Aluminum Pen",
+        "1x Retatrutide 10mg Prefilled Cartridge (HPLC 99.4%)",
+        "1x Official Device Passport & Serialized Authenticity Card",
+        "5x Sterile 31G 5mm Ultra-Fine Needles",
+        "10x Medical-Grade Alcohol Prep Pads",
+        "1x Quick-Start Assembly & Storage Guide"
+      ],
+      "compatibleRefillSku": "REF-RT-10"
+    },
+    {
+      "id": "pen-tirzepatide-15",
+      "title": "PEPTECH Reusable Pen Set — Tirzepatide",
+      "category": "complete-pen-sets",
+      "strength": "15mg Cartridge",
+      "price": 48.00,
+      "currency": "GBP",
+      "sku": "PEN-TR-15",
+      "batch": "TR-2609B",
+      "labReportUrl": "/lab-reports/TR-2609B.pdf",
+      "inStock": true,
+      "included": [
+        "1x Premium Reusable PEPTECH Aluminum Pen",
+        "1x Tirzepatide 15mg Prefilled Cartridge (HPLC 99.2%)",
+        "1x Official Device Passport & Serialized Authenticity Card",
+        "5x Sterile 31G 5mm Ultra-Fine Needles",
+        "10x Medical-Grade Alcohol Prep Pads",
+        "1x Quick-Start Assembly & Storage Guide"
+      ],
+      "compatibleRefillSku": "REF-TR-15"
+    },
+    {
+      "id": "pen-semaglutide-10",
+      "title": "PEPTECH Reusable Pen Set — Semaglutide",
+      "category": "complete-pen-sets",
+      "strength": "10mg Cartridge",
+      "price": 42.00,
+      "currency": "GBP",
+      "sku": "PEN-SM-10",
+      "batch": "SM-2609A",
+      "labReportUrl": "/lab-reports/SM-2609A.pdf",
+      "inStock": true,
+      "included": [
+        "1x Premium Reusable PEPTECH Aluminum Pen",
+        "1x Semaglutide 10mg Prefilled Cartridge (HPLC 99.5%)",
+        "1x Official Device Passport & Serialized Authenticity Card",
+        "5x Sterile 31G 5mm Ultra-Fine Needles",
+        "10x Medical-Grade Alcohol Prep Pads",
+        "1x Quick-Start Assembly & Storage Guide"
+      ],
+      "compatibleRefillSku": "REF-SM-10"
+    }
+  ],
+  "sampleRefills": [
+    {
+      "id": "refill-retatrutide-10",
+      "title": "PEPTECH Refill Cartridge — Retatrutide",
+      "category": "refill-cartridges",
+      "strength": "10mg",
+      "priceOneTime": 24.00,
+      "priceSubscription": 21.60,
+      "currency": "GBP",
+      "sku": "REF-RT-10",
+      "batch": "RT-2609A",
+      "inStock": true,
+      "compatibility": "Compatible exclusively with the PEPTECH Reusable Pen",
+      "matchingPenSetSku": "PEN-RT-10"
+    },
+    {
+      "id": "refill-tirzepatide-15",
+      "title": "PEPTECH Refill Cartridge — Tirzepatide",
+      "category": "refill-cartridges",
+      "strength": "15mg",
+      "priceOneTime": 26.00,
+      "priceSubscription": 23.40,
+      "currency": "GBP",
+      "sku": "REF-TR-15",
+      "batch": "TR-2609B",
+      "inStock": true,
+      "compatibility": "Compatible exclusively with the PEPTECH Reusable Pen",
+      "matchingPenSetSku": "PEN-TR-15"
+    }
+  ],
+  "featuredVials": [
+    { "name": "Retatrutide", "code": "RT", "strength": "5mg", "price": 8.40 },
+    { "name": "Retatrutide", "code": "RT", "strength": "10mg", "price": 15.60 },
+    { "name": "Tirzepatide", "code": "TR", "strength": "5mg", "price": 8.40 },
+    { "name": "Tirzepatide", "code": "TR", "strength": "10mg", "price": 14.40 },
+    { "name": "Semaglutide", "code": "SM", "strength": "5mg", "price": 8.40 },
+    { "name": "Semaglutide", "code": "SM", "strength": "10mg", "price": 14.40 },
+    { "name": "GHK-CU", "code": "Cu50", "strength": "50mg", "price": 8.40 },
+    { "name": "GHK-CU", "code": "Cu100", "strength": "100mg", "price": 12.00 },
+    { "name": "BPC 157 (Acetate)", "code": "BC5", "strength": "5mg", "price": 9.60 },
+    { "name": "TB500", "code": "TB5", "strength": "5mg", "price": 20.40 },
+    { "name": "NAD+", "code": "NJ500", "strength": "500mg", "price": 19.20 },
+    { "name": "Cagrilintide", "code": "CGL5", "strength": "5mg", "price": 31.20 }
+  ]
+}
