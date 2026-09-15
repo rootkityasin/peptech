@@ -1,100 +1,137 @@
-import React from "react"
+"use client"
+
+import React, { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 
 export function Footer() {
+  const [email, setEmail] = useState("")
+  const [subscribed, setSubscribed] = useState(false)
+
+  const handleSubscribe = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (email.trim()) {
+      setSubscribed(true)
+      setEmail("")
+    }
+  }
+
   return (
-    <footer className="bg-zinc-950 text-zinc-400 border-t border-zinc-800 text-xs">
-      {/* Top Value Propositions */}
-      <div className="border-b border-zinc-800/80 py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 text-center md:text-left">
-        <div className="flex items-center justify-center md:justify-start gap-3">
-          <span className="text-2xl">📦</span>
-          <div>
-            <div className="font-bold text-zinc-100 text-sm">Discreet Packaging Promise</div>
-            <div className="text-[11px] text-zinc-500">Unbranded exterior box. PEPTECH branding kept inside.</div>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-center md:justify-start gap-3">
-          <span className="text-2xl">🔬</span>
-          <div>
-            <div className="font-bold text-zinc-100 text-sm">Batch Verified Testing</div>
-            <div className="text-[11px] text-zinc-500">Independent HPLC &amp; Mass Spectrometry reports on every lot.</div>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-center md:justify-start gap-3">
-          <span className="text-2xl">🚚</span>
-          <div>
-            <div className="font-bold text-zinc-100 text-sm">Royal Mail Tracked</div>
-            <div className="text-[11px] text-zinc-500">£4.95 UK Delivery • £15.00 Worldwide Delivery</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Footer Links */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 grid grid-cols-2 md:grid-cols-5 gap-8">
+    <footer className="bg-slate-50 border-t border-slate-200 text-slate-600 text-xs">
+      {/* Main 4-Column Footer */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 grid grid-cols-1 md:grid-cols-12 gap-10">
         
-        {/* Brand Summary */}
-        <div className="col-span-2 space-y-3">
-          <div className="relative h-9 w-40 bg-black px-2 py-1 rounded flex items-center justify-center border border-zinc-800">
-            <Image
-              src="/logo.webp"
-              alt="PEPTECH"
-              width={140}
-              height={32}
-              className="object-contain"
-            />
+        {/* Column 1: Brand Info & Mission */}
+        <div className="md:col-span-4 space-y-4">
+          <Link href="/" className="inline-block">
+            <div className="relative h-10 w-44 flex items-center">
+              <Image
+                src="/logo.webp"
+                alt="PEPTECH®"
+                width={170}
+                height={42}
+                className="object-contain"
+              />
+            </div>
+          </Link>
+          <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+            One system. A healthier world.
           </div>
-          <p className="text-xs text-zinc-500 leading-relaxed max-w-sm">
-            PEPTECH® provides high-purity research compounds and reusable precision pen systems strictly for laboratory, scientific, and scientific research purposes.
+          <p className="text-xs text-slate-500 leading-relaxed max-w-sm">
+            PEPTECH® is committed to advancing global health and safety through innovative testing solutions.
           </p>
-          <div className="text-[11px] text-zinc-400 font-mono">
-            Support: <a href="mailto:info@peptech.bio" className="text-[var(--color-brand-teal)] hover:underline">info@peptech.bio</a>
+          {/* Social Icons */}
+          <div className="flex items-center gap-3 pt-2 text-slate-600">
+            <a href="#" className="w-8 h-8 rounded-full border border-slate-300 flex items-center justify-center hover:bg-[#0B1F3A] hover:text-white transition-colors" aria-label="LinkedIn">
+              <span className="font-bold text-xs">in</span>
+            </a>
+            <a href="#" className="w-8 h-8 rounded-full border border-slate-300 flex items-center justify-center hover:bg-[#0B1F3A] hover:text-white transition-colors" aria-label="Facebook">
+              <span className="font-bold text-xs">f</span>
+            </a>
+            <a href="#" className="w-8 h-8 rounded-full border border-slate-300 flex items-center justify-center hover:bg-[#0B1F3A] hover:text-white transition-colors" aria-label="YouTube">
+              <span className="text-xs">▶</span>
+            </a>
+            <a href="#" className="w-8 h-8 rounded-full border border-slate-300 flex items-center justify-center hover:bg-[#0B1F3A] hover:text-white transition-colors" aria-label="Instagram">
+              <span className="text-xs">📷</span>
+            </a>
           </div>
         </div>
 
-        {/* Categories */}
-        <div className="space-y-2.5">
-          <h4 className="font-bold text-zinc-100 text-xs uppercase tracking-wider">Product Categories</h4>
-          <ul className="space-y-1.5 text-zinc-400">
-            <li><Link href="/pen-sets" className="hover:text-white transition-colors">1. Complete Pen Sets</Link></li>
-            <li><Link href="/refills" className="hover:text-white transition-colors">2. Refill Cartridges</Link></li>
-            <li><Link href="/vials" className="hover:text-white transition-colors">3. Freeze-Dried Vials</Link></li>
-            <li><Link href="/how-it-works" className="hover:text-white transition-colors">How the System Works</Link></li>
+        {/* Column 2: Quick Links */}
+        <div className="md:col-span-2 space-y-3">
+          <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider">Quick Links</h4>
+          <ul className="space-y-2 text-xs text-slate-500">
+            <li><Link href="/products/complete-pen-set" className="hover:text-[#0B1F3A] transition-colors">Shop</Link></li>
+            <li><Link href="/#applications" className="hover:text-[#0B1F3A] transition-colors">Applications</Link></li>
+            <li><Link href="/about" className="hover:text-[#0B1F3A] transition-colors">About Us</Link></li>
+            <li><Link href="/quality" className="hover:text-[#0B1F3A] transition-colors">Quality</Link></li>
+            <li><Link href="/lab-reports" className="hover:text-[#0B1F3A] transition-colors">Resources</Link></li>
+            <li><Link href="/contact" className="hover:text-[#0B1F3A] transition-colors">Contact</Link></li>
           </ul>
         </div>
 
-        {/* Verification */}
-        <div className="space-y-2.5">
-          <h4 className="font-bold text-zinc-100 text-xs uppercase tracking-wider">Lab Verification</h4>
-          <ul className="space-y-1.5 text-zinc-400">
-            <li><Link href="/lab-reports" className="hover:text-white transition-colors">Search Lab Reports (COA)</Link></li>
-            <li><Link href="/verify" className="hover:text-white transition-colors">Packaging QR Verification</Link></li>
-            <li><Link href="/how-it-works#testing" className="hover:text-white transition-colors">HPLC Methodology</Link></li>
-            <li><a href="http://localhost:9000/app" target="_blank" rel="noreferrer" className="text-zinc-500 hover:text-white transition-colors">Admin Dashboard ↗</a></li>
+        {/* Column 3: Support */}
+        <div className="md:col-span-2 space-y-3">
+          <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider">Support</h4>
+          <ul className="space-y-2 text-xs text-slate-500">
+            <li><Link href="/how-it-works#faqs" className="hover:text-[#0B1F3A] transition-colors">FAQs</Link></li>
+            <li><Link href="/account" className="hover:text-[#0B1F3A] transition-colors">Track Order</Link></li>
+            <li><Link href="/shipping-returns" className="hover:text-[#0B1F3A] transition-colors">Shipping Policy</Link></li>
+            <li><Link href="/shipping-returns#returns" className="hover:text-[#0B1F3A] transition-colors">Returns &amp; Warranty</Link></li>
+            <li><Link href="/contact" className="hover:text-[#0B1F3A] transition-colors">Technical Support</Link></li>
           </ul>
         </div>
 
-        {/* Legal & Compliance */}
-        <div className="space-y-2.5">
-          <h4 className="font-bold text-zinc-100 text-xs uppercase tracking-wider">Compliance &amp; Legal</h4>
-          <ul className="space-y-1.5 text-zinc-400">
-            <li><Link href="/research-disclaimer" className="hover:text-white transition-colors">18+ Research Disclaimer</Link></li>
-            <li><Link href="/terms-of-sale" className="hover:text-white transition-colors">Terms of Sale</Link></li>
-            <li><Link href="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy (UK GDPR)</Link></li>
-            <li><Link href="/shipping-returns" className="hover:text-white transition-colors">Shipping &amp; Returns</Link></li>
-          </ul>
+        {/* Column 4: Stay Updated Newsletter */}
+        <div className="md:col-span-4 space-y-3">
+          <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider">Stay Updated</h4>
+          <p className="text-xs text-slate-500">
+            Get the latest updates, new products and resources.
+          </p>
+          <form onSubmit={handleSubscribe} className="flex gap-2">
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Your email address"
+              required
+              className="flex-1 px-3 py-2 text-xs rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0B1F3A]"
+            />
+            <button
+              type="submit"
+              className="px-4 py-2 rounded-lg bg-[#0B1F3A] text-white text-xs font-bold hover:bg-[#162e52] transition-colors cursor-pointer"
+            >
+              Subscribe
+            </button>
+          </form>
+          {subscribed && (
+            <p className="text-[11px] text-emerald-600 font-medium">Thank you for subscribing!</p>
+          )}
+          <p className="text-[11px] text-slate-400">
+            We respect your privacy. Unsubscribe anytime.
+          </p>
         </div>
 
       </div>
 
-      {/* Mandatory Statutory Notice */}
-      <div className="border-t border-zinc-900 bg-black/60 px-4 py-6 text-center text-[11px] text-zinc-500 space-y-2">
-        <p className="max-w-4xl mx-auto text-zinc-400">
-          <strong>RESEARCH USE ONLY (RUO):</strong> All products offered by PEPTECH® are intended solely for lawful in-vitro laboratory, scientific, and educational research purposes. They are NOT intended for human or veterinary use, injection, diagnosis, treatment, cure, or prevention of any disease.
+      {/* Mandatory Statutory Compliance Notice */}
+      <div className="border-t border-slate-200 bg-slate-100/70 px-4 py-4 text-center text-[11px] text-slate-500">
+        <p className="max-w-4xl mx-auto">
+          <strong>RESEARCH USE ONLY (RUO):</strong> All products offered by PEPTECH® are intended solely for lawful in-vitro laboratory, scientific, and educational research purposes. Not for human or veterinary administration.
         </p>
-        <p>© {new Date().getFullYear()} PEPTECH®. All rights reserved. Registered UK Trademark.</p>
+      </div>
+
+      {/* Bottom Bar: Copyright & Legal */}
+      <div className="border-t border-slate-200 px-4 sm:px-8 py-5 max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-slate-500">
+        <div>© 2026 PEPTECH®. All rights reserved.</div>
+        <div className="flex items-center gap-4">
+          <Link href="/privacy-policy" className="hover:underline">Privacy Policy</Link>
+          <span>|</span>
+          <Link href="/terms-of-sale" className="hover:underline">Terms of Service</Link>
+          <span>|</span>
+          <Link href="/research-disclaimer" className="hover:underline">Sitemap</Link>
+        </div>
+        <div className="text-slate-600 font-medium italic">A Healthier World. Together.™</div>
       </div>
     </footer>
   )
