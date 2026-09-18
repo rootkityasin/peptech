@@ -14,6 +14,7 @@ export interface CartItem {
   discountPercent?: number
   sku: string
   batch?: string
+  image?: string
 }
 
 interface CartContextType {
@@ -33,8 +34,49 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined)
 
+export const DEFAULT_CART_ITEMS: CartItem[] = [
+  {
+    id: "semaglutide-pen-set",
+    title: "Semaglutide Starter Pen Set (5mg)",
+    format: "pen-set",
+    strength: "5mg",
+    price: 145.0,
+    quantity: 1,
+    isSubscription: false,
+    sku: "PEP-SEMA-PEN-5",
+    batch: "PT-2026-081",
+    image: "/images/figma/152e353c4afaa5945905ac686de871b57ec2a770.png",
+  },
+  {
+    id: "tirzepatide-refill",
+    title: "Tirzepatide Refill Cartridge (10mg)",
+    format: "refill",
+    strength: "10mg",
+    price: 95.0,
+    quantity: 1,
+    isSubscription: true,
+    subscriptionIntervalDays: 28,
+    discountPercent: 10,
+    sku: "PEP-TIRZ-REF-10",
+    batch: "PT-2026-082",
+    image: "/images/figma/0e71e8560b9bae80ee21a3d08905300075c266b7.png",
+  },
+  {
+    id: "bpc-157-vial",
+    title: "BPC-157 Pure Research Peptide (10mg)",
+    format: "vial",
+    strength: "10mg",
+    price: 48.0,
+    quantity: 1,
+    isSubscription: false,
+    sku: "PEP-BPC-VIAL-10",
+    batch: "PT-2026-083",
+    image: "/images/figma/2d7803f97be6d80d5630dfb42abba84289ed1bb5.png",
+  },
+]
+
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>([])
+  const [items, setItems] = useState<CartItem[]>(DEFAULT_CART_ITEMS)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [destination, setDestination] = useState<"UK" | "INTL">("UK")
 
@@ -42,7 +84,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     try {
       const saved = localStorage.getItem("peptech_cart")
-      if (saved) setItems(JSON.parse(saved))
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setItems(parsed)
+        }
+      }
     } catch {
       // ignore
     }
@@ -96,8 +143,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     return acc + itemPrice * i.quantity
   }, 0)
 
-  // Royal Mail rates: £4.95 UK / £15.00 International
-  const shippingCost = items.length > 0 ? (destination === "UK" ? 4.95 : 15.0) : 0
+  // Royal Mail rates: Free UK over £100 / £4.95 UK standard / £15.00 International
+  const shippingCost = items.length > 0 ? (destination === "UK" ? (subtotal >= 100 ? 0 : 4.95) : 15.0) : 0
   const total = subtotal + shippingCost
 
   return (

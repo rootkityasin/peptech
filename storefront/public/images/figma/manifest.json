@@ -1,0 +1,248 @@
+[
+  {
+    "url": "http://localhost:3845/assets/2fc8ae919de84fe5269092b52f019438e68ce3c8.png",
+    "filename": "2fc8ae919de84fe5269092b52f019438e68ce3c8.png",
+    "varName": "imgRectangle",
+    "size": 700496
+  },
+  {
+    "url": "http://localhost:3845/assets/8b012678bb25981b73cb1639061824813cbca3eb.png",
+    "filename": "8b012678bb25981b73cb1639061824813cbca3eb.png",
+    "varName": "imgRectangle1",
+    "size": 46260
+  },
+  {
+    "url": "http://localhost:3845/assets/7f278c9d9e9d928a9e34cd536ca8e36bd11a5280.png",
+    "filename": "7f278c9d9e9d928a9e34cd536ca8e36bd11a5280.png",
+    "varName": "imgRectangle2",
+    "size": 46055
+  },
+  {
+    "url": "http://localhost:3845/assets/c93628427535078c7c52564bee9a85cb7e7042b6.png",
+    "filename": "c93628427535078c7c52564bee9a85cb7e7042b6.png",
+    "varName": "imgRectangle3",
+    "size": 46362
+  },
+  {
+    "url": "http://localhost:3845/assets/bed1e101b49165acd642afe868ab77dace39c715.png",
+    "filename": "bed1e101b49165acd642afe868ab77dace39c715.png",
+    "varName": "imgRectangle4",
+    "size": 46300
+  },
+  {
+    "url": "http://localhost:3845/assets/bb748b90bb24dff5e0b7140487e46282927f63c7.png",
+    "filename": "bb748b90bb24dff5e0b7140487e46282927f63c7.png",
+    "varName": "imgRectangle5",
+    "size": 44344
+  },
+  {
+    "url": "http://localhost:3845/assets/59e312c7b3a78ddca79d47b884a0992dc4142203.svg",
+    "filename": "59e312c7b3a78ddca79d47b884a0992dc4142203.svg",
+    "varName": "imgArrow",
+    "size": 467
+  },
+  {
+    "url": "http://localhost:3845/assets/27b4991e9b952fe1e43fac289265fda55a606a7f.svg",
+    "filename": "27b4991e9b952fe1e43fac289265fda55a606a7f.svg",
+    "varName": "imgCartIcon",
+    "size": 1221
+  },
+  {
+    "url": "http://localhost:3845/assets/c053e9bca99b2b8f944f474abd976f1ff48db2ed.png",
+    "filename": "c053e9bca99b2b8f944f474abd976f1ff48db2ed.png",
+    "varName": "imgPeptechBrandLogo",
+    "size": 18714
+  },
+  {
+    "url": "http://localhost:3845/assets/ebf52f91842a916d1e0249efbfba1688ac4e3863.svg",
+    "filename": "ebf52f91842a916d1e0249efbfba1688ac4e3863.svg",
+    "varName": "imgSearch",
+    "size": 629
+  },
+  {
+    "url": "http://localhost:3845/assets/e93dbfd043d0b35bf52fe04bc07fec31b1b89270.svg",
+    "filename": "e93dbfd043d0b35bf52fe04bc07fec31b1b89270.svg",
+    "varName": "imgAccount",
+    "size": 820
+  },
+  {
+    "url": "http://localhost:3845/assets/708f327e9ab3317eb424e55129023aeca5f39d84.svg",
+    "filename": "708f327e9ab3317eb424e55129023aeca5f39d84.svg",
+    "varName": "imgVector",
+    "size": 488
+  },
+  {
+    "url": "http://localhost:3845/assets/39227f4a6c0175ad7c8ef422dc3b913d45f190b6.svg",
+    "filename": "39227f4a6c0175ad7c8ef422dc3b913d45f190b6.svg",
+    "varName": "imgVector1",
+    "size": 537
+  },
+  {
+    "url": "http://localhost:3845/assets/152e353c4afaa5945905ac686de871b57ec2a770.png",
+    "filename": "152e353c4afaa5945905ac686de871b57ec2a770.png",
+    "varName": "imgPeptechReusableKitMockup",
+    "size": 293916
+  },
+  {
+    "url": "http://localhost:3845/assets/cf138c026b217b8110b7fdd708c88448e3a99bdd.svg",
+    "filename": "cf138c026b217b8110b7fdd708c88448e3a99bdd.svg",
+    "varName": "imgArrow",
+    "size": 463
+  },
+  {
+    "url": "http://localhost:3845/assets/6076af428c0683d536d0d4435012963059293b69.svg",
+    "filename": "6076af428c0683d536d0d4435012963059293b69.svg",
+    "varName": "imgIcon",
+    "size": 1148
+  },
+  {
+    "url": "http://localhost:3845/assets/9a289dd96136c48fb6cef7d8ba30a8c97b0b430d.svg",
+    "filename": "9a289dd96136c48fb6cef7d8ba30a8c97b0b430d.svg",
+    "varName": "imgIcon1",
+    "size": 384
+  },
+  {
+    "url": "http://localhost:3845/assets/5c343d0709cc901959062bec2de6ba293d2e174e.svg",
+    "filename": "5c343d0709cc901959062bec2de6ba293d2e174e.svg",
+    "varName": "imgIcon2",
+    "size": 1933
+  },
+  {
+    "url": "http://localhost:3845/assets/a819419d438f19d5403af2544fa2b4474b3b9495.svg",
+    "filename": "a819419d438f19d5403af2544fa2b4474b3b9495.svg",
+    "varName": "imgIcon3",
+    "size": 570
+  },
+  {
+    "url": "http://localhost:3845/assets/98f69e2fe708c4886c7ca60bb214e06c922aacba.svg",
+    "filename": "98f69e2fe708c4886c7ca60bb214e06c922aacba.svg",
+    "varName": "imgIcon",
+    "size": 1019
+  },
+  {
+    "url": "http://localhost:3845/assets/dc9d3e79da42658195cfdf7cfa3e253ad810b821.svg",
+    "filename": "dc9d3e79da42658195cfdf7cfa3e253ad810b821.svg",
+    "varName": "imgIcon1",
+    "size": 2262
+  },
+  {
+    "url": "http://localhost:3845/assets/89b234d03ace8ab04605b311f60f72150202a7f7.svg",
+    "filename": "89b234d03ace8ab04605b311f60f72150202a7f7.svg",
+    "varName": "imgIcon2",
+    "size": 666
+  },
+  {
+    "url": "http://localhost:3845/assets/533ac0e27faca24a45e2b476c614ca4430f5e5e3.svg",
+    "filename": "533ac0e27faca24a45e2b476c614ca4430f5e5e3.svg",
+    "varName": "imgIcon3",
+    "size": 1228
+  },
+  {
+    "url": "http://localhost:3845/assets/6948fa22c8a73f7599a07a2c13d249a2042dec80.png",
+    "filename": "6948fa22c8a73f7599a07a2c13d249a2042dec80.png",
+    "varName": "imgRectangle",
+    "size": 27503
+  },
+  {
+    "url": "http://localhost:3845/assets/23594f5d1db2a8dc754752d3fc592b97f50190d7.png",
+    "filename": "23594f5d1db2a8dc754752d3fc592b97f50190d7.png",
+    "varName": "imgPenPhoto",
+    "size": 315491
+  },
+  {
+    "url": "http://localhost:3845/assets/c11fd7f0e7906134322e05abb7396f5c3ebbfefe.svg",
+    "filename": "c11fd7f0e7906134322e05abb7396f5c3ebbfefe.svg",
+    "varName": "imgIcon",
+    "size": 1022
+  },
+  {
+    "url": "http://localhost:3845/assets/250b4b3c243a2a401102b5282f6beba1b9d8a0dd.svg",
+    "filename": "250b4b3c243a2a401102b5282f6beba1b9d8a0dd.svg",
+    "varName": "imgIcon1",
+    "size": 4663
+  },
+  {
+    "url": "http://localhost:3845/assets/6d5d5d27a5b976703c6acb8d242a8218db0b7846.svg",
+    "filename": "6d5d5d27a5b976703c6acb8d242a8218db0b7846.svg",
+    "varName": "imgIcon2",
+    "size": 592
+  },
+  {
+    "url": "http://localhost:3845/assets/76231626c15b815c695ea47c5d56c318fc3efe2b.svg",
+    "filename": "76231626c15b815c695ea47c5d56c318fc3efe2b.svg",
+    "varName": "imgIcon3",
+    "size": 812
+  },
+  {
+    "url": "http://localhost:3845/assets/17e38fe9190b84262d4ded3a0644750966c1fe9f.png",
+    "filename": "17e38fe9190b84262d4ded3a0644750966c1fe9f.png",
+    "varName": "imgLogoNsf",
+    "size": 7576
+  },
+  {
+    "url": "http://localhost:3845/assets/7db6e5b054352cc65e8b2d4f2685b6f463a6fe15.png",
+    "filename": "7db6e5b054352cc65e8b2d4f2685b6f463a6fe15.png",
+    "varName": "imgLogoIsoCertified",
+    "size": 19850
+  },
+  {
+    "url": "http://localhost:3845/assets/01aa16de117d0a4668b6d650d742856f11323a3f.png",
+    "filename": "01aa16de117d0a4668b6d650d742856f11323a3f.png",
+    "varName": "imgLogoCeMark",
+    "size": 16838
+  },
+  {
+    "url": "http://localhost:3845/assets/e1763a54660c167231d3ea6cd112ed5db3981202.png",
+    "filename": "e1763a54660c167231d3ea6cd112ed5db3981202.png",
+    "varName": "imgLogoFda",
+    "size": 38852
+  },
+  {
+    "url": "http://localhost:3845/assets/1bea44957df595f99eb0624d40ba57de2b3b65f9.png",
+    "filename": "1bea44957df595f99eb0624d40ba57de2b3b65f9.png",
+    "varName": "imgLogoWho",
+    "size": 41069
+  },
+  {
+    "url": "http://localhost:3845/assets/25fae3eb6b1844aece24a6e52c49e82f5007ab4e.png",
+    "filename": "25fae3eb6b1844aece24a6e52c49e82f5007ab4e.png",
+    "varName": "imgLogoAoacInternational",
+    "size": 31962
+  },
+  {
+    "url": "http://localhost:3845/assets/4d9e7f3a02beac915b5dcc91d3b78d2c0e5bd5db.png",
+    "filename": "4d9e7f3a02beac915b5dcc91d3b78d2c0e5bd5db.png",
+    "varName": "imgLeftPhotoBanner",
+    "size": 528881
+  },
+  {
+    "url": "http://localhost:3845/assets/a78820d9b2e69aa6f76f6b56775701d88333116d.svg",
+    "filename": "a78820d9b2e69aa6f76f6b56775701d88333116d.svg",
+    "varName": "imgShieldIcon",
+    "size": 485
+  },
+  {
+    "url": "http://localhost:3845/assets/189a1b54f2809ec497713a2c330e657d0bb0057f.svg",
+    "filename": "189a1b54f2809ec497713a2c330e657d0bb0057f.svg",
+    "varName": "imgLinkedIn",
+    "size": 1219
+  },
+  {
+    "url": "http://localhost:3845/assets/680d766dfd6a77333880ba90d321fcece6270899.svg",
+    "filename": "680d766dfd6a77333880ba90d321fcece6270899.svg",
+    "varName": "imgFacebook",
+    "size": 575
+  },
+  {
+    "url": "http://localhost:3845/assets/50be120ee695cd24a28f94519716b1677fcd739c.svg",
+    "filename": "50be120ee695cd24a28f94519716b1677fcd739c.svg",
+    "varName": "imgYouTube",
+    "size": 1045
+  },
+  {
+    "url": "http://localhost:3845/assets/e6f3de6cfc9585fcd8e15dd8bdbca9f20814d8d1.svg",
+    "filename": "e6f3de6cfc9585fcd8e15dd8bdbca9f20814d8d1.svg",
+    "varName": "imgInstagram",
+    "size": 1420
+  }
+]

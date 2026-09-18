@@ -1,6 +1,6 @@
 "use client"
 
-import React from "react"
+import React, { useEffect } from "react"
 import Link from "next/link"
 import { useCart } from "./CartContext"
 
@@ -11,221 +11,307 @@ export function CartDrawer() {
     updateQuantity,
     isDrawerOpen,
     setIsDrawerOpen,
-    subtotal,
-    shippingCost,
-    total,
-    destination,
-    setDestination,
   } = useCart()
 
-  if (!isDrawerOpen) return null
+  // Calculate items total
+  const itemsTotal = items.reduce((acc, item) => {
+    const unitPrice =
+      item.isSubscription && item.discountPercent
+        ? item.price * (1 - item.discountPercent / 100)
+        : item.price
+    return acc + unitPrice * item.quantity
+  }, 0)
 
+  // Prevent background scrolling when drawer is open
+  useEffect(() => {
+    if (isDrawerOpen) {
+      document.body.style.overflow = "hidden"
+    } else {
+      document.body.style.overflow = ""
+    }
+    return () => {
+      document.body.style.overflow = ""
+    }
+  }, [isDrawerOpen])
+
+  // Do not unmount abruptly - keep mounted for smooth slide-out transition
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden">
-      {/* Backdrop */}
+    <div
+      className={`fixed inset-0 z-50 overflow-hidden flex justify-end transition-all duration-300 ${
+        isDrawerOpen ? "pointer-events-auto visible" : "pointer-events-none invisible delay-300"
+      }`}
+      data-node-id="47:7370"
+      data-name="PEPTECH - Cart Drawer (Slide-Out)"
+    >
+      {/* Left Backdrop (Click to Close with Smooth Fade) */}
       <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity animate-in fade-in"
+        className={`fixed inset-0 bg-[rgba(11,31,58,0.55)] backdrop-blur-xs transition-opacity duration-300 ease-out cursor-pointer ${
+          isDrawerOpen ? "opacity-100" : "opacity-0"
+        }`}
         onClick={() => setIsDrawerOpen(false)}
+        data-node-id="47:7421"
+        data-name="Left Backdrop (Click to Close)"
       />
 
-      <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
-        <div className="w-screen max-w-md bg-white dark:bg-zinc-950 border-l border-zinc-200 dark:border-zinc-800 shadow-2xl flex flex-col text-[var(--color-foreground)]">
-          {/* Drawer Header */}
-          <div className="px-6 py-5 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-zinc-50 dark:bg-zinc-900/50">
-            <div>
-              <h2 className="text-base font-bold tracking-tight">Your Research Order</h2>
-              <p className="text-xs text-zinc-500">Royal Mail Tracked • Discreet Outer Box</p>
+      {/* Cart Drawer Panel (Right Aligned - Smooth 60fps Slide Entrance & Exit) */}
+      <div
+        className={`relative z-10 bg-white border-l border-[#e2e8f0] flex flex-col h-full items-start overflow-hidden shadow-[-12px_0px_32px_0px_rgba(11,31,58,0.22)] shrink-0 w-full sm:w-[480px] transition-transform duration-300 ease-out transform ${
+          isDrawerOpen ? "translate-x-0" : "translate-x-full"
+        }`}
+        data-node-id="47:7422"
+        data-name="Cart Drawer Panel (Right Aligned)"
+      >
+        {/* 01 Drawer Header */}
+        <div
+          className="bg-white border-b border-[#e2e8f0] flex flex-col items-start px-[24px] py-[18px] shrink-0 w-full"
+          data-node-id="47:7423"
+          data-name="01 Drawer Header"
+        >
+          <div
+            className="flex items-center justify-between w-full"
+            data-node-id="47:7424"
+            data-name="Title & Close Row"
+          >
+            <div className="flex items-center gap-2.5" data-node-id="47:7425" data-name="Header Left">
+              <h2
+                className="font-bold text-[#0b1f3a] text-[20px] leading-tight"
+                data-node-id="47:7426"
+              >
+                Review Cart
+              </h2>
+              {items.length > 0 && (
+                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-[#0b1f3a]">
+                  {items.reduce((sum, i) => sum + i.quantity, 0)} {items.reduce((sum, i) => sum + i.quantity, 0) === 1 ? "item" : "items"}
+                </span>
+              )}
             </div>
             <button
               onClick={() => setIsDrawerOpen(false)}
-              className="p-2 -mr-2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors"
+              className="bg-[#0b1f3a] cursor-pointer flex items-center justify-center rounded-[8px] shrink-0 size-[36px] hover:bg-[#16a6a3] active:scale-95 transition-all duration-200 group"
+              data-node-id="47:7429"
+              data-name="Close Button"
               aria-label="Close cart"
             >
-              ✕
+              <span
+                className="font-bold text-[14px] text-white leading-none transition-transform duration-200 group-hover:rotate-90"
+                data-node-id="47:7430"
+              >
+                ✕
+              </span>
             </button>
           </div>
+        </div>
 
-          {/* Cart Items List */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-4">
-            {items.length === 0 ? (
-              <div className="text-center py-16 space-y-3">
-                <div className="text-4xl">🛒</div>
-                <h3 className="font-semibold text-sm">Your order is empty</h3>
-                <p className="text-xs text-zinc-500 max-w-xs mx-auto">
-                  Browse our Complete Pen Sets, Refill Cartridges, or Freeze-Dried Vials to get started.
-                </p>
-                <div className="pt-2">
-                  <button
-                    onClick={() => setIsDrawerOpen(false)}
-                    className="px-4 py-2 text-xs font-semibold rounded-md bg-[var(--color-brand-navy)] text-white hover:bg-[var(--color-brand-slate)]"
-                  >
-                    Start Browsing
-                  </button>
-                </div>
+        {/* Free Shipping Dynamic Progress Indicator */}
+        {items.length > 0 && (
+          <div className="w-full px-6 py-3 bg-[#f8fafc] border-b border-[#e2e8f0] space-y-1.5 shrink-0">
+            <div className="flex items-center justify-between text-[11.5px]">
+              <span className="font-medium text-[#0b1f3a]">
+                {itemsTotal >= 150 ? (
+                  <span className="text-emerald-700 font-semibold flex items-center gap-1.5">
+                    <span className="text-emerald-600 font-bold">✓</span>
+                    <span>Free Royal Mail Tracked 24 Unlocked!</span>
+                  </span>
+                ) : (
+                  <span>
+                    Add <strong className="text-[#16a6a3]">£{(150 - itemsTotal).toFixed(2)}</strong> more for Free Tracked 24 Shipping
+                  </span>
+                )}
+              </span>
+              <span className="text-[11px] font-semibold text-[#94a3b8]">
+                {Math.min(100, Math.round((itemsTotal / 150) * 100))}%
+              </span>
+            </div>
+            <div className="w-full h-1.5 bg-[#e2e8f0] rounded-full overflow-hidden">
+              <div
+                className={`h-full transition-all duration-500 ease-out rounded-full ${
+                  itemsTotal >= 150 ? "bg-emerald-500" : "bg-[#16a6a3]"
+                }`}
+                style={{ width: `${Math.min(100, Math.max(6, (itemsTotal / 150) * 100))}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* 02 Drawer Body - Items List */}
+        <div
+          className="bg-[#f8fafc] flex flex-1 flex-col gap-[10px] min-h-0 overflow-y-auto px-[20px] py-[14px] w-full"
+          data-node-id="47:7439"
+          data-name="02 Drawer Body - Items List"
+        >
+          {items.length === 0 ? (
+            <div className="flex flex-1 flex-col items-center justify-center py-16 text-center space-y-4">
+              <div className="size-16 rounded-full bg-slate-100 flex items-center justify-center text-2xl text-[#64748b]">
+                🛒
               </div>
-            ) : (
-              items.map((item) => {
-                const effectivePrice =
-                  item.isSubscription && item.discountPercent
-                    ? item.price * (1 - item.discountPercent / 100)
-                    : item.price
+              <div className="space-y-1">
+                <h3 className="font-bold text-[#0b1f3a] text-base">Your cart is empty</h3>
+                <p className="text-xs text-[#64748b] max-w-[260px]">
+                  Explore our Complete Pen Sets, Refill Cartridges, and Freeze-Dried Vials.
+                </p>
+              </div>
+              <Link
+                href="/shop"
+                onClick={() => setIsDrawerOpen(false)}
+                className="btn-shimmer btn-press px-5 py-2.5 rounded-lg bg-[#0b1f3a] hover:bg-[#16335a] text-white font-semibold text-xs transition-colors shadow-sm"
+              >
+                Start Browsing
+              </Link>
+            </div>
+          ) : (
+            items.map((item) => {
+              const unitPrice =
+                item.isSubscription && item.discountPercent
+                  ? item.price * (1 - item.discountPercent / 100)
+                  : item.price
+              const itemTotal = unitPrice * item.quantity
+              const originalItemTotal = item.price * item.quantity
 
-                return (
-                  <div
-                    key={`${item.id}-${item.isSubscription}`}
-                    className="p-3.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/40 space-y-2.5"
-                  >
-                    <div className="flex justify-between items-start gap-2">
-                      <div className="space-y-0.5">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span
-                            className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider ${
-                              item.format === "pen-set"
-                                ? "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400"
-                                : item.format === "refill"
-                                ? "bg-[var(--color-brand-teal)]/10 text-[var(--color-brand-teal)]"
-                                : "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400"
-                            }`}
-                          >
-                            {item.format === "pen-set"
-                              ? "Pen Set"
-                              : item.format === "refill"
-                              ? "Refill"
-                              : "Vial"}
-                          </span>
-                          {item.isSubscription && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400">
-                              Subscribe &amp; Save (28 Days)
-                            </span>
+              const subtitle =
+                item.format === "pen-set"
+                  ? "Medical Applicator + Cartridge + 4x Needles"
+                  : item.format === "refill"
+                  ? "Pre-filled 3mL Borosilicate Glass Cartridge"
+                  : "99.8% HPLC Certified • Sterile Lyophilised Cake"
+
+              return (
+                <div
+                  key={`${item.id}-${item.isSubscription}`}
+                  className="bg-white border border-[#e2e8f0] hover:border-[#cbd5e1] flex items-center justify-between p-[14px] rounded-[10px] shrink-0 w-full shadow-xs transition-colors"
+                  data-name={`Cart Item - ${item.title}`}
+                >
+                  <div className="flex flex-1 gap-[12px] items-center min-w-0" data-name="Left Content">
+                    {/* Thumb Container */}
+                    <div
+                      className="flex items-center justify-center rounded-[8px] shrink-0 size-[64px] bg-[#f8fafc] border border-slate-100 overflow-hidden"
+                      data-name="Thumb Container"
+                    >
+                      <img
+                        src={item.image || "/images/figma/152e353c4afaa5945905ac686de871b57ec2a770.png"}
+                        alt={item.title}
+                        className="size-full object-contain pointer-events-none rounded-[6px] p-1 transition-transform duration-200 hover:scale-105"
+                      />
+                    </div>
+
+                    {/* Info Column */}
+                    <div className="flex flex-1 flex-col gap-[6px] items-start min-w-0" data-name="Info Column">
+                      <p className="font-bold text-[#0b1f3a] text-[13px] leading-snug truncate w-full">
+                        {item.title}
+                      </p>
+                      <p className="font-normal text-[#64748b] text-[10.5px] leading-tight truncate w-full">
+                        {subtitle}
+                      </p>
+
+                      {/* Price & Qty Stack */}
+                      <div className="flex flex-col gap-[6px] items-start" data-name="Price & Qty Stack">
+                        <div className="flex items-baseline gap-[6px]" data-name="Price Row">
+                          <p className="font-bold text-[#0b1f3a] text-[14px] leading-none">
+                            £{itemTotal.toFixed(2)}
+                          </p>
+                          {item.isSubscription && item.discountPercent && (
+                            <p className="font-normal line-through text-[#94a3b8] text-[11px] leading-none">
+                              £{originalItemTotal.toFixed(2)}
+                            </p>
                           )}
                         </div>
-                        <h4 className="font-semibold text-xs text-zinc-900 dark:text-zinc-100">{item.title}</h4>
-                        <div className="text-[11px] text-zinc-500 flex items-center gap-2">
-                          <span>Strength: <strong className="text-zinc-700 dark:text-zinc-300">{item.strength}</strong></span>
-                          {item.batch && <span>• Batch: <span className="font-mono">{item.batch}</span></span>}
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => removeItem(item.id, item.isSubscription)}
-                        className="text-zinc-400 hover:text-red-500 text-xs p-1"
-                        title="Remove item"
-                      >
-                        🗑️
-                      </button>
-                    </div>
 
-                    <div className="flex items-center justify-between pt-1 border-t border-zinc-200/60 dark:border-zinc-800/60">
-                      <div className="flex items-center border border-zinc-300 dark:border-zinc-700 rounded-md overflow-hidden bg-white dark:bg-zinc-800">
-                        <button
-                          onClick={() => updateQuantity(item.id, item.isSubscription, -1)}
-                          className="px-2 py-0.5 text-xs text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                        {/* Qty Stepper with Click Animation */}
+                        <div
+                          className="bg-[#f8fafc] border border-slate-200 flex h-[32px] items-center rounded-[6px] shrink-0 w-[96px] overflow-hidden shadow-2xs"
+                          data-name="Qty Stepper"
                         >
-                          -
-                        </button>
-                        <span className="px-2.5 py-0.5 text-xs font-semibold">{item.quantity}</span>
-                        <button
-                          onClick={() => updateQuantity(item.id, item.isSubscription, 1)}
-                          className="px-2 py-0.5 text-xs text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
-                        >
-                          +
-                        </button>
-                      </div>
-
-                      <div className="text-right">
-                        {item.isSubscription && item.discountPercent ? (
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[11px] line-through text-zinc-400">
-                              £{(item.price * item.quantity).toFixed(2)}
-                            </span>
-                            <span className="font-bold text-xs text-[var(--color-brand-teal)]">
-                              £{(effectivePrice * item.quantity).toFixed(2)}
-                            </span>
+                          <button
+                            type="button"
+                            onClick={() => updateQuantity(item.id, item.isSubscription, -1)}
+                            className="flex h-[32px] w-[30px] items-center justify-center font-bold text-[#65748b] text-[15px] hover:bg-slate-200 active:scale-90 active:bg-slate-300 transition-all cursor-pointer"
+                            data-name="Minus"
+                            aria-label="Decrease quantity"
+                          >
+                            −
+                          </button>
+                          <div
+                            className="bg-white border-x border-slate-200 flex h-[32px] w-[36px] items-center justify-center font-bold text-[#0b1f3a] text-[13.5px]"
+                            data-name="Value"
+                          >
+                            {item.quantity}
                           </div>
-                        ) : (
-                          <span className="font-bold text-xs">
-                            £{(effectivePrice * item.quantity).toFixed(2)}
-                          </span>
-                        )}
-                        <div className="text-[10px] text-zinc-500">
-                          {item.isSubscription ? "Renews every 28 days" : "One-time purchase"}
+                          <button
+                            type="button"
+                            onClick={() => updateQuantity(item.id, item.isSubscription, 1)}
+                            className="flex h-[32px] w-[30px] items-center justify-center font-bold text-[#0b1f3a] text-[15px] hover:bg-slate-200 active:scale-90 active:bg-slate-300 transition-all cursor-pointer"
+                            data-name="Plus"
+                            aria-label="Increase quantity"
+                          >
+                            +
+                          </button>
                         </div>
                       </div>
                     </div>
                   </div>
-                )
-              })
-            )}
-          </div>
 
-          {/* Drawer Footer / Summary */}
-          {items.length > 0 && (
-            <div className="p-6 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 space-y-3.5">
-              {/* Shipping Destination Selector */}
-              <div className="space-y-1.5">
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-zinc-600 dark:text-zinc-400">Delivery Destination:</span>
-                  <div className="flex gap-1 bg-zinc-200 dark:bg-zinc-800 p-0.5 rounded">
-                    <button
-                      onClick={() => setDestination("UK")}
-                      className={`px-2 py-0.5 text-[10px] font-semibold rounded ${
-                        destination === "UK"
-                          ? "bg-white dark:bg-zinc-900 text-[var(--color-brand-navy)] shadow-xs"
-                          : "text-zinc-500"
-                      }`}
-                    >
-                      UK Tracked (£4.95)
-                    </button>
-                    <button
-                      onClick={() => setDestination("INTL")}
-                      className={`px-2 py-0.5 text-[10px] font-semibold rounded ${
-                        destination === "INTL"
-                          ? "bg-white dark:bg-zinc-900 text-[var(--color-brand-navy)] shadow-xs"
-                          : "text-zinc-500"
-                      }`}
-                    >
-                      Worldwide (£15.00)
-                    </button>
-                  </div>
+                  {/* Delete Button with Hover Pop */}
+                  <button
+                    type="button"
+                    onClick={() => removeItem(item.id, item.isSubscription)}
+                    className="flex items-center justify-center rounded-[8px] shrink-0 size-[28px] hover:bg-red-50 text-[#94a3b8] hover:text-red-500 hover:scale-110 active:scale-90 transition-all cursor-pointer ml-2"
+                    data-name="Delete Button"
+                    title="Remove item"
+                    aria-label="Remove item"
+                  >
+                    <img
+                      src="/images/figma/82f34279beaa4b89be7b1de448ff84f33585b42e.svg"
+                      alt="Trash"
+                      className="size-[20px] block pointer-events-none"
+                    />
+                  </button>
                 </div>
-              </div>
-
-              {/* Price Calculations */}
-              <div className="space-y-1 text-xs">
-                <div className="flex justify-between text-zinc-600 dark:text-zinc-400">
-                  <span>Subtotal</span>
-                  <span>£{subtotal.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-zinc-600 dark:text-zinc-400">
-                  <span>Royal Mail Tracked</span>
-                  <span>£{shippingCost.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between font-bold text-sm text-zinc-900 dark:text-zinc-100 pt-1.5 border-t border-zinc-200 dark:border-zinc-800">
-                  <span>Total Due</span>
-                  <span className="text-[var(--color-brand-teal)] font-mono text-base">£{total.toFixed(2)}</span>
-                </div>
-              </div>
-
-              {/* Discreet Packaging Guarantee */}
-              <div className="flex items-center gap-2 p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-800 dark:text-emerald-300">
-                <span>📦</span>
-                <span>Plain, protective outer packaging with zero peptide branding.</span>
-              </div>
-
-              {/* Checkout CTA */}
-              <Link
-                href="/checkout"
-                onClick={() => setIsDrawerOpen(false)}
-                className="w-full py-3 rounded-lg bg-[var(--color-brand-teal)] hover:bg-[var(--color-brand-teal-hover)] text-white font-bold text-sm text-center block transition-all shadow-md"
-              >
-                Proceed to Secure Checkout →
-              </Link>
-
-              <div className="text-center text-[10px] text-zinc-400">
-                18+ Laboratory Research Only • Authorize.Net 3DS / Faster Payments
-              </div>
-            </div>
+              )
+            })
           )}
         </div>
+
+        {/* 03 Drawer Footer - Checkout Actions with Shimmer CTA */}
+        {items.length > 0 && (
+          <div
+            className="bg-white border-t border-[#e2e8f0] flex flex-col gap-[18px] items-start pb-[28px] pt-[20px] px-[24px] shrink-0 w-full shadow-xs"
+            data-node-id="47:7519"
+            data-name="03 Drawer Footer - Checkout Actions"
+          >
+            <div
+              className="flex items-center justify-between w-full"
+              data-node-id="47:7743"
+              data-name="Total Row"
+            >
+              <div className="flex flex-col">
+                <p
+                  className="font-medium text-[#64748b] text-[14px]"
+                  data-node-id="47:7744"
+                >
+                  Subtotal
+                </p>
+                <p className="text-[11px] text-[#94a3b8]">
+                  Taxes &amp; shipping calculated at checkout
+                </p>
+              </div>
+              <p
+                className="font-bold text-[#0b1f3a] text-[22px]"
+                data-node-id="47:7745"
+              >
+                £{itemsTotal.toFixed(2)}
+              </p>
+            </div>
+            <Link
+              href="/checkout"
+              onClick={() => setIsDrawerOpen(false)}
+              className="btn-shimmer btn-press bg-[#0b1f3a] hover:bg-[#162e52] flex h-[52px] items-center justify-center rounded-xl w-full text-white font-semibold text-[15px] transition-all shadow-md hover:shadow-xl group cursor-pointer"
+              data-node-id="47:7746"
+              data-name="Checkout Button"
+            >
+              <span>Proceed to Checkout</span>
+              <span className="ml-1.5 transition-transform duration-200 group-hover:translate-x-1.5">→</span>
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   )

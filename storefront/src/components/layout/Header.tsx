@@ -3,15 +3,21 @@
 import React, { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
+import { usePathname } from "next/navigation"
 import { useCart } from "../cart/CartContext"
+import { useCustomer } from "@/context/CustomerContext"
 
 export function Header() {
+  const pathname = usePathname()
   const { itemCount, setIsDrawerOpen } = useCart()
+  const { customer, isAuthenticated } = useCustomer()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [shopMenuOpen, setShopMenuOpen] = useState(false)
-  const [appMenuOpen, setAppMenuOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
+
+  // Do not show global header on checkout funnel pages (Figma Node 50:8021 / 52:8419)
+  if (pathname?.startsWith("/checkout")) return null
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -22,34 +28,43 @@ export function Header() {
 
   return (
     <>
-      {/* Top Utility Bar (Screenshot 1 & 2) */}
-      <div className="bg-[#08172c] text-white/80 text-[11px] sm:text-xs py-2 px-4 sm:px-8 border-b border-white/10">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2 sm:gap-4 truncate">
-            <span className="font-medium text-white/90">Precision Today. Better Tomorrow.</span>
-            <span className="hidden md:inline text-white/30">|</span>
-            <span className="hidden md:inline text-white/70">Trusted by laboratories worldwide</span>
-            <span className="hidden lg:inline text-white/30">|</span>
-            <span className="hidden lg:inline text-[var(--color-brand-teal)] font-semibold">Free shipping over $200</span>
+      {/* 01 Top Announcement Bar - Figma Node 2:29210 */}
+      <div className="bg-[#0e2a47] text-white text-[12px] h-[38px] flex items-center px-4 sm:px-8 border-b border-white/10 z-50 relative">
+        <div className="max-w-[1240px] w-full mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="font-normal text-[#e2e8f0]">Precision Today. Better Tomorrow.</span>
           </div>
-          <div className="flex items-center gap-4 sm:gap-6 text-white/80 shrink-0 font-medium">
-            <Link href="/how-it-works" className="hover:text-white transition-colors hidden sm:inline">Support</Link>
-            <Link href="/account" className="hover:text-white transition-colors hidden sm:inline">Track Order</Link>
-            <Link href="/lab-reports" className="hover:text-white transition-colors hidden md:inline">Resources</Link>
-            <div className="flex items-center gap-1 cursor-pointer hover:text-white">
-              <span>🌐</span>
-              <span>EN</span>
-              <span className="text-[9px]">▾</span>
+          <div className="flex items-center gap-[16px] text-[#e2e8f0] text-[12px] font-normal shrink-0">
+            <Link href="/how-it-works" className="hover:text-white transition-colors hidden sm:inline">
+              Support
+            </Link>
+            <span className="text-[#64748b] hidden sm:inline">|</span>
+            <Link href="/account" className="hover:text-white transition-colors hidden sm:inline">
+              Track Order
+            </Link>
+            <span className="text-[#64748b] hidden md:inline">|</span>
+            <Link href="/lab-reports" className="hover:text-white transition-colors hidden md:inline">
+              Resources
+            </Link>
+            <span className="text-[#64748b] hidden sm:inline">|</span>
+            <div className="flex items-center gap-[6px] cursor-pointer hover:text-white">
+              <div className="w-[14px] h-[14px]">
+                <img src="/images/figma/d3ec4cde5ca0a92f851ec4f47cdf9bbd626b88c1.svg" alt="Globe" className="w-full h-full" />
+              </div>
+              <span className="font-medium text-white text-[12px]">EN</span>
+              <div className="w-[10px] h-[10px]">
+                <img src="/images/figma/e68ef15ca285388cecea2f833256f21c7bf4c0e2.svg" alt="Chevron" className="w-full h-full" />
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Main Navbar */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 sm:h-20 flex items-center justify-between gap-4">
+      {/* 02 Header Navigation - Figma Node 2:29228 */}
+      <header className="bg-white border-b border-[#E2E8F0] sticky top-0 z-40 shadow-xs h-[80px] flex items-center">
+        <div className="max-w-[1240px] w-full mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
           
-          {/* Left: Mobile Toggle & PEPTECH Logo */}
+          {/* Brand Logo with Slogan */}
           <div className="flex items-center gap-3">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -65,122 +80,259 @@ export function Header() {
               </svg>
             </button>
 
-            <Link href="/" className="flex items-center gap-2 group">
-              <div className="relative h-10 sm:h-12 w-36 sm:w-44 flex items-center">
+            <Link href="/" className="flex flex-col gap-[3px] items-start shrink-0 group">
+              <div className="h-[27px] w-[130px] relative">
                 <Image
-                  src="/logo.webp"
-                  alt="PEPTECH® Quality. Safety. Precision."
-                  width={170}
-                  height={42}
+                  src="/images/figma/peptech-logo.png"
+                  alt="PEPTECH®"
+                  width={130}
+                  height={27}
                   className="object-contain"
                   priority
                 />
               </div>
+              <p className="font-semibold text-[#16A6A3] text-[9px] tracking-[0.5px] whitespace-nowrap uppercase">
+                Quality. Safety. Precision.
+              </p>
             </Link>
           </div>
 
-          {/* Center: Desktop Navigation Links (Mockup 1 & 2) */}
-          <nav className="hidden lg:flex items-center gap-7 text-[13px] font-semibold text-slate-700">
+          {/* Desktop Navigation Links */}
+          <nav className="hidden lg:flex items-center gap-[32px] text-[14px] font-medium text-[#64748b]">
             {/* Shop Dropdown */}
             <div 
-              className="relative py-2 group cursor-pointer"
+              className="relative py-4 group cursor-pointer"
               onMouseEnter={() => setShopMenuOpen(true)}
               onMouseLeave={() => setShopMenuOpen(false)}
             >
-              <div className="flex items-center gap-1 hover:text-[#0B1F3A] transition-colors">
+              <Link 
+                href="/shop" 
+                className={`flex items-center gap-1.5 transition-colors ${
+                  shopMenuOpen || pathname?.startsWith("/shop") || pathname?.startsWith("/pen-sets") || pathname?.startsWith("/refills") || pathname?.startsWith("/vials")
+                    ? "text-[#16A6A3] font-semibold" 
+                    : "text-[#64748b] hover:text-[#16A6A3]"
+                }`}
+              >
                 <span>Shop</span>
-                <span className="text-[10px] transition-transform group-hover:translate-y-0.5">▾</span>
-              </div>
-              {shopMenuOpen && (
-                <div className="absolute top-full left-0 w-64 bg-white border border-slate-200 rounded-xl shadow-xl py-3 px-2 z-50 animate-in fade-in slide-in-from-top-1">
-                  <Link 
-                    href="/products/complete-pen-set"
-                    className="block px-3 py-2 text-xs font-bold text-[#0B1F3A] hover:bg-slate-50 rounded-lg"
+                {/* Visible animated chevron arrow */}
+                <svg 
+                  className={`w-3.5 h-3.5 transition-transform duration-300 transform ${
+                    shopMenuOpen ? "rotate-180 text-[#16A6A3]" : "text-[#94a3b8] group-hover:text-[#16A6A3]"
+                  }`} 
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  stroke="currentColor" 
+                  strokeWidth={2.5}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </Link>
+
+              {/* Classy Animated Mega Dropdown */}
+              <div 
+                className={`absolute top-full left-0 w-[520px] bg-white border border-[#e2e8f0] rounded-2xl shadow-xl shadow-[#0b1f3a]/8 z-50 overflow-hidden transition-all duration-300 ease-out origin-top-left ${
+                  shopMenuOpen 
+                    ? "opacity-100 translate-y-1 pointer-events-auto scale-100" 
+                    : "opacity-0 translate-y-3 pointer-events-none scale-[0.98]"
+                }`}
+              >
+                {/* Dropdown Header Strip */}
+                <div className="px-5 py-3.5 bg-[#f8fafc] border-b border-[#e2e8f0] flex items-center justify-between">
+                  <span className="text-[11px] font-medium text-[#64748b] tracking-wider uppercase">
+                    Product Categories
+                  </span>
+                  <Link
+                    href="/shop"
+                    onClick={() => setShopMenuOpen(false)}
+                    className="text-[12px] font-medium text-[#0b1f3a] hover:text-[#16a6a3] transition-colors flex items-center gap-1 group/all"
                   >
-                    Complete Pen Sets <span className="text-[10px] text-emerald-600 block font-normal">Reusable pen kit + accessories</span>
+                    <span>All Products</span>
+                    <span className="transition-transform group-hover/all:translate-x-0.5 text-[#94a3b8]">→</span>
                   </Link>
-                  <Link 
+                </div>
+
+                {/* 3 Structured Category Cards */}
+                <div className="p-3 space-y-1.5">
+                  {/* Card 1: Complete Pen Sets */}
+                  <Link
+                    href="/pen-sets"
+                    onClick={() => setShopMenuOpen(false)}
+                    className="flex items-center gap-3.5 p-3 rounded-xl hover:bg-[#f8fafc] transition-colors group/item"
+                  >
+                    <div className="w-12 h-12 rounded-xl bg-[#f8fafc] group-hover/item:bg-white border border-[#e2e8f0] p-1.5 shrink-0 flex items-center justify-center transition-colors overflow-hidden">
+                      <Image
+                        src="/images/figma/product-set-rt40.png"
+                        alt="Complete Pen Sets"
+                        width={36}
+                        height={36}
+                        className="object-contain"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-[13px] font-semibold text-[#0b1f3a] group-hover/item:text-[#16a6a3] transition-colors">
+                          Complete Pen Sets
+                        </h4>
+                        <span className="text-[11.5px] text-[#94a3b8]">From £145</span>
+                      </div>
+                      <p className="text-[11.5px] text-[#64748b] leading-normal mt-0.5">
+                        Reusable precision pen body + prefilled cartridge &amp; accessories.
+                      </p>
+                    </div>
+                  </Link>
+
+                  {/* Card 2: Refill Cartridges */}
+                  <Link
                     href="/refills"
-                    className="block px-3 py-2 text-xs font-bold text-[#0B1F3A] hover:bg-slate-50 rounded-lg"
+                    onClick={() => setShopMenuOpen(false)}
+                    className="flex items-center gap-3.5 p-3 rounded-xl hover:bg-[#f8fafc] transition-colors group/item"
                   >
-                    Refill Cartridges <span className="text-[10px] text-[var(--color-brand-teal)] block font-normal">Pre-filled cartridges & 10% Sub</span>
+                    <div className="w-12 h-12 rounded-xl bg-[#f8fafc] group-hover/item:bg-white border border-[#e2e8f0] p-1.5 shrink-0 flex items-center justify-center transition-colors overflow-hidden">
+                      <Image
+                        src="/images/figma/cartridge-clear.png"
+                        alt="Refill Cartridges"
+                        width={36}
+                        height={36}
+                        className="object-contain"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-[13px] font-semibold text-[#0b1f3a] group-hover/item:text-[#16a6a3] transition-colors">
+                          Refill Cartridges
+                        </h4>
+                        <span className="text-[11.5px] text-[#16a6a3] font-medium">From £95 · 10% Sub Discount</span>
+                      </div>
+                      <p className="text-[11.5px] text-[#64748b] leading-normal mt-0.5">
+                        Snap-in cartridges engineered exclusively for the reusable pen body.
+                      </p>
+                    </div>
                   </Link>
-                  <Link 
+
+                  {/* Card 3: Freeze-Dried Vials */}
+                  <Link
                     href="/vials"
-                    className="block px-3 py-2 text-xs font-bold text-[#0B1F3A] hover:bg-slate-50 rounded-lg"
+                    onClick={() => setShopMenuOpen(false)}
+                    className="flex items-center gap-3.5 p-3 rounded-xl hover:bg-[#f8fafc] transition-colors group/item"
                   >
-                    Freeze-Dried Vials <span className="text-[10px] text-slate-500 block font-normal">5mg - 50mg laboratory vials</span>
+                    <div className="w-12 h-12 rounded-xl bg-[#f8fafc] group-hover/item:bg-white border border-[#e2e8f0] p-1.5 shrink-0 flex items-center justify-center transition-colors overflow-hidden">
+                      <Image
+                        src="/images/figma/7f278c9d9e9d928a9e34cd536ca8e36bd11a5280.png"
+                        alt="Freeze-Dried Vials"
+                        width={36}
+                        height={36}
+                        className="object-contain"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-[13px] font-semibold text-[#0b1f3a] group-hover/item:text-[#16a6a3] transition-colors">
+                          Freeze-Dried Vials
+                        </h4>
+                        <span className="text-[11.5px] text-[#94a3b8]">From £48</span>
+                      </div>
+                      <p className="text-[11.5px] text-[#64748b] leading-normal mt-0.5">
+                        Traditional vacuum borosilicate glass vials for laboratory dissolution.
+                      </p>
+                    </div>
                   </Link>
                 </div>
-              )}
-            </div>
 
-            {/* Applications Dropdown */}
-            <div 
-              className="relative py-2 group cursor-pointer"
-              onMouseEnter={() => setAppMenuOpen(true)}
-              onMouseLeave={() => setAppMenuOpen(false)}
-            >
-              <div className="flex items-center gap-1 hover:text-[#0B1F3A] transition-colors">
-                <span>Applications</span>
-                <span className="text-[10px] transition-transform group-hover:translate-y-0.5">▾</span>
-              </div>
-              {appMenuOpen && (
-                <div className="absolute top-full left-0 w-56 bg-white border border-slate-200 rounded-xl shadow-xl py-2 px-2 z-50 animate-in fade-in slide-in-from-top-1">
-                  <div className="px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50 rounded-md">Food Safety</div>
-                  <div className="px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50 rounded-md">Water Quality</div>
-                  <div className="px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50 rounded-md">Environmental</div>
-                  <div className="px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50 rounded-md">Healthcare</div>
-                  <div className="px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50 rounded-md">Industrial Hygiene</div>
-                  <div className="px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50 rounded-md">Agriculture & Feed</div>
+                {/* Dropdown Footer Strip */}
+                <div className="px-5 py-2.5 bg-[#f8fafc] border-t border-[#e2e8f0] flex items-center justify-between text-[11px] text-[#64748b]">
+                  <span>Royal Mail Tracked 24 Cold-Chain · Discreet Carton</span>
+                  <Link
+                    href="/verify"
+                    onClick={() => setShopMenuOpen(false)}
+                    className="font-medium text-[#0b1f3a] hover:text-[#16a6a3] transition-colors"
+                  >
+                    Verify Batch Seal →
+                  </Link>
                 </div>
-              )}
+              </div>
             </div>
 
-            <Link href="/about" className="hover:text-[#0B1F3A] transition-colors">About Us</Link>
-            <Link href="/quality" className="hover:text-[#0B1F3A] transition-colors">Quality</Link>
-            <Link href="/lab-reports" className="hover:text-[#0B1F3A] transition-colors">Resources</Link>
-            <Link href="/contact" className="hover:text-[#0B1F3A] transition-colors">Contact</Link>
+            <Link 
+              href="/about" 
+              className={pathname === "/about" ? "font-semibold text-[#0b1f3a]" : "hover:text-[#16A6A3] transition-colors"}
+            >
+              About Us
+            </Link>
+            <Link 
+              href="/how-it-works" 
+              className={pathname === "/how-it-works" ? "font-semibold text-[#0b1f3a]" : "hover:text-[#16A6A3] transition-colors"}
+            >
+              How It Works
+            </Link>
+            <Link 
+              href="/verify" 
+              className={pathname === "/verify" ? "font-semibold text-[#0b1f3a]" : "hover:text-[#16A6A3] transition-colors"}
+            >
+              Verify Your Batch
+            </Link>
+            <Link 
+              href="/contact" 
+              className={pathname === "/contact" ? "font-semibold text-[#0b1f3a]" : "hover:text-[#16A6A3] transition-colors"}
+            >
+              Contact
+            </Link>
           </nav>
 
-          {/* Right: Actions (Search, Account, Cart) */}
-          <div className="flex items-center gap-3 sm:gap-4">
+          {/* Right Utility Icons (Search, Account, Cart) */}
+          <div className="flex gap-[22px] items-center">
             {/* Search */}
             <button
               onClick={() => setSearchOpen(!searchOpen)}
-              className="p-2 text-slate-600 hover:text-[#0B1F3A] hover:bg-slate-100 rounded-full transition-colors cursor-pointer"
+              className="w-[20px] h-[20px] flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
               aria-label="Search"
               title="Search test systems & cartridges"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
+              <img src="/images/figma/ebf52f91842a916d1e0249efbfba1688ac4e3863.svg" alt="Search" className="w-[20px] h-[20px]" />
             </button>
 
-            {/* Account */}
-            <Link
-              href="/account"
-              className="p-2 text-slate-600 hover:text-[#0B1F3A] hover:bg-slate-100 rounded-full transition-colors hidden sm:flex items-center justify-center"
-              aria-label="Account"
-              title="Customer Account"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-            </Link>
+            {/* Account (Figma Node 52:9001 when authenticated, default icon when unauthenticated) */}
+            {isAuthenticated && customer ? (
+              <Link
+                href="/account"
+                className="bg-white border border-[#e2e8f0] hidden sm:flex items-center gap-[8px] pl-[8px] pr-[12px] py-[5px] rounded-[20px] shadow-2xs hover:border-[#16a6a3] transition-colors group"
+                title={`${customer.first_name || ""} ${customer.last_name || ""}`}
+              >
+                <div className="w-[22px] h-[22px] rounded-full overflow-hidden relative shrink-0 border border-slate-200">
+                  <img
+                    src={customer.metadata?.avatar_url || "/images/figma/d7ba35eef589d74712ad429f3bd1612dfa66c973.png"}
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <span className="font-semibold text-[#0b1f3a] group-hover:text-[#16a6a3] text-[12.5px] whitespace-nowrap transition-colors">
+                  {customer.metadata?.title ? `${customer.metadata.title} ` : ""}{customer.first_name} {customer.last_name ? `${customer.last_name[0]}.` : ""}
+                </span>
+              </Link>
+            ) : (
+              <Link
+                href="/account"
+                className="w-[20px] h-[20px] hidden sm:flex items-center justify-center hover:opacity-80 transition-opacity"
+                aria-label="Account"
+                title="Customer Account"
+              >
+                <img src="/images/figma/e93dbfd043d0b35bf52fe04bc07fec31b1b89270.svg" alt="Account" className="w-[20px] h-[20px]" />
+              </Link>
+            )}
 
             {/* Shopping Cart Button */}
             <button
               onClick={() => setIsDrawerOpen(true)}
-              className="relative p-2 text-slate-700 hover:text-[#0B1F3A] hover:bg-slate-100 rounded-full transition-colors cursor-pointer"
+              className="btn-press relative w-[36px] h-[36px] rounded-full flex items-center justify-center cursor-pointer hover:bg-slate-100 transition-all"
               aria-label="Cart"
               title="View Cart"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-[20px] h-[20px] transition-transform duration-200 hover:scale-110">
+                <path d="M0.833 1.833H4.167L6.4 12.992C6.476 13.375 6.685 13.72 6.99 13.965C7.294 14.21 7.676 14.341 8.067 14.333H16.167C16.558 14.341 16.939 14.21 17.244 13.965C17.548 13.72 17.757 13.375 17.833 12.992L19.167 6H5" stroke="#0B1F3A" strokeWidth="1.67" strokeLinecap="round" strokeLinejoin="round"/>
+                <circle cx="7.5" cy="17.5" r="1" stroke="#0B1F3A" strokeWidth="1.67"/>
+                <circle cx="15.5" cy="17.5" r="1" stroke="#0B1F3A" strokeWidth="1.67"/>
               </svg>
               {itemCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-[#00C5A0] text-white text-[10px] font-bold rounded-full h-4.5 w-4.5 flex items-center justify-center shadow-xs">
+                <span className="cart-icon-pop absolute -top-[2px] -right-[2px] bg-[#16a6a3] border-[1.5px] border-solid border-white text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center shadow-xs">
                   {itemCount}
                 </span>
               )}
@@ -190,7 +342,7 @@ export function Header() {
 
         {/* Search Bar Overlay */}
         {searchOpen && (
-          <div className="border-t border-slate-200 bg-slate-50 px-4 py-3 shadow-inner">
+          <div className="absolute top-[80px] left-0 right-0 border-t border-slate-200 bg-slate-50 px-4 py-3 shadow-md z-50">
             <form onSubmit={handleSearchSubmit} className="max-w-3xl mx-auto flex gap-2">
               <input
                 type="text"
@@ -219,14 +371,14 @@ export function Header() {
 
         {/* Mobile Dropdown Menu */}
         {mobileMenuOpen && (
-          <div className="lg:hidden border-t border-slate-200 bg-white px-4 py-4 space-y-3 shadow-lg animate-in slide-in-from-top-2">
+          <div className="lg:hidden absolute top-[80px] left-0 right-0 border-t border-slate-200 bg-white px-4 py-4 space-y-3 shadow-xl z-50">
             <div className="space-y-1 text-sm font-semibold text-slate-800">
               <Link
                 href="/products/complete-pen-set"
                 onClick={() => setMobileMenuOpen(false)}
                 className="block px-3 py-2 rounded-lg hover:bg-slate-100"
               >
-                Pen Systems ($249.00)
+                Complete Pen Sets ($249.00)
               </Link>
               <Link
                 href="/refills"
@@ -243,11 +395,39 @@ export function Header() {
                 Freeze-Dried Vials
               </Link>
               <Link
+                href="/about"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block px-3 py-2 rounded-lg hover:bg-slate-100"
+              >
+                About Us
+              </Link>
+              <Link
+                href="/how-it-works"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block px-3 py-2 rounded-lg hover:bg-slate-100"
+              >
+                How It Works &amp; FAQs
+              </Link>
+              <Link
+                href="/verify"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block px-3 py-2 rounded-lg hover:bg-slate-100"
+              >
+                Verify Your Batch
+              </Link>
+              <Link
                 href="/lab-reports"
                 onClick={() => setMobileMenuOpen(false)}
                 className="block px-3 py-2 rounded-lg hover:bg-slate-100"
               >
-                Resources & COA
+                Resources &amp; COA
+              </Link>
+              <Link
+                href="/contact"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block px-3 py-2 rounded-lg hover:bg-slate-100"
+              >
+                Contact Us
               </Link>
               <Link
                 href="/account"

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta
+            http-equiv="Content-Type"
+            content="text/html; charset=UTF-8"
+        />
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1"
+        />
+        <title>PEPTECH® Admin</title>
+        <link rel="icon" href="/app/logo.webp" />
+        <style>
+          /* Remove all background, shadows, and gradients from the old Medusa avatar container */
+          .bg-ui-button-neutral,
+          .shadow-buttons-neutral,
+          div:has(svg[viewBox="0 0 400 400"]),
+          div:has(svg[viewBox="0 0 36 38"]) {
+            background: transparent !important;
+            background-color: transparent !important;
+            background-image: none !important;
+            box-shadow: none !important;
+            border: none !important;
+            outline: none !important;
+          }
+          .bg-ui-button-neutral::after,
+          .bg-ui-button-neutral::before,
+          div:has(svg[viewBox="0 0 400 400"])::after,
+          div:has(svg[viewBox="0 0 400 400"])::before,
+          div:has(svg[viewBox="0 0 36 38"])::after,
+          div:has(svg[viewBox="0 0 36 38"])::before {
+            display: none !important;
+            content: none !important;
+          }
+          /* Hide the old Medusa SVG */
+          svg[viewBox="0 0 400 400"],
+          svg[viewBox="0 0 36 38"] {
+            display: none !important;
+          }
+          /* Pure PEPTECH Badge */
+          .peptech-logo-badge {
+            background-color: #0B1F3A !important;
+            border: 1px solid rgba(22, 166, 163, 0.45) !important;
+            border-radius: 14px !important;
+            width: 154px !important;
+            height: 48px !important;
+            padding: 6px 16px !important;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4) !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            margin-bottom: 1rem !important;
+          }
+          .peptech-logo-badge img {
+            height: 32px !important;
+            width: auto !important;
+            object-fit: contain !important;
+            display: block !important;
+          }
+        </style>
+        <script>
+          (function() {
+            function applyPeptech() {
+              if (document.title && document.title.includes('Medusa')) {
+                document.title = document.title.replace(/Medusa/g, 'PEPTECH®');
+              }
+              // Replace Welcome to Medusa text
+              var walker = document.createTreeWalker(document.body || document.documentElement, NodeFilter.SHOW_TEXT, null, false);
+              var node;
+              while (node = walker.nextNode()) {
+                if (node.nodeValue && node.nodeValue.indexOf('Welcome to Medusa') !== -1) {
+                  node.nodeValue = node.nodeValue.replace(/Welcome to Medusa/g, 'Welcome to PEPTECH');
+                }
+              }
+              // Replace Medusa Icon/AvatarBox entirely
+              document.querySelectorAll('svg[viewBox="0 0 400 400"], svg[viewBox="0 0 36 38"]').forEach(function(svg) {
+                var box = svg.closest('.bg-ui-button-neutral') || svg.closest('.shadow-borders-base') || svg.parentElement.parentElement || svg.parentElement;
+                if (box && !box.dataset.peptech) {
+                  box.dataset.peptech = "true";
+                  box.className = "peptech-logo-badge";
+                  box.innerHTML = '<img src="/app/logo.webp" alt="PEPTECH" />';
+                }
+              });
+            }
+            applyPeptech();
+            var observer = new MutationObserver(applyPeptech);
+            observer.observe(document.documentElement, { childList: true, subtree: true, characterData: true });
+            window.addEventListener('DOMContentLoaded', applyPeptech);
+            window.addEventListener('load', applyPeptech);
+          })();
+        </script>
+      <script type="module" crossorigin src="/app/assets/index-DsNbboJ6.js"></script>
+      <link rel="stylesheet" crossorigin href="/app/assets/index-B2aJFRET.css">
+    </head>
+
+    <body>
+        <div id="medusa"></div>
+    </body>
+</html>

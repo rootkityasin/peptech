@@ -1,0 +1,641 @@
+"use client"
+
+import React, { useState, useMemo } from "react"
+import Link from "next/link"
+import Image from "next/image"
+import { useCart } from "@/components/cart/CartContext"
+import { CATALOG_PRODUCTS, CatalogProduct } from "@/data/catalog"
+
+interface ShopCatalogProps {
+  initialCategory?: "all" | "pen-sets" | "refills" | "vials"
+}
+
+export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
+  const { addItem, setIsDrawerOpen } = useCart()
+
+  // State
+  const [activeTab, setActiveTab] = useState<"all" | "pen-sets" | "refills" | "vials">(initialCategory)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [selectedSort, setSelectedSort] = useState<"popular" | "price-asc" | "price-desc" | "name">("popular")
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
+
+  // Sidebar filter states
+  const [availability, setAvailability] = useState<"in-stock" | "all">("in-stock")
+  const [selectedFormats, setSelectedFormats] = useState<string[]>([])
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
+  const [selectedPurchaseType, setSelectedPurchaseType] = useState<"all" | "sub" | "one-time">("all")
+
+  // Counts
+  const penSetsCount = CATALOG_PRODUCTS.filter((p) => p.format === "complete-pen-set").length
+  const refillsCount = CATALOG_PRODUCTS.filter((p) => p.format === "refill-cartridge").length
+  const vialsCount = CATALOG_PRODUCTS.filter((p) => p.format === "freeze-dried-vial").length
+  const totalCount = CATALOG_PRODUCTS.length
+
+  // Filter logic
+  const filteredProducts = useMemo(() => {
+    return CATALOG_PRODUCTS.filter((product) => {
+      // Tab filter
+      if (activeTab === "pen-sets" && product.format !== "complete-pen-set") return false
+      if (activeTab === "refills" && product.format !== "refill-cartridge") return false
+      if (activeTab === "vials" && product.format !== "freeze-dried-vial") return false
+
+      // Search filter
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase()
+        const matchesName = product.name.toLowerCase().includes(q)
+        const matchesDesc = product.description.toLowerCase().includes(q)
+        const matchesCategory = product.categoryLabel.toLowerCase().includes(q)
+        if (!matchesName && !matchesDesc && !matchesCategory) return false
+      }
+
+      // Availability filter
+      if (availability === "in-stock" && !product.inStock) return false
+
+      // Format sidebar filter
+      if (selectedFormats.length > 0 && !selectedFormats.includes(product.format)) return false
+
+      // Research Category sidebar filter
+      if (selectedCategories.length > 0 && !selectedCategories.includes(product.category)) return false
+
+      // Purchase type
+      if (selectedPurchaseType === "sub" && !product.isSubscriptionEligible) return false
+
+      return true
+    }).sort((a, b) => {
+      if (selectedSort === "price-asc") return a.price - b.price
+      if (selectedSort === "price-desc") return b.price - a.price
+      if (selectedSort === "name") return a.name.localeCompare(b.name)
+      return 0 // popular / default
+    })
+  }, [activeTab, searchQuery, availability, selectedFormats, selectedCategories, selectedPurchaseType, selectedSort])
+
+  // Active filters list for chips
+  const activeFilterChips = useMemo(() => {
+    const chips: { label: string; onRemove: () => void }[] = []
+    if (availability === "in-stock") {
+      chips.push({ label: "In Stock", onRemove: () => setAvailability("all") })
+    }
+    if (activeTab !== "all") {
+      chips.push({
+        label: activeTab === "pen-sets" ? "Complete Pen Sets" : activeTab === "refills" ? "Refill Cartridges" : "Freeze-Dried Vials",
+        onRemove: () => setActiveTab("all"),
+      })
+    }
+    selectedFormats.forEach((fmt) => {
+      chips.push({
+        label: fmt === "complete-pen-set" ? "Pen Sets" : fmt === "refill-cartridge" ? "Refills" : "Vials",
+        onRemove: () => setSelectedFormats((prev) => prev.filter((f) => f !== fmt)),
+      })
+    })
+    selectedCategories.forEach((cat) => {
+      chips.push({
+        label: cat === "metabolic" ? "Metabolic" : cat === "tissue" ? "Tissue Recovery" : cat === "cellular" ? "Cellular" : "Neuropeptides",
+        onRemove: () => setSelectedCategories((prev) => prev.filter((c) => c !== cat)),
+      })
+    })
+    if (selectedPurchaseType === "sub") {
+      chips.push({ label: "Subscribe & Save", onRemove: () => setSelectedPurchaseType("all") })
+    }
+    return chips
+  }, [availability, activeTab, selectedFormats, selectedCategories, selectedPurchaseType])
+
+  const resetAllFilters = () => {
+    setActiveTab("all")
+    setSearchQuery("")
+    setAvailability("all")
+    setSelectedFormats([])
+    setSelectedCategories([])
+    setSelectedPurchaseType("all")
+  }
+
+  const handleAddToCart = (product: CatalogProduct) => {
+    addItem({
+      id: product.id,
+      title: product.name,
+      format: product.format === "complete-pen-set" ? "pen-set" : product.format === "refill-cartridge" ? "refill" : "vial",
+      strength: product.categoryLabel,
+      price: product.subscribePrice && product.isSubscriptionEligible ? product.subscribePrice : product.price,
+      isSubscription: product.isSubscriptionEligible,
+      subscriptionIntervalDays: product.isSubscriptionEligible ? 28 : undefined,
+      discountPercent: product.isSubscriptionEligible ? 10 : undefined,
+      sku: `PEP-${product.id.toUpperCase()}`,
+      batch: "LAB-2026-B1",
+    })
+    setIsDrawerOpen(true)
+  }
+
+  return (
+    <div className="bg-[#f8fafc] flex flex-col items-start w-full min-h-screen" data-node-id="37:5499" data-name="PEPTECH - Shop Catalog Prototype">
+      
+      {/* 03 Clean Breadcrumbs & Shop Header (Figma Node 37:5547) */}
+      <div className="bg-white flex flex-col items-start pb-[14px] pt-[20px] px-4 sm:px-8 lg:px-[80px] w-full border-b border-[#e2e8f0]" data-node-id="37:5547" data-name="03 Clean Breadcrumbs & Shop Header">
+        <div className="flex gap-[8px] items-center text-[13px] leading-normal whitespace-nowrap mb-3" data-name="Breadcrumbs">
+          <Link href="/" className="font-normal text-[#64748b] hover:text-[#0b1f3a] transition-colors">
+            Home
+          </Link>
+          <span className="font-normal text-[#94a3b8]">/</span>
+          <span className="font-semibold text-[#0b1f3a]">
+            Shop
+          </span>
+          {activeTab !== "all" && (
+            <>
+              <span className="font-normal text-[#94a3b8]">/</span>
+              <span className="font-semibold text-[#16a6a3]">
+                {activeTab === "pen-sets" ? "Complete Pen Sets" : activeTab === "refills" ? "Refill Cartridges" : "Freeze-Dried Vials"}
+              </span>
+            </>
+          )}
+        </div>
+        <div>
+          <h1 className="text-[24px] sm:text-[28px] font-bold text-[#0b1f3a] tracking-tight">
+            {activeTab === "all"
+              ? "PEPTECH® Master Catalog"
+              : activeTab === "pen-sets"
+              ? "Complete Precision Pen Sets"
+              : activeTab === "refills"
+              ? "Compatible Refill Cartridges"
+              : "Lyophilised Research Vials"}
+          </h1>
+          <p className="text-[13px] text-[#64748b] mt-1">
+            Precision-engineered laboratory research systems, cartridges, and pure lyophilised peptides.
+          </p>
+        </div>
+      </div>
+
+      {/* 04 Category Quick Tabs & Controls (Figma Node 37:5553) */}
+      <div className="bg-white flex flex-wrap gap-4 items-center justify-between px-4 sm:px-8 lg:px-[80px] py-[16px] w-full border-b border-[#e2e8f0]" data-node-id="37:5553" data-name="04 Category Quick Tabs & Controls">
+        
+        {/* Tabs Group */}
+        <div className="flex flex-wrap gap-[8px] items-center" data-name="Tabs Group">
+          <button
+            onClick={() => setActiveTab("all")}
+            className={`flex gap-[6px] items-center px-[14px] py-[8px] rounded-[6px] transition-colors ${
+              activeTab === "all"
+                ? "bg-[#0b1f3a] text-white font-semibold"
+                : "bg-[#f1f5f9] text-[#0b1f3a] font-medium hover:bg-slate-200"
+            }`}
+            data-name="Tab - All Products"
+          >
+            <span className="text-[13px]">All Products</span>
+            <span className={`text-[12px] ${activeTab === "all" ? "text-[#cbd5e1]" : "text-[#64748b]"}`}>
+              ({totalCount})
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("pen-sets")}
+            className={`flex gap-[6px] items-center px-[14px] py-[8px] rounded-[6px] transition-colors ${
+              activeTab === "pen-sets"
+                ? "bg-[#0b1f3a] text-white font-semibold"
+                : "bg-[#f1f5f9] text-[#0b1f3a] font-medium hover:bg-slate-200"
+            }`}
+            data-name="Tab - Complete Pen Sets"
+          >
+            <span className="text-[13px]">Complete Pen Sets</span>
+            <span className={`text-[12px] ${activeTab === "pen-sets" ? "text-[#cbd5e1]" : "text-[#64748b]"}`}>
+              ({penSetsCount})
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("refills")}
+            className={`flex gap-[6px] items-center px-[14px] py-[8px] rounded-[6px] transition-colors ${
+              activeTab === "refills"
+                ? "bg-[#0b1f3a] text-white font-semibold"
+                : "bg-[#f1f5f9] text-[#0b1f3a] font-medium hover:bg-slate-200"
+            }`}
+            data-name="Tab - Refill Cartridges"
+          >
+            <span className="text-[13px]">Refill Cartridges</span>
+            <span className={`text-[12px] ${activeTab === "refills" ? "text-[#cbd5e1]" : "text-[#64748b]"}`}>
+              ({refillsCount})
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("vials")}
+            className={`flex gap-[6px] items-center px-[14px] py-[8px] rounded-[6px] transition-colors ${
+              activeTab === "vials"
+                ? "bg-[#0b1f3a] text-white font-semibold"
+                : "bg-[#f1f5f9] text-[#0b1f3a] font-medium hover:bg-slate-200"
+            }`}
+            data-name="Tab - Freeze-Dried Vials"
+          >
+            <span className="text-[13px]">Freeze-Dried Vials</span>
+            <span className={`text-[12px] ${activeTab === "vials" ? "text-[#cbd5e1]" : "text-[#64748b]"}`}>
+              ({vialsCount})
+            </span>
+          </button>
+        </div>
+
+        {/* Controls Group */}
+        <div className="flex gap-[12px] items-center w-full sm:w-auto" data-name="Controls Group">
+          {/* Search Box */}
+          <div className="bg-[#f8fafc] border border-[#e2e8f0] flex gap-[8px] items-center px-[12px] py-[8px] rounded-[6px] w-full sm:w-[220px]" data-name="Search Box">
+            <div className="size-[14px] shrink-0">
+              <img alt="" className="size-full" src="/images/figma/80d0f018dc713a0fdd94a1beaefe7ec999174673.svg" />
+            </div>
+            <input
+              type="text"
+              placeholder="Search products..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="bg-transparent text-[12px] text-[#0b1f3a] placeholder-[#64748b] focus:outline-hidden w-full"
+            />
+          </div>
+
+          {/* Sort Box */}
+          <div className="bg-[#f8fafc] border border-[#e2e8f0] flex gap-[6px] items-center px-[12px] py-[8px] rounded-[6px] shrink-0" data-name="Sort Box">
+            <span className="font-medium text-[#64748b] text-[12px] whitespace-nowrap">
+              Sort by:
+            </span>
+            <select
+              value={selectedSort}
+              onChange={(e) => setSelectedSort(e.target.value as any)}
+              className="bg-transparent font-semibold text-[#0b1f3a] text-[12px] focus:outline-hidden cursor-pointer"
+            >
+              <option value="popular">Most Popular</option>
+              <option value="price-asc">Price: Low to High</option>
+              <option value="price-desc">Price: High to Low</option>
+              <option value="name">Product Name (A-Z)</option>
+            </select>
+          </div>
+        </div>
+
+      </div>
+
+      {/* 05 Main Catalog Section (Figma Node 37:5574) */}
+      <div className="flex flex-col lg:flex-row gap-[24px] items-start pb-[48px] pt-[32px] px-4 sm:px-8 lg:px-[80px] w-full" data-node-id="37:5574" data-name="05 Main Catalog Section">
+        
+        {/* Left Filter Sidebar (240px) */}
+        <aside className="w-full lg:w-[240px] shrink-0 flex flex-col gap-[14px]" data-name="Filter Sidebar">
+          
+          {/* Filter Header */}
+          <div className="flex items-center justify-between w-full" data-name="Filter Header">
+            <p className="font-bold text-[#0b1f3a] text-[16px]">
+              Filters
+            </p>
+            {activeFilterChips.length > 0 && (
+              <button
+                onClick={resetAllFilters}
+                className="font-medium text-[#64748b] hover:text-[#0b1f3a] text-[12px] transition-colors"
+                data-name="Reset All Button"
+              >
+                Reset All
+              </button>
+            )}
+          </div>
+
+          {/* Active Filters Box */}
+          {activeFilterChips.length > 0 && (
+            <div className="bg-white border border-[#e2e8f0] rounded-[8px] p-[14px] flex flex-col gap-[10px] w-full" data-name="Filter Box - Active Filters">
+              <p className="font-bold text-[#64748b] text-[10px] tracking-wider uppercase">
+                ACTIVE FILTERS
+              </p>
+              <div className="flex flex-wrap gap-[6px] items-start w-full">
+                {activeFilterChips.map((chip, idx) => (
+                  <button
+                    key={idx}
+                    onClick={chip.onRemove}
+                    className="bg-[#f1f5f9] border border-[#e2e8f0] flex gap-[6px] items-center px-[8px] py-[4px] rounded-[4px] hover:bg-slate-200 transition-colors"
+                  >
+                    <span className="font-medium text-[#0b1f3a] text-[11px]">{chip.label}</span>
+                    <span className="font-normal text-[#64748b] text-[9px]">✕</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Availability Box */}
+          <div className="bg-white border border-[#e2e8f0] rounded-[8px] p-[14px] flex flex-col gap-[10px] w-full" data-name="Filter Box - Availability">
+            <p className="font-bold text-[#64748b] text-[11px] tracking-wider uppercase">
+              AVAILABILITY
+            </p>
+            <label className="flex items-center justify-between cursor-pointer group">
+              <div className="flex gap-[10px] items-center">
+                <input
+                  type="radio"
+                  name="availability"
+                  checked={availability === "in-stock"}
+                  onChange={() => setAvailability("in-stock")}
+                  className="accent-[#0b1f3a] size-[15px]"
+                />
+                <span className="font-medium text-[#0b1f3a] text-[13px]">In Stock</span>
+              </div>
+              <span className="font-normal text-[#64748b] text-[12px]">({totalCount})</span>
+            </label>
+            <label className="flex items-center justify-between cursor-pointer group">
+              <div className="flex gap-[10px] items-center">
+                <input
+                  type="radio"
+                  name="availability"
+                  checked={availability === "all"}
+                  onChange={() => setAvailability("all")}
+                  className="accent-[#0b1f3a] size-[15px]"
+                />
+                <span className="font-medium text-[#0b1f3a] text-[13px]">All</span>
+              </div>
+              <span className="font-normal text-[#64748b] text-[12px]">({totalCount})</span>
+            </label>
+          </div>
+
+          {/* Product Format Box */}
+          <div className="bg-white border border-[#e2e8f0] rounded-[8px] p-[14px] flex flex-col gap-[10px] w-full" data-name="Filter Box - Product Format">
+            <p className="font-bold text-[#64748b] text-[10px] tracking-wider uppercase">
+              PRODUCT FORMAT
+            </p>
+            {[
+              { id: "complete-pen-set", label: "Complete Pen Sets", count: penSetsCount },
+              { id: "refill-cartridge", label: "Refill Cartridges", count: refillsCount },
+              { id: "freeze-dried-vial", label: "Freeze-Dried Vials", count: vialsCount },
+            ].map((f) => {
+              const checked = selectedFormats.includes(f.id)
+              return (
+                <label key={f.id} className="flex items-center justify-between cursor-pointer">
+                  <div className="flex gap-[10px] items-center">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => {
+                        setSelectedFormats((prev) =>
+                          checked ? prev.filter((item) => item !== f.id) : [...prev, f.id]
+                        )
+                      }}
+                      className="accent-[#0b1f3a] size-[15px] rounded"
+                    />
+                    <span className="font-medium text-[#0b1f3a] text-[13px]">{f.label}</span>
+                  </div>
+                  <span className="font-normal text-[#64748b] text-[12px]">({f.count})</span>
+                </label>
+              )
+            })}
+          </div>
+
+          {/* Research Category Box */}
+          <div className="bg-white border border-[#e2e8f0] rounded-[8px] p-[14px] flex flex-col gap-[10px] w-full" data-name="Filter Box - Research Category">
+            <p className="font-bold text-[#64748b] text-[10px] tracking-wider uppercase">
+              CATEGORY
+            </p>
+            {[
+              { id: "metabolic", label: "Metabolic & Glucose", count: 7 },
+              { id: "tissue", label: "Tissue Recovery", count: 6 },
+              { id: "cellular", label: "Cellular Longevity", count: 5 },
+              { id: "neuro", label: "Neuropeptides", count: 4 },
+            ].map((cat) => {
+              const checked = selectedCategories.includes(cat.id)
+              return (
+                <label key={cat.id} className="flex items-center justify-between cursor-pointer">
+                  <div className="flex gap-[8px] items-center">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => {
+                        setSelectedCategories((prev) =>
+                          checked ? prev.filter((item) => item !== cat.id) : [...prev, cat.id]
+                        )
+                      }}
+                      className="accent-[#0b1f3a] size-[15px] rounded"
+                    />
+                    <span className="font-normal text-[#475569] text-[12px]">{cat.label}</span>
+                  </div>
+                  <span className="font-normal text-[#94a3b8] text-[11px]">({cat.count})</span>
+                </label>
+              )
+            })}
+          </div>
+
+          {/* Purchase Type Box */}
+          <div className="bg-white border border-[#e2e8f0] rounded-[8px] p-[14px] flex flex-col gap-[10px] w-full" data-name="Filter Box - Purchase Model">
+            <p className="font-bold text-[#64748b] text-[10px] tracking-wider uppercase">
+              PURCHASE TYPE
+            </p>
+            <label className="flex items-center justify-between cursor-pointer">
+              <div className="flex gap-[8px] items-center">
+                <input
+                  type="radio"
+                  name="purchaseType"
+                  checked={selectedPurchaseType === "sub"}
+                  onChange={() => setSelectedPurchaseType("sub")}
+                  className="accent-[#0b1f3a] size-[15px]"
+                />
+                <span className="font-semibold text-[#0b1f3a] text-[12px]">Subscribe &amp; Save (10% off)</span>
+              </div>
+              <span className="font-normal text-[#94a3b8] text-[11px]">(18)</span>
+            </label>
+            <label className="flex items-center justify-between cursor-pointer">
+              <div className="flex gap-[8px] items-center">
+                <input
+                  type="radio"
+                  name="purchaseType"
+                  checked={selectedPurchaseType === "all"}
+                  onChange={() => setSelectedPurchaseType("all")}
+                  className="accent-[#0b1f3a] size-[15px]"
+                />
+                <span className="font-normal text-[#475569] text-[12px]">All Purchase Options</span>
+              </div>
+              <span className="font-normal text-[#94a3b8] text-[11px]">(24)</span>
+            </label>
+          </div>
+
+        </aside>
+
+        {/* Right Main Catalog Grid */}
+        <main className="flex-1 w-full flex flex-col gap-[20px]" data-name="Products Grid Container">
+          
+          {/* Results Summary Strip */}
+          <div className="flex items-center justify-between w-full" data-name="Results Summary Strip">
+            <p className="font-medium text-[#64748b] text-[13px]">
+              Showing {filteredProducts.length} of {totalCount} products
+            </p>
+
+            <div className="flex gap-[8px] items-center" data-name="View Switcher Container">
+              <span className="font-medium text-[#64748b] text-[12px]">View:</span>
+              <div className="bg-[#f1f5f9] border border-[#e2e8f0] flex gap-[2px] items-center p-[3px] rounded-[6px]">
+                <button
+                  onClick={() => setViewMode("grid")}
+                  className={`p-1 rounded-[4px] transition-colors ${
+                    viewMode === "grid" ? "bg-white shadow-xs border border-[#cbd5e1]" : ""
+                  }`}
+                  aria-label="Grid View"
+                >
+                  <div className="grid grid-cols-2 gap-[2px] size-[12px]">
+                    <div className="bg-[#0b1f3a] size-[5px] rounded-[1px]" />
+                    <div className="bg-[#0b1f3a] size-[5px] rounded-[1px]" />
+                    <div className="bg-[#0b1f3a] size-[5px] rounded-[1px]" />
+                    <div className="bg-[#0b1f3a] size-[5px] rounded-[1px]" />
+                  </div>
+                </button>
+                <button
+                  onClick={() => setViewMode("list")}
+                  className={`p-1 rounded-[4px] transition-colors ${
+                    viewMode === "list" ? "bg-white shadow-xs border border-[#cbd5e1]" : ""
+                  }`}
+                  aria-label="List View"
+                >
+                  <div className="flex flex-col gap-[2px] w-[12px] h-[10px] justify-center">
+                    <div className="bg-[#94a3b8] h-[2px] w-full rounded-[1px]" />
+                    <div className="bg-[#94a3b8] h-[2px] w-full rounded-[1px]" />
+                    <div className="bg-[#94a3b8] h-[2px] w-full rounded-[1px]" />
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Product Cards Grid */}
+          {filteredProducts.length === 0 ? (
+            <div className="bg-white border border-[#e2e8f0] rounded-[8px] p-12 text-center flex flex-col items-center justify-center gap-3">
+              <p className="text-[16px] font-bold text-[#0b1f3a]">No products match your current filters</p>
+              <p className="text-[13px] text-[#64748b]">Try searching with a different term or reset your active filters.</p>
+              <button
+                onClick={resetAllFilters}
+                className="mt-2 bg-[#0b1f3a] text-white px-4 py-2 rounded-[6px] text-[12px] font-semibold hover:bg-[#16a6a3] transition-colors"
+              >
+                Reset All Filters
+              </button>
+            </div>
+          ) : viewMode === "grid" ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[20px] w-full">
+              {filteredProducts.map((product) => (
+                <div
+                  key={product.id}
+                  className="bg-white border border-[#e2e8f0] rounded-[8px] p-[12px] flex flex-col justify-between h-[350px] hover:shadow-md transition-shadow text-center group"
+                >
+                  {/* Image Box */}
+                  <Link href={`/products/${product.handle}`} className="bg-[#f8fafc] rounded-[6px] h-[145px] w-full flex items-center justify-center relative overflow-hidden mb-2">
+                    <div className="h-[130px] w-[180px] relative">
+                      <Image
+                        src={product.image}
+                        alt={product.name}
+                        fill
+                        className="object-contain p-2 group-hover:scale-105 transition-transform"
+                      />
+                    </div>
+                  </Link>
+
+                  {/* Info Block */}
+                  <div className="flex flex-col gap-[3px] items-center text-center w-full">
+                    <Link href={`/products/${product.handle}`} className="font-bold text-[#0b1f3a] text-[15px] hover:text-[#16a6a3] transition-colors line-clamp-1">
+                      {product.name}
+                    </Link>
+                    <p className="font-semibold text-[#64748b] text-[10px] tracking-wide uppercase">
+                      {product.formatLabel}
+                    </p>
+                    <p className="font-normal text-[#475569] text-[11px] line-clamp-1">
+                      {product.description}
+                    </p>
+
+                    {/* Price Row */}
+                    <div className="flex gap-[6px] items-center justify-center pt-1 whitespace-nowrap">
+                      {product.isSubscriptionEligible && product.subscribePrice ? (
+                        <>
+                          <span className="font-bold text-[#0b1f3a] text-[15px]">
+                            £{product.subscribePrice.toFixed(2)}
+                          </span>
+                          <span className="font-normal text-[#64748b] text-[11px]">
+                            / 28 days
+                          </span>
+                          <div className="bg-[#e6fffa] border border-[#99f6e4] px-[5px] py-[2px] rounded-[4px]">
+                            <span className="font-bold text-[#0d7b78] text-[9px]">
+                              Save 10%
+                            </span>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <span className="font-bold text-[#0b1f3a] text-[15px]">
+                            £{product.price.toFixed(2)}
+                          </span>
+                          <span className="font-normal text-[#64748b] text-[11px]">
+                            One-Time Purchase
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Action Button */}
+                  {product.format === "complete-pen-set" ? (
+                    <Link
+                      href={`/products/${product.handle}`}
+                      className="btn-shimmer btn-press bg-[#0b1f3a] hover:bg-[#16a6a3] text-white flex gap-[6px] items-center justify-center px-[12px] py-[10px] rounded-xl text-[12px] font-semibold transition-all shadow-xs hover:shadow-md mt-2 group cursor-pointer"
+                    >
+                      <div className="size-[15px] shrink-0 transition-transform duration-200 group-hover:scale-110">
+                        <img alt="" className="size-full" src="/images/figma/27b4991e9b952fe1e43fac289265fda55a606a7f.svg" />
+                      </div>
+                      <span>View Pen Set</span>
+                    </Link>
+                  ) : (
+                    <button
+                      onClick={() => handleAddToCart(product)}
+                      className="btn-shimmer btn-press bg-[#0b1f3a] hover:bg-[#16a6a3] text-white flex gap-[6px] items-center justify-center px-[12px] py-[10px] rounded-xl text-[12px] font-semibold transition-all shadow-xs hover:shadow-md mt-2 group cursor-pointer"
+                    >
+                      <div className="size-[15px] shrink-0 transition-transform duration-200 group-hover:scale-110">
+                        <img alt="" className="size-full" src="/images/figma/27b4991e9b952fe1e43fac289265fda55a606a7f.svg" />
+                      </div>
+                      <span>Add to Cart</span>
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            /* List View */
+            <div className="flex flex-col gap-3 w-full">
+              {filteredProducts.map((product) => (
+                <div
+                  key={product.id}
+                  className="bg-white border border-[#e2e8f0] rounded-[8px] p-4 flex flex-col sm:flex-row items-center justify-between gap-4 hover:shadow-md transition-shadow"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="bg-[#f8fafc] rounded-[6px] size-[80px] relative shrink-0 p-1">
+                      <Image src={product.image} alt={product.name} fill className="object-contain" />
+                    </div>
+                    <div className="text-left">
+                      <span className="text-[10px] font-semibold text-[#64748b] tracking-wide uppercase">
+                        {product.formatLabel}
+                      </span>
+                      <h4 className="text-[15px] font-bold text-[#0b1f3a]">{product.name}</h4>
+                      <p className="text-[12px] text-[#475569]">{product.description}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4 shrink-0">
+                    <div className="text-right">
+                      <div className="text-[16px] font-bold text-[#0b1f3a]">
+                        £{(product.subscribePrice || product.price).toFixed(2)}
+                      </div>
+                      {product.isSubscriptionEligible && (
+                        <span className="text-[10px] font-bold text-[#0d7b78] bg-[#e6fffa] px-1.5 py-0.5 rounded border border-[#99f6e4]">
+                          Save 10%
+                        </span>
+                      )}
+                    </div>
+                    {product.format === "complete-pen-set" ? (
+                      <Link
+                        href={`/products/${product.handle}`}
+                        className="btn-shimmer btn-press bg-[#0b1f3a] hover:bg-[#16a6a3] text-white px-4 py-2.5 rounded-xl text-[12px] font-semibold transition-all shadow-xs hover:shadow-md cursor-pointer"
+                      >
+                        View Pen Set
+                      </Link>
+                    ) : (
+                      <button
+                        onClick={() => handleAddToCart(product)}
+                        className="btn-shimmer btn-press bg-[#0b1f3a] hover:bg-[#16a6a3] text-white px-4 py-2.5 rounded-xl text-[12px] font-semibold transition-all shadow-xs hover:shadow-md cursor-pointer"
+                      >
+                        Add to Cart
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+        </main>
+      </div>
+
+    </div>
+  )
+}

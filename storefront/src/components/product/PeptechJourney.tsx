@@ -3,55 +3,96 @@
 import React from "react"
 
 export function PeptechJourney() {
-  const steps = [
-    {
-      num: 1,
-      title: "Buy your Complete Pen Set once",
-      desc: "Get everything you need to get started.",
-      icon: "📦",
-    },
-    {
-      num: 2,
-      title: "Use your reusable PEPTECH® pen",
-      desc: "Accurate. Reliable. Built to last.",
-      icon: "🖊️",
-    },
-    {
-      num: 3,
-      title: "Return to order Refill Cartridges",
-      desc: "When needed. Save with subscription options.",
-      icon: "💧",
-    },
-  ]
-
   return (
-    <section className="py-14 bg-slate-50/70 border-t border-slate-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-10 text-center sm:text-left">
-          <h2 className="text-2xl sm:text-3xl font-black text-[#0B1F3A] tracking-tight">
-            Your PEPTECH® Journey
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Simple. Sustainable. Designed for the long term.
-          </p>
-        </div>
+    <section className="bg-white py-[20px] pb-[60px] flex items-center justify-center">
+      <div className="w-full max-w-[1240px] mx-auto px-4 sm:px-6">
+        <div className="bg-[#f0f6fa] rounded-[16px] p-[24px] sm:p-[32px] flex flex-col gap-[28px] items-start w-full">
+          
+          {/* Journey Header - Figma Node 8:41279 */}
+          <div className="flex flex-col gap-[6px] items-start">
+            <h2 className="font-bold text-[#0b1f3a] text-[22px] sm:text-[24px]">
+              Your PEPTECH® Journey
+            </h2>
+            <p className="font-normal text-[#64748b] text-[13px]">
+              Simple. Sustainable. Designed for the long term.
+            </p>
+          </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {steps.map((step) => (
-            <div
-              key={step.num}
-              className="bg-white rounded-2xl border border-slate-200 p-6 flex items-start gap-4 shadow-xs"
-            >
-              <div className="w-10 h-10 rounded-full bg-[#0B1F3A] text-white font-black text-sm flex items-center justify-center shrink-0">
-                {step.num}
+          {/* Steps Row - Figma Node 8:41282 */}
+          <div className="flex flex-col lg:flex-row items-center justify-between gap-4 w-full">
+            
+            {/* Step 1 */}
+            <div className="bg-white border border-[#e2e8f0] rounded-[12px] p-[18px] flex gap-[16px] items-center h-auto sm:h-[124px] w-full lg:w-[352px] shadow-xs">
+              <div className="flex flex-col gap-[8px] items-center shrink-0">
+                <div className="bg-[#0b1f3a] text-white size-[26px] rounded-full flex items-center justify-center font-bold text-[13px]">
+                  1
+                </div>
+                <div className="bg-[#e8f5fc] size-[42px] rounded-full flex items-center justify-center">
+                  <img src="/images/figma/1b75e610f624c5efcb536e24301bfe76b23e33c8.svg" alt="" className="size-[20px]" />
+                </div>
               </div>
-              <div className="space-y-1">
-                <h4 className="font-bold text-sm text-[#0B1F3A]">{step.title}</h4>
-                <p className="text-xs text-slate-500">{step.desc}</p>
+              <div className="flex flex-col gap-[4px] items-start">
+                <h4 className="font-bold text-[#0b1f3a] text-[15px] leading-[22px]">
+                  Buy your Complete<br className="hidden sm:inline" /> Pen Set once
+                </h4>
+                <p className="font-normal text-[#64748b] text-[12px] leading-[18px]">
+                  Get everything you need to get started.
+                </p>
               </div>
-              <span className="text-2xl ml-auto opacity-70 shrink-0">{step.icon}</span>
             </div>
-          ))}
+
+            {/* Chevron 1 */}
+            <div className="hidden lg:flex size-[20px] shrink-0 items-center justify-center">
+              <img src="/images/figma/1fdf488f3116d53907ccc08806441a8b89df2669.svg" alt="" className="size-full" />
+            </div>
+
+            {/* Step 2 */}
+            <div className="bg-white border border-[#e2e8f0] rounded-[12px] p-[18px] flex gap-[16px] items-center h-auto sm:h-[124px] w-full lg:w-[352px] shadow-xs">
+              <div className="flex flex-col gap-[8px] items-center shrink-0">
+                <div className="bg-[#0b1f3a] text-white size-[26px] rounded-full flex items-center justify-center font-bold text-[13px]">
+                  2
+                </div>
+                <div className="bg-[#e8f5fc] size-[42px] rounded-full flex items-center justify-center">
+                  <img src="/images/figma/f048e39ad3c157a714574a1cd54c3b7ebe55819f.svg" alt="" className="size-[20px]" />
+                </div>
+              </div>
+              <div className="flex flex-col gap-[4px] items-start">
+                <h4 className="font-bold text-[#0b1f3a] text-[15px] leading-[22px]">
+                  Use your reusable<br className="hidden sm:inline" /> PEPTECH® pen
+                </h4>
+                <p className="font-normal text-[#64748b] text-[12px] leading-[18px]">
+                  Accurate. Reliable. Built to last.
+                </p>
+              </div>
+            </div>
+
+            {/* Chevron 2 */}
+            <div className="hidden lg:flex size-[20px] shrink-0 items-center justify-center">
+              <img src="/images/figma/1fdf488f3116d53907ccc08806441a8b89df2669.svg" alt="" className="size-full" />
+            </div>
+
+            {/* Step 3 */}
+            <div className="bg-white border border-[#e2e8f0] rounded-[12px] p-[18px] flex gap-[16px] items-center h-auto sm:h-[124px] w-full lg:w-[352px] shadow-xs">
+              <div className="flex flex-col gap-[8px] items-center shrink-0">
+                <div className="bg-[#0b1f3a] text-white size-[26px] rounded-full flex items-center justify-center font-bold text-[13px]">
+                  3
+                </div>
+                <div className="bg-[#e8f5fc] size-[42px] rounded-full flex items-center justify-center">
+                  <img src="/images/figma/08577dad19be4865945dc30e801ea891a60a9862.svg" alt="" className="w-[18px] h-[22px]" />
+                </div>
+              </div>
+              <div className="flex flex-col gap-[4px] items-start">
+                <h4 className="font-bold text-[#0b1f3a] text-[15px] leading-[22px]">
+                  Return to order<br className="hidden sm:inline" /> Refill Cartridges
+                </h4>
+                <p className="font-normal text-[#64748b] text-[12px] leading-[18px]">
+                  When needed. Save with subscription options.
+                </p>
+              </div>
+            </div>
+
+          </div>
+
         </div>
       </div>
     </section>

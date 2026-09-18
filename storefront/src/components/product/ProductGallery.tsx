@@ -4,67 +4,86 @@ import React, { useState } from "react"
 import Image from "next/image"
 
 interface ProductGalleryProps {
-  images: string[]
+  images?: string[]
 }
 
+const DEFAULT_GALLERY_IMAGES = [
+  "/images/figma/2fc8ae919de84fe5269092b52f019438e68ce3c8.png", // Main pen set packaging
+  "/images/figma/6c45f3de1f0106a2749cbba78c5dfd998544baeb.png", // Pen angled with cartridge
+  "/images/figma/e52a6d3cac1aaae7fca44b96749f223772cf90a4.png", // Pen presentation close-up
+  "/images/figma/6ae689249c306b3f6b31d8744c7c961d01964ca0.png", // Cartridge clear detail
+  "/images/figma/c99c3796c997feceff8871b362c4b941211ea971.png", // Accessories kit
+  "/images/figma/hero-presentation-box.png", // Full box showcase
+]
+
 export function ProductGallery({ images }: ProductGalleryProps) {
+  const displayImages = images && images.length >= 6 ? images : DEFAULT_GALLERY_IMAGES
   const [activeIndex, setActiveIndex] = useState(0)
 
   const handlePrev = () => {
-    setActiveIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))
+    setActiveIndex((prev) => (prev === 0 ? displayImages.length - 1 : prev - 1))
   }
 
   const handleNext = () => {
-    setActiveIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1))
+    setActiveIndex((prev) => (prev === displayImages.length - 1 ? 0 : prev + 1))
   }
 
   return (
-    <div className="space-y-4">
-      {/* Main Showcase Image */}
-      <div className="relative w-full aspect-square sm:aspect-4/3 rounded-2xl bg-white border border-slate-200 overflow-hidden shadow-sm flex items-center justify-center p-4">
-        <Image
-          src={images[activeIndex] || images[0]}
-          alt="PEPTECH Pen System"
-          fill
-          className="object-contain p-4 transition-all duration-300"
-          priority
-        />
+    <div className="flex flex-col gap-[16px] items-start w-full max-w-[580px]">
+      {/* Main Image Box - Figma Node 8:41075 */}
+      <div className="bg-[#f4f8fb] border border-[#e2e8f0] h-[440px] sm:h-[520px] overflow-hidden relative rounded-[16px] w-full flex items-center justify-center">
+        <div className="relative w-full h-full p-6">
+          <Image
+            src={displayImages[activeIndex]}
+            alt="PEPTECH® Complete Pen Set"
+            fill
+            className="object-contain p-4 transition-all duration-300"
+            priority
+          />
+        </div>
 
-        {/* Carousel Arrow Controls (from Mockup 2) */}
+        {/* Prev Button */}
         <button
           onClick={handlePrev}
-          className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 border border-slate-200 text-slate-700 flex items-center justify-center hover:bg-white hover:shadow-md transition-all cursor-pointer"
+          type="button"
           aria-label="Previous Image"
+          className="absolute bg-white border border-[#e2e8f0] flex items-center justify-center left-[15px] rounded-full size-[36px] top-1/2 -translate-y-1/2 hover:bg-slate-50 transition-colors cursor-pointer shadow-xs z-10"
         >
-          ‹
+          <img src="/images/figma/4dfb2f4b53f3415909efe7e80dddcf2a15e5c197.svg" alt="Previous" className="size-[16px]" />
         </button>
+
+        {/* Next Button */}
         <button
           onClick={handleNext}
-          className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 border border-slate-200 text-slate-700 flex items-center justify-center hover:bg-white hover:shadow-md transition-all cursor-pointer"
+          type="button"
           aria-label="Next Image"
+          className="absolute bg-white border border-[#e2e8f0] flex items-center justify-center right-[15px] rounded-full size-[36px] top-1/2 -translate-y-1/2 hover:bg-slate-50 transition-colors cursor-pointer shadow-xs z-10"
         >
-          ›
+          <img src="/images/figma/95de1cd2974339673dc3948d0a6a252ac00ba2f8.svg" alt="Next" className="size-[16px]" />
         </button>
       </div>
 
-      {/* 4 Thumbnails Row */}
-      <div className="grid grid-cols-5 gap-3">
-        {images.slice(0, 5).map((img, idx) => (
+      {/* 6 Thumbnails Row - Figma Node 8:41083 */}
+      <div className="grid grid-cols-6 gap-2 sm:gap-3 w-full">
+        {displayImages.slice(0, 6).map((img, idx) => (
           <button
             key={img + idx}
+            type="button"
             onClick={() => setActiveIndex(idx)}
-            className={`relative aspect-square rounded-xl bg-white border-2 overflow-hidden transition-all p-1 cursor-pointer ${
+            className={`bg-white flex h-[64px] sm:h-[74px] items-center justify-center overflow-hidden relative rounded-[8px] cursor-pointer transition-all p-1 ${
               activeIndex === idx
-                ? "border-[#0B1F3A] ring-2 ring-[#0B1F3A]/10 shadow-xs"
-                : "border-slate-200 hover:border-slate-300 opacity-75 hover:opacity-100"
+                ? "border-2 border-[#00d2ff] shadow-xs"
+                : "border border-[#e2e8f0] hover:border-slate-300 opacity-80 hover:opacity-100"
             }`}
           >
-            <Image
-              src={img}
-              alt={`Thumbnail ${idx + 1}`}
-              fill
-              className="object-contain p-1"
-            />
+            <div className="relative size-full">
+              <Image
+                src={img}
+                alt={`Thumbnail ${idx + 1}`}
+                fill
+                className="object-contain"
+              />
+            </div>
           </button>
         ))}
       </div>

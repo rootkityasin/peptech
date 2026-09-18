@@ -32,7 +32,7 @@ export interface StoreProduct {
   status?: string
   categories?: StoreProductCategory[]
   variants?: StoreProductVariant[]
-  metadata?: Record<string, any> | null
+  metadata?: Record<string, unknown> | null
   [key: string]: unknown
 }
 
@@ -87,12 +87,22 @@ export async function getProductsByCategory(categoryHandle: string): Promise<Sto
  */
 export async function getProduct(idOrHandle: string): Promise<StoreProduct | null> {
   try {
-    const response = await medusa.store.product.retrieve(idOrHandle, {
+    if (idOrHandle.startsWith("prod_")) {
+      const response = await medusa.store.product.retrieve(idOrHandle, {
+        fields: "*categories,*variants,*variants.prices",
+      })
+      return (response.product as unknown as StoreProduct) || null
+    }
+
+    const response = await medusa.store.product.list({
+      handle: idOrHandle,
       fields: "*categories,*variants,*variants.prices",
+      limit: 1,
     })
-    return (response.product as unknown as StoreProduct) || null
+    const products = (response.products as unknown as StoreProduct[]) || []
+    return products[0] || null
   } catch (error) {
-    console.error(`Failed to fetch product ${idOrHandle}:`, error)
+    console.warn(`Could not load Medusa product for ${idOrHandle}:`, error)
     return null
   }
 }

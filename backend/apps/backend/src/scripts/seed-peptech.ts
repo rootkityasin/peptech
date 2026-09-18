@@ -18,9 +18,9 @@ export default async function seedPeptech({
   const logger = container.resolve(ContainerRegistrationKeys.LOGGER);
   const query = container.resolve(ContainerRegistrationKeys.QUERY);
 
-  logger.info("=== PEPTECH CATALOG SEED INITIALIZATION ===");
+  logger.info("=== PEPTECH CATALOG SEED INITIALIZATION (PDF DESIGN SYNC) ===");
 
-  // 1. Fetch & Delete all legacy/demo products
+  // 1. Fetch & Delete all legacy products
   logger.info("Step 1: Checking for existing products to purge...");
   const { data: existingProducts } = await query.graph({
     entity: "product",
@@ -40,7 +40,7 @@ export default async function seedPeptech({
     logger.info("No existing products to purge.");
   }
 
-  // 2. Fetch & Delete all legacy/demo categories
+  // 2. Fetch & Delete all legacy categories
   logger.info("Step 2: Checking for existing categories to purge...");
   const { data: existingCategories } = await query.graph({
     entity: "product_category",
@@ -88,9 +88,9 @@ export default async function seedPeptech({
     },
   });
 
-  const penSetsCat = categoryResult.find((c: any) => c.name === "Complete Pen Sets")!;
-  const refillsCat = categoryResult.find((c: any) => c.name === "Refill Cartridges")!;
-  const vialsCat = categoryResult.find((c: any) => c.name === "Freeze-Dried Vials")!;
+  const penSetsCat = categoryResult.find((c: any) => c.handle === "complete-pen-sets")!;
+  const refillsCat = categoryResult.find((c: any) => c.handle === "refill-cartridges")!;
+  const vialsCat = categoryResult.find((c: any) => c.handle === "freeze-dried-vials")!;
 
   logger.info(`Created categories:
   - Complete Pen Sets: ${penSetsCat.id}
@@ -113,16 +113,17 @@ export default async function seedPeptech({
 
   logger.info(`Using Sales Channel: ${defaultSalesChannel.id}, Shipping Profile: ${shippingProfile.id}`);
 
-  // 5. Build PEPTECH Products Catalog
-  logger.info("Step 5: Seeding PEPTECH products...");
+  // 5. Build PEPTECH Products Catalog Matching PDF Mockups Exactly
+  logger.info("Step 5: Seeding PEPTECH products from PDF catalog...");
 
   const productsToCreate: any[] = [
-    // --- Category 1: Complete Pen Sets (Strictly One-Time) ---
+    // --- Category 1: Complete Pen Sets ($249.00) ---
     {
-      title: "PEPTECH Reusable Pen Set — Retatrutide 10mg",
-      handle: "pen-retatrutide-10",
+      title: "Complete PEPTECH® Pen Set",
+      handle: "complete-pen-set",
       description:
-        "The complete starter package for laboratory research. Each set includes our medical-grade reusable precision aluminum pen, a prefilled certified 10mg Retatrutide cartridge (HPLC 99.4%), serialized device passport card, 5x sterile 31G 5mm ultra-fine needles, and 10x alcohol prep pads. One-time purchase only.",
+        "Get started with the complete PEPTECH® system. Includes reusable pen, a compatible prefilled cartridge, 14 instructions and all accessories you need for accurate, reliable testing.",
+      thumbnail: "http://localhost:3000/images/peptech/mockup2.webp",
       category_ids: [penSetsCat.id],
       status: ProductStatus.PUBLISHED,
       shipping_profile_id: shippingProfile.id,
@@ -130,39 +131,31 @@ export default async function seedPeptech({
       metadata: {
         category: "complete-pen-sets",
         format: "pen-set",
-        strength: "10mg Cartridge",
-        batch: "RT-2609A",
-        purity: "99.4%",
-        labReportUrl: "/lab-reports/RT-2609A.pdf",
-        compatibleRefillSku: "REF-RT-10",
+        application: "All Laboratory Testing",
+        tag: "PEN SYSTEM",
+        rating: 4.9,
+        reviewsCount: 264,
         purchaseType: "one-time",
       },
-      options: [
-        {
-          title: "Specification",
-          values: ["10mg Complete Starter Set"],
-        },
-      ],
+      options: [{ title: "System", values: ["Complete Starter Kit"] }],
       variants: [
         {
-          title: "10mg Complete Starter Set",
-          sku: "PEN-RT-10",
-          options: {
-            Specification: "10mg Complete Starter Set",
-          },
+          title: "Complete Starter Kit",
+          sku: "PPS-1000",
+          options: { System: "Complete Starter Kit" },
           prices: [
-            { amount: 45, currency_code: "gbp" },
-            { amount: 54, currency_code: "eur" },
-            { amount: 58, currency_code: "usd" },
+            { amount: 249, currency_code: "usd" },
+            { amount: 195, currency_code: "gbp" },
+            { amount: 230, currency_code: "eur" },
           ],
         },
       ],
     },
     {
-      title: "PEPTECH Reusable Pen Set — Tirzepatide 15mg",
-      handle: "pen-tirzepatide-15",
-      description:
-        "The complete starter package for laboratory research. Each set includes our medical-grade reusable precision aluminum pen, a prefilled certified 15mg Tirzepatide cartridge (HPLC 99.2%), serialized device passport card, 5x sterile 31G 5mm ultra-fine needles, and 10x alcohol prep pads. One-time purchase only.",
+      title: "RT40 Pen System",
+      handle: "pen-system-rt40",
+      description: "Complete starter set with reusable precision pen and RT40 cartridge for food safety testing.",
+      thumbnail: "http://localhost:3000/images/peptech/front.webp",
       category_ids: [penSetsCat.id],
       status: ProductStatus.PUBLISHED,
       shipping_profile_id: shippingProfile.id,
@@ -170,39 +163,29 @@ export default async function seedPeptech({
       metadata: {
         category: "complete-pen-sets",
         format: "pen-set",
-        strength: "15mg Cartridge",
-        batch: "TR-2609B",
-        purity: "99.2%",
-        labReportUrl: "/lab-reports/TR-2609B.pdf",
-        compatibleRefillSku: "REF-TR-15",
+        application: "Food Safety Testing",
+        tag: "PEN SYSTEM",
+        rating: 4.9,
         purchaseType: "one-time",
       },
-      options: [
-        {
-          title: "Specification",
-          values: ["15mg Complete Starter Set"],
-        },
-      ],
+      options: [{ title: "Model", values: ["RT40 Starter Set"] }],
       variants: [
         {
-          title: "15mg Complete Starter Set",
-          sku: "PEN-TR-15",
-          options: {
-            Specification: "15mg Complete Starter Set",
-          },
+          title: "RT40 Starter Set",
+          sku: "PEP-PEN-RT40",
+          options: { Model: "RT40 Starter Set" },
           prices: [
-            { amount: 48, currency_code: "gbp" },
-            { amount: 58, currency_code: "eur" },
-            { amount: 62, currency_code: "usd" },
+            { amount: 249, currency_code: "usd" },
+            { amount: 195, currency_code: "gbp" },
           ],
         },
       ],
     },
     {
-      title: "PEPTECH Reusable Pen Set — Semaglutide 10mg",
-      handle: "pen-semaglutide-10",
-      description:
-        "The complete starter package for laboratory research. Each set includes our medical-grade reusable precision aluminum pen, a prefilled certified 10mg Semaglutide cartridge (HPLC 99.5%), serialized device passport card, 5x sterile 31G 5mm ultra-fine needles, and 10x alcohol prep pads. One-time purchase only.",
+      title: "C.C-1236 Pen System",
+      handle: "pen-system-cc1236",
+      description: "Complete starter set with reusable precision pen and C.C-1236 cartridge for environmental testing.",
+      thumbnail: "http://localhost:3000/images/peptech/front.webp",
       category_ids: [penSetsCat.id],
       status: ProductStatus.PUBLISHED,
       shipping_profile_id: shippingProfile.id,
@@ -210,197 +193,386 @@ export default async function seedPeptech({
       metadata: {
         category: "complete-pen-sets",
         format: "pen-set",
-        strength: "10mg Cartridge",
-        batch: "SM-2609A",
-        purity: "99.5%",
-        labReportUrl: "/lab-reports/SM-2609A.pdf",
-        compatibleRefillSku: "REF-SM-10",
+        application: "Environmental Testing",
+        tag: "PEN SYSTEM",
+        rating: 4.9,
         purchaseType: "one-time",
       },
-      options: [
-        {
-          title: "Specification",
-          values: ["10mg Complete Starter Set"],
-        },
-      ],
+      options: [{ title: "Model", values: ["C.C-1236 Starter Set"] }],
       variants: [
         {
-          title: "10mg Complete Starter Set",
-          sku: "PEN-SM-10",
-          options: {
-            Specification: "10mg Complete Starter Set",
-          },
+          title: "C.C-1236 Starter Set",
+          sku: "PEP-PEN-CC1236",
+          options: { Model: "C.C-1236 Starter Set" },
           prices: [
-            { amount: 42, currency_code: "gbp" },
-            { amount: 50, currency_code: "eur" },
-            { amount: 55, currency_code: "usd" },
+            { amount: 249, currency_code: "usd" },
+            { amount: 195, currency_code: "gbp" },
+          ],
+        },
+      ],
+    },
+    {
+      title: "TB-S30 Pen System",
+      handle: "pen-system-tbs30",
+      description: "Complete starter set with reusable precision pen and TB-S30 cartridge for healthcare testing.",
+      thumbnail: "http://localhost:3000/images/peptech/front.webp",
+      category_ids: [penSetsCat.id],
+      status: ProductStatus.PUBLISHED,
+      shipping_profile_id: shippingProfile.id,
+      sales_channels: [{ id: defaultSalesChannel.id }],
+      metadata: {
+        category: "complete-pen-sets",
+        format: "pen-set",
+        application: "Healthcare Testing",
+        tag: "PEN SYSTEM",
+        rating: 4.9,
+        purchaseType: "one-time",
+      },
+      options: [{ title: "Model", values: ["TB-S30 Starter Set"] }],
+      variants: [
+        {
+          title: "TB-S30 Starter Set",
+          sku: "PEP-PEN-TBS30",
+          options: { Model: "TB-S30 Starter Set" },
+          prices: [
+            { amount: 249, currency_code: "usd" },
+            { amount: 195, currency_code: "gbp" },
+          ],
+        },
+      ],
+    },
+    {
+      title: "IFC-137 Pen System",
+      handle: "pen-system-ifc137",
+      description: "Complete starter set with reusable precision pen and IFC-137 cartridge for industrial hygiene.",
+      thumbnail: "http://localhost:3000/images/peptech/front.webp",
+      category_ids: [penSetsCat.id],
+      status: ProductStatus.PUBLISHED,
+      shipping_profile_id: shippingProfile.id,
+      sales_channels: [{ id: defaultSalesChannel.id }],
+      metadata: {
+        category: "complete-pen-sets",
+        format: "pen-set",
+        application: "Industrial Hygiene",
+        tag: "PEN SYSTEM",
+        rating: 4.9,
+        purchaseType: "one-time",
+      },
+      options: [{ title: "Model", values: ["IFC-137 Starter Set"] }],
+      variants: [
+        {
+          title: "IFC-137 Starter Set",
+          sku: "PEP-PEN-IFC137",
+          options: { Model: "IFC-137 Starter Set" },
+          prices: [
+            { amount: 249, currency_code: "usd" },
+            { amount: 195, currency_code: "gbp" },
+          ],
+        },
+      ],
+    },
+    {
+      title: "GVK-00 50 Pen System",
+      handle: "pen-system-gvk0050",
+      description: "Complete starter set with reusable precision pen and GVK-00 50 cartridge for water quality testing.",
+      thumbnail: "http://localhost:3000/images/peptech/front.webp",
+      category_ids: [penSetsCat.id],
+      status: ProductStatus.PUBLISHED,
+      shipping_profile_id: shippingProfile.id,
+      sales_channels: [{ id: defaultSalesChannel.id }],
+      metadata: {
+        category: "complete-pen-sets",
+        format: "pen-set",
+        application: "Water Quality Testing",
+        tag: "PEN SYSTEM",
+        rating: 4.9,
+        purchaseType: "one-time",
+      },
+      options: [{ title: "Model", values: ["GVK-00 50 Starter Set"] }],
+      variants: [
+        {
+          title: "GVK-00 50 Starter Set",
+          sku: "PEP-PEN-GVK0050",
+          options: { Model: "GVK-00 50 Starter Set" },
+          prices: [
+            { amount: 249, currency_code: "usd" },
+            { amount: 195, currency_code: "gbp" },
+          ],
+        },
+      ],
+    },
+    {
+      title: "Melatonin II Pen System",
+      handle: "pen-system-melatonin2",
+      description: "Complete starter set with reusable precision pen and Melatonin II cartridge for mycotoxin detection.",
+      thumbnail: "http://localhost:3000/images/peptech/front.webp",
+      category_ids: [penSetsCat.id],
+      status: ProductStatus.PUBLISHED,
+      shipping_profile_id: shippingProfile.id,
+      sales_channels: [{ id: defaultSalesChannel.id }],
+      metadata: {
+        category: "complete-pen-sets",
+        format: "pen-set",
+        application: "Mycotoxin Detection",
+        tag: "PEN SYSTEM",
+        rating: 4.9,
+        purchaseType: "one-time",
+      },
+      options: [{ title: "Model", values: ["Melatonin II Starter Set"] }],
+      variants: [
+        {
+          title: "Melatonin II Starter Set",
+          sku: "PEP-PEN-MELATONIN2",
+          options: { Model: "Melatonin II Starter Set" },
+          prices: [
+            { amount: 249, currency_code: "usd" },
+            { amount: 195, currency_code: "gbp" },
           ],
         },
       ],
     },
 
-    // --- Category 2: Refill Cartridges (One-Time & 28-day Subscribe & Save 10%) ---
+    // --- Category 2: Refill Cartridges ---
     {
-      title: "PEPTECH Refill Cartridge — Retatrutide 10mg",
-      handle: "refill-retatrutide-10",
-      description:
-        "High-purity prefilled replacement cartridge designed exclusively for the reusable PEPTECH precision pen system. Batch-certified HPLC 99.4%. Order single replacements or choose Subscribe & Save every 28 days for automated dispatch and 10% savings.",
+      title: "RT40 Test Cartridge",
+      handle: "cartridge-rt40",
+      description: "Replacement cartridge for RT40 food safety testing. Compatible with PEPTECH reusable pen.",
+      thumbnail: "http://localhost:3000/images/peptech/cartridge.webp",
       category_ids: [refillsCat.id],
       status: ProductStatus.PUBLISHED,
       shipping_profile_id: shippingProfile.id,
       sales_channels: [{ id: defaultSalesChannel.id }],
-      metadata: {
-        category: "refill-cartridges",
-        format: "refill",
-        strength: "10mg",
-        batch: "RT-2609A",
-        purity: "99.4%",
-        compatibility: "Compatible exclusively with the PEPTECH Reusable Pen",
-        matchingPenSetSku: "PEN-RT-10",
-        subscriptionDiscount: 10,
-        subscriptionIntervalDays: 28,
-        subscriptionPriceGbp: 21.60,
-      },
-      options: [
-        {
-          title: "Strength",
-          values: ["10mg Cartridge"],
-        },
-      ],
+      metadata: { category: "refill-cartridges", format: "refill", tag: "Test Cartridge", subDiscountPercent: 10 },
+      options: [{ title: "Type", values: ["Single Cartridge"] }],
       variants: [
         {
-          title: "10mg Cartridge",
-          sku: "REF-RT-10",
-          options: {
-            Strength: "10mg Cartridge",
-          },
+          title: "Single Cartridge",
+          sku: "PEP-CRT-RT40",
+          options: { Type: "Single Cartridge" },
           prices: [
-            { amount: 24, currency_code: "gbp" },
-            { amount: 29, currency_code: "eur" },
-            { amount: 31, currency_code: "usd" },
+            { amount: 39, currency_code: "usd" },
+            { amount: 30, currency_code: "gbp" },
           ],
         },
       ],
     },
     {
-      title: "PEPTECH Refill Cartridge — Tirzepatide 15mg",
-      handle: "refill-tirzepatide-15",
-      description:
-        "High-purity prefilled replacement cartridge designed exclusively for the reusable PEPTECH precision pen system. Batch-certified HPLC 99.2%. Order single replacements or choose Subscribe & Save every 28 days for automated dispatch and 10% savings.",
+      title: "C.C-1236 Test Cartridge",
+      handle: "cartridge-cc1236",
+      description: "Replacement cartridge for C.C-1236 environmental testing. Compatible with PEPTECH reusable pen.",
+      thumbnail: "http://localhost:3000/images/peptech/cartridge.webp",
       category_ids: [refillsCat.id],
       status: ProductStatus.PUBLISHED,
       shipping_profile_id: shippingProfile.id,
       sales_channels: [{ id: defaultSalesChannel.id }],
-      metadata: {
-        category: "refill-cartridges",
-        format: "refill",
-        strength: "15mg",
-        batch: "TR-2609B",
-        purity: "99.2%",
-        compatibility: "Compatible exclusively with the PEPTECH Reusable Pen",
-        matchingPenSetSku: "PEN-TR-15",
-        subscriptionDiscount: 10,
-        subscriptionIntervalDays: 28,
-        subscriptionPriceGbp: 23.40,
-      },
-      options: [
-        {
-          title: "Strength",
-          values: ["15mg Cartridge"],
-        },
-      ],
+      metadata: { category: "refill-cartridges", format: "refill", tag: "Test Cartridge", subDiscountPercent: 10 },
+      options: [{ title: "Type", values: ["Single Cartridge"] }],
       variants: [
         {
-          title: "15mg Cartridge",
-          sku: "REF-TR-15",
-          options: {
-            Strength: "15mg Cartridge",
-          },
+          title: "Single Cartridge",
+          sku: "PEP-CRT-CC1236",
+          options: { Type: "Single Cartridge" },
           prices: [
+            { amount: 39, currency_code: "usd" },
+            { amount: 30, currency_code: "gbp" },
+          ],
+        },
+      ],
+    },
+    {
+      title: "TB-S30 Test Cartridge",
+      handle: "cartridge-tbs30",
+      description: "Replacement cartridge for TB-S30 healthcare testing. Compatible with PEPTECH reusable pen.",
+      thumbnail: "http://localhost:3000/images/peptech/cartridge.webp",
+      category_ids: [refillsCat.id],
+      status: ProductStatus.PUBLISHED,
+      shipping_profile_id: shippingProfile.id,
+      sales_channels: [{ id: defaultSalesChannel.id }],
+      metadata: { category: "refill-cartridges", format: "refill", tag: "Test Cartridge", subDiscountPercent: 10 },
+      options: [{ title: "Type", values: ["Single Cartridge"] }],
+      variants: [
+        {
+          title: "Single Cartridge",
+          sku: "PEP-CRT-TBS30",
+          options: { Type: "Single Cartridge" },
+          prices: [
+            { amount: 25, currency_code: "usd" },
+            { amount: 20, currency_code: "gbp" },
+          ],
+        },
+      ],
+    },
+    {
+      title: "IFC-137 Test Cartridge",
+      handle: "cartridge-ifc137",
+      description: "Replacement cartridge for IFC-137 industrial hygiene. Compatible with PEPTECH reusable pen.",
+      thumbnail: "http://localhost:3000/images/peptech/cartridge.webp",
+      category_ids: [refillsCat.id],
+      status: ProductStatus.PUBLISHED,
+      shipping_profile_id: shippingProfile.id,
+      sales_channels: [{ id: defaultSalesChannel.id }],
+      metadata: { category: "refill-cartridges", format: "refill", tag: "Test Cartridge", subDiscountPercent: 10 },
+      options: [{ title: "Type", values: ["Single Cartridge"] }],
+      variants: [
+        {
+          title: "Single Cartridge",
+          sku: "PEP-CRT-IFC137",
+          options: { Type: "Single Cartridge" },
+          prices: [
+            { amount: 39, currency_code: "usd" },
+            { amount: 30, currency_code: "gbp" },
+          ],
+        },
+      ],
+    },
+    {
+      title: "GVK-00 50 Test Cartridge",
+      handle: "cartridge-gvk0050",
+      description: "Replacement cartridge for GVK-00 50 water quality testing. Compatible with PEPTECH reusable pen.",
+      thumbnail: "http://localhost:3000/images/peptech/cartridge.webp",
+      category_ids: [refillsCat.id],
+      status: ProductStatus.PUBLISHED,
+      shipping_profile_id: shippingProfile.id,
+      sales_channels: [{ id: defaultSalesChannel.id }],
+      metadata: { category: "refill-cartridges", format: "refill", tag: "Test Cartridge", subDiscountPercent: 10 },
+      options: [{ title: "Type", values: ["Single Cartridge"] }],
+      variants: [
+        {
+          title: "Single Cartridge",
+          sku: "PEP-CRT-GVK0050",
+          options: { Type: "Single Cartridge" },
+          prices: [
+            { amount: 35, currency_code: "usd" },
+            { amount: 28, currency_code: "gbp" },
+          ],
+        },
+      ],
+    },
+    {
+      title: "Melatonin II Test Cartridge",
+      handle: "cartridge-melatonin2",
+      description: "Replacement cartridge for Melatonin II mycotoxin detection. Compatible with PEPTECH reusable pen.",
+      thumbnail: "http://localhost:3000/images/peptech/cartridge.webp",
+      category_ids: [refillsCat.id],
+      status: ProductStatus.PUBLISHED,
+      shipping_profile_id: shippingProfile.id,
+      sales_channels: [{ id: defaultSalesChannel.id }],
+      metadata: { category: "refill-cartridges", format: "refill", tag: "Test Cartridge", subDiscountPercent: 10 },
+      options: [{ title: "Type", values: ["Single Cartridge"] }],
+      variants: [
+        {
+          title: "Single Cartridge",
+          sku: "PEP-CRT-MELATONIN2",
+          options: { Type: "Single Cartridge" },
+          prices: [
+            { amount: 33, currency_code: "usd" },
             { amount: 26, currency_code: "gbp" },
-            { amount: 31, currency_code: "eur" },
-            { amount: 34, currency_code: "usd" },
           ],
         },
       ],
     },
 
-    // --- Category 3: Freeze-Dried Vials (Schedule of 12 Compounds) ---
-    ...[
-      { name: "Retatrutide", code: "RT", strength: "5mg", price: 8.4 },
-      { name: "Retatrutide", code: "RT", strength: "10mg", price: 15.6 },
-      { name: "Tirzepatide", code: "TR", strength: "5mg", price: 8.4 },
-      { name: "Tirzepatide", code: "TR", strength: "10mg", price: 14.4 },
-      { name: "Semaglutide", code: "SM", strength: "5mg", price: 8.4 },
-      { name: "Semaglutide", code: "SM", strength: "10mg", price: 14.4 },
-      { name: "GHK-CU", code: "Cu50", strength: "50mg", price: 8.4 },
-      { name: "GHK-CU", code: "Cu100", strength: "100mg", price: 12.0 },
-      { name: "BPC-157", code: "BC5", strength: "5mg", price: 9.6 },
-      { name: "TB500", code: "TB5", strength: "5mg", price: 20.4 },
-      { name: "NAD+", code: "NJ500", strength: "500mg", price: 19.2 },
-      { name: "Cagrilintide", code: "CGL5", strength: "5mg", price: 31.2 },
-    ].map((v) => {
-      const cleanName = v.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
-      const cleanStrength = v.strength.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
-      const slug = `${cleanName}-${cleanStrength}`.replace(/-+/g, "-");
-      const cleanSkuCode = v.code.toUpperCase().replace(/[^A-Z0-9]+/g, "");
-      const sku = `VIA-${cleanSkuCode}-${v.strength.toUpperCase()}`;
-      const subPrice = Number((v.price * 0.9).toFixed(2));
-
-      return {
-        title: `${v.name} ${v.strength} Lyophilised Vial`,
-        handle: `vial-${slug}`,
-        description: `Individually vacuum-sealed, lyophilised ${v.name} peptide vial (${v.strength}) for laboratory research. Certified batch testing via HPLC and Mass Spectrometry. Available for One-Time purchase or Subscribe & Save every 28 days with 10% discount.`,
-        category_ids: [vialsCat.id],
-        status: ProductStatus.PUBLISHED,
-        shipping_profile_id: shippingProfile.id,
-        sales_channels: [{ id: defaultSalesChannel.id }],
-        metadata: {
-          category: "freeze-dried-vials",
-          format: "vial",
-          compound: v.name,
-          code: v.code,
-          strength: v.strength,
-          batch: `${v.code}-2609`,
-          subscriptionDiscount: 10,
-          subscriptionIntervalDays: 28,
-          subscriptionPriceGbp: subPrice,
+    // --- Category 3: Freeze-Dried Vials ---
+    {
+      title: "Research Grade 5 mg Lyophilised Vial",
+      handle: "vial-5mg",
+      description: "Research grade 5 mg freeze-dried laboratory peptide vial. Sealed under nitrogen.",
+      thumbnail: "http://localhost:3000/images/peptech/front.webp",
+      category_ids: [vialsCat.id],
+      status: ProductStatus.PUBLISHED,
+      shipping_profile_id: shippingProfile.id,
+      sales_channels: [{ id: defaultSalesChannel.id }],
+      metadata: { category: "freeze-dried-vials", format: "vial", tag: "Freeze-Dried Vial" },
+      options: [{ title: "Dose", values: ["5 mg"] }],
+      variants: [
+        {
+          title: "5 mg",
+          sku: "PEP-VIA-5MG",
+          options: { Dose: "5 mg" },
+          prices: [
+            { amount: 129, currency_code: "usd" },
+            { amount: 100, currency_code: "gbp" },
+          ],
         },
-        options: [
-          {
-            title: "Strength",
-            values: [v.strength],
-          },
-        ],
-        variants: [
-          {
-            title: `${v.strength} Single Vial`,
-            sku,
-            options: {
-              Strength: v.strength,
-            },
-            prices: [
-              { amount: v.price, currency_code: "gbp" },
-              { amount: Number((v.price * 1.2).toFixed(2)), currency_code: "eur" },
-              { amount: Number((v.price * 1.3).toFixed(2)), currency_code: "usd" },
-            ],
-          },
-        ],
-      };
-    }),
+      ],
+    },
+    {
+      title: "Research Grade 10 mg Lyophilised Vial",
+      handle: "vial-10mg",
+      description: "Research grade 10 mg freeze-dried laboratory peptide vial. Sealed under nitrogen.",
+      thumbnail: "http://localhost:3000/images/peptech/front.webp",
+      category_ids: [vialsCat.id],
+      status: ProductStatus.PUBLISHED,
+      shipping_profile_id: shippingProfile.id,
+      sales_channels: [{ id: defaultSalesChannel.id }],
+      metadata: { category: "freeze-dried-vials", format: "vial", tag: "Freeze-Dried Vial" },
+      options: [{ title: "Dose", values: ["10 mg"] }],
+      variants: [
+        {
+          title: "10 mg",
+          sku: "PEP-VIA-10MG",
+          options: { Dose: "10 mg" },
+          prices: [
+            { amount: 199, currency_code: "usd" },
+            { amount: 155, currency_code: "gbp" },
+          ],
+        },
+      ],
+    },
+    {
+      title: "Research Grade 25 mg Lyophilised Vial",
+      handle: "vial-25mg",
+      description: "Research grade 25 mg freeze-dried laboratory peptide vial. Sealed under nitrogen.",
+      thumbnail: "http://localhost:3000/images/peptech/front.webp",
+      category_ids: [vialsCat.id],
+      status: ProductStatus.PUBLISHED,
+      shipping_profile_id: shippingProfile.id,
+      sales_channels: [{ id: defaultSalesChannel.id }],
+      metadata: { category: "freeze-dried-vials", format: "vial", tag: "Freeze-Dried Vial" },
+      options: [{ title: "Dose", values: ["25 mg"] }],
+      variants: [
+        {
+          title: "25 mg",
+          sku: "PEP-VIA-25MG",
+          options: { Dose: "25 mg" },
+          prices: [
+            { amount: 349, currency_code: "usd" },
+            { amount: 270, currency_code: "gbp" },
+          ],
+        },
+      ],
+    },
+    {
+      title: "Research Grade 50 mg Lyophilised Vial",
+      handle: "vial-50mg",
+      description: "Research grade 50 mg freeze-dried laboratory peptide vial. Sealed under nitrogen.",
+      thumbnail: "http://localhost:3000/images/peptech/front.webp",
+      category_ids: [vialsCat.id],
+      status: ProductStatus.PUBLISHED,
+      shipping_profile_id: shippingProfile.id,
+      sales_channels: [{ id: defaultSalesChannel.id }],
+      metadata: { category: "freeze-dried-vials", format: "vial", tag: "Freeze-Dried Vial" },
+      options: [{ title: "Dose", values: ["50 mg"] }],
+      variants: [
+        {
+          title: "50 mg",
+          sku: "PEP-VIA-50MG",
+          options: { Dose: "50 mg" },
+          prices: [
+            { amount: 599, currency_code: "usd" },
+            { amount: 465, currency_code: "gbp" },
+          ],
+        },
+      ],
+    },
   ];
 
-  logger.info(`Creating ${productsToCreate.length} PEPTECH products in Medusa...`);
-  const { result: createdProducts } = await createProductsWorkflow(container).run({
+  logger.info(`Creating ${productsToCreate.length} products...`);
+  await createProductsWorkflow(container).run({
     input: {
       products: productsToCreate,
     },
   });
 
-  logger.info(`Successfully created ${createdProducts.length} PEPTECH products!`);
-  createdProducts.forEach((p: any) => {
-    logger.info(`✓ [${p.id}] ${p.title} (${p.handle})`);
-  });
-
-  logger.info("=== PEPTECH CATALOG SEED COMPLETED SUCCESSFULLY ===");
+  logger.info(`✅ Successfully seeded ${productsToCreate.length} PEPTECH products matching PDF mockups!`);
 }

@@ -5,156 +5,137 @@ import Link from "next/link"
 import Image from "next/image"
 import { useCart } from "@/components/cart/CartContext"
 
-// Featured Pen Systems from Mockup 1
-const FEATURED_PEN_SETS = [
+// Featured Complete Pen Sets from Figma (Node 2:29339)
+const FIGMA_FEATURED_PEN_SETS = [
   {
     id: "pen-set-rt40",
     name: "RT40",
+    handle: "pen-system-rt40",
     tag: "PEN SYSTEM",
     application: "Food Safety Testing",
     price: 249.00,
-    image: "/images/peptech/front.webp",
+    image: "/images/figma/product-set-rt40.png",
   },
   {
     id: "pen-set-cc1236",
     name: "C.C-1236",
+    handle: "pen-system-cc1236",
     tag: "PEN SYSTEM",
     application: "Environmental Testing",
     price: 249.00,
-    image: "/images/peptech/front.webp",
+    image: "/images/figma/product-set-cc1236.png",
   },
   {
     id: "pen-set-tbs30",
     name: "TB-S30",
+    handle: "pen-system-tbs30",
     tag: "PEN SYSTEM",
     application: "Healthcare Testing",
     price: 249.00,
-    image: "/images/peptech/front.webp",
+    image: "/images/figma/product-set-tbs30.png",
   },
   {
     id: "pen-set-ifc137",
     name: "IFC-137",
+    handle: "pen-system-ifc137",
     tag: "PEN SYSTEM",
     application: "Industrial Hygiene",
     price: 249.00,
-    image: "/images/peptech/front.webp",
+    image: "/images/figma/product-set-ifc137.png",
   },
   {
     id: "pen-set-gvk0050",
     name: "GVK-00 50",
+    handle: "pen-system-gvk0050",
     tag: "PEN SYSTEM",
     application: "Water Quality Testing",
     price: 249.00,
-    image: "/images/peptech/front.webp",
+    image: "/images/figma/product-set-gvk0050.png",
   },
   {
-    id: "pen-set-melatonin2",
-    name: "Melatonin II",
+    id: "pen-set-melatoxin2",
+    name: "Melatoxin II",
+    handle: "pen-system-melatoxin2",
     tag: "PEN SYSTEM",
     application: "Mycotoxin Detection",
     price: 249.00,
-    image: "/images/peptech/front.webp",
+    image: "/images/figma/product-set-melatoxin2.png",
   },
 ]
 
-// Individual Cartridges from Mockup 1
-const INDIVIDUAL_CARTRIDGES = [
+// Individual Cartridges from Figma (Node 2:29436)
+const FIGMA_CARTRIDGES = [
   {
     id: "cartridge-rt40",
     name: "RT40",
+    handle: "cartridge-rt40",
     type: "Test Cartridge",
     price: 39.00,
-    image: "/images/peptech/cartridge.webp",
+    image: "/images/figma/cartridge-clear.png",
   },
   {
     id: "cartridge-cc1236",
     name: "C.C-1236",
+    handle: "cartridge-cc1236",
     type: "Test Cartridge",
     price: 39.00,
-    image: "/images/peptech/cartridge.webp",
+    image: "/images/figma/cartridge-clear.png",
   },
   {
     id: "cartridge-tbs30",
     name: "TB-S30",
+    handle: "cartridge-tbs30",
     type: "Test Cartridge",
     price: 25.00,
-    image: "/images/peptech/cartridge.webp",
+    image: "/images/figma/cartridge-clear.png",
   },
   {
     id: "cartridge-ifc137",
     name: "IFC-137",
+    handle: "cartridge-ifc137",
     type: "Test Cartridge",
     price: 39.00,
-    image: "/images/peptech/cartridge.webp",
+    image: "/images/figma/cartridge-clear.png",
   },
   {
     id: "cartridge-gvk0050",
     name: "GVK-00 50",
+    handle: "cartridge-gvk0050",
     type: "Test Cartridge",
     price: 35.00,
-    image: "/images/peptech/cartridge.webp",
+    image: "/images/figma/cartridge-clear.png",
   },
   {
-    id: "cartridge-melatonin2",
-    name: "Melatonin II",
+    id: "cartridge-melatoxin2",
+    name: "Melatoxin II",
+    handle: "cartridge-melatoxin2",
     type: "Test Cartridge",
     price: 33.00,
-    image: "/images/peptech/cartridge.webp",
-  },
-]
-
-// Applications from Mockup 1
-const APPLICATIONS = [
-  {
-    title: "Food Safety",
-    image: "https://images.unsplash.com/photo-1576086213369-97a306d36557?w=600&auto=format&fit=crop&q=80",
-    desc: "Rapid pathogen and contaminant screening for food production facilities.",
-  },
-  {
-    title: "Water Quality",
-    image: "https://images.unsplash.com/photo-1581093458791-9f3c3900df4b?w=600&auto=format&fit=crop&q=80",
-    desc: "Precision microbial and chemical assay testing for water treatment plants.",
-  },
-  {
-    title: "Environmental",
-    image: "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=600&auto=format&fit=crop&q=80",
-    desc: "On-site soil and ecological analysis with laboratory-grade consistency.",
-  },
-  {
-    title: "Healthcare",
-    image: "https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=600&auto=format&fit=crop&q=80",
-    desc: "Point-of-care clinical research, biomarker evaluation and diagnostic protocols.",
-  },
-  {
-    title: "Industrial Hygiene",
-    image: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=600&auto=format&fit=crop&q=80",
-    desc: "Cleanroom surface monitoring and bio-load verification across manufacturing.",
-  },
-  {
-    title: "Agriculture & Feed",
-    image: "https://images.unsplash.com/photo-1628352081506-83c43123ed6d?w=600&auto=format&fit=crop&q=80",
-    desc: "High-sensitivity screening for crop health, livestock nutrients and mycotoxins.",
+    image: "/images/figma/cartridge-clear.png",
   },
 ]
 
 export default function HomePage() {
   const { addItem, setIsDrawerOpen } = useCart()
 
-  const handleAddPenSet = (set: typeof FEATURED_PEN_SETS[0]) => {
+  // Handle Add to Cart for Complete Pen Sets
+  const handleAddPenSet = (product: typeof FIGMA_FEATURED_PEN_SETS[0]) => {
     addItem({
-      id: set.id,
-      title: `${set.name} Complete Pen System`,
+      id: product.id,
+      title: `${product.name} Complete Pen Set`,
       format: "pen-set",
-      strength: set.application,
-      price: set.price,
+      strength: product.application,
+      price: product.price,
       isSubscription: false,
-      sku: `PEP-PEN-${set.name.replace(/[^a-zA-Z0-9]/g, "").toUpperCase()}`,
-      batch: "PT-2026-01",
+      sku: `PEP-PEN-${product.name.replace(/[^a-zA-Z0-9]/g, "").toUpperCase()}`,
+      batch: "PT-2026-B1",
+      image: product.image,
     })
     setIsDrawerOpen(true)
   }
 
-  const handleAddCartridge = (cartridge: typeof INDIVIDUAL_CARTRIDGES[0]) => {
+  // Handle Add to Cart for Cartridges
+  const handleAddCartridge = (cartridge: typeof FIGMA_CARTRIDGES[0]) => {
     addItem({
       id: cartridge.id,
       title: `${cartridge.name} Test Cartridge`,
@@ -164,109 +145,86 @@ export default function HomePage() {
       isSubscription: false,
       sku: `PEP-CRT-${cartridge.name.replace(/[^a-zA-Z0-9]/g, "").toUpperCase()}`,
       batch: "CRT-2026-B1",
+      image: cartridge.image,
     })
     setIsDrawerOpen(true)
   }
 
   return (
-    <div className="bg-white min-h-screen text-slate-900">
+    <main className="bg-white text-slate-900 overflow-x-hidden font-sans">
       
-      {/* 1. HERO SECTION (Same as Page 1 Mockup) */}
-      <section className="relative overflow-hidden pt-8 pb-16 lg:pt-14 lg:pb-24 border-b border-slate-100 bg-gradient-to-b from-slate-50/70 to-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+      {/* 01. HERO SECTION - Figma Node 2:29257 */}
+      <section className="bg-[#F4F7FA] py-14 sm:py-16 border-b border-[#E2E8F0] relative">
+        <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             
-            {/* Left Column: Hero Text & CTAs */}
-            <div className="lg:col-span-6 space-y-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-50 border border-cyan-200/60 text-[#00A896] text-xs font-bold tracking-wider uppercase">
-                <span>Rapid Testing. Real Impact.</span>
-              </div>
-
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-[#0B1F3A] leading-[1.1]">
-                THE COMPLETE <br className="hidden sm:inline" />
-                PEPTECH® SYSTEM
+            {/* Left Column: Value Proposition */}
+            <div className="lg:col-span-6 space-y-5">
+              <span className="inline-block text-[12px] font-bold text-[#16A6A3] tracking-[1.2px] uppercase">
+                RAPID TESTING. REAL IMPACT.
+              </span>
+              
+              <h1 className="text-3xl sm:text-4xl lg:text-[44px] font-extrabold text-[#0B1F3A] leading-[1.15] tracking-tight uppercase">
+                THE COMPLETE<br className="hidden sm:inline" /> PEPTECH® SYSTEM
               </h1>
 
-              <p className="text-base sm:text-lg font-semibold text-slate-800 leading-snug">
+              <p className="text-sm sm:text-base font-bold text-[#0B1F3A] leading-relaxed">
                 One reusable pen. Multiple test cartridges. Accurate. Reliable. Convenient.
               </p>
 
-              <p className="text-sm sm:text-base text-slate-600 leading-relaxed max-w-xl">
+              <p className="text-xs sm:text-[14px] text-[#64748B] leading-[22px] max-w-lg">
                 PEPTECH® delivers premium, ready-to-use kits and reagents designed for precision, consistency and trusted results across multiple industries.
               </p>
 
-              {/* Action CTAs */}
-              <div className="flex flex-wrap items-center gap-4 pt-2">
+              {/* Action Buttons */}
+              <div className="flex flex-wrap items-center gap-3.5 pt-2">
                 <Link
                   href="/products/complete-pen-set"
-                  className="px-7 py-3.5 rounded-lg bg-[#0B1F3A] hover:bg-[#15345d] text-white text-sm font-bold shadow-md hover:shadow-lg transition-all flex items-center gap-2 group"
+                  className="btn-shimmer btn-press px-6 py-3.5 rounded-xl bg-[#0B1F3A] hover:bg-[#162e52] text-white text-[14px] font-semibold transition-all shadow-md hover:shadow-xl inline-flex items-center gap-2 group cursor-pointer"
                 >
                   <span>Shop All Products</span>
-                  <span className="transition-transform group-hover:translate-x-1">→</span>
+                  <span className="transition-transform duration-200 group-hover:translate-x-1">→</span>
                 </Link>
-
-                <a
-                  href="#pen-showcase"
-                  className="px-7 py-3.5 rounded-lg border border-slate-300 hover:border-slate-400 bg-white text-slate-800 text-sm font-bold hover:bg-slate-50 transition-all"
+                
+                <Link
+                  href="/how-it-works"
+                  className="btn-press px-6 py-3.5 rounded-xl bg-white hover:bg-slate-50 text-[#0B1F3A] border border-[#CBD5E1] hover:border-[#0B1F3A] text-[14px] font-semibold transition-all shadow-xs hover:shadow-md inline-flex items-center cursor-pointer"
                 >
                   Learn More
-                </a>
+                </Link>
               </div>
 
-              {/* 4 Feature Metrics Row */}
-              <div className="pt-8 border-t border-slate-200/80 grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div className="flex items-center gap-2.5">
-                  <span className="text-xl">🎯</span>
-                  <div className="text-xs font-bold text-slate-800">High<br />Accuracy</div>
+              {/* 4 Micro Value Props Row - Figma Node I2:29725;2:29272 */}
+              <div className="pt-6 border-t border-[#E2E8F0] grid grid-cols-2 sm:grid-cols-4 gap-4 text-center max-w-[520px]">
+                <div className="flex flex-col items-center text-center">
+                  <img src="/images/figma/icon-target.svg" alt="Accuracy" className="w-5 h-5 mb-2" />
+                  <span className="text-[12px] font-bold text-[#0B1F3A] leading-tight">High Accuracy</span>
                 </div>
-                <div className="flex items-center gap-2.5">
-                  <span className="text-xl">⚡</span>
-                  <div className="text-xs font-bold text-slate-800">Fast<br />Results</div>
+                <div className="flex flex-col items-center text-center">
+                  <img src="/images/figma/icon-lightning.svg" alt="Results" className="w-5 h-5 mb-2" />
+                  <span className="text-[12px] font-bold text-[#0B1F3A] leading-tight">Fast Results</span>
                 </div>
-                <div className="flex items-center gap-2.5">
-                  <span className="text-xl">🧪</span>
-                  <div className="text-xs font-bold text-slate-800">Easy<br />to Use</div>
+                <div className="flex flex-col items-center text-center">
+                  <img src="/images/figma/icon-hand.svg" alt="Usage" className="w-5 h-5 mb-2" />
+                  <span className="text-[12px] font-bold text-[#0B1F3A] leading-tight">Easy to Use</span>
                 </div>
-                <div className="flex items-center gap-2.5">
-                  <span className="text-xl">🛡️</span>
-                  <div className="text-xs font-bold text-slate-800">Reliable &amp;<br />Consistent</div>
+                <div className="flex flex-col items-center text-center">
+                  <img src="/images/figma/icon-shield.svg" alt="Consistency" className="w-5 h-5 mb-2" />
+                  <span className="text-[12px] font-bold text-[#0B1F3A] leading-tight">Reliable &amp; Consistent</span>
                 </div>
               </div>
             </div>
 
-            {/* Right Column: Hero Kit Showcase Mockup */}
-            <div className="lg:col-span-6 relative flex flex-col items-center justify-center">
-              <div className="relative w-full max-w-lg aspect-4/3 rounded-2xl overflow-hidden shadow-2xl border border-slate-200/80 bg-white">
+            {/* Right Column: Hero Presentation Kit Mockup */}
+            <div className="lg:col-span-6 flex justify-center lg:justify-end">
+              <div className="relative w-full max-w-[580px] h-[340px] sm:h-[440px] flex items-center justify-center">
                 <Image
-                  src="/images/peptech/mockup1.webp"
-                  alt="PEPTECH Complete Reusable Pen System Kit"
+                  src="/images/figma/hero-presentation-box.png"
+                  alt="PEPTECH® Reusable Injection Pen System Kit Presentation"
                   fill
-                  className="object-cover"
+                  className="object-contain drop-shadow-xl"
                   priority
                 />
-
-                {/* Floating "Reusable Pen Reusable up to 2 years" Badge */}
-                <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-xs border border-slate-200/80 shadow-lg rounded-xl p-2 sm:p-2.5 flex items-center gap-2.5 max-w-[200px]">
-                  <div className="relative w-9 h-9 shrink-0">
-                    <Image
-                      src="/images/peptech/badge.webp"
-                      alt="Quality Badge"
-                      fill
-                      className="object-contain"
-                    />
-                  </div>
-                  <div>
-                    <div className="text-[11px] font-bold text-[#0B1F3A] leading-tight">Reusable Pen</div>
-                    <div className="text-[9px] text-slate-500 font-medium">Reusable up to 2 years</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Signature Script under Hero Image */}
-              <div className="mt-4 text-center">
-                <span className="text-slate-500 text-xs sm:text-sm italic font-serif">
-                  A Healthier World. Together.™
-                </span>
               </div>
             </div>
 
@@ -274,40 +232,48 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 2. FOUR TRUST VALUE CARDS (Mockup 1) */}
-      <section className="py-10 bg-slate-50/50 border-b border-slate-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* 02. TRUST BADGES STRIP - Figma Node 2:29297 */}
+      <section className="bg-white py-10 border-b border-[#E2E8F0]">
+        <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             
-            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex items-start gap-4">
-              <span className="text-2xl p-2 bg-blue-50 text-blue-600 rounded-lg">🛡️</span>
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center shrink-0">
+                <img src="/images/figma/icon-trusted-tech.svg" alt="Technology" className="w-6 h-6" />
+              </div>
               <div>
-                <h4 className="font-bold text-sm text-[#0B1F3A]">Trusted Technology</h4>
-                <p className="text-xs text-slate-500 mt-0.5">Backed by research and real-world results</p>
+                <h4 className="text-[14px] font-bold text-[#0B1F3A]">Trusted Technology</h4>
+                <p className="text-[12px] text-[#64748B]">Backed by research and real-world results</p>
               </div>
             </div>
 
-            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex items-start gap-4">
-              <span className="text-2xl p-2 bg-teal-50 text-teal-600 rounded-lg">🔬</span>
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-full bg-cyan-50 flex items-center justify-center shrink-0">
+                <img src="/images/figma/icon-wide-menu.svg" alt="Menu" className="w-6 h-6" />
+              </div>
               <div>
-                <h4 className="font-bold text-sm text-[#0B1F3A]">Wide Test Menu</h4>
-                <p className="text-xs text-slate-500 mt-0.5">For multiple applications and industries</p>
+                <h4 className="text-[14px] font-bold text-[#0B1F3A]">Wide Test Menu</h4>
+                <p className="text-[12px] text-[#64748B]">For multiple applications and industries</p>
               </div>
             </div>
 
-            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex items-start gap-4">
-              <span className="text-2xl p-2 bg-indigo-50 text-indigo-600 rounded-lg">🌐</span>
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-full bg-teal-50 flex items-center justify-center shrink-0">
+                <img src="/images/figma/icon-global-standards.svg" alt="Standards" className="w-6 h-6" />
+              </div>
               <div>
-                <h4 className="font-bold text-sm text-[#0B1F3A]">Global Standards</h4>
-                <p className="text-xs text-slate-500 mt-0.5">Quality you can rely on</p>
+                <h4 className="text-[14px] font-bold text-[#0B1F3A]">Global Standards</h4>
+                <p className="text-[12px] text-[#64748B]">Quality you can rely on</p>
               </div>
             </div>
 
-            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex items-start gap-4">
-              <span className="text-2xl p-2 bg-emerald-50 text-emerald-600 rounded-lg">📞</span>
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-full bg-sky-50 flex items-center justify-center shrink-0">
+                <img src="/images/figma/icon-dedicated-support.svg" alt="Support" className="w-6 h-6" />
+              </div>
               <div>
-                <h4 className="font-bold text-sm text-[#0B1F3A]">Dedicated Support</h4>
-                <p className="text-xs text-slate-500 mt-0.5">Here when you need us</p>
+                <h4 className="text-[14px] font-bold text-[#0B1F3A]">Dedicated Support</h4>
+                <p className="text-[12px] text-[#64748B]">Here when you need us</p>
               </div>
             </div>
 
@@ -315,126 +281,151 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 3. FEATURED PRODUCTS: START WITH A PREMIUM PEPTECH® SET (Mockup 1) */}
-      <section className="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
-          <div>
-            <span className="text-xs font-bold text-[var(--color-brand-teal)] uppercase tracking-wider block mb-1">
-              FEATURED PRODUCTS
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-black text-[#0B1F3A] tracking-tight">
-              Start with a premium PEPTECH® set
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1">
-              Each set includes everything you need to begin testing with confidence.
-            </p>
-          </div>
-          <Link
-            href="/products/complete-pen-set"
-            className="text-xs sm:text-sm font-bold text-[#0B1F3A] hover:text-[var(--color-brand-teal)] transition-colors flex items-center gap-1 group"
-          >
-            <span>View All Products</span>
-            <span className="transition-transform group-hover:translate-x-1">→</span>
-          </Link>
-        </div>
-
-        {/* 6 Pen Sets Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-5">
-          {FEATURED_PEN_SETS.map((product) => (
-            <div
-              key={product.id}
-              className="bg-white rounded-xl border border-slate-200 p-3 flex flex-col justify-between hover:shadow-lg transition-all group"
+      {/* 03. FEATURED PRODUCTS SECTION - Figma Node 2:29339 */}
+      <section className="bg-white py-16">
+        <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+          
+          {/* Section Header */}
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+            <div className="space-y-1.5">
+              <span className="text-[12px] font-bold text-[#16A6A3] tracking-[1.2px] uppercase">
+                FEATURED PRODUCTS
+              </span>
+              <h2 className="text-2xl sm:text-[28px] font-bold text-[#0B1F3A]">
+                Start with a premium PEPTECH® set
+              </h2>
+              <p className="text-[14px] text-[#64748B]">
+                Each set includes everything you need to begin testing with confidence.
+              </p>
+            </div>
+            <Link
+              href="/products/complete-pen-set"
+              className="text-[14px] font-semibold text-[#0B1F3A] hover:text-[#16A6A3] transition-colors inline-flex items-center gap-1.5 shrink-0"
             >
-              <Link href={`/products/complete-pen-set?model=${encodeURIComponent(product.name)}`} className="block">
-                <div className="relative w-full aspect-square rounded-lg bg-slate-50 overflow-hidden mb-3 border border-slate-100 flex items-center justify-center p-2">
-                  <Image
-                    src={product.image}
-                    alt={product.name}
-                    width={180}
-                    height={180}
-                    className="object-contain group-hover:scale-105 transition-transform duration-300"
-                  />
-                </div>
-                <div className="text-center space-y-1">
-                  <h3 className="font-black text-sm text-[#0B1F3A] tracking-tight">{product.name}</h3>
-                  <div className="text-[10px] font-bold text-slate-400 tracking-wider uppercase">{product.tag}</div>
-                  <div className="text-[11px] text-slate-500 line-clamp-1">{product.application}</div>
-                  <div className="text-sm font-bold text-[#0B1F3A] pt-1">
-                    ${product.price.toFixed(2)}
-                  </div>
-                </div>
-              </Link>
+              <span>View All Products</span>
+              <span>→</span>
+            </Link>
+          </div>
 
-              <button
-                onClick={() => handleAddPenSet(product)}
-                className="mt-3 w-full py-2 px-2 rounded-lg bg-[#0B1F3A] hover:bg-[#15345d] text-white text-xs font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+          {/* 6 Product Cards Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+            {FIGMA_FEATURED_PEN_SETS.map((p) => (
+              <div
+                key={p.id}
+                className="bg-white border border-[#E2E8F0] rounded-[8px] p-3 flex flex-col justify-between hover:shadow-md transition-shadow group"
               >
-                <span>🛒</span>
-                <span>Add to Cart</span>
-              </button>
-            </div>
-          ))}
+                {/* Product Box Image */}
+                <Link href={`/products/${p.handle}`} className="block">
+                  <div className="h-[125px] w-full relative flex items-center justify-center mb-2">
+                    <Image
+                      src={p.image}
+                      alt={p.name}
+                      fill
+                      className="object-contain p-1 group-hover:scale-105 transition-transform"
+                    />
+                  </div>
+                </Link>
+
+                {/* Info Block */}
+                <div className="text-center space-y-0.5 mb-3">
+                  <Link href={`/products/${p.handle}`}>
+                    <h3 className="text-[15px] font-bold text-[#0B1F3A] hover:text-[#16A6A3] transition-colors">
+                      {p.name}
+                    </h3>
+                  </Link>
+                  <p className="text-[10px] font-semibold text-[#64748B] tracking-[0.5px]">
+                    {p.tag}
+                  </p>
+                  <p className="text-[11px] text-[#475569] truncate">
+                    {p.application}
+                  </p>
+                  <p className="text-[15px] font-bold text-[#0B1F3A] pt-1">
+                    ${p.price.toFixed(2)}
+                  </p>
+                </div>
+
+                {/* Add to Cart Button */}
+                <button
+                  onClick={() => handleAddPenSet(p)}
+                  className="w-full py-2 bg-[#0B1F3A] hover:bg-[#162e52] text-white rounded-[6px] text-[12px] font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <img src="/images/figma/icon-cart.svg" alt="" className="w-3.5 h-3.5" />
+                  <span>Add to Cart</span>
+                </button>
+              </div>
+            ))}
+          </div>
+
         </div>
       </section>
 
-      {/* 4. INDIVIDUAL CARTRIDGES: JUST REPLACE THE CARTRIDGE (Mockup 1) */}
-      <section className="py-12 bg-slate-50/70 border-y border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* 04. INDIVIDUAL CARTRIDGES SECTION - Figma Node 2:29436 */}
+      <section className="bg-white py-12 border-t border-[#E2E8F0]">
+        <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
             
-            {/* Left Promo Card */}
-            <div className="lg:col-span-3 bg-gradient-to-br from-cyan-50 to-blue-50/40 p-6 rounded-2xl border border-cyan-200/70 flex flex-col justify-between">
-              <div className="space-y-2">
-                <span className="text-[10px] font-bold text-[#00A896] uppercase tracking-wider">
+            {/* Left Spotlight Container */}
+            <div className="lg:col-span-3 bg-[#EEF5F9] rounded-[12px] p-7 flex flex-col justify-between h-full min-h-[400px]">
+              <div className="space-y-3">
+                <span className="text-[11px] font-bold text-[#16A6A3] tracking-[1.2px] uppercase">
                   INDIVIDUAL CARTRIDGES
                 </span>
-                <h3 className="text-xl sm:text-2xl font-black text-[#0B1F3A] leading-tight">
-                  Just replace the cartridge.
-                </h3>
-                <p className="text-xs text-slate-600 leading-relaxed">
+                <h2 className="text-[26px] font-bold text-[#0B1F3A] leading-[32px]">
+                  Just replace<br />the cartridge.
+                </h2>
+                <p className="text-[13px] text-[#475569] leading-[20px]">
                   Our test cartridges are designed for quick, reliable and consistent results across all applications.
                 </p>
               </div>
 
               <Link
                 href="/refills"
-                className="mt-6 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg bg-[#0B1F3A] hover:bg-[#15345d] text-white text-xs font-bold transition-all shadow-xs"
+                className="w-full py-3 px-4 bg-[#0B1F3A] hover:bg-[#162e52] text-white rounded-[6px] text-[12px] font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer mt-6"
               >
                 <span>Shop All Cartridges</span>
                 <span>→</span>
               </Link>
             </div>
 
-            {/* Right 6 Cartridges Grid */}
+            {/* Right 6-Card Cartridge Grid */}
             <div className="lg:col-span-9 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
-              {INDIVIDUAL_CARTRIDGES.map((cartridge) => (
+              {FIGMA_CARTRIDGES.map((c) => (
                 <div
-                  key={cartridge.id}
-                  className="bg-white rounded-xl border border-slate-200 p-3 flex flex-col justify-between hover:shadow-md transition-all text-center"
+                  key={c.id}
+                  className="bg-white border border-[#E2E8F0] rounded-[8px] p-3 flex flex-col justify-between h-[420px] hover:shadow-md transition-shadow group"
                 >
-                  <div className="relative w-full aspect-square rounded-lg bg-slate-50/60 overflow-hidden mb-2 border border-slate-100 flex items-center justify-center p-2">
-                    <Image
-                      src={cartridge.image}
-                      alt={cartridge.name}
-                      width={140}
-                      height={140}
-                      className="object-contain"
-                    />
-                  </div>
-                  <div>
-                    <h4 className="font-black text-xs text-[#0B1F3A]">{cartridge.name}</h4>
-                    <div className="text-[10px] text-slate-400 font-medium">{cartridge.type}</div>
-                    <div className="text-xs font-bold text-[#0B1F3A] mt-1">
-                      ${cartridge.price.toFixed(2)}
+                  {/* Cartridge Clear Photo */}
+                  <Link href="/refills" className="block">
+                    <div className="h-[220px] w-full relative flex items-center justify-center">
+                      <Image
+                        src={c.image}
+                        alt={c.name}
+                        fill
+                        className="object-contain p-2 group-hover:scale-105 transition-transform"
+                      />
                     </div>
+                  </Link>
+
+                  {/* Info Block */}
+                  <div className="text-center space-y-0.5">
+                    <h3 className="text-[14px] font-bold text-[#0B1F3A]">
+                      {c.name}
+                    </h3>
+                    <p className="text-[11px] text-[#64748B]">
+                      {c.type}
+                    </p>
+                    <p className="text-[14px] font-bold text-[#0B1F3A] pt-0.5">
+                      ${c.price.toFixed(2)}
+                    </p>
                   </div>
 
+                  {/* Add to Cart Button */}
                   <button
-                    onClick={() => handleAddCartridge(cartridge)}
-                    className="mt-2.5 w-full py-1.5 px-2 rounded-lg bg-[#0B1F3A] hover:bg-[#15345d] text-white text-xs font-bold transition-colors flex items-center justify-center gap-1 cursor-pointer"
-                    title={`Add ${cartridge.name} Cartridge to Cart`}
+                    onClick={() => handleAddCartridge(c)}
+                    className="w-full h-[36px] bg-[#0B1F3A] hover:bg-[#162e52] text-white rounded-[6px] text-[12px] font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                   >
-                    <span>🛒</span>
+                    <img src="/images/figma/icon-cart.svg" alt="" className="w-3.5 h-3.5" />
+                    <span>Add to Cart</span>
                   </button>
                 </div>
               ))}
@@ -444,178 +435,205 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 5. HARDWARE SHOWCASE: ONE PEN. MULTIPLE POSSIBILITIES. (Mockup 1) */}
-      <section id="pen-showcase" className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-3xl mx-auto mb-10">
-          <h2 className="text-3xl sm:text-4xl font-black text-[#0B1F3A] tracking-tight">
-            ONE PEN. MULTIPLE POSSIBILITIES.
-          </h2>
-          <p className="text-xs sm:text-sm font-semibold text-slate-500 mt-1">
-            Engineered for precision. Designed for performance.
-          </p>
-        </div>
+      {/* 05. ONE PEN ARCHITECTURE SECTION - Figma Node 2:29527 */}
+      <section className="bg-white py-[40px] flex items-center justify-center">
+        <div className="w-full max-w-[1240px] mx-auto px-4 sm:px-6">
+          <div className="bg-[#f2f7fa] flex flex-col gap-[32px] items-center px-[24px] sm:px-[40px] py-[36px] rounded-[16px]">
+            {/* Top Row: Left Header + Right 4 Features */}
+            <div className="flex flex-col lg:flex-row items-center justify-between w-full max-w-[1160px] gap-8">
+              {/* Left Header */}
+              <div className="flex flex-col gap-[6px] items-start w-full lg:w-[440px]">
+                <div className="font-bold text-[#0b1f3a] text-[24px] sm:text-[26px] tracking-[0.5px] leading-[32px]">
+                  <p className="mb-0">ONE PEN.</p>
+                  <p>MULTIPLE POSSIBILITIES.</p>
+                </div>
+                <p className="text-[#64748b] text-[13px]">
+                  Engineered for precision. Designed for performance.
+                </p>
+              </div>
 
-        {/* 4 Feature Highlight Points */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto mb-12">
-          <div className="text-center space-y-1">
-            <span className="text-2xl inline-block mb-1">🔄</span>
-            <h4 className="font-black text-xs sm:text-sm text-[#0B1F3A]">Reusable Pen</h4>
-            <p className="text-[11px] text-slate-500">Cost-effective and sustainable</p>
-          </div>
-          <div className="text-center space-y-1">
-            <span className="text-2xl inline-block mb-1">💧</span>
-            <h4 className="font-black text-xs sm:text-sm text-[#0B1F3A]">Simple Workflow</h4>
-            <p className="text-[11px] text-slate-500">Minimal training required</p>
-          </div>
-          <div className="text-center space-y-1">
-            <span className="text-2xl inline-block mb-1">📈</span>
-            <h4 className="font-black text-xs sm:text-sm text-[#0B1F3A]">Reliable Results</h4>
-            <p className="text-[11px] text-slate-500">Consistent and reproducible</p>
-          </div>
-          <div className="text-center space-y-1">
-            <span className="text-2xl inline-block mb-1">🔲</span>
-            <h4 className="font-black text-xs sm:text-sm text-[#0B1F3A]">Multiple Applications</h4>
-            <p className="text-[11px] text-slate-500">One platform, wider possibilities</p>
-          </div>
-        </div>
+              {/* Right Architecture Features Row */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 items-center justify-between w-full lg:w-[680px]">
+                <div className="flex flex-col gap-[8px] items-center text-center">
+                  <div className="w-[22px] h-[22px]">
+                    <img src="/images/figma/icon-reusable-pen.svg" alt="Reusable Pen" className="w-full h-full object-contain" />
+                  </div>
+                  <p className="font-bold text-[#0b1f3a] text-[13px]">Reusable Pen</p>
+                  <div className="text-[#64748b] text-[11px] leading-[15px]">
+                    <p className="mb-0">Cost-effective</p>
+                    <p>and sustainable</p>
+                  </div>
+                </div>
 
-        {/* Sleek Horizontal Pen Shot */}
-        <div className="relative w-full max-w-4xl mx-auto aspect-[16/6] bg-slate-50/60 rounded-2xl border border-slate-200/80 p-6 flex items-center justify-center overflow-hidden shadow-inner">
-          <Image
-            src="/images/peptech/pen.webp"
-            alt="PEPTECH Aerospace-Grade Reusable Injection Pen"
-            fill
-            className="object-contain p-4"
-          />
+                <div className="flex flex-col gap-[8px] items-center text-center">
+                  <div className="w-[22px] h-[22px]">
+                    <img src="/images/figma/icon-simple-workflow.svg" alt="Simple Workflow" className="w-full h-full object-contain" />
+                  </div>
+                  <p className="font-bold text-[#0b1f3a] text-[13px]">Simple Workflow</p>
+                  <div className="text-[#64748b] text-[11px] leading-[15px]">
+                    <p className="mb-0">Minimal training</p>
+                    <p>required</p>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-[8px] items-center text-center">
+                  <div className="w-[22px] h-[22px]">
+                    <img src="/images/figma/icon-reliable-results.svg" alt="Reliable Results" className="w-full h-full object-contain" />
+                  </div>
+                  <p className="font-bold text-[#0b1f3a] text-[13px]">Reliable Results</p>
+                  <div className="text-[#64748b] text-[11px] leading-[15px]">
+                    <p className="mb-0">Consistent and</p>
+                    <p>reproducible</p>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-[8px] items-center text-center">
+                  <div className="w-[22px] h-[22px]">
+                    <img src="/images/figma/icon-multiple-apps.svg" alt="Multiple Applications" className="w-full h-full object-contain" />
+                  </div>
+                  <p className="font-bold text-[#0b1f3a] text-[13px]">Multiple Applications</p>
+                  <div className="text-[#64748b] text-[11px] leading-[15px]">
+                    <p className="mb-0">One platform,</p>
+                    <p>wider possibilities</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Horizontal Pen Centerpiece Box */}
+            <div className="h-[150px] sm:h-[160px] w-full max-w-[1040px] relative flex items-center justify-center">
+              <Image
+                src="/images/figma/peptech-pen-horizontal.png"
+                alt="PEPTECH® Reusable Injection Pen System"
+                fill
+                className="object-contain"
+              />
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* 6. APPLICATIONS: MULTIPLE INDUSTRIES. REAL IMPACT. (Mockup 1) */}
-      <section id="applications" className="py-16 bg-slate-50/70 border-t border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mb-10">
-            <span className="text-xs font-bold text-[var(--color-brand-teal)] uppercase tracking-wider block mb-1">
-              APPLICATIONS
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-black text-[#0B1F3A] tracking-tight">
-              Multiple Industries. Real Impact.
+      {/* 06. TRUSTED BY PROFESSIONALS LOGOS - Figma Node 2:29589 */}
+      <section className="bg-white py-[48px] flex flex-col items-center justify-center border-t border-[#e2e8f0]">
+        <div className="w-full max-w-[1240px] mx-auto px-4 sm:px-6 flex flex-col gap-[32px] items-center">
+          <div className="flex flex-col gap-2 items-center text-center max-w-[800px]">
+            <h2 className="text-2xl sm:text-[28px] font-bold text-[#0B1F3A] tracking-tight uppercase">
+              TRUSTED BY PROFESSIONALS
             </h2>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1">
-              Trusted by professionals in laboratories, industries and research institutions worldwide.
+            <p className="text-[14px] sm:text-[15px] text-[#64748B]">
+              Used by leading laboratories, industries and research institutions worldwide.
             </p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-5">
-            {APPLICATIONS.map((app) => (
+          {/* 6 Certification Logos Row - Optically Balanced & High-Res */}
+          <div className="w-full flex flex-wrap items-center justify-center lg:justify-between gap-6 sm:gap-8 pt-2">
+            <div className="h-[52px] w-[130px] flex items-center justify-center shrink-0">
+              <img
+                src="/images/figma/logo-nsf.svg"
+                alt="NSF Certified"
+                className="h-[46px] w-[46px] object-contain"
+              />
+            </div>
+            <div className="h-[52px] w-[130px] flex items-center justify-center shrink-0">
+              <img
+                src="/images/figma/logo-iso.svg"
+                alt="ISO 9001 Certified"
+                className="h-[44px] w-auto max-w-[56px] object-contain"
+              />
+            </div>
+            <div className="h-[52px] w-[130px] flex items-center justify-center shrink-0">
+              <img
+                src="/images/figma/logo-ce.svg"
+                alt="CE Mark"
+                className="h-[42px] w-auto max-w-[62px] object-contain"
+              />
+            </div>
+            <div className="h-[52px] w-[130px] flex items-center justify-center shrink-0">
+              <img
+                src="/images/figma/logo-fda.svg"
+                alt="FDA Facility Registered"
+                className="h-[34px] w-auto max-w-[92px] object-contain"
+              />
+            </div>
+            <div className="h-[52px] w-[140px] flex items-center justify-center shrink-0">
+              <img
+                src="/images/figma/logo-who.svg"
+                alt="World Health Organization"
+                className="h-[36px] w-auto max-w-[130px] object-contain"
+              />
+            </div>
+            <div className="h-[52px] w-[130px] flex items-center justify-center shrink-0">
+              <img
+                src="/images/figma/logo-aoac-official.png"
+                alt="AOAC International"
+                className="h-[46px] w-auto max-w-[60px] object-contain"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 07. BOTTOM CTA BANNER - Figma Node 2:29601 */}
+      <section className="bg-white py-[40px] flex items-center justify-center">
+        <div className="w-full max-w-[1240px] mx-auto px-4 sm:px-6">
+          <div className="bg-[#001845] flex flex-col lg:flex-row h-auto lg:h-[280px] items-center justify-between overflow-hidden rounded-[16px] w-full shadow-xl">
+            {/* Left Photo Banner */}
+            <div className="relative w-full lg:w-[970px] h-[280px] overflow-hidden shrink-0">
+              <Image
+                src="/images/figma/lab-banner-photo.png"
+                alt="Laboratory research background"
+                fill
+                className="object-cover"
+              />
               <div
-                key={app.title}
-                className="bg-white rounded-xl overflow-hidden border border-slate-200 shadow-xs hover:shadow-md transition-shadow group flex flex-col"
-              >
-                <div className="relative h-32 w-full overflow-hidden bg-slate-200">
-                  <Image
-                    src={app.image}
-                    alt={app.title}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
+                className="absolute inset-0"
+                style={{
+                  backgroundImage: "linear-gradient(90deg, rgba(3, 31, 97, 0.95) 0%, rgba(3, 38, 115, 0.82) 50%, rgba(3, 26, 82, 0.4) 80%, rgba(3, 20, 71, 0.75) 100%)",
+                }}
+              />
+              <div className="absolute inset-0 flex flex-col gap-[14px] items-start pl-[32px] sm:pl-[48px] pr-[24px] sm:pr-[40px] py-[36px]">
+                <p className="font-bold text-[#93c5fd] text-[11px] tracking-[1.5px] uppercase">
+                  ADVANCING A HEALTHIER WORLD
+                </p>
+                <div className="font-bold text-[28px] sm:text-[34px] text-white leading-[34px] sm:leading-[40px]">
+                  <p className="mb-0">Better Testing</p>
+                  <p>for a Safer Tomorrow</p>
                 </div>
-                <div className="p-3 flex-1 flex flex-col justify-between">
-                  <h4 className="font-black text-xs sm:text-sm text-[#0B1F3A]">{app.title}</h4>
-                  <p className="text-[10px] text-slate-500 mt-1 line-clamp-2">{app.desc}</p>
+                <p className="text-[#e2e8f0] text-[13px] leading-[22px] max-w-[520px]">
+                  Discover how PEPTECH® helps you achieve accurate, reliable and efficient testing — every day.
+                </p>
+                <div className="pt-1">
+                  <Link
+                    href="/products/complete-pen-set"
+                    className="bg-white hover:bg-slate-100 flex gap-[8px] items-center justify-center px-[22px] py-[12px] rounded-[6px] text-[#0b1f3a] text-[13px] font-semibold transition-colors shadow-sm"
+                  >
+                    <span>Get Started</span>
+                    <img src="/images/figma/icon-arrow.svg" alt="" className="w-4 h-4" />
+                  </Link>
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* 7. TRUSTED BY PROFESSIONALS: CERTIFICATION LOGOS (Mockup 1) */}
-      <section className="py-14 bg-white border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1">
-            TRUSTED BY PROFESSIONALS
-          </h3>
-          <p className="text-xs text-slate-500 mb-8">
-            Used by leading laboratories, industries and research institutions worldwide.
-          </p>
-
-          <div className="flex flex-wrap items-center justify-center gap-8 sm:gap-14 opacity-85">
-            {/* NSF */}
-            <div className="flex items-center gap-1 text-slate-700 font-black text-xl tracking-tighter border-2 border-slate-700 rounded-full px-3 py-1">
-              <span>NSF</span>
             </div>
 
-            {/* ISO 9001 */}
-            <div className="flex flex-col items-center">
-              <div className="font-black text-slate-800 text-lg leading-tight">ISO</div>
-              <div className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">CERTIFIED</div>
-            </div>
-
-            {/* CE */}
-            <div className="font-serif font-black text-slate-800 text-3xl tracking-tight">
-              CE
-            </div>
-
-            {/* FDA */}
-            <div className="font-mono font-black text-slate-800 text-2xl tracking-tight">
-              FDA
-            </div>
-
-            {/* World Health Organization */}
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">🌐</span>
-              <div className="text-left leading-tight">
-                <div className="text-[10px] font-bold text-slate-800 uppercase">World Health</div>
-                <div className="text-[9px] text-slate-500 uppercase">Organization</div>
+            {/* Right Solid Value Block */}
+            <div className="bg-[#001f54] border-t lg:border-t-0 lg:border-l border-[#0b2b6b] flex flex-col gap-[18px] items-start px-[32px] py-[36px] lg:py-[44px] w-full lg:w-[270px] h-auto lg:h-[280px] shrink-0">
+              <div className="flex gap-[12px] items-center">
+                <img src="/images/figma/icon-banner-shield.svg" alt="Shield" className="w-[24px] h-[24px]" />
+                <div className="font-bold text-[14px] text-white leading-[20px]">
+                  <p className="mb-0">Accurate.</p>
+                  <p className="mb-0">Reliable.</p>
+                  <p>Everywhere.</p>
+                </div>
               </div>
-            </div>
-
-            {/* AOAC */}
-            <div className="text-left leading-tight">
-              <div className="text-sm font-black text-slate-800">AOAC</div>
-              <div className="text-[9px] text-slate-500 font-mono">INTERNATIONAL</div>
+              <div className="bg-[#00d2ff] h-[2px] w-[44px]" />
+              <div className="text-[#e2e8f0] text-[13px] font-medium leading-[18px]">
+                <p className="mb-0">Small Testing.</p>
+                <p>A Bigger Tomorrow.</p>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 8. ADVANCING A HEALTHIER WORLD: CTA BANNER (Mockup 1) */}
-      <section className="py-16 bg-[#0B1F3A] text-white relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
-            
-            <div className="md:col-span-8 space-y-4">
-              <div className="text-xs font-bold text-[var(--color-brand-teal)] uppercase tracking-wider">
-                ADVANCING A HEALTHIER WORLD
-              </div>
-              <h2 className="text-3xl sm:text-4xl font-black tracking-tight leading-tight">
-                Better Testing <br />
-                for a Safer Tomorrow
-              </h2>
-              <p className="text-sm text-slate-300 max-w-xl leading-relaxed">
-                Discover how PEPTECH® helps you achieve accurate, reliable and efficient testing — every day.
-              </p>
-              <div className="pt-2">
-                <Link
-                  href="/products/complete-pen-set"
-                  className="inline-flex items-center gap-2 px-7 py-3 rounded-lg bg-white text-[#0B1F3A] text-xs font-bold hover:bg-slate-100 transition-colors shadow-lg"
-                >
-                  <span>Get Started</span>
-                  <span>→</span>
-                </Link>
-              </div>
-            </div>
-
-            <div className="md:col-span-4 bg-white/5 rounded-2xl p-6 border border-white/10 text-center space-y-2 backdrop-blur-xs">
-              <span className="text-3xl">🛡️</span>
-              <div className="font-bold text-sm text-white">Accurate. Reliable. Everywhere.</div>
-              <div className="text-xs text-slate-400 italic">Small Testing. A Bigger Tomorrow.</div>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-    </div>
+    </main>
   )
 }

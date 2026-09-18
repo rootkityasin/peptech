@@ -1,5 +1,11 @@
-import { redirect } from "next/navigation"
+import { ShopCatalog } from "@/components/catalog/ShopCatalog"
 
-export default function PenSetsRedirectPage() {
-  redirect("/products/complete-pen-set")
+export const metadata = {
+  title: "Complete Pen Sets | PEPTECH® Reusable System",
+  description: "First-time buyer laboratory packages: Reusable precision pen, prefilled cartridge, device passport, sterile needles, and alcohol prep pads.",
 }
+
+export default function PenSetsPage() {
+  return <ShopCatalog initialCategory="pen-sets" />
+}
+

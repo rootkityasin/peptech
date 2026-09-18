@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import "./globals.css"
+import { CustomerProvider } from "@/context/CustomerContext"
 import { CartProvider } from "@/components/cart/CartContext"
 import { CartDrawer } from "@/components/cart/CartDrawer"
 import { ResearchDisclaimerModal } from "@/components/compliance/ResearchDisclaimerModal"
@@ -29,13 +30,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-white text-slate-900">
-        <CartProvider>
-          <ResearchDisclaimerModal />
-          <Header />
-          <div className="flex-1">{children}</div>
-          <Footer />
-          <CartDrawer />
-        </CartProvider>
+        <CustomerProvider>
+          <CartProvider>
+            <ResearchDisclaimerModal />
+            <Header />
+            <div className="flex-1">{children}</div>
+            <Footer />
+            <CartDrawer />
+          </CartProvider>
+        </CustomerProvider>
       </body>
     </html>
   )

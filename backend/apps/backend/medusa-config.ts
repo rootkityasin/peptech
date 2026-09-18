@@ -11,6 +11,10 @@ module.exports = defineConfig({
       authCors: process.env.AUTH_CORS || 'http://localhost:3000,http://localhost:5173,http://localhost:9000,http://localhost:8000,https://docs.medusajs.com',
       jwtSecret: process.env.JWT_SECRET || 'supersecret',
       cookieSecret: process.env.COOKIE_SECRET || 'supersecret',
+    },
+    cookieOptions: {
+      secure: false,
+      sameSite: 'lax',
     }
   },
   modules: [
