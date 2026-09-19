@@ -19,7 +19,6 @@ function AccountContent() {
     isAuthenticated,
     isLoading,
     login,
-    loginAsDemo,
     register,
     logout,
     updateProfile,
@@ -177,18 +176,6 @@ function AccountContent() {
     }
   }
 
-  const handleDemoLogin = async () => {
-    setAuthError(null)
-    setAuthSubmitting(true)
-    try {
-      await loginAsDemo()
-    } catch (err: any) {
-      setAuthError(err.message || "Failed to sign in as demo researcher.")
-    } finally {
-      setAuthSubmitting(false)
-    }
-  }
-
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
     setAuthError(null)
@@ -244,38 +231,7 @@ function AccountContent() {
             </p>
           </div>
 
-          {/* 1-Tap Quick Demo Access Box */}
-          <div className="bg-[#e6fffa] border border-[#16a6a3]/30 rounded-[12px] p-4 flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold tracking-wide uppercase text-[#16a6a3]">
-                Instant Demo Access
-              </span>
-              <span className="text-[11.5px] text-[#0b1f3a] font-semibold">Dr. Alexander Wright</span>
-            </div>
-            <p className="text-[12px] text-[#64748b]">
-              Cambridge Biomedical Research Hub · Pre-configured with active semaglutide refill protocol &amp; batch COA certificates.
-            </p>
-            <button
-              type="button"
-              onClick={handleDemoLogin}
-              disabled={authSubmitting}
-              className="btn-press mt-1 w-full bg-[#0b1f3a] hover:bg-[#162a45] text-white text-[13px] font-semibold py-2.5 rounded-[8px] transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
-            >
-              {authSubmitting ? (
-                <span>Authenticating with Medusa 2.0...</span>
-              ) : (
-                <span>1-Tap Sign In as Dr. Alexander Wright →</span>
-              )}
-            </button>
-          </div>
 
-          {/* Divider */}
-          <div className="relative flex items-center justify-center">
-            <div className="border-t border-slate-200 w-full" />
-            <span className="bg-white px-3 text-[11.5px] text-slate-400 font-medium whitespace-nowrap">
-              or enter research credentials
-            </span>
-          </div>
 
           {/* Auth Tabs */}
           <div className="grid grid-cols-2 bg-[#f1f5f9] p-1 rounded-[10px]">

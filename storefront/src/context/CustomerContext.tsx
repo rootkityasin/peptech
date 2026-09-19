@@ -20,7 +20,6 @@ interface CustomerContextType {
   isLoading: boolean
   isAuthenticated: boolean
   login: (email: string, password: string) => Promise<void>
-  loginAsDemo: () => Promise<void>
   register: (payload: CustomerRegisterPayload) => Promise<void>
   logout: () => void
   updateProfile: (payload: CustomerUpdatePayload) => Promise<void>
@@ -74,10 +73,6 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false)
     }
-  }
-
-  const loginAsDemo = async () => {
-    return login("alexander.wright@cambridge-biotech.ac.uk", "Password123!")
   }
 
   const register = async (payload: CustomerRegisterPayload) => {
@@ -134,7 +129,6 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         isAuthenticated: !!customer,
         login,
-        loginAsDemo,
         register,
         logout,
         updateProfile,
