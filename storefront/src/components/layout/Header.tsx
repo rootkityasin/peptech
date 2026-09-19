@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useRef, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
@@ -15,6 +15,42 @@ export function Header() {
   const [shopMenuOpen, setShopMenuOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
+
+  const searchInputRef = useRef<HTMLInputElement>(null)
+  const searchContainerRef = useRef<HTMLDivElement>(null)
+
+  // Focus input automatically when search opens
+  useEffect(() => {
+    if (searchOpen) {
+      const timer = setTimeout(() => {
+        searchInputRef.current?.focus()
+      }, 70)
+      return () => clearTimeout(timer)
+    }
+  }, [searchOpen])
+
+  // Dismiss on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && searchOpen) {
+        setSearchOpen(false)
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [searchOpen])
+
+  // Dismiss when clicking outside navbar while search is open
+  useEffect(() => {
+    if (!searchOpen) return
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        setSearchOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [searchOpen])
 
   // Do not show global header on checkout funnel pages (Figma Node 50:8021 / 52:8419)
   if (pathname?.startsWith("/checkout")) return null
@@ -58,8 +94,10 @@ export function Header() {
       </div>
 
       {/* 02 Header Navigation - Figma Node 2:29228 */}
-      <header className="bg-white border-b border-[#E2E8F0] sticky top-0 z-40 shadow-xs h-[80px] flex items-center">
-        <div className="max-w-[1240px] w-full mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
+      <header className="bg-white border-b border-[#E2E8F0] sticky top-0 z-40 shadow-xs h-[80px] flex items-center relative">
+        <div className={`max-w-[1240px] w-full mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4 transition-all duration-250 ease-out ${
+          searchOpen ? "opacity-0 pointer-events-none scale-[0.99]" : "opacity-100 pointer-events-auto scale-100"
+        }`}>
           
           {/* Brand Logo with Slogan */}
           <div className="flex items-center gap-3">
@@ -277,14 +315,18 @@ export function Header() {
 
           {/* Right Utility Icons (Search, Account, Cart) */}
           <div className="flex gap-[22px] items-center">
-            {/* Search */}
+            {/* Search Button with smooth hover animation */}
             <button
-              onClick={() => setSearchOpen(!searchOpen)}
-              className="w-[20px] h-[20px] flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={() => setSearchOpen(true)}
+              className="group relative w-[36px] h-[36px] rounded-full flex items-center justify-center cursor-pointer hover:bg-slate-100 hover:ring-2 hover:ring-[#16a6a3]/20 transition-all duration-300 active:scale-95"
               aria-label="Search"
               title="Search test systems & cartridges"
             >
-              <img src="/images/figma/ebf52f91842a916d1e0249efbfba1688ac4e3863.svg" alt="Search" className="w-[20px] h-[20px]" />
+              <img
+                src="/images/figma/ebf52f91842a916d1e0249efbfba1688ac4e3863.svg"
+                alt="Search"
+                className="w-[20px] h-[20px] transition-transform duration-300 ease-out group-hover:scale-115 group-hover:rotate-[-8deg]"
+              />
             </button>
 
             {/* Account (Figma Node 52:9001 when authenticated, default icon when unauthenticated) */}
@@ -337,34 +379,86 @@ export function Header() {
           </div>
         </div>
 
-        {/* Search Bar Overlay */}
-        {searchOpen && (
-          <div className="absolute top-[80px] left-0 right-0 border-t border-slate-200 bg-slate-50 px-4 py-3 shadow-md z-50">
-            <form onSubmit={handleSearchSubmit} className="max-w-3xl mx-auto flex gap-2">
+        {/* Integrated In-Navbar Search (Appears as a native, seamless part of the 80px navbar) */}
+        <div
+          ref={searchContainerRef}
+          className={`absolute inset-0 bg-white z-20 flex items-center px-4 sm:px-6 lg:px-8 transition-all duration-300 ease-out ${
+            searchOpen
+              ? "opacity-100 pointer-events-auto translate-y-0"
+              : "opacity-0 pointer-events-none -translate-y-1"
+          }`}
+        >
+          <div className="max-w-[1240px] w-full mx-auto flex items-center gap-3 sm:gap-6">
+            {/* Brand Logo Anchor (Preserves navbar identity) */}
+            <Link
+              href="/"
+              onClick={() => setSearchOpen(false)}
+              className="flex flex-col gap-[2px] items-start shrink-0 group"
+            >
+              <div className="h-[24px] sm:h-[27px] w-[105px] sm:w-[130px] relative">
+                <Image
+                  src="/images/figma/peptech-logo.png"
+                  alt="PEPTECH®"
+                  width={130}
+                  height={27}
+                  className="object-contain"
+                  priority
+                />
+              </div>
+              <p className="hidden sm:block font-semibold text-[#16A6A3] text-[8.5px] tracking-[0.5px] whitespace-nowrap uppercase">
+                Quality. Safety. Precision.
+              </p>
+            </Link>
+
+            {/* Seamless Search Input Form */}
+            <form onSubmit={handleSearchSubmit} className="flex-1 min-w-0 relative flex items-center">
+              {/* Search Icon with pop entrance animation */}
+              <div className="absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 pointer-events-none flex items-center justify-center">
+                <img
+                  src="/images/figma/ebf52f91842a916d1e0249efbfba1688ac4e3863.svg"
+                  alt=""
+                  className={`w-[18px] h-[18px] ${searchOpen ? "animate-search-icon-pop" : ""}`}
+                />
+              </div>
+
               <input
+                ref={searchInputRef}
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search products, systems, or cartridges (e.g., RT40, C.C-1236, TB-S30)..."
-                className="flex-1 px-4 py-2 text-sm rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#0B1F3A]"
-                autoFocus
+                className="w-full h-[46px] rounded-full bg-[#f8fafc] border border-[#e2e8f0] focus:border-[#16a6a3] focus:bg-white focus:ring-4 focus:ring-[#16a6a3]/10 pl-10 sm:pl-11 pr-20 sm:pr-24 text-[13px] sm:text-[13.5px] text-[#0b1f3a] placeholder:text-[#94a3b8] transition-all outline-none"
               />
+
+              {/* Submit Button inside input pill */}
               <button
                 type="submit"
-                className="px-5 py-2 rounded-lg bg-[#0B1F3A] text-white text-xs font-bold hover:bg-[#162e52] transition-colors"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-[#0B1F3A] hover:bg-[#16A6A3] text-white text-[11px] sm:text-[12px] font-semibold transition-colors shadow-2xs cursor-pointer flex items-center gap-1.5"
               >
-                Search
-              </button>
-              <button
-                type="button"
-                onClick={() => setSearchOpen(false)}
-                className="px-3 py-2 rounded-lg border border-slate-300 text-slate-500 hover:bg-slate-100 text-xs"
-              >
-                ✕
+                <span>Search</span>
               </button>
             </form>
+
+            {/* Close Button */}
+            <button
+              type="button"
+              onClick={() => setSearchOpen(false)}
+              className="w-[36px] h-[36px] rounded-full flex items-center justify-center text-[#64748b] hover:text-[#0b1f3a] hover:bg-slate-100 hover:ring-2 hover:ring-slate-200 transition-all cursor-pointer group shrink-0"
+              aria-label="Close search"
+              title="Close search (Esc)"
+            >
+              <svg
+                className="w-5 h-5 transition-transform duration-200 group-hover:rotate-90 text-[#0b1f3a]"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
-        )}
+        </div>
 
         {/* Mobile Dropdown Menu */}
         {mobileMenuOpen && (
