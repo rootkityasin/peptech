@@ -215,10 +215,9 @@ export default function ContactPage() {
 
                   <button
                     type="submit"
-                    className="w-full py-3.5 rounded-xl bg-[#0b1f3a] hover:bg-[#16a6a3] text-white font-bold text-sm transition-all shadow-md flex items-center justify-center gap-2"
+                    className="w-full py-3.5 rounded-xl bg-[#0b1f3a] hover:bg-[#16a6a3] text-white font-bold text-sm transition-all shadow-md flex items-center justify-center"
                   >
                     <span>Submit Laboratory Inquiry</span>
-                    <span>→</span>
                   </button>
                 </form>
               )}
@@ -229,39 +228,61 @@ export default function ContactPage() {
               
               {/* Facility Details Box */}
               <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-3xl p-6 sm:p-8 space-y-6">
-                <div className="space-y-2">
-                  <span className="text-xs font-bold text-[#16a6a3] font-mono tracking-wider uppercase">
+                {/* Structured Header */}
+                <div className="border-b border-[#e2e8f0] pb-5 space-y-1">
+                  <span className="text-[11px] font-bold font-mono tracking-widest text-black uppercase block">
                     DIRECT CONTACT
                   </span>
-                  <h4 className="text-xl font-bold text-[#0b1f3a]">PEPTECH BioSciences Ltd</h4>
-                  <p className="text-xs text-[#64748b]">Cambridge Science Park, United Kingdom</p>
+                  <h4 className="text-xl font-bold text-black tracking-tight">
+                    PEPTECH BioSciences Ltd
+                  </h4>
+                  <p className="text-xs text-slate-500">
+                    Cambridge Science Park, United Kingdom
+                  </p>
                 </div>
 
-                <div className="space-y-4 text-xs border-t border-[#e2e8f0] pt-4">
-                  <div className="flex items-start gap-3">
-                    <span className="text-base text-[#16a6a3]">✉️</span>
+                {/* Structured Info Rows with Black Icons */}
+                <div className="space-y-4 text-xs">
+                  {/* Direct Email */}
+                  <div className="flex items-start gap-3.5">
+                    <div className="w-8 h-8 rounded-lg border border-[#e2e8f0] bg-white flex items-center justify-center text-black shrink-0 shadow-2xs">
+                      <svg className="w-4 h-4 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                    </div>
                     <div>
-                      <strong className="block text-[#0b1f3a]">Direct Email</strong>
-                      <a href="mailto:info@peptech.bio" className="text-[#16a6a3] hover:underline font-mono">
+                      <strong className="block text-black font-semibold">Direct Email</strong>
+                      <a href="mailto:info@peptech.bio" className="text-black font-medium hover:underline font-mono text-xs mt-0.5 block">
                         info@peptech.bio
                       </a>
                     </div>
                   </div>
 
-                  <div className="flex items-start gap-3">
-                    <span className="text-base text-[#16a6a3]">⏱️</span>
+                  {/* Laboratory Support Hours */}
+                  <div className="flex items-start gap-3.5">
+                    <div className="w-8 h-8 rounded-lg border border-[#e2e8f0] bg-white flex items-center justify-center text-black shrink-0 shadow-2xs">
+                      <svg className="w-4 h-4 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
                     <div>
-                      <strong className="block text-[#0b1f3a]">Laboratory Support Hours</strong>
-                      <span className="text-[#64748b]">Monday – Friday: 08:00 – 18:00 GMT</span>
-                      <p className="text-[11px] text-emerald-600 font-semibold mt-0.5">Average response SLA: &lt; 2 Hours</p>
+                      <strong className="block text-black font-semibold">Laboratory Support Hours</strong>
+                      <span className="text-slate-600 block mt-0.5">Monday – Friday: 08:00 – 18:00 GMT</span>
+                      <p className="text-[11px] text-slate-500 font-medium mt-0.5">Average response SLA: &lt; 2 Hours</p>
                     </div>
                   </div>
 
-                  <div className="flex items-start gap-3">
-                    <span className="text-base text-[#16a6a3]">📍</span>
+                  {/* Facility Address */}
+                  <div className="flex items-start gap-3.5">
+                    <div className="w-8 h-8 rounded-lg border border-[#e2e8f0] bg-white flex items-center justify-center text-black shrink-0 shadow-2xs">
+                      <svg className="w-4 h-4 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    </div>
                     <div>
-                      <strong className="block text-[#0b1f3a]">Facility Address</strong>
-                      <address className="not-italic text-[#64748b] leading-relaxed">
+                      <strong className="block text-black font-semibold">Facility Address</strong>
+                      <address className="not-italic text-slate-600 leading-relaxed block mt-0.5">
                         PEPTECH BioSciences Ltd<br />
                         Cambridge Science Park, Milton Road<br />
                         Cambridge CB4 0FW, United Kingdom
@@ -271,34 +292,29 @@ export default function ContactPage() {
                 </div>
 
                 {/* Quick Link Cards */}
-                <div className="pt-2 grid grid-cols-2 gap-3">
+                <div className="pt-2 grid grid-cols-2 gap-3 border-t border-[#e2e8f0]">
                   <Link
                     href="/account?tab=orders"
-                    className="p-3 rounded-xl bg-white border border-[#e2e8f0] hover:border-[#0b1f3a] text-center transition-all block group"
+                    className="p-3 rounded-xl bg-white border border-[#e2e8f0] hover:border-black text-center transition-all block group"
                   >
-                    <span className="block text-[10px] font-bold text-[#64748b] uppercase">Orders</span>
-                    <span className="text-xs font-bold text-[#0b1f3a] group-hover:text-[#16a6a3]">Track Parcel →</span>
+                    <span className="block text-[10px] font-bold text-slate-500 uppercase">Orders</span>
+                    <span className="text-xs font-bold text-black group-hover:underline">Track Parcel</span>
                   </Link>
                   <Link
                     href="/verify"
-                    className="p-3 rounded-xl bg-white border border-[#e2e8f0] hover:border-[#0b1f3a] text-center transition-all block group"
+                    className="p-3 rounded-xl bg-white border border-[#e2e8f0] hover:border-black text-center transition-all block group"
                   >
-                    <span className="block text-[10px] font-bold text-[#64748b] uppercase">Packaging</span>
-                    <span className="text-xs font-bold text-[#0b1f3a] group-hover:text-[#16a6a3]">Verify Batch →</span>
+                    <span className="block text-[10px] font-bold text-slate-500 uppercase">Packaging</span>
+                    <span className="text-xs font-bold text-black group-hover:underline">Verify Batch</span>
                   </Link>
                 </div>
               </div>
 
-              {/* Institutional Ordering Banner */}
-              <div className="bg-[#0b1f3a] rounded-3xl p-6 sm:p-8 text-white space-y-4">
-                <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 rounded-full bg-white/10 text-[#00c5a0] text-[10px] font-bold font-mono">
-                    INSTITUTIONAL BILLING
-                  </span>
-                </div>
-                <h5 className="font-bold text-base">Net-30 Purchase Orders</h5>
-                <p className="text-xs text-slate-300 leading-relaxed">
-                  We support accredited academic universities, clinical trial centres, and registered biopharma companies with institutional Net-30 purchase orders. Submit your formal PO with billing contact to <a href="mailto:info@peptech.bio" className="underline text-[#00c5a0]">info@peptech.bio</a>.
+              {/* Net-30 Purchase Orders Box (No #0B1F3A, No INSTITUTIONAL BILLING, clean black text) */}
+              <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-3xl p-6 sm:p-8 space-y-3">
+                <h5 className="font-bold text-base text-black">Net-30 Purchase Orders</h5>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  We support accredited academic universities, clinical trial centres, and registered biopharma companies with institutional Net-30 purchase orders. Submit your formal PO with billing contact to <a href="mailto:info@peptech.bio" className="font-medium text-black underline hover:text-slate-800">info@peptech.bio</a>.
                 </p>
               </div>
 

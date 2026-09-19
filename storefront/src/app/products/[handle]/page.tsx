@@ -78,12 +78,6 @@ export default function ProductDetailPage({
               {title}
             </span>
           </div>
-
-          {product && (
-            <span className="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-              ● Medusa Live Product
-            </span>
-          )}
         </div>
       </div>
 

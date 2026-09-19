@@ -108,10 +108,10 @@ function VerifyContent() {
           </form>
         </div>
 
-        {/* Quick Demo Pill Helper */}
+        {/* Sample Batch Helper */}
         {resultState === "none" && (
           <div className="flex items-center gap-2 text-xs text-slate-500 flex-wrap justify-center">
-            <span>Quick test:</span>
+            <span>Sample batches:</span>
             <button
               type="button"
               onClick={() => {

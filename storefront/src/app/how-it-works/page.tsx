@@ -2,6 +2,7 @@
 
 import React, { useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 
 const faqs = [
   {
@@ -77,9 +78,6 @@ export default function HowItWorksPage() {
       <section className="py-16 sm:py-20 border-b border-[#e2e8f0] bg-white">
         <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
           <div className="text-center max-w-xl mx-auto space-y-2">
-            <h2 className="text-xs font-bold text-[#16a6a3] tracking-widest uppercase font-mono">
-              THE 3-STEP REUSABLE JOURNEY
-            </h2>
             <h3 className="text-2xl sm:text-3xl font-extrabold text-[#0b1f3a]">
               One Pen. Endless Compatible Compounds.
             </h3>
@@ -159,45 +157,82 @@ export default function HowItWorksPage() {
       <section className="py-16 sm:py-20 bg-[#f8fafc] border-b border-[#e2e8f0]">
         <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
           <div className="text-center max-w-xl mx-auto space-y-2">
-            <h2 className="text-xs font-bold text-[#16a6a3] tracking-widest uppercase font-mono">
-              HARDWARE SPECIFICATIONS
-            </h2>
             <h3 className="text-2xl sm:text-3xl font-extrabold text-[#0b1f3a]">
               Engineered for Clinical Repeatability
             </h3>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-white rounded-2xl p-6 border border-[#e2e8f0] shadow-xs space-y-2">
-              <div className="text-2xl">📐</div>
-              <h5 className="font-bold text-sm text-[#0b1f3a]">Precision Dialing</h5>
-              <p className="text-xs text-[#64748b] leading-relaxed">
-                Smooth mechanical micro-stepping mechanism with audible tactile clicks for micro-increment adjustments.
-              </p>
+            {/* Card 1: Precision Dialing */}
+            <div className="bg-white rounded-3xl overflow-hidden border border-[#e2e8f0] shadow-xs flex flex-col group hover:shadow-xl hover:border-[#16a6a3]/40 transition-all">
+              <div className="relative h-44 w-full overflow-hidden bg-slate-900 shrink-0 border-b border-slate-100">
+                <Image
+                  src="/images/how-it-works/precision-dialing.jpg"
+                  alt="Precision Dialing Mechanism"
+                  fill
+                  className="object-cover object-center group-hover:scale-105 transition-transform duration-700"
+                />
+              </div>
+              <div className="p-6 space-y-2 flex-1 flex flex-col justify-start">
+                <h5 className="font-bold text-base text-[#0b1f3a]">Precision Dialing</h5>
+                <p className="text-xs text-[#475569] leading-relaxed">
+                  Smooth mechanical micro-stepping mechanism with audible tactile clicks for micro-increment adjustments.
+                </p>
+              </div>
             </div>
 
-            <div className="bg-white rounded-2xl p-6 border border-[#e2e8f0] shadow-xs space-y-2">
-              <div className="text-2xl">🛡️</div>
-              <h5 className="font-bold text-sm text-[#0b1f3a]">Anodized Alloy</h5>
-              <p className="text-xs text-[#64748b] leading-relaxed">
-                6061-T6 aviation aluminum with corrosion-resistant matte anodized finish, easily sterilized with alcohol wipes.
-              </p>
+            {/* Card 2: Anodized Alloy */}
+            <div className="bg-white rounded-3xl overflow-hidden border border-[#e2e8f0] shadow-xs flex flex-col group hover:shadow-xl hover:border-[#16a6a3]/40 transition-all">
+              <div className="relative h-44 w-full overflow-hidden bg-slate-900 shrink-0 border-b border-slate-100">
+                <Image
+                  src="/images/about/cnc-lathe.jpg"
+                  alt="6061-T6 Anodized Aluminum Alloy"
+                  fill
+                  className="object-cover object-center group-hover:scale-105 transition-transform duration-700"
+                />
+              </div>
+              <div className="p-6 space-y-2 flex-1 flex flex-col justify-start">
+                <h5 className="font-bold text-base text-[#0b1f3a]">Anodized Alloy</h5>
+                <p className="text-xs text-[#475569] leading-relaxed">
+                  6061-T6 aviation aluminum with corrosion-resistant matte anodized finish, easily sterilized with alcohol wipes.
+                </p>
+              </div>
             </div>
 
-            <div className="bg-white rounded-2xl p-6 border border-[#e2e8f0] shadow-xs space-y-2">
-              <div className="text-2xl">🧪</div>
-              <h5 className="font-bold text-sm text-[#0b1f3a]">Type I Borosilicate</h5>
-              <p className="text-xs text-[#64748b] leading-relaxed">
-                Cartridges are formed from neutral hydrolytic Type I glass, eliminating leaching or interaction with peptides.
-              </p>
+            {/* Card 3: Type I Borosilicate */}
+            <div className="bg-white rounded-3xl overflow-hidden border border-[#e2e8f0] shadow-xs flex flex-col group hover:shadow-xl hover:border-[#16a6a3]/40 transition-all">
+              <div className="relative h-44 w-full overflow-hidden bg-slate-900 shrink-0 border-b border-slate-100">
+                <Image
+                  src="/images/how-it-works/borosilicate-vials.jpg"
+                  alt="Type I Neutral Borosilicate Cartridge"
+                  fill
+                  className="object-cover object-center group-hover:scale-105 transition-transform duration-700"
+                />
+              </div>
+              <div className="p-6 space-y-2 flex-1 flex flex-col justify-start">
+                <h5 className="font-bold text-base text-[#0b1f3a]">Type I Borosilicate</h5>
+                <p className="text-xs text-[#475569] leading-relaxed">
+                  Cartridges are formed from neutral hydrolytic Type I glass, eliminating leaching or interaction with peptides.
+                </p>
+              </div>
             </div>
 
-            <div className="bg-white rounded-2xl p-6 border border-[#e2e8f0] shadow-xs space-y-2">
-              <div className="text-2xl">❄️</div>
-              <h5 className="font-bold text-sm text-[#0b1f3a]">Insulated Transit</h5>
-              <p className="text-xs text-[#64748b] leading-relaxed">
-                Shipped with thermal cold-pack insulation via Royal Mail Tracked 24 cold-chain priority dispatch.
-              </p>
+            {/* Card 4: Insulated Transit */}
+            <div className="bg-white rounded-3xl overflow-hidden border border-[#e2e8f0] shadow-xs flex flex-col group hover:shadow-xl hover:border-[#16a6a3]/40 transition-all">
+              <div className="relative h-44 w-full overflow-hidden bg-slate-900 shrink-0 border-b border-slate-100">
+                <Image
+                  src="/images/how-it-works/cold-chain-packaging.jpg"
+                  alt="Thermal Insulated Cold-Chain Transit"
+                  fill
+                  className="object-cover object-center group-hover:scale-105 transition-transform duration-700"
+                />
+              </div>
+              <div className="p-6 space-y-2 flex-1 flex flex-col justify-start">
+                <h5 className="font-bold text-base text-[#0b1f3a]">Insulated Transit</h5>
+                <p className="text-xs text-[#475569] leading-relaxed">
+                  Shipped with thermal cold-pack insulation via Royal Mail Tracked 24 cold-chain priority dispatch.
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -207,9 +242,6 @@ export default function HowItWorksPage() {
       <section className="py-16 sm:py-24 bg-white" id="faqs">
         <div className="max-w-[900px] mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
           <div className="text-center space-y-3">
-            <h2 className="text-xs font-bold text-[#16a6a3] tracking-widest uppercase font-mono">
-              FREQUENTLY ASKED QUESTIONS
-            </h2>
             <h3 className="text-2xl sm:text-4xl font-extrabold text-[#0b1f3a]">
               Everything You Need to Know
             </h3>

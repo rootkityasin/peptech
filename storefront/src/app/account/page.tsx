@@ -276,7 +276,7 @@ function AccountContent() {
 
     setAuthSubmitting(true)
     try {
-      setAuthSuccessMessage("Registering research facility and syncing with Medusa 2.0...")
+      setAuthSuccessMessage("Registering research facility account...")
       await register({
         email: cleanEmail,
         password: regPassword,
@@ -655,10 +655,10 @@ function AccountContent() {
                 {authSubmitting ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Registering with Medusa 2.0...</span>
+                    <span>Registering account...</span>
                   </>
                 ) : (
-                  <span>Create Verified Research Account →</span>
+                  <span>Create Verified Research Account</span>
                 )}
               </button>
             </form>
@@ -2243,7 +2243,7 @@ function AccountContent() {
 
             {editSuccess && (
               <div className="bg-[#e6fffa] border border-[#16a6a3] text-[#0b1f3a] text-xs font-semibold p-3 rounded-[8px]">
-                ✓ Profile saved and synchronized with Medusa backend!
+                ✓ Profile updated successfully!
               </div>
             )}
 

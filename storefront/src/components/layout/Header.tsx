@@ -94,10 +94,10 @@ export function Header() {
       </div>
 
       {/* 02 Header Navigation - Figma Node 2:29228 */}
-      <header className="bg-white border-b border-[#E2E8F0] sticky top-0 z-40 shadow-xs h-[80px] flex items-center relative">
-        <div className={`max-w-[1240px] w-full mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4 transition-all duration-250 ease-out ${
-          searchOpen ? "opacity-0 pointer-events-none scale-[0.99]" : "opacity-100 pointer-events-auto scale-100"
-        }`}>
+      <header className={`bg-white sticky top-0 z-40 shadow-xs h-[80px] flex items-center relative transition-colors ${
+        searchOpen ? "border-b-0" : "border-b border-[#E2E8F0]"
+      }`}>
+        <div className="max-w-[1240px] w-full mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
           
           {/* Brand Logo with Slogan */}
           <div className="flex items-center gap-3">
@@ -317,15 +317,21 @@ export function Header() {
           <div className="flex gap-[22px] items-center">
             {/* Search Button with smooth hover animation */}
             <button
-              onClick={() => setSearchOpen(true)}
-              className="group relative w-[36px] h-[36px] rounded-full flex items-center justify-center cursor-pointer hover:bg-slate-100 hover:ring-2 hover:ring-[#16a6a3]/20 transition-all duration-300 active:scale-95"
+              onClick={() => setSearchOpen(!searchOpen)}
+              className={`group relative w-[36px] h-[36px] rounded-full flex items-center justify-center cursor-pointer transition-all duration-300 active:scale-95 ${
+                searchOpen
+                  ? "bg-slate-100 ring-2 ring-[#16a6a3]/30"
+                  : "hover:bg-slate-100 hover:ring-2 hover:ring-[#16a6a3]/20"
+              }`}
               aria-label="Search"
               title="Search test systems & cartridges"
             >
               <img
                 src="/images/figma/ebf52f91842a916d1e0249efbfba1688ac4e3863.svg"
                 alt="Search"
-                className="w-[20px] h-[20px] transition-transform duration-300 ease-out group-hover:scale-115 group-hover:rotate-[-8deg]"
+                className={`w-[20px] h-[20px] transition-transform duration-300 ease-out ${
+                  searchOpen ? "scale-115 rotate-[-8deg]" : "group-hover:scale-115 group-hover:rotate-[-8deg]"
+                }`}
               />
             </button>
 
@@ -379,84 +385,65 @@ export function Header() {
           </div>
         </div>
 
-        {/* Integrated In-Navbar Search (Appears as a native, seamless part of the 80px navbar) */}
+        {/* Search Bar Dropdown Below Navbar (No border separating it from navbar) */}
         <div
           ref={searchContainerRef}
-          className={`absolute inset-0 bg-white z-20 flex items-center px-4 sm:px-6 lg:px-8 transition-all duration-300 ease-out ${
+          className={`absolute top-[80px] -mt-[1px] left-0 right-0 bg-white border-b border-[#E2E8F0] shadow-lg shadow-[#0b1f3a]/6 z-30 transition-all duration-300 ease-out ${
             searchOpen
-              ? "opacity-100 pointer-events-auto translate-y-0"
-              : "opacity-0 pointer-events-none -translate-y-1"
+              ? "opacity-100 translate-y-0 pointer-events-auto"
+              : "opacity-0 -translate-y-2 pointer-events-none"
           }`}
         >
-          <div className="max-w-[1240px] w-full mx-auto flex items-center gap-3 sm:gap-6">
-            {/* Brand Logo Anchor (Preserves navbar identity) */}
-            <Link
-              href="/"
-              onClick={() => setSearchOpen(false)}
-              className="flex flex-col gap-[2px] items-start shrink-0 group"
-            >
-              <div className="h-[24px] sm:h-[27px] w-[105px] sm:w-[130px] relative">
-                <Image
-                  src="/images/figma/peptech-logo.png"
-                  alt="PEPTECH®"
-                  width={130}
-                  height={27}
-                  className="object-contain"
-                  priority
-                />
-              </div>
-              <p className="hidden sm:block font-semibold text-[#16A6A3] text-[8.5px] tracking-[0.5px] whitespace-nowrap uppercase">
-                Quality. Safety. Precision.
-              </p>
-            </Link>
+          <div className="max-w-[840px] w-full mx-auto px-4 sm:px-6 py-4">
+            <form onSubmit={handleSearchSubmit} className="flex items-center gap-3 w-full">
+              {/* Input container with embedded icon and submit button */}
+              <div className="relative flex-1 flex items-center">
+                {/* Search Icon with pop entrance animation */}
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none flex items-center justify-center">
+                  <img
+                    src="/images/figma/ebf52f91842a916d1e0249efbfba1688ac4e3863.svg"
+                    alt=""
+                    className={`w-[18px] h-[18px] ${searchOpen ? "animate-search-icon-pop" : ""}`}
+                  />
+                </div>
 
-            {/* Seamless Search Input Form */}
-            <form onSubmit={handleSearchSubmit} className="flex-1 min-w-0 relative flex items-center">
-              {/* Search Icon with pop entrance animation */}
-              <div className="absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 pointer-events-none flex items-center justify-center">
-                <img
-                  src="/images/figma/ebf52f91842a916d1e0249efbfba1688ac4e3863.svg"
-                  alt=""
-                  className={`w-[18px] h-[18px] ${searchOpen ? "animate-search-icon-pop" : ""}`}
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search products, systems, or cartridges (e.g., RT40, C.C-1236, TB-S30)..."
+                  className="w-full h-[48px] rounded-full bg-[#f8fafc] border border-[#e2e8f0] focus:border-[#16a6a3] focus:bg-white focus:ring-4 focus:ring-[#16a6a3]/10 pl-11 pr-28 text-[13.5px] text-[#0b1f3a] placeholder:text-[#94a3b8] transition-all outline-none"
                 />
+
+                {/* Submit Button safely contained INSIDE the input pill */}
+                <button
+                  type="submit"
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 px-5 py-2 rounded-full bg-[#0B1F3A] hover:bg-[#16A6A3] text-white text-[12px] font-semibold transition-colors shadow-2xs cursor-pointer flex items-center gap-1.5"
+                >
+                  <span>Search</span>
+                </button>
               </div>
 
-              <input
-                ref={searchInputRef}
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search products, systems, or cartridges (e.g., RT40, C.C-1236, TB-S30)..."
-                className="w-full h-[46px] rounded-full bg-[#f8fafc] border border-[#e2e8f0] focus:border-[#16a6a3] focus:bg-white focus:ring-4 focus:ring-[#16a6a3]/10 pl-10 sm:pl-11 pr-20 sm:pr-24 text-[13px] sm:text-[13.5px] text-[#0b1f3a] placeholder:text-[#94a3b8] transition-all outline-none"
-              />
-
-              {/* Submit Button inside input pill */}
+              {/* Close Button cleanly outside input */}
               <button
-                type="submit"
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-[#0B1F3A] hover:bg-[#16A6A3] text-white text-[11px] sm:text-[12px] font-semibold transition-colors shadow-2xs cursor-pointer flex items-center gap-1.5"
+                type="button"
+                onClick={() => setSearchOpen(false)}
+                className="w-[38px] h-[38px] rounded-full flex items-center justify-center text-[#64748b] hover:text-[#0b1f3a] hover:bg-slate-100 transition-all cursor-pointer group shrink-0"
+                aria-label="Close search"
+                title="Close search (Esc)"
               >
-                <span>Search</span>
+                <svg
+                  className="w-5 h-5 transition-transform duration-200 group-hover:rotate-90 text-[#0b1f3a]"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
             </form>
-
-            {/* Close Button */}
-            <button
-              type="button"
-              onClick={() => setSearchOpen(false)}
-              className="w-[36px] h-[36px] rounded-full flex items-center justify-center text-[#64748b] hover:text-[#0b1f3a] hover:bg-slate-100 hover:ring-2 hover:ring-slate-200 transition-all cursor-pointer group shrink-0"
-              aria-label="Close search"
-              title="Close search (Esc)"
-            >
-              <svg
-                className="w-5 h-5 transition-transform duration-200 group-hover:rotate-90 text-[#0b1f3a]"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
           </div>
         </div>
 

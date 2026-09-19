@@ -89,9 +89,6 @@ export default function AboutPage() {
       <section className="py-16 sm:py-24 bg-[#f8fafc]">
         <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
           <div className="text-center max-w-2xl mx-auto space-y-3">
-            <h2 className="text-xs font-bold text-[#16a6a3] tracking-widest uppercase font-mono">
-              OUR SCIENTIFIC FOUNDATION
-            </h2>
             <h3 className="text-2xl sm:text-4xl font-extrabold text-[#0b1f3a] tracking-tight">
               The Three Pillars of PEPTECH®
             </h3>
@@ -102,50 +99,77 @@ export default function AboutPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Pillar 1 */}
-            <div className="bg-white rounded-2xl p-8 border border-[#e2e8f0] shadow-xs space-y-4 flex flex-col justify-between">
-              <div className="space-y-4">
-                <div className="w-12 h-12 rounded-xl bg-[#0b1f3a]/5 border border-[#0b1f3a]/10 flex items-center justify-center text-xl">
-                  🔬
-                </div>
-                <h4 className="text-lg font-bold text-[#0b1f3a]">1. Absolute Chemical Purity</h4>
-                <p className="text-xs sm:text-sm text-[#64748b] leading-relaxed">
-                  We formulate each peptide through solid-phase peptide synthesis (SPPS), freeze-dried in vacuum-sealed borosilicate glass. Every single production run is submitted to independent ISO 17025 accredited laboratories in the UK for HPLC chromatogram and Mass Spectrometry validation.
-                </p>
+            <div className="bg-white rounded-3xl overflow-hidden border border-[#e2e8f0] shadow-xs flex flex-col justify-between group hover:shadow-xl hover:border-[#16a6a3]/40 transition-all min-h-[460px]">
+              <div className="relative h-52 w-full overflow-hidden bg-slate-100 shrink-0">
+                <Image
+                  src="/images/about/pillar-purity.jpg"
+                  alt="Absolute Chemical Purity"
+                  fill
+                  className="object-cover object-center group-hover:scale-105 transition-transform duration-700"
+                />
               </div>
-              <div className="pt-4 border-t border-[#e2e8f0]">
-                <span className="text-xs font-semibold text-[#16a6a3]">Zero filler. Zero unverified claims.</span>
+
+              <div className="p-8 space-y-4 flex-1 flex flex-col justify-between">
+                <div className="space-y-3">
+                  <h4 className="text-xl font-bold text-[#0b1f3a]">1. Absolute Chemical Purity</h4>
+                  <p className="text-xs sm:text-sm text-[#475569] leading-relaxed">
+                    We formulate each peptide through solid-phase peptide synthesis (SPPS), freeze-dried in vacuum-sealed borosilicate glass. Every single production run is submitted to independent ISO 17025 accredited laboratories in the UK for HPLC chromatogram and Mass Spectrometry validation.
+                  </p>
+                </div>
+
+                <div className="pt-4 border-t border-slate-100">
+                  <span className="text-xs font-bold text-[#16a6a3]">Zero filler. Zero unverified claims.</span>
+                </div>
               </div>
             </div>
 
             {/* Pillar 2 */}
-            <div className="bg-white rounded-2xl p-8 border border-[#e2e8f0] shadow-xs space-y-4 flex flex-col justify-between">
-              <div className="space-y-4">
-                <div className="w-12 h-12 rounded-xl bg-[#16a6a3]/10 border border-[#16a6a3]/20 flex items-center justify-center text-xl">
-                  ⚙️
-                </div>
-                <h4 className="text-lg font-bold text-[#0b1f3a]">2. Reusable Aluminum Architecture</h4>
-                <p className="text-xs sm:text-sm text-[#64748b] leading-relaxed">
-                  Traditional research relies on fragile plastic disposables that create thousands of tons of medical waste. The PEPTECH pen system uses a CNC-machined aluminum chassis engineered for repeated multi-year use. Researchers purchase the pen once, then simply snap in compatible prefilled refill cartridges.
-                </p>
+            <div className="bg-white rounded-3xl overflow-hidden border border-[#e2e8f0] shadow-xs flex flex-col justify-between group hover:shadow-xl hover:border-[#16a6a3]/40 transition-all min-h-[460px]">
+              <div className="relative h-52 w-full overflow-hidden bg-slate-100 shrink-0">
+                <Image
+                  src="/images/about/cnc-lathe.jpg"
+                  alt="Reusable Aluminum Architecture"
+                  fill
+                  className="object-cover object-center group-hover:scale-105 transition-transform duration-700"
+                />
               </div>
-              <div className="pt-4 border-t border-[#e2e8f0]">
-                <span className="text-xs font-semibold text-[#16a6a3]">Sustainable hardware lifecycle.</span>
+
+              <div className="p-8 space-y-4 flex-1 flex flex-col justify-between">
+                <div className="space-y-3">
+                  <h4 className="text-xl font-bold text-[#0b1f3a]">2. Reusable Aluminum Architecture</h4>
+                  <p className="text-xs sm:text-sm text-[#475569] leading-relaxed">
+                    Traditional research relies on fragile plastic disposables that create thousands of tons of medical waste. The PEPTECH pen system uses a CNC-machined aluminum chassis engineered for repeated multi-year use. Researchers purchase the pen once, then simply snap in compatible prefilled refill cartridges.
+                  </p>
+                </div>
+
+                <div className="pt-4 border-t border-slate-100">
+                  <span className="text-xs font-bold text-[#16a6a3]">Sustainable hardware lifecycle.</span>
+                </div>
               </div>
             </div>
 
             {/* Pillar 3 */}
-            <div className="bg-white rounded-2xl p-8 border border-[#e2e8f0] shadow-xs space-y-4 flex flex-col justify-between">
-              <div className="space-y-4">
-                <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-xl">
-                  🛡️
-                </div>
-                <h4 className="text-lg font-bold text-[#0b1f3a]">3. Cryptographic Traceability</h4>
-                <p className="text-xs sm:text-sm text-[#64748b] leading-relaxed">
-                  Counterfeiting is a critical issue in modern biochemical supply chains. Every PEPTECH unit carries an iridescent holographic security seal and unique QR code. Researchers can authenticate batch lots and view full analytical certificates in seconds via our mobile-first verification tool.
-                </p>
+            <div className="bg-white rounded-3xl overflow-hidden border border-[#e2e8f0] shadow-xs flex flex-col justify-between group hover:shadow-xl hover:border-[#16a6a3]/40 transition-all min-h-[460px]">
+              <div className="relative h-52 w-full overflow-hidden bg-slate-100 shrink-0">
+                <Image
+                  src="/images/about/hologram-textured.jpg"
+                  alt="Cryptographic Traceability"
+                  fill
+                  className="object-cover object-center group-hover:scale-105 transition-transform duration-700"
+                />
               </div>
-              <div className="pt-4 border-t border-[#e2e8f0]">
-                <span className="text-xs font-semibold text-emerald-600">Tamper-evident verification.</span>
+
+              <div className="p-8 space-y-4 flex-1 flex flex-col justify-between">
+                <div className="space-y-3">
+                  <h4 className="text-xl font-bold text-[#0b1f3a]">3. Cryptographic Traceability</h4>
+                  <p className="text-xs sm:text-sm text-[#475569] leading-relaxed">
+                    Counterfeiting is a critical issue in modern biochemical supply chains. Every PEPTECH unit carries an iridescent holographic security seal and unique QR code. Researchers can authenticate batch lots and view full analytical certificates in seconds via our mobile-first verification tool.
+                  </p>
+                </div>
+
+                <div className="pt-4 border-t border-slate-100">
+                  <span className="text-xs font-bold text-emerald-600">Tamper-evident verification.</span>
+                </div>
               </div>
             </div>
           </div>
@@ -157,9 +181,6 @@ export default function AboutPage() {
         <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             <div className="lg:col-span-6 space-y-6">
-              <span className="text-xs font-bold text-[#16a6a3] tracking-widest uppercase font-mono">
-                HEADQUARTERS &amp; LOGISTICS HUB
-              </span>
               <h3 className="text-2xl sm:text-4xl font-extrabold text-[#0b1f3a] tracking-tight">
                 Operating from the Heart of Cambridge Bioscience
               </h3>
@@ -243,9 +264,6 @@ export default function AboutPage() {
       <section className="py-12 bg-[#0b1f3a] text-white">
         <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="space-y-2 max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-white/10 text-[#00c5a0] text-xs font-bold font-mono">
-              LEGAL NOTICE • RESEARCH COMPLIANCE
-            </div>
             <h4 className="text-xl font-bold">Research &amp; Laboratory Use Only (RUO)</h4>
             <p className="text-xs text-slate-300 leading-relaxed">
               All PEPTECH® products and compounds are supplied exclusively for in-vitro scientific research, laboratory trials, and educational investigation. None of our compounds are sold or intended for human or veterinary administration.

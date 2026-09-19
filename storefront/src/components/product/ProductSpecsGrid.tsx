@@ -143,32 +143,29 @@ export function ProductSpecsGrid() {
             {/* Certifications Box */}
             <div className="flex flex-col gap-[18px] items-start pt-[10px] w-full">
               
-              {/* Row 1: ISO, FDA, CE */}
+              {/* Row 1: ISO, FDA, CE (Reusing Home Page High-Res SVGs) */}
               <div className="flex items-center justify-between w-full">
-                <div className="h-[46px] w-[75px] relative">
-                  <Image
-                    src="/images/figma/d6bd95c062c2ee427e921e165a1f427fe65cdee7.png"
+                <div className="h-[46px] w-[75px] flex items-center justify-center shrink-0">
+                  <img
+                    src="/images/figma/logo-iso.svg"
                     alt="ISO 9001 Certified"
-                    fill
-                    className="object-contain"
+                    className="h-[40px] w-auto max-w-[65px] object-contain"
                   />
                 </div>
                 <div className="w-px h-[36px] bg-[#d1e0ed]" />
-                <div className="h-[46px] w-[105px] relative">
-                  <Image
-                    src="/images/figma/eb63da58b5d162a3095f09aec9680e6c3185d7d2.png"
-                    alt="FDA Registered Facility"
-                    fill
-                    className="object-contain"
+                <div className="h-[46px] w-[105px] flex items-center justify-center shrink-0">
+                  <img
+                    src="/images/figma/logo-fda.svg"
+                    alt="FDA Facility Registered"
+                    className="h-[34px] w-auto max-w-[90px] object-contain"
                   />
                 </div>
                 <div className="w-px h-[36px] bg-[#d1e0ed]" />
-                <div className="h-[42px] w-[65px] relative">
-                  <Image
-                    src="/images/figma/490a0cba1a3627d46d9eaf115d0d21770c5db3d6.png"
+                <div className="h-[42px] w-[65px] flex items-center justify-center shrink-0">
+                  <img
+                    src="/images/figma/logo-ce.svg"
                     alt="CE Mark"
-                    fill
-                    className="object-contain"
+                    className="h-[38px] w-auto max-w-[55px] object-contain"
                   />
                 </div>
               </div>
