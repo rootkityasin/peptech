@@ -316,17 +316,10 @@ function AccountContent() {
       <div className="bg-[#f8fafc] flex flex-col items-center justify-center w-full min-h-[calc(100vh-118px)] px-4 py-12">
         <div className="max-w-[480px] w-full bg-white rounded-[20px] p-6 sm:p-9 border border-[#e2e8f0] shadow-sm flex flex-col gap-6">
           {/* Top Header */}
-          <div className="flex flex-col gap-1.5 text-center">
-            <div className="inline-flex items-center justify-center gap-2 self-center px-3 py-1 bg-[#f1f5f9] rounded-full text-[11px] font-semibold text-[#0b1f3a]">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#16a6a3] animate-pulse" />
-              PEPTECH® RESEARCH PORTAL
-            </div>
-            <h1 className="text-[22px] font-bold text-[#0b1f3a] tracking-tight mt-1">
+          <div className="text-center">
+            <h1 className="text-[22px] font-bold text-[#0b1f3a] tracking-tight">
               Researcher Portal Access
             </h1>
-            <p className="text-[12.5px] text-[#64748b] leading-relaxed">
-              Access active cold-chain orders, manage automated 28-day refill protocols, and download certified batch COA certificates.
-            </p>
           </div>
 
 
