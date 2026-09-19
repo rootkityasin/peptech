@@ -460,21 +460,12 @@ function AccountContent() {
                 {authSubmitting ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Verifying Research Credentials...</span>
+                    <span>Signing In...</span>
                   </>
                 ) : (
-                  <span>Sign In to Research Account →</span>
+                  <span>Sign In</span>
                 )}
               </button>
-
-              <div className="text-center pt-1">
-                <a
-                  href="mailto:info@peptech.bio?subject=Password%20Reset%20or%20Account%20Inquiry"
-                  className="text-[12px] text-[#16a6a3] hover:underline"
-                >
-                  Forgot research credentials or need support?
-                </a>
-              </div>
             </form>
           ) : (
             /* Register Form */
