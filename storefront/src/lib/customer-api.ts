@@ -85,93 +85,122 @@ export interface CustomerAddressPayload {
  * Log in customer with email and password via Medusa 2.0 Auth API
  */
 export async function loginCustomer(email: string, password: string): Promise<string> {
-  const response = await fetch(`${BACKEND_URL}/auth/customer/emailpass`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-publishable-api-key": PUBLISHABLE_KEY,
-    },
-    body: JSON.stringify({ email, password }),
-  })
+  try {
+    const response = await fetch(`${BACKEND_URL}/auth/customer/emailpass`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-publishable-api-key": PUBLISHABLE_KEY,
+      },
+      body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
+    })
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}))
-    throw new Error(errorData.message || "Invalid research credentials. Please check your email and password.")
-  }
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      const msg = errorData.message || ""
+      if (response.status === 401 || msg.toLowerCase().includes("invalid") || msg.toLowerCase().includes("unauthorized")) {
+        throw new Error("Invalid institutional email or password. Please verify your credentials.")
+      }
+      throw new Error(msg || "Authentication failed. Please check your credentials and try again.")
+    }
 
-  const data = await response.json()
-  if (!data.token) {
-    throw new Error("Authentication token was not returned by server.")
+    const data = await response.json()
+    if (!data.token) {
+      throw new Error("Authentication token was not returned by server.")
+    }
+    return data.token
+  } catch (err: any) {
+    if (err.message && !err.message.includes("fetch") && !err.message.includes("Failed to fetch")) {
+      throw err
+    }
+    throw new Error("Unable to connect to the authentication server. Please check your network or try again shortly.")
   }
-  return data.token
 }
 
 /**
  * Register a new customer via Medusa 2.0 Auth & Customer Store API
  */
 export async function registerCustomer(payload: CustomerRegisterPayload): Promise<{ token: string; customer: Customer }> {
-  // Step 1: Register auth identity
-  const authResponse = await fetch(`${BACKEND_URL}/auth/customer/emailpass/register`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-publishable-api-key": PUBLISHABLE_KEY,
-    },
-    body: JSON.stringify({
-      email: payload.email,
-      password: payload.password,
-    }),
-  })
-
-  if (!authResponse.ok) {
-    const errorData = await authResponse.json().catch(() => ({}))
-    throw new Error(errorData.message || "Registration failed. This email may already be registered.")
-  }
-
-  const authData = await authResponse.json()
-  const token = authData.token
-  if (!token) {
-    throw new Error("Registration token was not returned.")
-  }
-
-  // Generate a research customer ID code if not provided
-  const generatedCustCode = `#PEP-CUST-${Math.floor(1000 + Math.random() * 9000)}`
-  const now = new Date()
-  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-  const memberSince = `${monthNames[now.getMonth()]} ${now.getFullYear()}`
-
-  // Step 2: Create customer record linked to this identity
-  const custResponse = await fetch(`${BACKEND_URL}/store/customers`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${token}`,
-      "x-publishable-api-key": PUBLISHABLE_KEY,
-    },
-    body: JSON.stringify({
-      email: payload.email,
-      first_name: payload.first_name,
-      last_name: payload.last_name,
-      company_name: payload.company_name || "",
-      phone: payload.phone || null,
-      metadata: {
-        role: "Verified Clinical Researcher",
-        title: payload.metadata?.title || "Dr.",
-        avatar_url: payload.metadata?.avatar_url || null,
-        member_since: memberSince,
-        customer_id_code: generatedCustCode,
-        ...(payload.metadata || {}),
+  const normalizedEmail = payload.email.trim().toLowerCase()
+  try {
+    // Step 1: Register auth identity
+    const authResponse = await fetch(`${BACKEND_URL}/auth/customer/emailpass/register`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-publishable-api-key": PUBLISHABLE_KEY,
       },
-    }),
-  })
+      body: JSON.stringify({
+        email: normalizedEmail,
+        password: payload.password,
+      }),
+    })
 
-  if (!custResponse.ok) {
-    const err = await custResponse.json().catch(() => ({}))
-    throw new Error(err.message || "Could not complete customer profile creation.")
+    if (!authResponse.ok) {
+      const errorData = await authResponse.json().catch(() => ({}))
+      const msg = errorData.message || ""
+      if (
+        authResponse.status === 400 ||
+        msg.toLowerCase().includes("already exists") ||
+        msg.toLowerCase().includes("identity")
+      ) {
+        throw new Error("An account is already registered with this institutional email. Please sign in instead.")
+      }
+      throw new Error(msg || "Registration failed. Please review your details and try again.")
+    }
+
+    const authData = await authResponse.json()
+    const token = authData.token
+    if (!token) {
+      throw new Error("Registration token was not returned.")
+    }
+
+    // Generate a research customer ID code if not provided
+    const generatedCustCode = `#PEP-CUST-${Math.floor(1000 + Math.random() * 9000)}`
+    const now = new Date()
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    const memberSince = `${monthNames[now.getMonth()]} ${now.getFullYear()}`
+
+    // Step 2: Create customer record linked to this identity
+    const custResponse = await fetch(`${BACKEND_URL}/store/customers`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+        "x-publishable-api-key": PUBLISHABLE_KEY,
+      },
+      body: JSON.stringify({
+        email: normalizedEmail,
+        first_name: payload.first_name.trim(),
+        last_name: payload.last_name.trim(),
+        company_name: (payload.company_name || "").trim(),
+        phone: payload.phone ? payload.phone.trim() : null,
+        metadata: {
+          role: "Verified Clinical Researcher",
+          title: payload.metadata?.title || "Dr.",
+          avatar_url: payload.metadata?.avatar_url || null,
+          member_since: memberSince,
+          customer_id_code: generatedCustCode,
+          compliance_ack: true,
+          registered_via: "PEPTECH Storefront Portal",
+          ...(payload.metadata || {}),
+        },
+      }),
+    })
+
+    if (!custResponse.ok) {
+      const err = await custResponse.json().catch(() => ({}))
+      throw new Error(err.message || "Could not complete customer profile creation.")
+    }
+
+    const custData = await custResponse.json()
+    return { token, customer: custData.customer }
+  } catch (err: any) {
+    if (err.message && !err.message.includes("fetch") && !err.message.includes("Failed to fetch")) {
+      throw err
+    }
+    throw new Error("Unable to connect to the registration server. Please verify your connection or try again.")
   }
-
-  const custData = await custResponse.json()
-  return { token, customer: custData.customer }
 }
 
 /**

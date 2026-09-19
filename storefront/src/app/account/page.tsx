@@ -30,8 +30,13 @@ function AccountContent() {
   const [authMode, setAuthMode] = useState<"signin" | "register">("signin")
   const [loginEmail, setLoginEmail] = useState("")
   const [loginPassword, setLoginPassword] = useState("")
+  const [showLoginPassword, setShowLoginPassword] = useState(false)
   const [authError, setAuthError] = useState<string | null>(null)
+  const [authSuccessMessage, setAuthSuccessMessage] = useState<string | null>(null)
   const [authSubmitting, setAuthSubmitting] = useState(false)
+  const [failedAttempts, setFailedAttempts] = useState(0)
+  const [lockedUntil, setLockedUntil] = useState<number | null>(null)
+  const [lockCountdown, setLockCountdown] = useState(0)
 
   // Registration Form States
   const [regTitle, setRegTitle] = useState("Dr.")
@@ -41,6 +46,26 @@ function AccountContent() {
   const [regCompany, setRegCompany] = useState("")
   const [regPhone, setRegPhone] = useState("")
   const [regPassword, setRegPassword] = useState("")
+  const [regConfirmPassword, setRegConfirmPassword] = useState("")
+  const [showRegPassword, setShowRegPassword] = useState(false)
+  const [showRegConfirmPassword, setShowRegConfirmPassword] = useState(false)
+  const [regAgreeCompliance, setRegAgreeCompliance] = useState(false)
+
+  // Rate Limiting Security Cooldown
+  useEffect(() => {
+    if (!lockedUntil) return
+    const interval = setInterval(() => {
+      const diff = Math.ceil((lockedUntil - Date.now()) / 1000)
+      if (diff <= 0) {
+        setLockedUntil(null)
+        setLockCountdown(0)
+        setFailedAttempts(0)
+      } else {
+        setLockCountdown(diff)
+      }
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [lockedUntil])
 
   // Profile Edit Modal States
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false)
@@ -166,11 +191,42 @@ function AccountContent() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setAuthError(null)
+    setAuthSuccessMessage(null)
+
+    if (lockedUntil && Date.now() < lockedUntil) {
+      setAuthError(`Security pause active. Please wait ${lockCountdown}s before attempting to sign in again.`)
+      return
+    }
+
+    const cleanEmail = loginEmail.trim().toLowerCase()
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!cleanEmail || !emailRegex.test(cleanEmail)) {
+      setAuthError("Please enter a valid institutional email address.")
+      return
+    }
+
+    if (!loginPassword || loginPassword.length < 8) {
+      setAuthError("Password must be at least 8 characters.")
+      return
+    }
+
     setAuthSubmitting(true)
     try {
-      await login(loginEmail, loginPassword)
+      await login(cleanEmail, loginPassword)
+      setFailedAttempts(0)
+      setLockedUntil(null)
     } catch (err: any) {
-      setAuthError(err.message || "Failed to sign in.")
+      const nextFailed = failedAttempts + 1
+      setFailedAttempts(nextFailed)
+      if (nextFailed >= 5) {
+        const lockTime = Date.now() + 60000
+        setLockedUntil(lockTime)
+        setLockCountdown(60)
+        setAuthError("Security threshold reached (5 consecutive failed attempts). Account access paused for 60 seconds.")
+      } else {
+        const remaining = 5 - nextFailed
+        setAuthError(`${err.message || "Invalid credentials."} (${remaining} attempt${remaining === 1 ? "" : "s"} remaining)`)
+      }
     } finally {
       setAuthSubmitting(false)
     }
@@ -179,21 +235,63 @@ function AccountContent() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
     setAuthError(null)
+    setAuthSuccessMessage(null)
+
+    const cleanEmail = regEmail.trim().toLowerCase()
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!cleanEmail || !emailRegex.test(cleanEmail)) {
+      setAuthError("Please enter a valid institutional email address.")
+      return
+    }
+
+    if (!regFirstName.trim() || !regLastName.trim()) {
+      setAuthError("Researcher first name and last name are required.")
+      return
+    }
+
+    if (!regCompany.trim()) {
+      setAuthError("Institution or facility name is required for clinical compliance.")
+      return
+    }
+
+    if (regPassword.length < 8) {
+      setAuthError("Password must be at least 8 characters long.")
+      return
+    }
+
+    if (!/(?=.*[a-zA-Z])(?=.*[0-9])/.test(regPassword)) {
+      setAuthError("Password must contain at least one letter and one number for laboratory security.")
+      return
+    }
+
+    if (regPassword !== regConfirmPassword) {
+      setAuthError("Passwords do not match. Please verify both password entries.")
+      return
+    }
+
+    if (!regAgreeCompliance) {
+      setAuthError("You must certify that you are 18+ and that all orders are strictly for Laboratory Research Use Only.")
+      return
+    }
+
     setAuthSubmitting(true)
     try {
+      setAuthSuccessMessage("Registering research facility and syncing with Medusa 2.0...")
       await register({
-        email: regEmail,
+        email: cleanEmail,
         password: regPassword,
-        first_name: regFirstName,
-        last_name: regLastName,
-        company_name: regCompany,
-        phone: regPhone,
+        first_name: regFirstName.trim(),
+        last_name: regLastName.trim(),
+        company_name: regCompany.trim(),
+        phone: regPhone.trim() || undefined,
         metadata: {
           title: regTitle,
           role: "Verified Clinical Researcher",
         },
       })
+      setAuthSuccessMessage("Facility verified! Loading research dashboard...")
     } catch (err: any) {
+      setAuthSuccessMessage(null)
       setAuthError(err.message || "Failed to create account.")
     } finally {
       setAuthSubmitting(false)
@@ -265,10 +363,25 @@ function AccountContent() {
             </button>
           </div>
 
+          {/* Success Notification */}
+          {authSuccessMessage && (
+            <div className="bg-emerald-50 border border-emerald-200 rounded-[10px] p-3.5 text-[12.5px] text-emerald-800 flex items-start gap-2.5">
+              <svg className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>{authSuccessMessage}</span>
+            </div>
+          )}
+
           {/* Error Message */}
           {authError && (
-            <div className="bg-rose-50 border border-rose-200 rounded-[8px] p-3 text-[12.5px] text-rose-700">
-              {authError}
+            <div className="bg-rose-50 border border-rose-200 rounded-[10px] p-3.5 text-[12.5px] text-rose-700 flex items-start gap-2.5">
+              <svg className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <div className="flex-1">
+                <span>{authError}</span>
+              </div>
             </div>
           )}
 
@@ -279,14 +392,21 @@ function AccountContent() {
                 <label className="text-[12.5px] font-semibold text-[#0b1f3a]">
                   Institutional Email
                 </label>
-                <input
-                  type="email"
-                  required
-                  value={loginEmail}
-                  onChange={(e) => setLoginEmail(e.target.value)}
-                  placeholder="e.g. researcher@cambridge-biotech.ac.uk"
-                  className="border border-[#cbd5e1] rounded-[8px] px-3 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] focus:ring-1 focus:ring-[#16a6a3] outline-hidden placeholder:text-slate-400"
-                />
+                <div className="relative flex items-center">
+                  <input
+                    type="email"
+                    required
+                    autoComplete="email"
+                    value={loginEmail}
+                    onChange={(e) => {
+                      setLoginEmail(e.target.value)
+                      if (authError) setAuthError(null)
+                    }}
+                    placeholder="researcher@biotech-institute.ac.uk"
+                    disabled={authSubmitting || (!!lockedUntil && Date.now() < lockedUntil)}
+                    className="w-full border border-[#cbd5e1] rounded-[8px] px-3.5 py-2.5 text-sm text-[#0b1f3a] focus:border-[#16a6a3] focus:ring-1 focus:ring-[#16a6a3] outline-hidden placeholder:text-slate-400 disabled:bg-slate-50 disabled:text-slate-400"
+                  />
+                </div>
               </div>
 
               <div className="flex flex-col gap-1.5">
@@ -296,23 +416,72 @@ function AccountContent() {
                   </label>
                   <span className="text-[11.5px] text-[#64748b]">Min. 8 characters</span>
                 </div>
-                <input
-                  type="password"
-                  required
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
-                  placeholder="••••••••••••"
-                  className="border border-[#cbd5e1] rounded-[8px] px-3 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] focus:ring-1 focus:ring-[#16a6a3] outline-hidden placeholder:text-slate-400"
-                />
+                <div className="relative flex items-center">
+                  <input
+                    type={showLoginPassword ? "text" : "password"}
+                    required
+                    autoComplete="current-password"
+                    value={loginPassword}
+                    onChange={(e) => {
+                      setLoginPassword(e.target.value)
+                      if (authError) setAuthError(null)
+                    }}
+                    placeholder="••••••••••••"
+                    disabled={authSubmitting || (!!lockedUntil && Date.now() < lockedUntil)}
+                    className="w-full border border-[#cbd5e1] rounded-[8px] pl-3.5 pr-10 py-2.5 text-sm text-[#0b1f3a] focus:border-[#16a6a3] focus:ring-1 focus:ring-[#16a6a3] outline-hidden placeholder:text-slate-400 disabled:bg-slate-50 disabled:text-slate-400"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowLoginPassword(!showLoginPassword)}
+                    className="absolute right-3 p-1 text-slate-400 hover:text-slate-600 cursor-pointer"
+                    tabIndex={-1}
+                    aria-label={showLoginPassword ? "Hide password" : "Show password"}
+                  >
+                    {showLoginPassword ? (
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                      </svg>
+                    ) : (
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
               </div>
+
+              {/* Rate limit banner if locked */}
+              {lockedUntil && Date.now() < lockedUntil && (
+                <div className="bg-amber-50 border border-amber-200 rounded-[8px] p-2.5 text-[12px] text-amber-800 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                  <span>Security cooldown: Access paused for {lockCountdown}s</span>
+                </div>
+              )}
 
               <button
                 type="submit"
-                disabled={authSubmitting}
-                className="btn-press mt-2 w-full bg-[#0b1f3a] hover:bg-[#162a45] text-white text-[13.5px] font-semibold py-2.5 rounded-[8px] transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
+                disabled={authSubmitting || (!!lockedUntil && Date.now() < lockedUntil)}
+                className="btn-press mt-2 w-full bg-[#0b1f3a] hover:bg-[#162a45] disabled:opacity-50 text-white text-[13.5px] font-semibold py-2.5 rounded-[8px] transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
               >
-                {authSubmitting ? "Verifying..." : "Sign In to Research Account"}
+                {authSubmitting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Verifying Research Credentials...</span>
+                  </>
+                ) : (
+                  <span>Sign In to Research Account →</span>
+                )}
               </button>
+
+              <div className="text-center pt-1">
+                <a
+                  href="mailto:info@peptech.bio?subject=Password%20Reset%20or%20Account%20Inquiry"
+                  className="text-[12px] text-[#16a6a3] hover:underline"
+                >
+                  Forgot research credentials or need support?
+                </a>
+              </div>
             </form>
           ) : (
             /* Register Form */
@@ -329,27 +498,28 @@ function AccountContent() {
                     <option value="Prof.">Prof.</option>
                     <option value="Mr.">Mr.</option>
                     <option value="Ms.">Ms.</option>
+                    <option value="Ph.D.">Ph.D.</option>
                   </select>
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-[12px] font-semibold text-[#0b1f3a]">First Name</label>
+                  <label className="text-[12px] font-semibold text-[#0b1f3a]">First Name *</label>
                   <input
                     type="text"
                     required
                     value={regFirstName}
                     onChange={(e) => setRegFirstName(e.target.value)}
-                    placeholder="Jane"
+                    placeholder="Alexander"
                     className="border border-[#cbd5e1] rounded-[8px] px-3 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden"
                   />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-[12px] font-semibold text-[#0b1f3a]">Last Name</label>
+                  <label className="text-[12px] font-semibold text-[#0b1f3a]">Last Name *</label>
                   <input
                     type="text"
                     required
                     value={regLastName}
                     onChange={(e) => setRegLastName(e.target.value)}
-                    placeholder="Smith"
+                    placeholder="Wright"
                     className="border border-[#cbd5e1] rounded-[8px] px-3 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden"
                   />
                 </div>
@@ -357,63 +527,155 @@ function AccountContent() {
 
               <div className="flex flex-col gap-1">
                 <label className="text-[12px] font-semibold text-[#0b1f3a]">
-                  Institution / Facility Name
+                  Institution / Facility Name *
                 </label>
                 <input
                   type="text"
                   required
                   value={regCompany}
                   onChange={(e) => setRegCompany(e.target.value)}
-                  placeholder="Oxford Genomics Laboratory"
+                  placeholder="e.g. Cambridge Biomedical Research Centre"
                   className="border border-[#cbd5e1] rounded-[8px] px-3 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden"
                 />
               </div>
 
               <div className="flex flex-col gap-1">
                 <label className="text-[12px] font-semibold text-[#0b1f3a]">
-                  Institutional Email
+                  Institutional Email *
                 </label>
                 <input
                   type="email"
                   required
+                  autoComplete="email"
                   value={regEmail}
                   onChange={(e) => setRegEmail(e.target.value)}
-                  placeholder="j.smith@oxford-genomics.ac.uk"
+                  placeholder="alexander.wright@cambridge-biotech.ac.uk"
                   className="border border-[#cbd5e1] rounded-[8px] px-3 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden"
                 />
+                <span className="text-[11px] text-[#64748b]">
+                  Orders, cold-chain dispatches, and COAs will be delivered here.
+                </span>
               </div>
 
               <div className="flex flex-col gap-1">
                 <label className="text-[12px] font-semibold text-[#0b1f3a]">
-                  Direct Phone / Lab Extension
+                  Direct Phone / Lab Extension <span className="text-slate-400 font-normal">(optional)</span>
                 </label>
                 <input
                   type="tel"
                   value={regPhone}
                   onChange={(e) => setRegPhone(e.target.value)}
-                  placeholder="+44 1865 270 000"
+                  placeholder="+44 1223 928 401"
                   className="border border-[#cbd5e1] rounded-[8px] px-3 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden"
                 />
               </div>
 
+              {/* Password */}
               <div className="flex flex-col gap-1">
-                <label className="text-[12px] font-semibold text-[#0b1f3a]">Password</label>
-                <input
-                  type="password"
-                  required
-                  value={regPassword}
-                  onChange={(e) => setRegPassword(e.target.value)}
-                  placeholder="At least 8 characters"
-                  className="border border-[#cbd5e1] rounded-[8px] px-3 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden"
-                />
+                <div className="flex items-center justify-between">
+                  <label className="text-[12px] font-semibold text-[#0b1f3a]">Create Password *</label>
+                  <span className="text-[11px] text-[#64748b]">Min. 8 chars (letters &amp; numbers)</span>
+                </div>
+                <div className="relative flex items-center">
+                  <input
+                    type={showRegPassword ? "text" : "password"}
+                    required
+                    autoComplete="new-password"
+                    value={regPassword}
+                    onChange={(e) => setRegPassword(e.target.value)}
+                    placeholder="••••••••••••"
+                    className="w-full border border-[#cbd5e1] rounded-[8px] pl-3 pr-10 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowRegPassword(!showRegPassword)}
+                    className="absolute right-3 p-1 text-slate-400 hover:text-slate-600 cursor-pointer"
+                    tabIndex={-1}
+                    aria-label={showRegPassword ? "Hide password" : "Show password"}
+                  >
+                    {showRegPassword ? (
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                      </svg>
+                    ) : (
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
               </div>
+
+              {/* Confirm Password */}
+              <div className="flex flex-col gap-1">
+                <label className="text-[12px] font-semibold text-[#0b1f3a]">Confirm Password *</label>
+                <div className="relative flex items-center">
+                  <input
+                    type={showRegConfirmPassword ? "text" : "password"}
+                    required
+                    autoComplete="new-password"
+                    value={regConfirmPassword}
+                    onChange={(e) => setRegConfirmPassword(e.target.value)}
+                    placeholder="Re-enter password"
+                    className={`w-full border rounded-[8px] pl-3 pr-10 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden ${
+                      regConfirmPassword && regConfirmPassword !== regPassword
+                        ? "border-rose-400 focus:border-rose-500"
+                        : "border-[#cbd5e1]"
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowRegConfirmPassword(!showRegConfirmPassword)}
+                    className="absolute right-3 p-1 text-slate-400 hover:text-slate-600 cursor-pointer"
+                    tabIndex={-1}
+                    aria-label={showRegConfirmPassword ? "Hide password" : "Show password"}
+                  >
+                    {showRegConfirmPassword ? (
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                      </svg>
+                    ) : (
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+                {regConfirmPassword && regConfirmPassword !== regPassword && (
+                  <span className="text-[11px] text-rose-500 font-medium">Passwords do not match</span>
+                )}
+              </div>
+
+              {/* Research Use Only & 18+ Mandatory Certification */}
+              <label className="flex items-start gap-2.5 pt-1 text-[12px] text-[#475569] cursor-pointer">
+                <input
+                  type="checkbox"
+                  required
+                  checked={regAgreeCompliance}
+                  onChange={(e) => setRegAgreeCompliance(e.target.checked)}
+                  className="mt-0.5 rounded border-[#cbd5e1] text-[#16a6a3] focus:ring-[#16a6a3] cursor-pointer"
+                />
+                <span className="leading-snug">
+                  I certify that I am at least 18 years old and represent an accredited laboratory or scientific facility. All purchases are strictly for{" "}
+                  <strong className="text-[#0b1f3a]">In-Vitro Laboratory Research Use Only (RUO)</strong>.
+                </span>
+              </label>
 
               <button
                 type="submit"
-                disabled={authSubmitting}
-                className="btn-press mt-2 w-full bg-[#0b1f3a] hover:bg-[#162a45] text-white text-[13.5px] font-semibold py-2.5 rounded-[8px] transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
+                disabled={authSubmitting || !regAgreeCompliance}
+                className="btn-press mt-2 w-full bg-[#0b1f3a] hover:bg-[#162a45] disabled:opacity-50 text-white text-[13.5px] font-semibold py-2.5 rounded-[8px] transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
               >
-                {authSubmitting ? "Creating Account..." : "Create Verified Research Account"}
+                {authSubmitting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Registering with Medusa 2.0...</span>
+                  </>
+                ) : (
+                  <span>Create Verified Research Account →</span>
+                )}
               </button>
             </form>
           )}
