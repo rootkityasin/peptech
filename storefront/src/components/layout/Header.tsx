@@ -52,9 +52,6 @@ export function Header() {
                 <img src="/images/figma/d3ec4cde5ca0a92f851ec4f47cdf9bbd626b88c1.svg" alt="Globe" className="w-full h-full" />
               </div>
               <span className="font-medium text-white text-[12px]">EN</span>
-              <div className="w-[10px] h-[10px]">
-                <img src="/images/figma/e68ef15ca285388cecea2f833256f21c7bf4c0e2.svg" alt="Chevron" className="w-full h-full" />
-              </div>
             </div>
           </div>
         </div>
