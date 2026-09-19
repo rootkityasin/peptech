@@ -224,27 +224,53 @@ export default function HowItWorksPage() {
               return (
                 <div
                   key={idx}
-                  className="rounded-2xl border border-[#e2e8f0] bg-white overflow-hidden shadow-xs transition-all"
+                  className={`rounded-2xl border bg-white overflow-hidden shadow-xs transition-all duration-300 ${
+                    isOpen ? "border-[#16a6a3]/40 shadow-sm ring-1 ring-[#16a6a3]/10" : "border-[#e2e8f0] hover:border-slate-300"
+                  }`}
                 >
                   <button
                     onClick={() => toggleFaq(idx)}
-                    className="w-full px-6 py-5 text-left flex items-center justify-between gap-4 hover:bg-[#f8fafc] transition-colors"
+                    className="w-full px-6 py-5 text-left flex items-center justify-between gap-4 hover:bg-[#f8fafc]/80 transition-colors group cursor-pointer"
+                    aria-expanded={isOpen}
                   >
-                    <span className="font-bold text-sm text-[#0b1f3a]">
+                    <span className={`font-bold text-sm sm:text-[15px] transition-colors duration-300 ${
+                      isOpen ? "text-[#16a6a3]" : "text-[#0b1f3a] group-hover:text-[#16a6a3]"
+                    }`}>
                       {faq.q}
                     </span>
-                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-transform ${
-                      isOpen ? "bg-[#0b1f3a] text-white rotate-180" : "bg-[#f1f5f9] text-[#64748b]"
-                    }`}>
-                      ↓
+                    <span
+                      className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-all duration-500 ease-out ${
+                        isOpen
+                          ? "bg-[#0b1f3a] text-white shadow-xs scale-105"
+                          : "bg-[#f1f5f9] text-[#64748b] group-hover:bg-[#e2e8f0] group-hover:text-[#0b1f3a]"
+                      }`}
+                    >
+                      <svg
+                        className={`w-3.5 h-3.5 transition-transform duration-500 ease-in-out transform ${
+                          isOpen ? "rotate-180 text-white" : "rotate-0 text-[#64748b] group-hover:text-[#0b1f3a]"
+                        }`}
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2.5}
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                      </svg>
                     </span>
                   </button>
 
-                  {isOpen && (
-                    <div className="px-6 pb-6 pt-1 text-xs sm:text-sm text-[#475569] leading-relaxed border-t border-[#f1f5f9] bg-[#f8fafc]/50">
-                      {faq.a}
+                  {/* Smooth height animation via CSS Grid */}
+                  <div
+                    className={`grid transition-all duration-500 ease-in-out ${
+                      isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+                    }`}
+                  >
+                    <div className="overflow-hidden">
+                      <div className="px-6 pb-6 pt-3 text-xs sm:text-sm text-[#475569] leading-relaxed border-t border-[#f1f5f9] bg-[#f8fafc]/40">
+                        {faq.a}
+                      </div>
                     </div>
-                  )}
+                  </div>
                 </div>
               )
             })}
