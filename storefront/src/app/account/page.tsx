@@ -317,8 +317,8 @@ function AccountContent() {
         <div className="max-w-[480px] w-full bg-white rounded-[20px] p-6 sm:p-9 border border-[#e2e8f0] shadow-sm flex flex-col gap-6">
           {/* Top Header */}
           <div className="text-center">
-            <h1 className="text-[22px] font-bold text-[#0b1f3a] tracking-tight">
-              Researcher Portal Access
+            <h1 className="text-[24px] font-bold text-[#0b1f3a] tracking-tight">
+              Login
             </h1>
           </div>
 
