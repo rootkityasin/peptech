@@ -1,9 +1,26 @@
 "use client"
 
-import React from "react"
+import React, { useState, useEffect } from "react"
 import Link from "next/link"
 
 export default function PaymentSuccessPage() {
+  const [order, setOrder] = useState<any>(null)
+
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("peptech_last_order")
+      if (raw) {
+        setOrder(JSON.parse(raw))
+      }
+    } catch {}
+  }, [])
+
+  const orderId = order?.id || "#PEP-CONFIRMED"
+  const orderDate = order?.displayDate || new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+  const orderTotal = order?.total != null ? `£${Number(order.total).toFixed(2)}` : "Paid in Full"
+  const paymentMethod = order?.paymentMethod || "Secure Research Payment Gateway"
+  const itemsSummary = order?.items?.map((i: any) => `${i.title} (${i.quantity}x)`).join(", ") || "Research Peptide Items"
+
   return (
     <div
       className="bg-white flex flex-col items-center justify-center py-[48px] min-h-screen w-full"
@@ -75,10 +92,10 @@ export default function PaymentSuccessPage() {
           >
             <div className="flex gap-[6px] items-center" data-node-id="52:8494">
               <span className="text-[#64748b]" data-node-id="52:8495">Order ID:</span>
-              <span className="font-bold text-[#0b1f3a]" data-node-id="52:8496">#PEP-89241</span>
+              <span className="font-bold text-[#0b1f3a]" data-node-id="52:8496">{orderId}</span>
             </div>
             <span className="text-[#94a3b8] text-[12px]" data-node-id="52:8497">
-              16 Sep 2026, 18:34 GMT
+              {orderDate}
             </span>
           </div>
 
@@ -92,19 +109,19 @@ export default function PaymentSuccessPage() {
             <div className="flex items-center justify-between w-full" data-node-id="52:8500">
               <span className="text-[#64748b]" data-node-id="52:8501">Payment amount</span>
               <span className="font-bold text-[#0b1f3a] text-[17px]" data-node-id="52:8502">
-                £278.50
+                {orderTotal}
               </span>
             </div>
             <div className="flex items-center justify-between w-full" data-node-id="52:8503">
               <span className="text-[#64748b]" data-node-id="52:8504">Payment method</span>
               <span className="font-medium text-[#0b1f3a] text-[13.5px]" data-node-id="52:8505">
-                Visa ending in 1234
+                {paymentMethod}
               </span>
             </div>
             <div className="flex items-center justify-between w-full" data-node-id="52:8506">
               <span className="text-[#64748b]" data-node-id="52:8507">Order items</span>
               <span className="font-medium text-[#0b1f3a] text-[13.5px] truncate max-w-[280px]" data-node-id="52:8508">
-                Semaglutide Starter, Tirzepatide, BPC-157
+                {itemsSummary}
               </span>
             </div>
             <div className="flex items-center justify-between w-full" data-node-id="52:8509">

@@ -24,7 +24,7 @@ export interface CustomerAddress {
 export interface CustomerMetadata {
   role?: string
   title?: string
-  avatar_url?: string
+  avatar_url?: string | null
   member_since?: string
   customer_id_code?: string
   [key: string]: unknown
@@ -194,7 +194,14 @@ export async function registerCustomer(payload: CustomerRegisterPayload): Promis
     }
 
     const custData = await custResponse.json()
-    return { token, customer: custData.customer }
+    // Re-authenticate to ensure token contains full customer actor_id
+    let activeToken = token
+    try {
+      activeToken = await loginCustomer(normalizedEmail, payload.password)
+    } catch {
+      // fallback to auth token
+    }
+    return { token: activeToken, customer: custData.customer }
   } catch (err: any) {
     if (err.message && !err.message.includes("fetch") && !err.message.includes("Failed to fetch")) {
       throw err
@@ -286,3 +293,25 @@ export async function deleteCustomerAddress(token: string, addressId: string): P
     throw new Error(errorData.message || "Failed to delete address.")
   }
 }
+
+/**
+ * Fetch authenticated customer's order history from Medusa 2.0 store API
+ */
+export async function getCustomerOrders(token: string): Promise<any[]> {
+  try {
+    const response = await fetch(`${BACKEND_URL}/store/orders?fields=*items,*items.variant,*shipping_address`, {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "x-publishable-api-key": PUBLISHABLE_KEY,
+      },
+    })
+    if (!response.ok) return []
+    const data = await response.json()
+    return data.orders || []
+  } catch (err) {
+    console.warn("Failed to fetch customer orders from Medusa:", err)
+    return []
+  }
+}
+

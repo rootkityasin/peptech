@@ -1,10 +1,11 @@
 "use client"
 
-import React, { useState, useEffect, Suspense } from "react"
+import React, { useState, useEffect, Suspense, useRef } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { VisaBadge, MastercardBadge } from "@/components/ui/PaymentBadges"
 import { useCustomer } from "@/context/CustomerContext"
+import { getCustomerOrders } from "@/lib/customer-api"
 
 type AccountTab = "overview" | "orders" | "subscriptions" | "addresses" | "payment"
 
@@ -25,6 +26,22 @@ function AccountContent() {
     addAddress,
     deleteAddress,
   } = useCustomer()
+
+  // Dynamic User Data (Orders, Subscriptions, Saved Payment Cards)
+  const [orders, setOrders] = useState<any[]>([])
+  const [subscriptions, setSubscriptions] = useState<any[]>([])
+  const [paymentCards, setPaymentCards] = useState<any[]>([])
+  const [isLoadingOrders, setIsLoadingOrders] = useState(false)
+  const avatarInputRef = useRef<HTMLInputElement | null>(null)
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
+
+  // Payment Modal States
+  const [isAddCardOpen, setIsAddCardOpen] = useState(false)
+  const [cardholderName, setCardholderName] = useState("")
+  const [cardNumber, setCardNumber] = useState("")
+  const [cardExpiry, setCardExpiry] = useState("")
+  const [cardCvc, setCardCvc] = useState("")
+  const [cardBillingAddress, setCardBillingAddress] = useState("")
 
   // Auth Portal States
   const [authMode, setAuthMode] = useState<"signin" | "register">("signin")
@@ -66,6 +83,225 @@ function AccountContent() {
     }, 1000)
     return () => clearInterval(interval)
   }, [lockedUntil])
+
+  // Initials helper
+  const getInitials = (first?: string | null, last?: string | null) => {
+    const f = (first || "").trim()[0] || ""
+    const l = (last || "").trim()[0] || ""
+    return (f + l).toUpperCase() || "RU"
+  }
+
+  // Load customer orders, subscriptions, and payment methods
+  useEffect(() => {
+    if (!customer?.id) {
+      setOrders([])
+      setSubscriptions([])
+      setPaymentCards([])
+      return
+    }
+
+    const loadData = async () => {
+      setIsLoadingOrders(true)
+      try {
+        let loadedOrders: any[] = []
+        try {
+          const raw = localStorage.getItem(`peptech_customer_orders_${customer.id}`)
+          if (raw) loadedOrders = JSON.parse(raw)
+        } catch {}
+
+        const savedToken = typeof window !== "undefined" ? localStorage.getItem("peptech_customer_token") : null
+        if (savedToken) {
+          try {
+            const medusaOrders = await getCustomerOrders(savedToken)
+            if (Array.isArray(medusaOrders) && medusaOrders.length > 0) {
+              const mapped = medusaOrders.map((mo: any) => ({
+                id: mo.display_id ? `PEP-${mo.display_id}` : mo.id.slice(0, 10).toUpperCase(),
+                date: mo.created_at,
+                displayDate: new Date(mo.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }),
+                total: (mo.total || 0) / 100,
+                status: mo.fulfillment_status === "delivered" ? "Delivered" : "Cold-Chain Packing",
+                trackingNumber: mo.metadata?.tracking_number || `GB-RM24-${mo.id.slice(0, 6).toUpperCase()}-CLD`,
+                paymentMethod: mo.metadata?.payment_method || "Secure Research Payment",
+                items: (mo.items || []).map((it: any) => ({
+                  id: it.id,
+                  title: it.title,
+                  subtitle: it.variant_title || "Standard Grade",
+                  price: (it.unit_price || 0) / 100,
+                  quantity: it.quantity,
+                  image: it.thumbnail || "/images/figma/152e353c4afaa5945905ac686de871b57ec2a770.png"
+                }))
+              }))
+              const existingIds = new Set(loadedOrders.map(o => o.id))
+              mapped.forEach(m => {
+                if (!existingIds.has(m.id)) loadedOrders.push(m)
+              })
+            }
+          } catch (e) {
+            console.warn("Could not fetch remote Medusa orders", e)
+          }
+        }
+        setOrders(loadedOrders)
+
+        try {
+          const rawSubs = localStorage.getItem(`peptech_customer_subscriptions_${customer.id}`)
+          if (rawSubs) {
+            setSubscriptions(JSON.parse(rawSubs))
+          } else {
+            setSubscriptions([])
+          }
+        } catch {
+          setSubscriptions([])
+        }
+
+        try {
+          const rawCards = localStorage.getItem(`peptech_customer_cards_${customer.id}`)
+          if (rawCards) {
+            setPaymentCards(JSON.parse(rawCards))
+          } else {
+            setPaymentCards([])
+          }
+        } catch {
+          setPaymentCards([])
+        }
+      } finally {
+        setIsLoadingOrders(false)
+      }
+    }
+
+    void loadData()
+  }, [customer?.id])
+
+  // Avatar upload handler
+  const handleAvatarFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith("image/")) {
+      alert("Please upload a valid image file (PNG, JPG, WEBP).")
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Image file size must be under 5MB.")
+      return
+    }
+
+    setIsUploadingAvatar(true)
+    try {
+      const reader = new FileReader()
+      reader.onload = () => {
+        const base64Data = reader.result as string
+        const img = new Image()
+        img.onload = async () => {
+          const canvas = document.createElement("canvas")
+          const maxDim = 250
+          let width = img.width
+          let height = img.height
+          if (width > height) {
+            if (width > maxDim) {
+              height = Math.round((height * maxDim) / width)
+              width = maxDim
+            }
+          } else {
+            if (height > maxDim) {
+              width = Math.round((width * maxDim) / height)
+              height = maxDim
+            }
+          }
+          canvas.width = width
+          canvas.height = height
+          const ctx = canvas.getContext("2d")
+          ctx?.drawImage(img, 0, 0, width, height)
+          const optimizedDataUrl = canvas.toDataURL("image/jpeg", 0.85)
+
+          try {
+            await updateProfile({
+              metadata: {
+                ...(customer?.metadata || {}),
+                avatar_url: optimizedDataUrl,
+              },
+            })
+          } catch (err: any) {
+            alert(err.message || "Failed to update profile picture.")
+          } finally {
+            setIsUploadingAvatar(false)
+          }
+        }
+        img.src = base64Data
+      }
+      reader.readAsDataURL(file)
+    } catch (err: any) {
+      alert(err.message || "Failed to process image.")
+      setIsUploadingAvatar(false)
+    }
+  }
+
+  const handleRemoveAvatar = async () => {
+    if (!customer?.metadata?.avatar_url) return
+    setIsUploadingAvatar(true)
+    try {
+      await updateProfile({
+        metadata: {
+          ...(customer.metadata || {}),
+          avatar_url: null,
+        },
+      })
+    } catch (err: any) {
+      alert(err.message || "Failed to remove avatar.")
+    } finally {
+      setIsUploadingAvatar(false)
+    }
+  }
+
+  // Payment Cards management
+  const handleAddPaymentCard = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!cardNumber || !cardExpiry || !cardholderName) {
+      alert("Please fill in Cardholder Name, Card Number, and Expiry.")
+      return
+    }
+    const cleanNum = cardNumber.replace(/\s+/g, "")
+    const last4 = cleanNum.slice(-4) || "4242"
+    const isMastercard = cleanNum.startsWith("5")
+    const newCard = {
+      id: `card_${Date.now()}`,
+      brand: isMastercard ? "mastercard" : "visa",
+      title: isMastercard ? "Mastercard Corporate" : "Visa Corporate",
+      last4,
+      expiry: cardExpiry,
+      cardholder: cardholderName,
+      billingAddress: cardBillingAddress || (customer?.addresses?.[0]?.address_1 ? `${customer.addresses[0].address_1}, ${customer.addresses[0].city}` : "Laboratory Facility Address"),
+      isDefault: paymentCards.length === 0,
+    }
+    const updated = [...paymentCards, newCard]
+    setPaymentCards(updated)
+    if (customer?.id) {
+      localStorage.setItem(`peptech_customer_cards_${customer.id}`, JSON.stringify(updated))
+    }
+    setIsAddCardOpen(false)
+    setCardNumber("")
+    setCardExpiry("")
+    setCardCvc("")
+    setCardholderName("")
+    setCardBillingAddress("")
+  }
+
+  const handleDeleteCard = (cardId: string) => {
+    const updated = paymentCards.filter(c => c.id !== cardId)
+    setPaymentCards(updated)
+    if (customer?.id) {
+      localStorage.setItem(`peptech_customer_cards_${customer.id}`, JSON.stringify(updated))
+    }
+  }
+
+  const handleSetDefaultCard = (cardId: string) => {
+    const updated = paymentCards.map(c => ({
+      ...c,
+      isDefault: c.id === cardId,
+    }))
+    setPaymentCards(updated)
+    if (customer?.id) {
+      localStorage.setItem(`peptech_customer_cards_${customer.id}`, JSON.stringify(updated))
+    }
+  }
 
   // Profile Edit Modal States
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false)
@@ -684,11 +920,38 @@ function AccountContent() {
           {/* Banner Top Row */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full">
             <div className="flex gap-[20px] items-center">
-              <div className="relative shrink-0 w-[60px] h-[60px] rounded-full overflow-hidden border-2 border-slate-100 shadow-2xs">
-                <img
-                  alt={`${customer.first_name || ""} ${customer.last_name || ""}`}
-                  className="w-full h-full object-cover"
-                  src={customer.metadata?.avatar_url || "/images/figma/d7ba35eef589d74712ad429f3bd1612dfa66c973.png"}
+              <div className="relative shrink-0 w-[64px] h-[64px] rounded-full overflow-hidden border-2 border-slate-100 shadow-2xs group">
+                {customer.metadata?.avatar_url ? (
+                  <img
+                    alt={`${customer.first_name || ""} ${customer.last_name || ""}`}
+                    className="w-full h-full object-cover"
+                    src={customer.metadata.avatar_url}
+                  />
+                ) : (
+                  <div className="w-full h-full bg-[#0b1f3a] text-white font-bold text-[22px] flex items-center justify-center tracking-wider">
+                    {getInitials(customer.first_name, customer.last_name)}
+                  </div>
+                )}
+                {/* Hover Camera Overlay to change avatar */}
+                <button
+                  type="button"
+                  onClick={() => avatarInputRef.current?.click()}
+                  disabled={isUploadingAvatar}
+                  className="absolute inset-0 bg-[#0b1f3a]/75 text-white flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded-full"
+                  title="Upload profile picture"
+                >
+                  <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  <span className="text-[9px] font-semibold mt-0.5">{isUploadingAvatar ? "..." : "Upload"}</span>
+                </button>
+                <input
+                  type="file"
+                  ref={avatarInputRef}
+                  onChange={handleAvatarFileChange}
+                  accept="image/png,image/jpeg,image/webp"
+                  className="hidden"
                 />
               </div>
               <div className="flex flex-col gap-[4px] items-start">
@@ -706,17 +969,26 @@ function AccountContent() {
                   </button>
                 </div>
                 <p className="font-normal text-[#64748b] text-[12.5px] sm:text-[13px]">
-                  {customer.metadata?.role || "Verified Clinical Researcher"} · Member since {customer.metadata?.member_since || "Sep 2025"} · Customer ID: {customer.metadata?.customer_id_code || customer.id}
+                  {customer.metadata?.role || "Verified Clinical Researcher"} · Member since {customer.metadata?.member_since || "Sep 2026"} · Customer ID: {customer.metadata?.customer_id_code || customer.id}
                   {customer.company_name ? ` · ${customer.company_name}` : ""}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-3 shrink-0">
-              <div className="bg-[#f1f5f9] flex items-center px-[12px] py-[8px] rounded-[8px]">
-                <p className="font-medium text-[#0b1f3a] text-[12.5px] whitespace-nowrap">
-                  Next Dispatch: <span className="font-bold text-[#16a6a3]">14 Oct 2026</span>
-                </p>
-              </div>
+              {subscriptions.length > 0 ? (
+                <div className="bg-[#f1f5f9] flex items-center px-[12px] py-[8px] rounded-[8px]">
+                  <p className="font-medium text-[#0b1f3a] text-[12.5px] whitespace-nowrap">
+                    Next Dispatch: <span className="font-bold text-[#16a6a3]">{subscriptions[0].nextDispatchDate || "Scheduled"}</span>
+                  </p>
+                </div>
+              ) : (
+                <div className="bg-[#e6fffa] border border-[#a7f4d0]/60 flex items-center gap-2 px-[12px] py-[8px] rounded-[8px]">
+                  <span className="w-2 h-2 rounded-full bg-[#16a6a3] animate-pulse" />
+                  <p className="font-semibold text-[#0b1f3a] text-[12px] whitespace-nowrap">
+                    Verified Research Account
+                  </p>
+                </div>
+              )}
               <button
                 type="button"
                 onClick={logout}
@@ -753,13 +1025,15 @@ function AccountContent() {
               }`}
             >
               <span>Orders &amp; Tracking</span>
-              <span
-                className={`flex items-center justify-center px-[6px] py-[2px] rounded-[10px] text-[10px] font-bold leading-none ${
-                  activeTab === "orders" ? "bg-[#0b1f3a] text-white" : "bg-[#e2e8f0] text-[#64748b]"
-                }`}
-              >
-                1
-              </span>
+              {orders.length > 0 && (
+                <span
+                  className={`flex items-center justify-center px-[6px] py-[2px] rounded-[10px] text-[10px] font-bold leading-none ${
+                    activeTab === "orders" ? "bg-[#0b1f3a] text-white" : "bg-[#e2e8f0] text-[#64748b]"
+                  }`}
+                >
+                  {orders.length}
+                </span>
+              )}
             </button>
 
             {/* Active Subscriptions */}
@@ -773,13 +1047,15 @@ function AccountContent() {
               }`}
             >
               <span>Active Subscriptions</span>
-              <span
-                className={`flex items-center justify-center px-[6px] py-[2px] rounded-[10px] text-[10px] font-bold leading-none ${
-                  activeTab === "subscriptions" ? "bg-[#0b1f3a] text-white" : "bg-[#e2e8f0] text-[#64748b]"
-                }`}
-              >
-                1
-              </span>
+              {subscriptions.length > 0 && (
+                <span
+                  className={`flex items-center justify-center px-[6px] py-[2px] rounded-[10px] text-[10px] font-bold leading-none ${
+                    activeTab === "subscriptions" ? "bg-[#0b1f3a] text-white" : "bg-[#e2e8f0] text-[#64748b]"
+                  }`}
+                >
+                  {subscriptions.length}
+                </span>
+              )}
             </button>
 
             {/* Saved Addresses */}
@@ -820,236 +1096,250 @@ function AccountContent() {
           <div className="flex flex-col lg:flex-row gap-[32px] items-start w-full">
             {/* Left Main Column (flex-1) */}
             <div className="flex flex-col gap-[24px] w-full lg:flex-1">
-              {/* Card 1: Latest Order #PEP-89241 */}
-              <div className="bg-white rounded-[16px] px-6 sm:px-[28px] py-[26px] shadow-xs border border-slate-100 flex flex-col gap-[20px]">
-                <div className="flex items-center justify-between">
-                  <div className="flex flex-col gap-[3px]">
-                    <p className="font-bold text-[#0b1f3a] text-[17px]">
-                      Latest Order #PEP-89241
-                    </p>
-                    <p className="font-normal text-[#64748b] text-[12.5px]">
-                      Placed Today, 18:34 GMT · 3 Line Items · Royal Mail Tracked 24
-                    </p>
+              {/* Card 1: Latest Order or Empty State */}
+              {orders.length > 0 ? (
+                <div className="bg-white rounded-[16px] px-6 sm:px-[28px] py-[26px] shadow-xs border border-slate-100 flex flex-col gap-[20px]">
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-col gap-[3px]">
+                      <p className="font-bold text-[#0b1f3a] text-[17px]">
+                        Latest Order #{orders[0].id}
+                      </p>
+                      <p className="font-normal text-[#64748b] text-[12.5px]">
+                        Placed {orders[0].displayDate} · {orders[0].items?.length || 1} Line Item{(orders[0].items?.length || 1) === 1 ? "" : "s"} · Royal Mail Tracked 24
+                      </p>
+                    </div>
+                    <div className="bg-[#e6fffa] px-[12px] py-[6px] rounded-[20px]">
+                      <p className="font-semibold text-[#16a6a3] text-[12px] whitespace-nowrap">
+                        {orders[0].status || "Cold-Chain Packing"}
+                      </p>
+                    </div>
                   </div>
-                  <div className="bg-[#e6fffa] px-[12px] py-[6px] rounded-[20px]">
-                    <p className="font-semibold text-[#16a6a3] text-[12px] whitespace-nowrap">
-                      Cold-Chain Packing
-                    </p>
+
+                  {/* 4-Step Progress Stepper */}
+                  <div className="bg-[#f8fafc] rounded-[10px] px-[16px] py-[14px] flex items-center justify-between gap-2 overflow-x-auto">
+                    {/* Step 1 */}
+                    <div className="flex gap-[8px] items-center shrink-0">
+                      <div className="w-[22px] h-[22px] rounded-full bg-[#16a6a3] text-white flex items-center justify-center font-bold text-[11px]">
+                        ✓
+                      </div>
+                      <span className="font-medium text-[#0f172a] text-[12px] whitespace-nowrap">
+                        Order Placed
+                      </span>
+                    </div>
+                    <div className="flex-1 h-[2px] min-w-[20px] bg-[#16a6a3] rounded-full" />
+
+                    {/* Step 2 */}
+                    <div className="flex gap-[8px] items-center shrink-0">
+                      <div className={`w-[22px] h-[22px] rounded-full ${orders[0].status === "Delivered" ? "bg-[#16a6a3] text-white" : "bg-[#0b1f3a] text-white ring-4 ring-[#0b1f3a]/10"} flex items-center justify-center font-bold text-[11px]`}>
+                        {orders[0].status === "Delivered" ? "✓" : "2"}
+                      </div>
+                      <span className="font-bold text-[#0b1f3a] text-[12px] whitespace-nowrap">
+                        Cold-Chain Packing
+                      </span>
+                    </div>
+                    <div className={`flex-1 h-[2px] min-w-[20px] ${orders[0].status === "Delivered" ? "bg-[#16a6a3]" : "bg-[#e2e8f0]"} rounded-full`} />
+
+                    {/* Step 3 */}
+                    <div className="flex gap-[8px] items-center shrink-0">
+                      <div className={`w-[22px] h-[22px] rounded-full ${orders[0].status === "Delivered" ? "bg-[#16a6a3] text-white" : "bg-[#cbd5e1] text-white"} flex items-center justify-center font-bold text-[11px]`}>
+                        {orders[0].status === "Delivered" ? "✓" : "3"}
+                      </div>
+                      <span className="font-medium text-[#94a3b8] text-[12px] whitespace-nowrap">
+                        Dispatched (Tracked 24)
+                      </span>
+                    </div>
+                    <div className={`flex-1 h-[2px] min-w-[20px] ${orders[0].status === "Delivered" ? "bg-[#16a6a3]" : "bg-[#e2e8f0]"} rounded-full`} />
+
+                    {/* Step 4 */}
+                    <div className="flex gap-[8px] items-center shrink-0">
+                      <div className={`w-[22px] h-[22px] rounded-full ${orders[0].status === "Delivered" ? "bg-[#16a6a3] text-white" : "bg-[#cbd5e1] text-white"} flex items-center justify-center font-bold text-[11px]`}>
+                        {orders[0].status === "Delivered" ? "✓" : "4"}
+                      </div>
+                      <span className="font-medium text-[#94a3b8] text-[12px] whitespace-nowrap">
+                        Delivered
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="h-px bg-[#f1f5f9] w-full" />
+
+                  {/* Ordered Items List */}
+                  <div className="flex flex-col gap-[14px]">
+                    {orders[0].items?.map((item: any, idx: number) => (
+                      <div key={item.id || idx} className="flex items-center justify-between">
+                        <div className="flex gap-[14px] items-center">
+                          <div className="w-[48px] h-[48px] rounded-[8px] bg-slate-50 border border-slate-200 overflow-hidden flex items-center justify-center p-1 shrink-0">
+                            <img
+                              alt=""
+                              className="w-full h-full object-contain"
+                              src={item.image || "/images/figma/152e353c4afaa5945905ac686de871b57ec2a770.png"}
+                            />
+                          </div>
+                          <div className="flex flex-col gap-[3px]">
+                            <p className="font-semibold text-[#0b1f3a] text-[13.5px]">
+                              {item.title}
+                            </p>
+                            <p className="font-normal text-[#64748b] text-[12px]">
+                              {item.subtitle || `${item.quantity || 1}x Units`}
+                            </p>
+                          </div>
+                        </div>
+                        <p className="font-bold text-[#0b1f3a] text-[14px]">
+                          £{((item.price || 0) * (item.quantity || 1)).toFixed(2)}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="h-px bg-[#f1f5f9] w-full" />
+
+                  {/* Actions Row */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex gap-[8px] items-center text-[13px]">
+                      <span className="text-[#64748b]">Total Paid:</span>
+                      <span className="font-bold text-[#0b1f3a] text-[16px]">£{orders[0].total?.toFixed(2)}</span>
+                      {orders[0].paymentMethod && (
+                        <span className="text-[#94a3b8] text-[12.5px]">({orders[0].paymentMethod})</span>
+                      )}
+                    </div>
+                    <div className="flex gap-[10px] items-center">
+                      <button
+                        type="button"
+                        onClick={() => handleTabChange("orders")}
+                        className="bg-[#0b1f3a] hover:bg-[#162a45] text-white text-[12.5px] font-semibold px-[16px] py-[8px] rounded-[6px] transition-colors cursor-pointer"
+                      >
+                        Live Dispatch Tracker →
+                      </button>
+                      <Link
+                        href="/checkout/success"
+                        className="bg-[#f1f5f9] hover:bg-slate-200 text-[#0b1f3a] text-[12.5px] font-semibold px-[14px] py-[8px] rounded-[6px] transition-colors"
+                      >
+                        View Receipt Slip
+                      </Link>
+                    </div>
                   </div>
                 </div>
-
-                {/* 4-Step Progress Stepper */}
-                <div className="bg-[#f8fafc] rounded-[10px] px-[16px] py-[14px] flex items-center justify-between gap-2 overflow-x-auto">
-                  {/* Step 1 */}
-                  <div className="flex gap-[8px] items-center shrink-0">
-                    <div className="w-[22px] h-[22px] rounded-full bg-[#16a6a3] text-white flex items-center justify-center font-bold text-[11px]">
-                      ✓
-                    </div>
-                    <span className="font-medium text-[#0f172a] text-[12px] whitespace-nowrap">
-                      Order Placed
-                    </span>
+              ) : (
+                <div className="bg-white rounded-[16px] px-6 sm:px-[28px] py-[36px] shadow-xs border border-slate-100 flex flex-col items-center justify-center text-center gap-[16px]">
+                  <div className="w-[56px] h-[56px] rounded-full bg-[#f1f5f9] flex items-center justify-center text-[#0b1f3a]">
+                    <svg className="w-7 h-7 text-[#16a6a3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                    </svg>
                   </div>
-                  <div className="flex-1 h-[2px] min-w-[20px] bg-[#16a6a3] rounded-full" />
-
-                  {/* Step 2 (Active) */}
-                  <div className="flex gap-[8px] items-center shrink-0">
-                    <div className="w-[22px] h-[22px] rounded-full bg-[#0b1f3a] text-white flex items-center justify-center font-bold text-[11px] ring-4 ring-[#0b1f3a]/10">
-                      2
-                    </div>
-                    <span className="font-bold text-[#0b1f3a] text-[12px] whitespace-nowrap">
-                      Cold-Chain Packing
-                    </span>
+                  <div className="max-w-[440px]">
+                    <p className="font-bold text-[#0b1f3a] text-[18px]">No Orders Placed Yet</p>
+                    <p className="font-normal text-[#64748b] text-[13px] mt-1.5 leading-relaxed">
+                      You haven&apos;t placed any research peptide orders yet. Once you complete checkout, your order progress, cold-chain tracking, and dispatch details will appear here.
+                    </p>
                   </div>
-                  <div className="flex-1 h-[2px] min-w-[20px] bg-[#e2e8f0] rounded-full" />
-
-                  {/* Step 3 */}
-                  <div className="flex gap-[8px] items-center shrink-0">
-                    <div className="w-[22px] h-[22px] rounded-full bg-[#cbd5e1] text-white flex items-center justify-center font-bold text-[11px]">
-                      3
-                    </div>
-                    <span className="font-medium text-[#94a3b8] text-[12px] whitespace-nowrap">
-                      Dispatched (Tracked 24)
-                    </span>
-                  </div>
-                  <div className="flex-1 h-[2px] min-w-[20px] bg-[#e2e8f0] rounded-full" />
-
-                  {/* Step 4 */}
-                  <div className="flex gap-[8px] items-center shrink-0">
-                    <div className="w-[22px] h-[22px] rounded-full bg-[#cbd5e1] text-white flex items-center justify-center font-bold text-[11px]">
-                      4
-                    </div>
-                    <span className="font-medium text-[#94a3b8] text-[12px] whitespace-nowrap">
-                      Delivered
-                    </span>
-                  </div>
-                </div>
-
-                <div className="h-px bg-[#f1f5f9] w-full" />
-
-                {/* Ordered Items List */}
-                <div className="flex flex-col gap-[14px]">
-                  {/* Item 1 */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex gap-[14px] items-center">
-                      <div className="w-[48px] h-[48px] rounded-[8px] bg-slate-50 border border-slate-200 overflow-hidden flex items-center justify-center p-1 shrink-0">
-                        <img
-                          alt=""
-                          className="w-full h-full object-contain"
-                          src="/images/figma/152e353c4afaa5945905ac686de871b57ec2a770.png"
-                        />
-                      </div>
-                      <div className="flex flex-col gap-[3px]">
-                        <p className="font-semibold text-[#0b1f3a] text-[13.5px]">
-                          Semaglutide Starter Kit (5mg)
-                        </p>
-                        <p className="font-normal text-[#64748b] text-[12px]">
-                          1x Pen + 28-Day Cartridge Included · Free Micro-Needles
-                        </p>
-                      </div>
-                    </div>
-                    <p className="font-bold text-[#0b1f3a] text-[14px]">£129.00</p>
-                  </div>
-
-                  {/* Item 2 */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex gap-[14px] items-center">
-                      <div className="w-[48px] h-[48px] rounded-[8px] bg-slate-50 border border-slate-200 overflow-hidden flex items-center justify-center p-1 shrink-0">
-                        <img
-                          alt=""
-                          className="w-full h-full object-contain"
-                          src="/images/figma/0e71e8560b9bae80ee21a3d08905300075c266b7.png"
-                        />
-                      </div>
-                      <div className="flex flex-col gap-[3px]">
-                        <p className="font-semibold text-[#0b1f3a] text-[13.5px]">
-                          Tirzepatide Cartridge Refill (10mg)
-                        </p>
-                        <p className="font-normal text-[#64748b] text-[12px]">
-                          1x Multi-Dose Cartridge · Batch #TRZ-2026-08B
-                        </p>
-                      </div>
-                    </div>
-                    <p className="font-bold text-[#0b1f3a] text-[14px]">£95.00</p>
-                  </div>
-
-                  {/* Item 3 */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex gap-[14px] items-center">
-                      <div className="w-[48px] h-[48px] rounded-[8px] bg-slate-50 border border-slate-200 overflow-hidden flex items-center justify-center p-1 shrink-0">
-                        <img
-                          alt=""
-                          className="w-full h-full object-contain"
-                          src="/images/figma/2d7803f97be6d80d5630dfb42abba84289ed1bb5.png"
-                        />
-                      </div>
-                      <div className="flex flex-col gap-[3px]">
-                        <p className="font-semibold text-[#0b1f3a] text-[13.5px]">
-                          BPC-157 Research Grade (5mg)
-                        </p>
-                        <p className="font-normal text-[#64748b] text-[12px]">
-                          1x Reconstituted Lyophilized Vial · 99.91% Purity
-                        </p>
-                      </div>
-                    </div>
-                    <p className="font-bold text-[#0b1f3a] text-[14px]">£44.50</p>
-                  </div>
-                </div>
-
-                <div className="h-px bg-[#f1f5f9] w-full" />
-
-                {/* Actions Row */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="flex gap-[8px] items-center text-[13px]">
-                    <span className="text-[#64748b]">Total Paid:</span>
-                    <span className="font-bold text-[#0b1f3a] text-[16px]">£278.50</span>
-                    <span className="text-[#94a3b8] text-[12.5px]">(Visa •••• 1234)</span>
-                  </div>
-                  <div className="flex gap-[10px] items-center">
-                    <button
-                      type="button"
-                      onClick={() => handleTabChange("orders")}
-                      className="bg-[#0b1f3a] hover:bg-[#162a45] text-white text-[12.5px] font-semibold px-[16px] py-[8px] rounded-[6px] transition-colors cursor-pointer"
-                    >
-                      Live Dispatch Tracker →
-                    </button>
+                  <div className="flex flex-wrap gap-3 items-center justify-center pt-1">
                     <Link
-                      href="/checkout/success"
-                      className="bg-[#f1f5f9] hover:bg-slate-200 text-[#0b1f3a] text-[12.5px] font-semibold px-[14px] py-[8px] rounded-[6px] transition-colors"
+                      href="/refills"
+                      className="bg-[#0b1f3a] hover:bg-[#162a45] text-white text-[13px] font-semibold px-[18px] py-[9px] rounded-[8px] transition-colors"
                     >
-                      View Receipt Slip
+                      Browse Refill Cartridges
+                    </Link>
+                    <Link
+                      href="/pen-sets"
+                      className="bg-[#f1f5f9] hover:bg-slate-200 text-[#0b1f3a] text-[13px] font-semibold px-[16px] py-[9px] rounded-[8px] transition-colors"
+                    >
+                      Complete Pen Sets
                     </Link>
                   </div>
                 </div>
-              </div>
+              )}
 
               {/* Card 2: Active Refill Protocol */}
-              <div className="bg-white rounded-[16px] px-6 sm:px-[28px] py-[26px] shadow-xs border border-slate-100 flex flex-col gap-[18px]">
-                <div className="flex items-center justify-between">
-                  <div className="flex flex-col gap-[3px]">
-                    <p className="font-bold text-[#0b1f3a] text-[17px]">
-                      Active Refill Protocol · 28-Day Automated Cycle
-                    </p>
-                    <p className="font-normal text-[#64748b] text-[12.5px]">
-                      Ensures uninterrupted cold-chain peptide supply with 15% subscriber savings
-                    </p>
-                  </div>
-                  <div className="bg-[#e6fffa] px-[12px] py-[6px] rounded-[20px]">
-                    <p className="font-semibold text-[#16a6a3] text-[12px] whitespace-nowrap">
-                      Active Subscription
-                    </p>
-                  </div>
-                </div>
-
-                <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-[16px] px-4 sm:px-[28px] py-[22px] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="flex gap-[14px] items-center">
-                    <div className="w-[44px] h-[44px] rounded-[8px] bg-white border border-slate-200 overflow-hidden flex items-center justify-center p-1 shrink-0">
-                      <img
-                        alt=""
-                        className="w-full h-full object-contain"
-                        src="/images/figma/0e71e8560b9bae80ee21a3d08905300075c266b7.png"
-                      />
-                    </div>
+              {subscriptions.length > 0 ? (
+                <div className="bg-white rounded-[16px] px-6 sm:px-[28px] py-[26px] shadow-xs border border-slate-100 flex flex-col gap-[18px]">
+                  <div className="flex items-center justify-between">
                     <div className="flex flex-col gap-[3px]">
-                      <p className="font-bold text-[#0b1f3a] text-[14px]">
-                        Semaglutide 5mg 28-Day Refill Cartridge
+                      <p className="font-bold text-[#0b1f3a] text-[17px]">
+                        Active Refill Protocol · 28-Day Automated Cycle
                       </p>
-                      <p className="font-normal text-[#64748b] text-[12px]">
-                        Next auto-billing &amp; dispatch: 14 October 2026 · Protocol: 0.25mg / week
+                      <p className="font-normal text-[#64748b] text-[12.5px]">
+                        Ensures uninterrupted cold-chain peptide supply with 10% subscriber savings
+                      </p>
+                    </div>
+                    <div className="bg-[#e6fffa] px-[12px] py-[6px] rounded-[20px]">
+                      <p className="font-semibold text-[#16a6a3] text-[12px] whitespace-nowrap">
+                        Active Subscription
                       </p>
                     </div>
                   </div>
-                  <p className="font-bold text-[#0b1f3a] text-[15px] whitespace-nowrap">
-                    £110.00 / cycle
-                  </p>
-                </div>
 
-                <div className="flex flex-wrap gap-[10px] items-center pt-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      handleTabChange("subscriptions")
-                      setScheduleExpanded(true)
-                    }}
-                    className="bg-[#0b1f3a] hover:bg-[#162a45] text-white text-[12px] font-semibold px-[14px] py-[8px] rounded-[6px] transition-colors cursor-pointer"
-                  >
-                    Manage Refill Schedule
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => alert("Upcoming 14 Oct cycle skipped. Next cycle set to 11 Nov.")}
-                    className="bg-[#f1f5f9] hover:bg-slate-200 text-[#0b1f3a] text-[12px] font-semibold px-[14px] py-[8px] rounded-[6px] transition-colors cursor-pointer"
-                  >
-                    Skip Next Cycle
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleTabChange("subscriptions")}
-                    className="bg-[#f1f5f9] hover:bg-slate-200 text-[#0b1f3a] text-[12px] font-semibold px-[14px] py-[8px] rounded-[6px] transition-colors cursor-pointer"
-                  >
-                    Update Dosage Protocol
-                  </button>
+                  <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-[16px] px-4 sm:px-[28px] py-[22px] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex gap-[14px] items-center">
+                      <div className="w-[44px] h-[44px] rounded-[8px] bg-white border border-slate-200 overflow-hidden flex items-center justify-center p-1 shrink-0">
+                        <img
+                          alt=""
+                          className="w-full h-full object-contain"
+                          src={subscriptions[0].image || "/images/figma/0e71e8560b9bae80ee21a3d08905300075c266b7.png"}
+                        />
+                      </div>
+                      <div className="flex flex-col gap-[3px]">
+                        <p className="font-bold text-[#0b1f3a] text-[14px]">
+                          {subscriptions[0].title}
+                        </p>
+                        <p className="font-normal text-[#64748b] text-[12px]">
+                          Next auto-billing &amp; dispatch: {subscriptions[0].nextDispatchDate} · Protocol: {subscriptions[0].protocolInfo || "Standard Cadence"}
+                        </p>
+                      </div>
+                    </div>
+                    <p className="font-bold text-[#0b1f3a] text-[15px] whitespace-nowrap">
+                      £{subscriptions[0].price?.toFixed(2)} / cycle
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap gap-[10px] items-center pt-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleTabChange("subscriptions")
+                        setScheduleExpanded(true)
+                      }}
+                      className="bg-[#0b1f3a] hover:bg-[#162a45] text-white text-[12px] font-semibold px-[14px] py-[8px] rounded-[6px] transition-colors cursor-pointer"
+                    >
+                      Manage Refill Schedule
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => alert(`Upcoming ${subscriptions[0].nextDispatchDate} cycle skipped.`)}
+                      className="bg-[#f1f5f9] hover:bg-slate-200 text-[#0b1f3a] text-[12px] font-semibold px-[14px] py-[8px] rounded-[6px] transition-colors cursor-pointer"
+                    >
+                      Skip Next Cycle
+                    </button>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="bg-white rounded-[16px] px-6 sm:px-[28px] py-[28px] shadow-xs border border-slate-100 flex flex-col gap-[16px]">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-bold text-[#0b1f3a] text-[16px]">
+                        Automated 28-Day Refill Protocols
+                      </p>
+                      <p className="font-normal text-[#64748b] text-[12.5px] mt-0.5">
+                        Maintain uninterrupted cold-chain peptide supply with 10% subscriber savings.
+                      </p>
+                    </div>
+                    <span className="bg-[#f1f5f9] text-[#64748b] text-[11px] font-medium px-[10px] py-[4px] rounded-[12px]">
+                      0 Active Protocols
+                    </span>
+                  </div>
+                  <div className="bg-[#f8fafc] border border-slate-200 border-dashed rounded-[12px] p-6 text-center flex flex-col items-center justify-center gap-2">
+                    <p className="text-[13px] text-[#0b1f3a] font-semibold">No active recurring refill cycles on file.</p>
+                    <p className="text-[12px] text-[#64748b] max-w-[420px]">
+                      Compatible refill cartridges and lyophilised vials can be ordered on a 28-day automated cycle with flexible pause and cancel controls.
+                    </p>
+                    <Link
+                      href="/refills"
+                      className="mt-1 text-[12.5px] font-semibold text-[#16a6a3] hover:underline"
+                    >
+                      Explore 28-Day Refills →
+                    </Link>
+                  </div>
+                </div>
+              )}
 
               {/* Card 3: Digital COA Vault */}
               <div className="bg-white rounded-[16px] px-6 sm:px-[28px] py-[26px] shadow-xs border border-slate-100 flex flex-col gap-[18px]">
@@ -1058,74 +1348,46 @@ function AccountContent() {
                     Digital Certificate of Analysis (COA) Vault
                   </p>
                   <p className="font-medium text-[#64748b] text-[12.5px]">
-                    3 Verified Batch Certificates
+                    {orders.length > 0 ? `${orders.reduce((acc, o) => acc + (o.items?.length || 0), 0)} Verified Batch Reports` : "Central Verified Library"}
                   </p>
                 </div>
 
-                <div className="flex flex-col gap-[10px]">
-                  {/* COA 1 */}
-                  <div className="bg-[#f8fafc] rounded-[8px] px-[14px] py-[10px] flex items-center justify-between">
-                    <div className="flex gap-[12px] items-center flex-wrap">
-                      <span className="font-bold text-[#0b1f3a] text-[13px]">
-                        Batch #SMG-2026-09A
-                      </span>
-                      <span className="font-medium text-[#0f172a] text-[13px]">
-                        Semaglutide 5mg
-                      </span>
-                      <span className="bg-[#e6fffa] text-[#16a6a3] text-[11px] font-bold px-[6px] py-[2px] rounded-[4px]">
-                        99.82% HPLC
-                      </span>
-                    </div>
+                {orders.length > 0 ? (
+                  <div className="flex flex-col gap-[10px]">
+                    {orders.flatMap(o => o.items || []).slice(0, 3).map((item: any, idx: number) => (
+                      <div key={item.id || idx} className="bg-[#f8fafc] rounded-[8px] px-[14px] py-[10px] flex items-center justify-between">
+                        <div className="flex gap-[12px] items-center flex-wrap">
+                          <span className="font-bold text-[#0b1f3a] text-[13px]">
+                            Batch #{item.batchNumber || `PEP-2026-${(idx + 1) * 10}A`}
+                          </span>
+                          <span className="font-medium text-[#0f172a] text-[13px]">
+                            {item.title}
+                          </span>
+                          <span className="bg-[#e6fffa] text-[#16a6a3] text-[11px] font-bold px-[6px] py-[2px] rounded-[4px]">
+                            99.8% HPLC
+                          </span>
+                        </div>
+                        <Link
+                          href="/lab-reports"
+                          className="bg-white border border-slate-200 hover:border-slate-300 text-[#0b1f3a] font-semibold text-[11.5px] px-[10px] py-[5px] rounded-[6px] transition-colors"
+                        >
+                          View COA →
+                        </Link>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="bg-[#f8fafc] rounded-[10px] p-5 text-center flex flex-col items-center justify-center gap-2">
+                    <p className="text-[13px] text-[#0b1f3a] font-medium">Batch lab reports will automatically link here upon order completion.</p>
+                    <p className="text-[12px] text-[#64748b]">You can also look up any batch or lot number in our central repository.</p>
                     <Link
                       href="/lab-reports"
-                      className="bg-white border border-slate-200 hover:border-slate-300 text-[#0b1f3a] font-semibold text-[11.5px] px-[10px] py-[5px] rounded-[6px] transition-colors"
+                      className="text-[12.5px] font-semibold text-[#16a6a3] hover:underline pt-1"
                     >
-                      Download PDF ↓
+                      Search Central COA Library →
                     </Link>
                   </div>
-
-                  {/* COA 2 */}
-                  <div className="bg-[#f8fafc] rounded-[8px] px-[14px] py-[10px] flex items-center justify-between">
-                    <div className="flex gap-[12px] items-center flex-wrap">
-                      <span className="font-bold text-[#0b1f3a] text-[13px]">
-                        Batch #TRZ-2026-08B
-                      </span>
-                      <span className="font-medium text-[#0f172a] text-[13px]">
-                        Tirzepatide 10mg
-                      </span>
-                      <span className="bg-[#e6fffa] text-[#16a6a3] text-[11px] font-bold px-[6px] py-[2px] rounded-[4px]">
-                        99.64% HPLC
-                      </span>
-                    </div>
-                    <Link
-                      href="/lab-reports"
-                      className="bg-white border border-slate-200 hover:border-slate-300 text-[#0b1f3a] font-semibold text-[11.5px] px-[10px] py-[5px] rounded-[6px] transition-colors"
-                    >
-                      Download PDF ↓
-                    </Link>
-                  </div>
-
-                  {/* COA 3 */}
-                  <div className="bg-[#f8fafc] rounded-[8px] px-[14px] py-[10px] flex items-center justify-between">
-                    <div className="flex gap-[12px] items-center flex-wrap">
-                      <span className="font-bold text-[#0b1f3a] text-[13px]">
-                        Batch #BPC-2026-07F
-                      </span>
-                      <span className="font-medium text-[#0f172a] text-[13px]">
-                        BPC-157 5mg
-                      </span>
-                      <span className="bg-[#e6fffa] text-[#16a6a3] text-[11px] font-bold px-[6px] py-[2px] rounded-[4px]">
-                        99.91% HPLC
-                      </span>
-                    </div>
-                    <Link
-                      href="/lab-reports"
-                      className="bg-white border border-slate-200 hover:border-slate-300 text-[#0b1f3a] font-semibold text-[11.5px] px-[10px] py-[5px] rounded-[6px] transition-colors"
-                    >
-                      Download PDF ↓
-                    </Link>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
 
@@ -1173,21 +1435,35 @@ function AccountContent() {
               <div className="bg-white rounded-[16px] px-6 sm:px-[28px] py-[26px] shadow-xs border border-slate-100 flex flex-col gap-[14px]">
                 <div className="flex items-center justify-between">
                   <p className="font-bold text-[#0b1f3a] text-[15px]">Payment &amp; Billing</p>
-                  <span className="bg-[#f8fafc] border border-slate-200 text-[#16a6a3] text-[10.5px] font-medium px-[6px] py-[2px] rounded-[4px]">
-                    ACTIVE
-                  </span>
+                  {paymentCards.length > 0 && (
+                    <span className="bg-[#f8fafc] border border-slate-200 text-[#16a6a3] text-[10.5px] font-medium px-[6px] py-[2px] rounded-[4px]">
+                      ACTIVE
+                    </span>
+                  )}
                 </div>
-                <div className="flex flex-col gap-[4px]">
-                  <div className="flex items-center gap-[8px] py-1">
-                    <VisaBadge className="w-[32px] h-[20px]" monochrome />
-                    <p className="font-semibold text-[#0f172a] text-[13.5px]">
-                      Visa ending in ...1234
+                {paymentCards.length > 0 ? (
+                  <div className="flex flex-col gap-[4px]">
+                    <div className="flex items-center gap-[8px] py-1">
+                      {paymentCards[0].brand === "mastercard" ? (
+                        <MastercardBadge className="w-[32px] h-[20px]" monochrome />
+                      ) : (
+                        <VisaBadge className="w-[32px] h-[20px]" monochrome />
+                      )}
+                      <p className="font-semibold text-[#0f172a] text-[13.5px]">
+                        {paymentCards[0].title || "Corporate Card"} ending in ...{paymentCards[0].last4 || "1234"}
+                      </p>
+                    </div>
+                    <p className="font-normal text-[#64748b] text-[12px]">
+                      Expires: {paymentCards[0].expiry || "08/2028"} · Verified 3D Secure
                     </p>
                   </div>
-                  <p className="font-normal text-[#64748b] text-[12px]">
-                    Expires: 08/2028 · Verified 3D Secure
-                  </p>
-                </div>
+                ) : (
+                  <div className="flex flex-col gap-[6px]">
+                    <p className="text-[#64748b] text-[12.5px]">
+                      No saved payment methods on file. Cards can be securely saved during checkout.
+                    </p>
+                  </div>
+                )}
                 <button
                   type="button"
                   onClick={() => handleTabChange("payment")}
@@ -1219,7 +1495,7 @@ function AccountContent() {
                         : "bg-white border border-[#e2e8f0] text-[#0f172a] hover:border-slate-300"
                     }`}
                   >
-                    All Orders (3)
+                    All Orders ({orders.length})
                   </button>
                   <button
                     type="button"
@@ -1230,7 +1506,7 @@ function AccountContent() {
                         : "bg-white border border-[#e2e8f0] text-[#0f172a] hover:border-slate-300"
                     }`}
                   >
-                    In Transit (1)
+                    In Transit ({orders.filter(o => o.status !== "Delivered").length})
                   </button>
                   <button
                     type="button"
@@ -1241,7 +1517,7 @@ function AccountContent() {
                         : "bg-white border border-[#e2e8f0] text-[#0f172a] hover:border-slate-300"
                     }`}
                   >
-                    Delivered (2)
+                    Delivered ({orders.filter(o => o.status === "Delivered").length})
                   </button>
                 </div>
 
@@ -1269,218 +1545,152 @@ function AccountContent() {
                 </div>
               </div>
 
-              {/* Order Card 1: #PEP-89241 (In Transit / Packing) */}
-              {(ordersFilter === "all" || ordersFilter === "transit") && (
-                <div className="bg-white rounded-[16px] px-6 sm:px-[28px] py-[26px] shadow-xs border border-slate-100 flex flex-col gap-[20px]">
-                  <div className="flex items-center justify-between">
-                    <div className="flex flex-col gap-[3px]">
-                      <p className="font-bold text-[#0b1f3a] text-[17px]">
-                        Order #PEP-89241
-                      </p>
-                      <p className="font-normal text-[#64748b] text-[12.5px]">
-                        Placed Today, 16 Sep 2026, 18:34 GMT · Tracking: GB-RM24-89241-CLD
-                      </p>
-                    </div>
-                    <div className="bg-[#e6fffa] px-[12px] py-[6px] rounded-[20px]">
-                      <p className="font-semibold text-[#16a6a3] text-[12px] whitespace-nowrap">
-                        Cold-Chain Packing
-                      </p>
-                    </div>
+              {/* Order Cards List or Empty State */}
+              {orders.length === 0 ? (
+                <div className="bg-white rounded-[16px] p-12 border border-slate-100 text-center flex flex-col items-center justify-center gap-3">
+                  <div className="w-14 h-14 rounded-full bg-[#f1f5f9] flex items-center justify-center text-[#0b1f3a]">
+                    <svg className="w-7 h-7 text-[#16a6a3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
                   </div>
-
-                  {/* Stepper */}
-                  <div className="bg-[#f8fafc] rounded-[10px] px-[16px] py-[14px] flex items-center justify-between gap-2 overflow-x-auto">
-                    <div className="flex gap-[8px] items-center shrink-0">
-                      <div className="w-[22px] h-[22px] rounded-full bg-[#16a6a3] text-white flex items-center justify-center font-bold text-[11px]">
-                        ✓
-                      </div>
-                      <span className="font-medium text-[#0f172a] text-[12px] whitespace-nowrap">
-                        Order Placed
-                      </span>
-                    </div>
-                    <div className="flex-1 h-[2px] min-w-[20px] bg-[#16a6a3] rounded-full" />
-                    <div className="flex gap-[8px] items-center shrink-0">
-                      <div className="w-[22px] h-[22px] rounded-full bg-[#0b1f3a] text-white flex items-center justify-center font-bold text-[11px]">
-                        2
-                      </div>
-                      <span className="font-bold text-[#0b1f3a] text-[12px] whitespace-nowrap">
-                        Cold-Chain Packing
-                      </span>
-                    </div>
-                    <div className="flex-1 h-[2px] min-w-[20px] bg-[#e2e8f0] rounded-full" />
-                    <div className="flex gap-[8px] items-center shrink-0">
-                      <div className="w-[22px] h-[22px] rounded-full bg-[#cbd5e1] text-white flex items-center justify-center font-bold text-[11px]">
-                        3
-                      </div>
-                      <span className="font-medium text-[#94a3b8] text-[12px] whitespace-nowrap">
-                        Dispatched (Tracked 24)
-                      </span>
-                    </div>
-                    <div className="flex-1 h-[2px] min-w-[20px] bg-[#e2e8f0] rounded-full" />
-                    <div className="flex gap-[8px] items-center shrink-0">
-                      <div className="w-[22px] h-[22px] rounded-full bg-[#cbd5e1] text-white flex items-center justify-center font-bold text-[11px]">
-                        4
-                      </div>
-                      <span className="font-medium text-[#94a3b8] text-[12px] whitespace-nowrap">
-                        Delivered
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Items */}
-                  <div className="flex flex-col gap-[14px]">
-                    <div className="flex items-center justify-between">
-                      <div className="flex gap-[14px] items-center">
-                        <div className="w-[48px] h-[48px] rounded-[8px] bg-slate-50 border border-slate-200 overflow-hidden flex items-center justify-center p-1 shrink-0">
-                          <img
-                            alt=""
-                            className="w-full h-full object-contain"
-                            src="/images/figma/152e353c4afaa5945905ac686de871b57ec2a770.png"
-                          />
-                        </div>
-                        <div className="flex flex-col gap-[3px]">
-                          <p className="font-semibold text-[#0b1f3a] text-[13.5px]">
-                            Semaglutide Starter Kit (5mg)
-                          </p>
-                          <p className="font-normal text-[#64748b] text-[12px]">
-                            1x Pen + 28-Day Cartridge Included · Free Micro-Needles
-                          </p>
-                        </div>
-                      </div>
-                      <p className="font-bold text-[#0b1f3a] text-[14px]">£129.00</p>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="flex gap-[14px] items-center">
-                        <div className="w-[48px] h-[48px] rounded-[8px] bg-slate-50 border border-slate-200 overflow-hidden flex items-center justify-center p-1 shrink-0">
-                          <img
-                            alt=""
-                            className="w-full h-full object-contain"
-                            src="/images/figma/0e71e8560b9bae80ee21a3d08905300075c266b7.png"
-                          />
-                        </div>
-                        <div className="flex flex-col gap-[3px]">
-                          <p className="font-semibold text-[#0b1f3a] text-[13.5px]">
-                            Tirzepatide Cartridge Refill (10mg)
-                          </p>
-                          <p className="font-normal text-[#64748b] text-[12px]">
-                            1x Multi-Dose Cartridge · Batch #TRZ-2026-08B
-                          </p>
-                        </div>
-                      </div>
-                      <p className="font-bold text-[#0b1f3a] text-[14px]">£95.00</p>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="flex gap-[14px] items-center">
-                        <div className="w-[48px] h-[48px] rounded-[8px] bg-slate-50 border border-slate-200 overflow-hidden flex items-center justify-center p-1 shrink-0">
-                          <img
-                            alt=""
-                            className="w-full h-full object-contain"
-                            src="/images/figma/2d7803f97be6d80d5630dfb42abba84289ed1bb5.png"
-                          />
-                        </div>
-                        <div className="flex flex-col gap-[3px]">
-                          <p className="font-semibold text-[#0b1f3a] text-[13.5px]">
-                            BPC-157 Research Grade (5mg)
-                          </p>
-                          <p className="font-normal text-[#64748b] text-[12px]">
-                            1x Reconstituted Lyophilized Vial · 99.91% Purity
-                          </p>
-                        </div>
-                      </div>
-                      <p className="font-bold text-[#0b1f3a] text-[14px]">£44.50</p>
-                    </div>
-                  </div>
-
-                  <div className="h-px bg-[#f1f5f9] w-full" />
-
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <p className="font-bold text-[#0b1f3a] text-[15px]">
-                      Total Paid: £278.50 (Visa ...1234)
-                    </p>
-                    <div className="flex gap-[10px] items-center">
-                      <button
-                        type="button"
-                        onClick={() => alert("Tracking GB-RM24-89241-CLD: Departs Cambridge Hub at 22:00 GMT.")}
-                        className="bg-[#0b1f3a] hover:bg-[#162a45] text-white text-[12px] font-semibold px-[14px] py-[8px] rounded-[6px] transition-colors cursor-pointer"
-                      >
-                        Track Live Dispatch →
-                      </button>
-                      <Link
-                        href="/checkout/success"
-                        className="bg-[#f1f5f9] hover:bg-slate-200 text-[#0b1f3a] text-[12px] font-semibold px-[14px] py-[8px] rounded-[6px] transition-colors"
-                      >
-                        View Receipt Slip
-                      </Link>
-                    </div>
-                  </div>
+                  <p className="font-bold text-[#0b1f3a] text-[17px]">No Order History Found</p>
+                  <p className="text-sm text-[#64748b] max-w-[420px]">
+                    You haven&apos;t placed any research peptide orders yet. Once placed, your cold-chain tracking status and line items will be displayed here in real time.
+                  </p>
+                  <Link
+                    href="/pen-sets"
+                    className="mt-2 bg-[#0b1f3a] hover:bg-[#162a45] text-white text-[13px] font-semibold px-5 py-2.5 rounded-[8px] transition-colors"
+                  >
+                    Explore Research Catalog
+                  </Link>
                 </div>
-              )}
-
-              {/* Order Card 2: #PEP-77412 (Delivered) */}
-              {(ordersFilter === "all" || ordersFilter === "delivered") && (
-                <div className="bg-white rounded-[16px] px-6 sm:px-[28px] py-[24px] shadow-xs border border-slate-100 flex flex-col gap-[16px]">
-                  <div className="flex items-center justify-between">
-                    <div className="flex flex-col gap-[3px]">
-                      <p className="font-bold text-[#0b1f3a] text-[16px]">
-                        Order #PEP-77412
-                      </p>
-                      <p className="font-normal text-[#64748b] text-[12.5px]">
-                        Delivered 16 Aug 2026 · Royal Mail Tracked 24 (Signed: A. Wright)
-                      </p>
-                    </div>
-                    <div className="bg-[#f8fafc] border border-slate-200 px-[12px] py-[6px] rounded-[20px]">
-                      <p className="font-semibold text-[#64748b] text-[12px] whitespace-nowrap">
-                        ✓ Delivered
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex gap-[14px] items-center">
-                      <div className="w-[48px] h-[48px] rounded-[8px] bg-slate-50 border border-slate-200 overflow-hidden flex items-center justify-center p-1 shrink-0">
-                        <img
-                          alt=""
-                          className="w-full h-full object-contain"
-                          src="/images/figma/0e71e8560b9bae80ee21a3d08905300075c266b7.png"
-                        />
+              ) : (
+                orders
+                  .filter((order) => {
+                    if (ordersFilter === "transit") return order.status !== "Delivered"
+                    if (ordersFilter === "delivered") return order.status === "Delivered"
+                    return true
+                  })
+                  .filter((order) => {
+                    if (!orderSearchQuery.trim()) return true
+                    const q = orderSearchQuery.toLowerCase()
+                    return (
+                      order.id?.toLowerCase().includes(q) ||
+                      order.items?.some((it: any) => it.title?.toLowerCase().includes(q))
+                    )
+                  })
+                  .map((order) => (
+                    <div
+                      key={order.id}
+                      className="bg-white rounded-[16px] px-6 sm:px-[28px] py-[26px] shadow-xs border border-slate-100 flex flex-col gap-[20px]"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex flex-col gap-[3px]">
+                          <p className="font-bold text-[#0b1f3a] text-[17px]">
+                            Order #{order.id}
+                          </p>
+                          <p className="font-normal text-[#64748b] text-[12.5px]">
+                            Placed {order.displayDate} · Tracking: {order.trackingNumber || "GB-RM24-PENDING"}
+                          </p>
+                        </div>
+                        <div className="bg-[#e6fffa] px-[12px] py-[6px] rounded-[20px]">
+                          <p className="font-semibold text-[#16a6a3] text-[12px] whitespace-nowrap">
+                            {order.status || "Cold-Chain Packing"}
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex flex-col gap-[3px]">
-                        <p className="font-semibold text-[#0b1f3a] text-[13.5px]">
-                          Semaglutide 5mg 28-Day Refill Cartridge
+
+                      {/* Stepper */}
+                      <div className="bg-[#f8fafc] rounded-[10px] px-[16px] py-[14px] flex items-center justify-between gap-2 overflow-x-auto">
+                        <div className="flex gap-[8px] items-center shrink-0">
+                          <div className="w-[22px] h-[22px] rounded-full bg-[#16a6a3] text-white flex items-center justify-center font-bold text-[11px]">
+                            ✓
+                          </div>
+                          <span className="font-medium text-[#0f172a] text-[12px] whitespace-nowrap">
+                            Order Placed
+                          </span>
+                        </div>
+                        <div className="flex-1 h-[2px] min-w-[20px] bg-[#16a6a3] rounded-full" />
+                        <div className="flex gap-[8px] items-center shrink-0">
+                          <div className={`w-[22px] h-[22px] rounded-full ${order.status === "Delivered" ? "bg-[#16a6a3] text-white" : "bg-[#0b1f3a] text-white ring-4 ring-[#0b1f3a]/10"} flex items-center justify-center font-bold text-[11px]`}>
+                            {order.status === "Delivered" ? "✓" : "2"}
+                          </div>
+                          <span className="font-bold text-[#0b1f3a] text-[12px] whitespace-nowrap">
+                            Cold-Chain Packing
+                          </span>
+                        </div>
+                        <div className={`flex-1 h-[2px] min-w-[20px] ${order.status === "Delivered" ? "bg-[#16a6a3]" : "bg-[#e2e8f0]"} rounded-full`} />
+                        <div className="flex gap-[8px] items-center shrink-0">
+                          <div className={`w-[22px] h-[22px] rounded-full ${order.status === "Delivered" ? "bg-[#16a6a3] text-white" : "bg-[#cbd5e1] text-white"} flex items-center justify-center font-bold text-[11px]`}>
+                            {order.status === "Delivered" ? "✓" : "3"}
+                          </div>
+                          <span className="font-medium text-[#94a3b8] text-[12px] whitespace-nowrap">
+                            Dispatched (Tracked 24)
+                          </span>
+                        </div>
+                        <div className={`flex-1 h-[2px] min-w-[20px] ${order.status === "Delivered" ? "bg-[#16a6a3]" : "bg-[#e2e8f0]"} rounded-full`} />
+                        <div className="flex gap-[8px] items-center shrink-0">
+                          <div className={`w-[22px] h-[22px] rounded-full ${order.status === "Delivered" ? "bg-[#16a6a3] text-white" : "bg-[#cbd5e1] text-white"} flex items-center justify-center font-bold text-[11px]`}>
+                            {order.status === "Delivered" ? "✓" : "4"}
+                          </div>
+                          <span className="font-medium text-[#94a3b8] text-[12px] whitespace-nowrap">
+                            Delivered
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Items */}
+                      <div className="flex flex-col gap-[14px]">
+                        {order.items?.map((item: any, idx: number) => (
+                          <div key={item.id || idx} className="flex items-center justify-between">
+                            <div className="flex gap-[14px] items-center">
+                              <div className="w-[48px] h-[48px] rounded-[8px] bg-slate-50 border border-slate-200 overflow-hidden flex items-center justify-center p-1 shrink-0">
+                                <img
+                                  alt=""
+                                  className="w-full h-full object-contain"
+                                  src={item.image || "/images/figma/152e353c4afaa5945905ac686de871b57ec2a770.png"}
+                                />
+                              </div>
+                              <div className="flex flex-col gap-[3px]">
+                                <p className="font-semibold text-[#0b1f3a] text-[13.5px]">
+                                  {item.title}
+                                </p>
+                                <p className="font-normal text-[#64748b] text-[12px]">
+                                  {item.subtitle || `${item.quantity || 1}x Units`}
+                                </p>
+                              </div>
+                            </div>
+                            <p className="font-bold text-[#0b1f3a] text-[14px]">
+                              £{((item.price || 0) * (item.quantity || 1)).toFixed(2)}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="h-px bg-[#f1f5f9] w-full" />
+
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <p className="font-bold text-[#0b1f3a] text-[15px]">
+                          Total Paid: £{order.total?.toFixed(2)}
                         </p>
-                        <p className="font-normal text-[#64748b] text-[12px]">
-                          1x Cartridge · Batch #SMG-2026-07D
-                        </p>
+                        <div className="flex gap-[10px] items-center">
+                          <button
+                            type="button"
+                            onClick={() => alert(`Tracking ${order.trackingNumber || order.id}: Cold-chain shipment verified.`)}
+                            className="bg-[#0b1f3a] hover:bg-[#162a45] text-white text-[12px] font-semibold px-[14px] py-[8px] rounded-[6px] transition-colors cursor-pointer"
+                          >
+                            Track Live Dispatch →
+                          </button>
+                          <Link
+                            href="/checkout/success"
+                            className="bg-[#f1f5f9] hover:bg-slate-200 text-[#0b1f3a] text-[12px] font-semibold px-[14px] py-[8px] rounded-[6px] transition-colors"
+                          >
+                            View Receipt Slip
+                          </Link>
+                        </div>
                       </div>
                     </div>
-                    <p className="font-bold text-[#0b1f3a] text-[14px]">£110.00</p>
-                  </div>
-
-                  <div className="h-px bg-[#f1f5f9] w-full" />
-
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <p className="font-bold text-[#0b1f3a] text-[14px]">
-                      Total Paid: £110.00 (Visa ...1234)
-                    </p>
-                    <div className="flex gap-[10px] items-center">
-                      <Link
-                        href="/refills"
-                        className="bg-[#f1f5f9] hover:bg-slate-200 text-[#0b1f3a] text-[12px] font-semibold px-[14px] py-[8px] rounded-[6px] transition-colors"
-                      >
-                        Reorder Cartridge ↻
-                      </Link>
-                      <button
-                        type="button"
-                        onClick={() => alert("Downloading official VAT receipt for #PEP-77412...")}
-                        className="bg-[#f1f5f9] hover:bg-slate-200 text-[#0b1f3a] text-[12px] font-semibold px-[14px] py-[8px] rounded-[6px] transition-colors cursor-pointer"
-                      >
-                        Download Invoice
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                  ))
               )}
             </div>
 
@@ -1499,63 +1709,55 @@ function AccountContent() {
 
                 <div className="grid grid-cols-3 gap-[10px] w-full">
                   <div className="bg-[#f8fafc] p-[10px] rounded-[8px]">
-                    <p className="font-bold text-[#0b1f3a] text-[15px]">3 Orders</p>
+                    <p className="font-bold text-[#0b1f3a] text-[15px]">{orders.length} Orders</p>
                     <p className="text-[#64748b] text-[11px]">Total Orders</p>
                   </div>
                   <div className="bg-[#f8fafc] p-[10px] rounded-[8px]">
-                    <p className="font-bold text-[#0b1f3a] text-[15px]">£537.50</p>
+                    <p className="font-bold text-[#0b1f3a] text-[15px]">
+                      £{orders.reduce((sum, o) => sum + (o.total || 0), 0).toFixed(2)}
+                    </p>
                     <p className="text-[#64748b] text-[11px]">Total Spend</p>
                   </div>
                   <div className="bg-[#f8fafc] p-[10px] rounded-[8px]">
-                    <p className="font-bold text-[#0b1f3a] text-[15px]">5 Files</p>
+                    <p className="font-bold text-[#0b1f3a] text-[15px]">
+                      {orders.reduce((sum, o) => sum + (o.items?.length || 0), 0)} Files
+                    </p>
                     <p className="text-[#64748b] text-[11px]">COA Reports</p>
                   </div>
                 </div>
 
                 <div className="h-px bg-[#f1f5f9] w-full" />
 
-                <div className="flex flex-col gap-[10px] text-[13px]">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-semibold text-[#0b1f3a]">#PEP-89241</p>
-                      <p className="text-[#64748b] text-[11.5px]">16 Sep 2026</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold text-[#0b1f3a]">£278.50</p>
-                      <p className="text-[#16a6a3] text-[11px] font-medium">Packing (Cold-Chain)</p>
-                    </div>
+                {orders.length > 0 ? (
+                  <div className="flex flex-col gap-[10px] text-[13px]">
+                    {orders.slice(0, 3).map((o) => (
+                      <div key={o.id} className="flex items-center justify-between">
+                        <div>
+                          <p className="font-semibold text-[#0b1f3a]">#{o.id}</p>
+                          <p className="text-[#64748b] text-[11.5px]">{o.displayDate}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-[#0b1f3a]">£{o.total?.toFixed(2)}</p>
+                          <p className="text-[#16a6a3] text-[11px] font-medium">{o.status}</p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
+                ) : (
+                  <p className="text-[#64748b] text-[12.5px] text-center py-2">
+                    No order history recorded for 2026.
+                  </p>
+                )}
 
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-semibold text-[#0b1f3a]">#PEP-77412</p>
-                      <p className="text-[#64748b] text-[11.5px]">14 Aug 2026</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold text-[#0b1f3a]">£110.00</p>
-                      <p className="text-[#94a3b8] text-[11px] font-medium">Delivered</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-semibold text-[#0b1f3a]">#PEP-64109</p>
-                      <p className="text-[#64748b] text-[11.5px]">10 Jul 2026</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold text-[#0b1f3a]">£149.00</p>
-                      <p className="text-[#94a3b8] text-[11px] font-medium">Delivered</p>
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => alert("Exporting 2026 Statement...")}
-                  className="font-semibold text-[#0b1f3a] hover:text-[#16a6a3] text-[12.5px] text-left transition-colors pt-1 cursor-pointer"
-                >
-                  Download 2026 Annual Statement (PDF) ↓
-                </button>
+                {orders.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => alert("Exporting 2026 Statement...")}
+                    className="font-semibold text-[#0b1f3a] hover:text-[#16a6a3] text-[12.5px] text-left transition-colors pt-1 cursor-pointer"
+                  >
+                    Download 2026 Annual Statement (PDF) ↓
+                  </button>
+                )}
               </div>
 
               {/* Delivery Address Card */}
@@ -1566,13 +1768,27 @@ function AccountContent() {
                     DEFAULT
                   </span>
                 </div>
-                <div className="text-[#0f172a] text-[13px] leading-[20px] font-normal">
-                  <p className="font-semibold text-[#0b1f3a]">Dr. Alexander Wright</p>
-                  <p>Dept. of Molecular Pharmacology</p>
-                  <p>Cambridge Science Park, Milton Rd</p>
-                  <p>Cambridge, CB4 0GZ</p>
-                  <p>United Kingdom</p>
-                </div>
+                {customer.addresses && customer.addresses.length > 0 ? (
+                  <div className="text-[#0f172a] text-[13px] leading-[20px] font-normal">
+                    <p className="font-semibold text-[#0b1f3a]">
+                      {customer.addresses[0].first_name} {customer.addresses[0].last_name}
+                    </p>
+                    {customer.addresses[0].company && <p>{customer.addresses[0].company}</p>}
+                    <p>{customer.addresses[0].address_1}</p>
+                    {customer.addresses[0].address_2 && <p>{customer.addresses[0].address_2}</p>}
+                    <p>{customer.addresses[0].city}, {customer.addresses[0].postal_code}</p>
+                    <p>{customer.addresses[0].country_code?.toUpperCase() === "GB" ? "United Kingdom" : customer.addresses[0].country_code?.toUpperCase()}</p>
+                  </div>
+                ) : (
+                  <div className="text-[#0f172a] text-[13px] leading-[20px] font-normal">
+                    <p className="font-semibold text-[#0b1f3a]">
+                      {customer.metadata?.title ? `${customer.metadata.title} ` : ""}
+                      {customer.first_name} {customer.last_name}
+                    </p>
+                    {customer.company_name && <p>{customer.company_name}</p>}
+                    <p className="text-[#64748b] italic">No delivery address saved yet.</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -1597,7 +1813,7 @@ function AccountContent() {
                         : "bg-white border border-[#e2e8f0] text-[#0f172a] hover:border-slate-300"
                     }`}
                   >
-                    Active Protocols (1)
+                    Active Protocols ({subscriptions.length})
                   </button>
                   <button
                     type="button"
@@ -1630,223 +1846,170 @@ function AccountContent() {
                 </Link>
               </div>
 
-              {/* Main Subscription Card */}
-              <div className="bg-white rounded-[16px] px-6 sm:px-[28px] py-[26px] shadow-xs border border-slate-100 flex flex-col gap-[20px]">
-                <div className="flex items-center justify-between">
-                  <div className="flex flex-col gap-[3px]">
-                    <p className="font-bold text-[#0b1f3a] text-[17px]">
-                      Semaglutide 5mg 28-Day Cartridge Refill
-                    </p>
-                    <p className="font-normal text-[#64748b] text-[12.5px]">
-                      28-Day Automated Cycle · Subscription ID #SUB-SMG-8902
-                    </p>
+              {/* Dynamic Subscription List or Empty State */}
+              {subscriptions.length === 0 ? (
+                <div className="bg-white rounded-[16px] p-8 sm:p-12 text-center border border-slate-100 flex flex-col items-center justify-center gap-4">
+                  <div className="w-16 h-16 rounded-full bg-[#f1f5f9] flex items-center justify-center text-[#64748b]">
+                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
                   </div>
-                  <div className="bg-[#e6fffa] px-[12px] py-[6px] rounded-[20px]">
-                    <p className="font-semibold text-[#16a6a3] text-[12px] whitespace-nowrap">
-                      Active Subscription
+                  <div className="max-w-md">
+                    <h3 className="text-[17px] font-bold text-[#0b1f3a]">No Active Refill Protocols</h3>
+                    <p className="text-[13px] text-[#64748b] mt-1 leading-relaxed">
+                      You do not currently have any active automated 28-day cartridge refill protocols. Refill subscriptions unlock guaranteed batch allocation, 10% locked pricing, and free tracked cold-chain dispatch.
                     </p>
                   </div>
-                </div>
-
-                <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-[16px] px-4 sm:px-[28px] py-[22px] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="flex gap-[16px] items-center">
-                    <div className="w-[54px] h-[54px] rounded-[8px] bg-white border border-slate-200 overflow-hidden flex items-center justify-center p-1 shrink-0">
-                      <img
-                        alt=""
-                        className="w-[46px] h-[46px] object-contain"
-                        src="/images/figma/0e71e8560b9bae80ee21a3d08905300075c266b7.png"
-                      />
-                    </div>
-                    <div className="flex flex-col gap-[4px]">
-                      <p className="font-bold text-[#0b1f3a] text-[14px]">
-                        Semaglutide Multi-Dose Cartridge (5mg)
-                      </p>
-                      <p className="font-normal text-[#64748b] text-[12.5px]">
-                        Protocol: 0.25mg Weekly Escalation Protocol · 4 Doses / Refill
-                      </p>
-                      <p className="font-normal text-[#94a3b8] text-[12px]">
-                        Ships to: Cambridge Science Park (Dr. Alexander Wright)
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold text-[#0b1f3a] text-[17px]">£110.00</p>
-                    <p className="font-medium text-[#16a6a3] text-[11.5px]">per 28-day cycle (-15%)</p>
+                  <div className="flex flex-wrap gap-3 mt-2">
+                    <Link
+                      href="/refills"
+                      className="bg-[#0b1f3a] hover:bg-[#162a45] text-white text-[13px] font-semibold px-5 py-2.5 rounded-[8px] transition-colors"
+                    >
+                      Browse Refill Cartridges
+                    </Link>
+                    <Link
+                      href="/vials"
+                      className="bg-[#f8fafc] border border-slate-200 hover:bg-slate-100 text-[#0b1f3a] text-[13px] font-semibold px-5 py-2.5 rounded-[8px] transition-colors"
+                    >
+                      Explore Lyophilised Vials
+                    </Link>
                   </div>
                 </div>
-
-                <div className="bg-[#e6fffa] px-[16px] py-[12px] rounded-[8px] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <p className="font-semibold text-[#0b1f3a] text-[12.5px]">
-                    Next Cold-Chain Dispatch: Wednesday, 14 October 2026
-                  </p>
-                  <p className="font-normal text-[#64748b] text-[12px]">
-                    Auto-billed to Visa ...1234 on 13 Oct
-                  </p>
-                </div>
-
-                {/* Sub Actions Row */}
-                <div className="flex flex-wrap gap-[10px] items-center">
-                  <button
-                    type="button"
-                    onClick={() => setScheduleExpanded(!scheduleExpanded)}
-                    className="bg-[#0b1f3a] hover:bg-[#162a45] text-white text-[12.5px] font-semibold px-[14px] py-[8px] rounded-[6px] transition-colors cursor-pointer"
-                  >
-                    {scheduleExpanded ? "Hide Refill Schedule ▲" : "Manage Refill Schedule ▼"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => alert("Upcoming 14 Oct cycle skipped. Next cycle set to 11 Nov.")}
-                    className="bg-[#f1f5f9] hover:bg-slate-200 text-[#0b1f3a] text-[12.5px] font-semibold px-[14px] py-[8px] rounded-[6px] transition-colors cursor-pointer"
-                  >
-                    Skip Next Cycle
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => alert("Dosage Protocol updated: 0.50mg / dose.")}
-                    className="bg-[#f1f5f9] hover:bg-slate-200 text-[#0b1f3a] text-[12.5px] font-semibold px-[14px] py-[8px] rounded-[6px] transition-colors cursor-pointer"
-                  >
-                    Update Dosage Protocol
-                  </button>
-                </div>
-
-                {/* Expanded Refill Schedule Panel (Figma Node 52:11602 / 52:11825) */}
-                {scheduleExpanded && (
-                  <div className="border-t border-[#f1f5f9] pt-[18px] flex flex-col gap-[16px] animate-in fade-in slide-in-from-top-2 duration-200">
+              ) : (
+                subscriptions.map((sub: any) => (
+                  <div key={sub.id} className="bg-white rounded-[16px] px-6 sm:px-[28px] py-[26px] shadow-xs border border-slate-100 flex flex-col gap-[20px]">
                     <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-bold text-[#0b1f3a] text-[15px]">
-                          Refill Schedule Configuration
+                      <div className="flex flex-col gap-[3px]">
+                        <p className="font-bold text-[#0b1f3a] text-[17px]">
+                          {sub.title}
                         </p>
-                        <p className="font-normal text-[#64748b] text-[12px] mt-0.5">
-                          Adjust automated cadence, upcoming dispatch dates, and facility receiving hours.
+                        <p className="font-normal text-[#64748b] text-[12.5px]">
+                          28-Day Automated Cycle · Subscription ID #{sub.id}
                         </p>
                       </div>
+                      <div className="bg-[#e6fffa] px-[12px] py-[6px] rounded-[20px]">
+                        <p className="font-semibold text-[#16a6a3] text-[12px] whitespace-nowrap">
+                          {sub.status || "Active Subscription"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-[16px] px-4 sm:px-[28px] py-[22px] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="flex gap-[16px] items-center">
+                        <div className="w-[54px] h-[54px] rounded-[8px] bg-white border border-slate-200 overflow-hidden flex items-center justify-center p-1 shrink-0">
+                          <img
+                            alt=""
+                            className="w-[46px] h-[46px] object-contain"
+                            src={sub.image || "/images/figma/0e71e8560b9bae80ee21a3d08905300075c266b7.png"}
+                          />
+                        </div>
+                        <div className="flex flex-col gap-[4px]">
+                          <p className="font-bold text-[#0b1f3a] text-[14px]">
+                            {sub.title}
+                          </p>
+                          <p className="font-normal text-[#64748b] text-[12.5px]">
+                            Automated 28-Day Cadence · {sub.quantity || 1} Unit(s) / Cycle
+                          </p>
+                          <p className="font-normal text-[#94a3b8] text-[12px]">
+                            Ships to: {sub.shipsTo || "Verified Laboratory Facility"}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-[#0b1f3a] text-[17px]">£{(sub.price || 0).toFixed(2)}</p>
+                        <p className="font-medium text-[#16a6a3] text-[11.5px]">per 28-day cycle (-10%)</p>
+                      </div>
+                    </div>
+
+                    <div className="bg-[#e6fffa] px-[16px] py-[12px] rounded-[8px] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <p className="font-semibold text-[#0b1f3a] text-[12.5px]">
+                        Next Cold-Chain Dispatch: {sub.nextBillingDate || "Scheduled within 28 days"}
+                      </p>
+                      <p className="font-normal text-[#64748b] text-[12px]">
+                        Auto-billed to {sub.cardEnding ? `Card ending in ...${sub.cardEnding}` : "Authorized Billing Method"}
+                      </p>
+                    </div>
+
+                    {/* Sub Actions Row */}
+                    <div className="flex flex-wrap gap-[10px] items-center">
                       <button
                         type="button"
-                        onClick={() => setScheduleExpanded(false)}
-                        className="text-[#64748b] hover:text-[#0b1f3a] text-[12.5px] font-semibold cursor-pointer"
+                        onClick={() => setScheduleExpanded(!scheduleExpanded)}
+                        className="bg-[#0b1f3a] hover:bg-[#162a45] text-white text-[12.5px] font-semibold px-[14px] py-[8px] rounded-[6px] transition-colors cursor-pointer"
                       >
-                        ✕ Close Schedule
+                        {scheduleExpanded ? "Hide Refill Schedule ▲" : "Manage Refill Schedule ▼"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => alert(`Upcoming cycle for ${sub.title} skipped.`)}
+                        className="bg-[#f1f5f9] hover:bg-slate-200 text-[#0b1f3a] text-[12.5px] font-semibold px-[14px] py-[8px] rounded-[6px] transition-colors cursor-pointer"
+                      >
+                        Skip Next Cycle
                       </button>
                     </div>
 
-                    <div className="flex flex-col gap-[8px]">
-                      <p className="font-semibold text-[#0b1f3a] text-[13px]">
-                        1. Automated Refill Frequency
-                      </p>
-
-                      {/* Cadence 1: 28 Days */}
-                      <div
-                        onClick={() => setSelectedCadence("28")}
-                        className={`rounded-[8px] px-[14px] py-[10px] flex items-center justify-between cursor-pointer border transition-all ${
-                          selectedCadence === "28"
-                            ? "bg-[#e6fffa] border-[#16a6a3]"
-                            : "bg-[#f8fafc] border-transparent hover:border-slate-300"
-                        }`}
-                      >
-                        <div className="flex gap-[10px] items-center">
-                          <div
-                            className={`w-[14px] h-[14px] rounded-full border-2 flex items-center justify-center ${
-                              selectedCadence === "28" ? "border-[#16a6a3]" : "border-slate-400"
-                            }`}
-                          >
-                            {selectedCadence === "28" && (
-                              <div className="w-[6px] h-[6px] rounded-full bg-[#16a6a3]" />
-                            )}
-                          </div>
+                    {/* Expanded Refill Schedule Panel */}
+                    {scheduleExpanded && (
+                      <div className="border-t border-[#f1f5f9] pt-[18px] flex flex-col gap-[16px] animate-in fade-in slide-in-from-top-2 duration-200">
+                        <div className="flex items-center justify-between">
                           <div>
-                            <p className="font-semibold text-[#0b1f3a] text-[13px]">
-                              Every 28 Days (Standard Cycle)
+                            <p className="font-bold text-[#0b1f3a] text-[15px]">
+                              Refill Schedule Configuration
                             </p>
-                            <p className="font-normal text-[#64748b] text-[11.5px]">
-                              Weekly 0.25mg titration protocol · 4 doses per cycle
+                            <p className="font-normal text-[#64748b] text-[12px] mt-0.5">
+                              Adjust automated cadence, upcoming dispatch dates, and facility receiving hours.
                             </p>
                           </div>
+                          <button
+                            type="button"
+                            onClick={() => setScheduleExpanded(false)}
+                            className="text-[#64748b] hover:text-[#0b1f3a] text-[12.5px] font-semibold cursor-pointer"
+                          >
+                            ✕ Close Schedule
+                          </button>
                         </div>
-                        <span className="bg-white text-[#16a6a3] font-bold text-[10px] px-[8px] py-[3px] rounded-[10px] shadow-2xs">
-                          CURRENT CADENCE
-                        </span>
-                      </div>
 
-                      {/* Cadence 2: 14 Days */}
-                      <div
-                        onClick={() => setSelectedCadence("14")}
-                        className={`rounded-[8px] px-[14px] py-[10px] flex items-center justify-between cursor-pointer border transition-all ${
-                          selectedCadence === "14"
-                            ? "bg-[#e6fffa] border-[#16a6a3]"
-                            : "bg-[#f8fafc] border-transparent hover:border-slate-300"
-                        }`}
-                      >
-                        <div className="flex gap-[10px] items-center">
+                        <div className="flex flex-col gap-[8px]">
+                          <p className="font-semibold text-[#0b1f3a] text-[13px]">
+                            Automated Refill Frequency
+                          </p>
                           <div
-                            className={`w-[14px] h-[14px] rounded-full border-2 flex items-center justify-center ${
-                              selectedCadence === "14" ? "border-[#16a6a3]" : "border-slate-400"
+                            onClick={() => setSelectedCadence("28")}
+                            className={`rounded-[8px] px-[14px] py-[10px] flex items-center justify-between cursor-pointer border transition-all ${
+                              selectedCadence === "28"
+                                ? "bg-[#e6fffa] border-[#16a6a3]"
+                                : "bg-[#f8fafc] border-transparent hover:border-slate-300"
                             }`}
                           >
-                            {selectedCadence === "14" && (
-                              <div className="w-[6px] h-[6px] rounded-full bg-[#16a6a3]" />
-                            )}
-                          </div>
-                          <div>
-                            <p className="font-semibold text-[#0b1f3a] text-[13px]">
-                              Every 14 Days (Accelerated Protocol)
-                            </p>
-                            <p className="font-normal text-[#64748b] text-[11.5px]">
-                              Bi-weekly automated dispatch for dual-subject parallel protocols
-                            </p>
+                            <div className="flex gap-[10px] items-center">
+                              <div
+                                className={`w-[14px] h-[14px] rounded-full border-2 flex items-center justify-center ${
+                                  selectedCadence === "28" ? "border-[#16a6a3]" : "border-slate-400"
+                                }`}
+                              >
+                                {selectedCadence === "28" && (
+                                  <div className="w-[6px] h-[6px] rounded-full bg-[#16a6a3]" />
+                                )}
+                              </div>
+                              <div>
+                                <p className="font-semibold text-[#0b1f3a] text-[13px]">
+                                  Every 28 Days (Standard Cycle)
+                                </p>
+                                <p className="font-normal text-[#64748b] text-[11.5px]">
+                                  Laboratory standard replenishment cadence
+                                </p>
+                              </div>
+                            </div>
+                            <span className="bg-white text-[#16a6a3] font-bold text-[10px] px-[8px] py-[3px] rounded-[10px] shadow-2xs">
+                              ACTIVE CADENCE
+                            </span>
                           </div>
                         </div>
                       </div>
-
-                      {/* Cadence 3: 56 Days */}
-                      <div
-                        onClick={() => setSelectedCadence("56")}
-                        className={`rounded-[8px] px-[14px] py-[10px] flex items-center justify-between cursor-pointer border transition-all ${
-                          selectedCadence === "56"
-                            ? "bg-[#e6fffa] border-[#16a6a3]"
-                            : "bg-[#f8fafc] border-transparent hover:border-slate-300"
-                        }`}
-                      >
-                        <div className="flex gap-[10px] items-center">
-                          <div
-                            className={`w-[14px] h-[14px] rounded-full border-2 flex items-center justify-center ${
-                              selectedCadence === "56" ? "border-[#16a6a3]" : "border-slate-400"
-                            }`}
-                          >
-                            {selectedCadence === "56" && (
-                              <div className="w-[6px] h-[6px] rounded-full bg-[#16a6a3]" />
-                            )}
-                          </div>
-                          <div>
-                            <p className="font-semibold text-[#0b1f3a] text-[13px]">
-                              Every 56 Days (8-Week Maintenance)
-                            </p>
-                            <p className="font-normal text-[#64748b] text-[11.5px]">
-                              Extended replenishment schedule for established baseline experiments
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-2">
-                      <p className="text-xs text-slate-500">
-                        Changes take effect on your next cycle on 14 October 2026.
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          alert(`Schedule cadence saved: Every ${selectedCadence} days.`)
-                          setScheduleExpanded(false)
-                        }}
-                        className="bg-[#16a6a3] hover:bg-[#138e8c] text-white font-bold text-xs px-4 py-2 rounded-lg transition-colors cursor-pointer"
-                      >
-                        Save Schedule Settings
-                      </button>
-                    </div>
+                    )}
                   </div>
-                )}
-              </div>
+                ))
+              )}
 
               {/* Subscriber Perks Card */}
               <div className="bg-white rounded-[16px] px-6 sm:px-[28px] py-[26px] shadow-xs border border-slate-100 flex flex-col gap-[14px]">
@@ -1872,7 +2035,7 @@ function AccountContent() {
                   </div>
                   <div className="bg-[#f8fafc] p-[14px] rounded-[10px]">
                     <p className="font-bold text-[#0b1f3a] text-[12.5px]">
-                      ✓ -15% Locked Pricing
+                      ✓ -10% Locked Pricing
                     </p>
                     <p className="font-normal text-[#64748b] text-[11.5px] mt-1 leading-relaxed">
                       Discounted subscription rate locked for the lifetime of the active protocol.
@@ -1890,32 +2053,44 @@ function AccountContent() {
                   <p className="font-bold text-[#0b1f3a] text-[15px]">
                     Refill Subscription Overview
                   </p>
-                  <span className="bg-[#e6fffa] text-[#16a6a3] text-[11px] font-bold px-[8px] py-[3px] rounded-[12px]">
-                    1 ACTIVE
+                  <span className={`text-[11px] font-bold px-[8px] py-[3px] rounded-[12px] ${
+                    subscriptions.length > 0 ? "bg-[#e6fffa] text-[#16a6a3]" : "bg-slate-100 text-slate-500"
+                  }`}>
+                    {subscriptions.length > 0 ? `${subscriptions.length} ACTIVE` : "0 ACTIVE"}
                   </span>
                 </div>
 
                 <div className="flex flex-col gap-[10px] text-[12.5px]">
                   <div className="flex items-center justify-between">
                     <span className="text-[#64748b]">Active Cycles</span>
-                    <span className="font-semibold text-[#0b1f3a]">1 Protocol</span>
+                    <span className="font-semibold text-[#0b1f3a]">
+                      {subscriptions.length} Protocol{subscriptions.length === 1 ? "" : "s"}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-[#64748b]">Replenishment Cycle</span>
-                    <span className="font-semibold text-[#0b1f3a]">Every {selectedCadence} Days</span>
+                    <span className="font-semibold text-[#0b1f3a]">
+                      {subscriptions.length > 0 ? `Every ${selectedCadence} Days` : "None"}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-[#64748b]">Next Billing Date</span>
-                    <span className="font-semibold text-[#0b1f3a]">13 Oct 2026</span>
+                    <span className="font-semibold text-[#0b1f3a]">
+                      {subscriptions[0]?.nextBillingDate || "No scheduled billing"}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-[#64748b]">Estimated Delivery</span>
-                    <span className="font-semibold text-[#0b1f3a]">15 Oct 2026</span>
+                    <span className="font-semibold text-[#0b1f3a]">
+                      {subscriptions.length > 0 ? "Tracked 24 Cold-Chain" : "No pending shipments"}
+                    </span>
                   </div>
                   <div className="h-px bg-slate-100 my-1" />
                   <div className="flex items-center justify-between">
                     <span className="text-[#64748b]">Recurring Total</span>
-                    <span className="font-bold text-[#0b1f3a] text-[14px]">£110.00 / cycle</span>
+                    <span className="font-bold text-[#0b1f3a] text-[14px]">
+                      £{subscriptions.reduce((sum: number, s: any) => sum + (s.price || 0), 0).toFixed(2)} / cycle
+                    </span>
                   </div>
                 </div>
               </div>
@@ -2068,151 +2243,92 @@ function AccountContent() {
               </div>
               <button
                 type="button"
-                onClick={() => alert("Add payment method modal opened.")}
+                onClick={() => setIsAddCardOpen(true)}
                 className="bg-[#0b1f3a] hover:bg-[#162a45] text-white font-semibold text-[13px] px-[16px] py-[10px] rounded-[6px] transition-colors cursor-pointer shrink-0"
               >
                 + Add Payment Method
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-[24px] w-full">
-              {/* Card 1 */}
-              <div className="bg-white border border-[#e2e8f0] rounded-[12px] p-[22px] shadow-xs flex flex-col justify-between gap-[16px]">
-                <div className="flex items-start justify-between">
-                  <div className="flex gap-[10px] items-center">
-                    <div className="w-[42px] h-[26px] relative shrink-0 flex items-center">
-                      <VisaBadge className="w-full h-full" monochrome />
+            {paymentCards.length === 0 ? (
+              <div className="bg-white rounded-[16px] p-8 sm:p-12 text-center border border-slate-100 flex flex-col items-center justify-center gap-4 w-full">
+                <div className="w-16 h-16 rounded-full bg-[#f1f5f9] flex items-center justify-center text-[#64748b]">
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                  </svg>
+                </div>
+                <div className="max-w-md">
+                  <h3 className="text-[17px] font-bold text-[#0b1f3a]">No Saved Payment Methods</h3>
+                  <p className="text-[13px] text-[#64748b] mt-1 leading-relaxed">
+                    You haven't saved any payment methods yet. Save an authorized corporate laboratory card or research grant payment method for rapid checkout and automated refill billing.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsAddCardOpen(true)}
+                  className="bg-[#0b1f3a] hover:bg-[#162a45] text-white text-[13px] font-semibold px-5 py-2.5 rounded-[8px] transition-colors cursor-pointer mt-2"
+                >
+                  + Add Payment Method
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-[24px] w-full">
+                {paymentCards.map((card: any) => (
+                  <div key={card.id} className="bg-white border border-[#e2e8f0] rounded-[12px] p-[22px] shadow-xs flex flex-col justify-between gap-[16px]">
+                    <div className="flex items-start justify-between">
+                      <div className="flex gap-[10px] items-center">
+                        <div className="w-[42px] h-[26px] relative shrink-0 flex items-center">
+                          {card.brand === "mastercard" ? (
+                            <MastercardBadge className="w-full h-full" monochrome />
+                          ) : (
+                            <VisaBadge className="w-full h-full" monochrome />
+                          )}
+                        </div>
+                        <div className="flex flex-col gap-[2px]">
+                          <p className="font-bold text-[#0b1f3a] text-[14px]">
+                            {card.title || (card.brand === "mastercard" ? "Mastercard Corporate" : "Visa Corporate")}
+                          </p>
+                          <p className="font-normal text-[#64748b] text-[12px]">
+                            Ending in •••• {card.last4} · Exp: {card.expiry}
+                          </p>
+                        </div>
+                      </div>
+                      {card.isDefault && (
+                        <span className="bg-[#ecfdf5] border border-[#a7f4d0] text-[#059669] font-bold text-[10px] px-[8px] py-[4px] rounded-[4px] whitespace-nowrap">
+                          DEFAULT BILLING
+                        </span>
+                      )}
                     </div>
-                    <div className="flex flex-col gap-[2px]">
-                      <p className="font-bold text-[#0b1f3a] text-[14px]">Visa Corporate</p>
-                      <p className="font-normal text-[#64748b] text-[12px]">
-                        Ending in •••• 1234 · Exp: 08/2028
+
+                    <div className="bg-[#f8fafc] px-[14px] py-[12px] rounded-[8px] flex flex-col gap-[4px] text-[11px] text-[#64748b]">
+                      <p className="font-semibold text-[#0b1f3a] text-[12px]">
+                        Cardholder: {card.cardholder}
                       </p>
+                      {card.billingAddress && <p>Billing Address: {card.billingAddress}</p>}
+                    </div>
+
+                    <div className="flex gap-[16px] items-center text-[12px] pt-1 border-t border-slate-100">
+                      {!card.isDefault && (
+                        <button
+                          type="button"
+                          onClick={() => handleSetDefaultCard(card.id)}
+                          className="font-medium text-[#0d9488] hover:underline cursor-pointer"
+                        >
+                          Set as Default
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteCard(card.id)}
+                        className="text-[#94a3b8] hover:text-rose-600 cursor-pointer"
+                      >
+                        Remove
+                      </button>
                     </div>
                   </div>
-                  <span className="bg-[#ecfdf5] border border-[#a7f4d0] text-[#059669] font-bold text-[10px] px-[8px] py-[4px] rounded-[4px] whitespace-nowrap">
-                    DEFAULT BILLING
-                  </span>
-                </div>
-
-                <div className="bg-[#f8fafc] px-[14px] py-[12px] rounded-[8px] flex flex-col gap-[4px] text-[11px] text-[#64748b]">
-                  <p className="font-semibold text-[#0b1f3a] text-[12px]">
-                    Cardholder: Dr. Alexander Wright
-                  </p>
-                  <p>Billing Address: Cambridge Science Park, Milton Rd, Suite 4B, Cambridge, CB4 0GZ</p>
-                </div>
-
-                <div className="flex gap-[16px] items-center text-[12px] pt-1 border-t border-slate-100">
-                  <button
-                    type="button"
-                    onClick={() => alert("Edit card modal.")}
-                    className="font-semibold text-[#0d9488] hover:underline cursor-pointer"
-                  >
-                    Edit Details
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => alert("Default billing method cannot be removed.")}
-                    className="text-[#94a3b8] hover:text-slate-600 cursor-pointer"
-                  >
-                    Remove
-                  </button>
-                </div>
+                ))}
               </div>
-
-              {/* Card 2 */}
-              <div className="bg-white border border-[#e2e8f0] rounded-[12px] p-[22px] shadow-xs flex flex-col justify-between gap-[16px]">
-                <div className="flex items-center justify-between">
-                  <div className="flex gap-[12px] items-center">
-                    <div className="w-[42px] h-[26px] relative shrink-0 flex items-center">
-                      <MastercardBadge className="w-full h-full" monochrome />
-                    </div>
-                    <div className="flex flex-col gap-[2px]">
-                      <p className="font-bold text-[#0b1f3a] text-[14px]">Mastercard Grant Account</p>
-                      <p className="font-normal text-[#64748b] text-[12px]">
-                        Ending in •••• 8890 · Exp: 11/2027
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-[#f8fafc] px-[14px] py-[12px] rounded-[8px] flex flex-col gap-[4px] text-[11px] text-[#64748b]">
-                  <p className="font-semibold text-[#0b1f3a] text-[12px]">
-                    Cardholder: Cambridge Biomedical Research Trust
-                  </p>
-                  <p>Billing Address: The Old Schools, Trinity Lane, Cambridge, CB2 1TN</p>
-                </div>
-
-                <div className="flex gap-[16px] items-center text-[12px] pt-1 border-t border-slate-100">
-                  <button
-                    type="button"
-                    onClick={() => alert("Edit card modal.")}
-                    className="font-semibold text-[#0d9488] hover:underline cursor-pointer"
-                  >
-                    Edit Details
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => alert("Set as default card.")}
-                    className="font-medium text-[#64748b] hover:text-[#0b1f3a] cursor-pointer"
-                  >
-                    Set as Default
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => alert("Card removed.")}
-                    className="text-[#94a3b8] hover:text-rose-600 cursor-pointer"
-                  >
-                    Remove
-                  </button>
-                </div>
-              </div>
-
-              {/* Card 3 */}
-              <div className="bg-white border border-[#e2e8f0] rounded-[12px] p-[22px] shadow-xs flex flex-col justify-between gap-[16px]">
-                <div className="flex items-center justify-between">
-                  <div className="flex flex-col gap-[2px]">
-                    <p className="font-bold text-[#0b1f3a] text-[14px]">
-                      Institutional Purchase Order
-                    </p>
-                    <p className="font-normal text-[#64748b] text-[12px]">
-                      Ref: PEP-PO-6629 · Net-30 PO
-                    </p>
-                  </div>
-                </div>
-
-                <div className="bg-[#f8fafc] px-[14px] py-[12px] rounded-[8px] flex flex-col gap-[4px] text-[11px] text-[#64748b]">
-                  <p className="font-semibold text-[#0b1f3a] text-[12px]">
-                    Cardholder: Univ. of Cambridge Pharmacology Dept.
-                  </p>
-                  <p>Billing Address: Biomedical Campus, Hills Rd, Cambridge, CB2 0QQ</p>
-                </div>
-
-                <div className="flex gap-[16px] items-center text-[12px] pt-1 border-t border-slate-100">
-                  <button
-                    type="button"
-                    onClick={() => alert("Edit PO details.")}
-                    className="font-semibold text-[#0d9488] hover:underline cursor-pointer"
-                  >
-                    Edit Details
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => alert("Set as default billing.")}
-                    className="font-medium text-[#64748b] hover:text-[#0b1f3a] cursor-pointer"
-                  >
-                    Set as Default
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => alert("Purchase Order reference removed.")}
-                    className="text-[#94a3b8] hover:text-rose-600 cursor-pointer"
-                  >
-                    Remove
-                  </button>
-                </div>
-              </div>
-            </div>
+            )}
           </div>
         )}
       </main>
@@ -2248,6 +2364,46 @@ function AccountContent() {
             )}
 
             <form onSubmit={handleSaveProfile} className="flex flex-col gap-4">
+              {/* Avatar Row in Edit Profile */}
+              <div className="flex items-center gap-4 p-3 bg-slate-50 rounded-[12px] border border-slate-100">
+                <div className="w-14 h-14 rounded-full overflow-hidden shrink-0 border-2 border-[#16a6a3] bg-[#0b1f3a] flex items-center justify-center">
+                  {customer?.metadata?.avatar_url ? (
+                    <img
+                      src={customer.metadata.avatar_url}
+                      alt=""
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-white font-bold text-base">
+                      {getInitials(editFirstName, editLastName)}
+                    </span>
+                  )}
+                </div>
+                <div className="flex flex-col gap-1.5 flex-1">
+                  <span className="text-[12px] font-semibold text-[#0b1f3a]">Profile Avatar</span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => avatarInputRef.current?.click()}
+                      disabled={isUploadingAvatar}
+                      className="px-3 py-1.5 text-xs font-semibold rounded-md bg-[#0b1f3a] text-white hover:bg-[#162a45] transition-colors cursor-pointer"
+                    >
+                      {isUploadingAvatar ? "Uploading..." : "Upload New Photo"}
+                    </button>
+                    {customer?.metadata?.avatar_url && (
+                      <button
+                        type="button"
+                        onClick={handleRemoveAvatar}
+                        disabled={isUploadingAvatar}
+                        className="px-2.5 py-1.5 text-xs font-medium rounded-md text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                      >
+                        Remove Photo
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               <div className="grid grid-cols-3 gap-3">
                 <div className="flex flex-col gap-1">
                   <label className="text-[12px] font-semibold text-[#0b1f3a]">Title</label>
@@ -2376,7 +2532,7 @@ function AccountContent() {
                     type="text"
                     value={addrFirstName}
                     onChange={(e) => setAddrFirstName(e.target.value)}
-                    placeholder={customer?.first_name || "Alexander"}
+                    placeholder={customer?.first_name || "First Name"}
                     className="border border-[#cbd5e1] rounded-[8px] px-3 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden"
                   />
                 </div>
@@ -2386,7 +2542,7 @@ function AccountContent() {
                     type="text"
                     value={addrLastName}
                     onChange={(e) => setAddrLastName(e.target.value)}
-                    placeholder={customer?.last_name || "Wright"}
+                    placeholder={customer?.last_name || "Last Name"}
                     className="border border-[#cbd5e1] rounded-[8px] px-3 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden"
                   />
                 </div>
@@ -2400,7 +2556,7 @@ function AccountContent() {
                   type="text"
                   value={addrCompany}
                   onChange={(e) => setAddrCompany(e.target.value)}
-                  placeholder="Dept. of Molecular Pharmacology"
+                  placeholder="e.g. Molecular Biology Facility"
                   className="border border-[#cbd5e1] rounded-[8px] px-3 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden"
                 />
               </div>
@@ -2414,7 +2570,7 @@ function AccountContent() {
                   required
                   value={addrLine1}
                   onChange={(e) => setAddrLine1(e.target.value)}
-                  placeholder="Cambridge Science Park, Milton Rd"
+                  placeholder="e.g. 10 Innovation Way"
                   className="border border-[#cbd5e1] rounded-[8px] px-3 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden"
                 />
               </div>
@@ -2427,7 +2583,7 @@ function AccountContent() {
                   type="text"
                   value={addrLine2}
                   onChange={(e) => setAddrLine2(e.target.value)}
-                  placeholder="Suite 4B, Reception Wing"
+                  placeholder="e.g. Unit 4B, Science Wing"
                   className="border border-[#cbd5e1] rounded-[8px] px-3 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden"
                 />
               </div>
@@ -2440,7 +2596,7 @@ function AccountContent() {
                     required
                     value={addrCity}
                     onChange={(e) => setAddrCity(e.target.value)}
-                    placeholder="Cambridge"
+                    placeholder="e.g. Cambridge"
                     className="border border-[#cbd5e1] rounded-[8px] px-3 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden"
                   />
                 </div>
@@ -2451,7 +2607,7 @@ function AccountContent() {
                     required
                     value={addrPostcode}
                     onChange={(e) => setAddrPostcode(e.target.value)}
-                    placeholder="CB4 0GZ"
+                    placeholder="e.g. CB4 0GF"
                     className="border border-[#cbd5e1] rounded-[8px] px-3 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden"
                   />
                 </div>
@@ -2477,7 +2633,7 @@ function AccountContent() {
                     type="tel"
                     value={addrPhone}
                     onChange={(e) => setAddrPhone(e.target.value)}
-                    placeholder="+44 1223 982 401"
+                    placeholder="+44 20 7123 4567"
                     className="border border-[#cbd5e1] rounded-[8px] px-3 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden"
                   />
                 </div>
@@ -2497,6 +2653,114 @@ function AccountContent() {
                   className="btn-press px-5 py-2 rounded-[8px] bg-[#0b1f3a] hover:bg-[#162a45] text-white text-xs font-semibold transition-colors cursor-pointer shadow-2xs"
                 >
                   {addrSaving ? "Adding..." : "Save Delivery Address"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* ADD PAYMENT CARD MODAL */}
+      {/* ========================================================= */}
+      {isAddCardOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
+          <div className="bg-white rounded-[20px] max-w-[500px] w-full p-6 sm:p-8 border border-[#e2e8f0] shadow-xl flex flex-col gap-5 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="text-[17px] font-bold text-[#0b1f3a]">
+                  Add Payment Method
+                </h3>
+                <p className="text-[12px] text-[#64748b] mt-0.5">
+                  Save an authorized corporate or laboratory card for rapid order settlement.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAddCardOpen(false)}
+                className="text-slate-400 hover:text-slate-600 text-lg cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleAddPaymentCard} className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1">
+                <label className="text-[12px] font-semibold text-[#0b1f3a]">Cardholder Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={cardholderName}
+                  onChange={(e) => setCardholderName(e.target.value)}
+                  placeholder={`${customer?.first_name || ""} ${customer?.last_name || ""}`.trim() || "Full Name"}
+                  className="border border-[#cbd5e1] rounded-[8px] px-3 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-[12px] font-semibold text-[#0b1f3a]">Card Number *</label>
+                <input
+                  type="text"
+                  required
+                  maxLength={19}
+                  value={cardNumber}
+                  onChange={(e) => setCardNumber(e.target.value)}
+                  placeholder="4242 •••• •••• ••••"
+                  className="border border-[#cbd5e1] rounded-[8px] px-3 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden tracking-wider"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[12px] font-semibold text-[#0b1f3a]">Expiry Date *</label>
+                  <input
+                    type="text"
+                    required
+                    maxLength={7}
+                    value={cardExpiry}
+                    onChange={(e) => setCardExpiry(e.target.value)}
+                    placeholder="MM/YY"
+                    className="border border-[#cbd5e1] rounded-[8px] px-3 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden text-center"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[12px] font-semibold text-[#0b1f3a]">CVC Security Code *</label>
+                  <input
+                    type="text"
+                    required
+                    maxLength={4}
+                    value={cardCvc}
+                    onChange={(e) => setCardCvc(e.target.value)}
+                    placeholder="123"
+                    className="border border-[#cbd5e1] rounded-[8px] px-3 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden text-center"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-[12px] font-semibold text-[#0b1f3a]">Billing Address (Optional)</label>
+                <input
+                  type="text"
+                  value={cardBillingAddress}
+                  onChange={(e) => setCardBillingAddress(e.target.value)}
+                  placeholder="e.g. 10 Innovation Way, Cambridge, CB4 0GF"
+                  className="border border-[#cbd5e1] rounded-[8px] px-3 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2.5 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsAddCardOpen(false)}
+                  className="px-4 py-2 rounded-[8px] border border-slate-200 text-[#64748b] hover:text-[#0b1f3a] text-xs font-semibold cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn-press px-5 py-2 rounded-[8px] bg-[#0b1f3a] hover:bg-[#162a45] text-white text-xs font-semibold transition-colors cursor-pointer shadow-2xs"
+                >
+                  Save Card
                 </button>
               </div>
             </form>

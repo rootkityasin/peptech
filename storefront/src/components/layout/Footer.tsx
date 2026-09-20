@@ -22,13 +22,13 @@ export function Footer() {
   }
 
   return (
-    <footer className="bg-white border-t border-[#E2E8F0] pt-16 pb-8 text-[#64748B] text-xs">
+    <footer className="bg-white border-t border-[#E2E8F0] pt-10 sm:pt-16 pb-8 sm:pb-10 text-[#64748B] text-xs">
       {/* Main 4-Column Footer Container - Figma Node 2:29623 */}
       <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-10 pb-12">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 sm:gap-10 pb-8 sm:pb-12">
           
           {/* Brand Column */}
-          <div className="md:col-span-4 space-y-4">
+          <div className="md:col-span-4 space-y-3.5 sm:space-y-4">
             <Link href="/" className="inline-block">
               <div className="relative h-[26px] w-[125px] flex items-center">
                 <Image
@@ -43,11 +43,11 @@ export function Footer() {
             <div className="text-[9px] font-semibold text-[#16A6A3] tracking-[0.5px] uppercase">
               Quality. Safety. Precision.
             </div>
-            <p className="text-[13px] text-[#64748B] leading-[20px] max-w-[300px]">
+            <p className="text-[13px] text-[#64748B] leading-[22px] max-w-[320px]">
               One system. A healthier world. PEPTECH® is committed to advancing global health and safety through innovative testing solutions.
             </p>
             {/* Social Icons */}
-            <div className="flex items-center gap-2.5 pt-1">
+            <div className="flex items-center gap-3 pt-1.5">
               <a
                 href="https://linkedin.com"
                 target="_blank"
@@ -97,56 +97,59 @@ export function Footer() {
             </div>
           </div>
 
-          {/* Quick Links Column */}
-          <div className="md:col-span-2 space-y-3">
-            <h4 className="font-bold text-[#0B1F3A] text-[14px]">Quick Links</h4>
-            <ul className="space-y-3 text-[13px] text-[#475569]">
-              <li><Link href="/shop" className="hover:text-[#16A6A3] transition-colors">Shop</Link></li>
-              <li><Link href="/about" className="hover:text-[#16A6A3] transition-colors">About Us</Link></li>
-              <li><Link href="/how-it-works" className="hover:text-[#16A6A3] transition-colors">How It Works</Link></li>
-              <li><Link href="/verify" className="hover:text-[#16A6A3] transition-colors">Verify Your Batch</Link></li>
-              <li><Link href="/contact" className="hover:text-[#16A6A3] transition-colors">Contact</Link></li>
-            </ul>
-          </div>
+          {/* Quick Links & Support Columns (Side-by-side on mobile, 4 columns on desktop) */}
+          <div className="col-span-1 md:col-span-4 grid grid-cols-2 gap-8 sm:gap-10">
+            {/* Quick Links Column */}
+            <div className="space-y-3 sm:space-y-3.5">
+              <h4 className="font-bold text-[#0B1F3A] text-[15px] tracking-tight">Quick Links</h4>
+              <ul className="space-y-2.5 text-[13px] text-[#475569]">
+                <li><Link href="/shop" className="hover:text-[#16A6A3] transition-colors">Shop</Link></li>
+                <li><Link href="/about" className="hover:text-[#16A6A3] transition-colors">About Us</Link></li>
+                <li><Link href="/how-it-works" className="hover:text-[#16A6A3] transition-colors">How It Works</Link></li>
+                <li><Link href="/verify" className="hover:text-[#16A6A3] transition-colors">Verify Your Batch</Link></li>
+                <li><Link href="/contact" className="hover:text-[#16A6A3] transition-colors">Contact</Link></li>
+              </ul>
+            </div>
 
-          {/* Support Column */}
-          <div className="md:col-span-2 space-y-3">
-            <h4 className="font-bold text-[#0B1F3A] text-[14px]">Support</h4>
-            <ul className="space-y-3 text-[13px] text-[#475569]">
-              <li><Link href="/how-it-works#faqs" className="hover:text-[#16A6A3] transition-colors">FAQs</Link></li>
-              <li><Link href="/account?tab=orders" className="hover:text-[#16A6A3] transition-colors">Track Order</Link></li>
-              <li><Link href="/shipping-returns" className="hover:text-[#16A6A3] transition-colors">Shipping Policy</Link></li>
-              <li><Link href="/terms-of-sale" className="hover:text-[#16A6A3] transition-colors">Returns &amp; Warranty</Link></li>
-              <li><Link href="/contact" className="hover:text-[#16A6A3] transition-colors">Laboratory Support</Link></li>
-            </ul>
+            {/* Support Column */}
+            <div className="space-y-3 sm:space-y-3.5">
+              <h4 className="font-bold text-[#0B1F3A] text-[15px] tracking-tight">Support</h4>
+              <ul className="space-y-2.5 text-[13px] text-[#475569]">
+                <li><Link href="/how-it-works#faqs" className="hover:text-[#16A6A3] transition-colors">FAQs</Link></li>
+                <li><Link href="/account?tab=orders" className="hover:text-[#16A6A3] transition-colors">Track Order</Link></li>
+                <li><Link href="/shipping-returns" className="hover:text-[#16A6A3] transition-colors">Shipping Policy</Link></li>
+                <li><Link href="/terms-of-sale" className="hover:text-[#16A6A3] transition-colors">Returns &amp; Warranty</Link></li>
+                <li><Link href="/contact" className="hover:text-[#16A6A3] transition-colors">Laboratory Support</Link></li>
+              </ul>
+            </div>
           </div>
 
           {/* Stay Updated Card */}
-          <div className="md:col-span-4 bg-[#F0F5FD] p-6 rounded-[16px] space-y-3.5">
+          <div className="md:col-span-4 bg-[#F0F5FD] p-6 sm:p-7 rounded-[18px] space-y-4">
             <h4 className="font-bold text-[#0B1F3A] text-[16px]">Stay Updated</h4>
-            <p className="text-[13px] text-[#4E657E] leading-[19px]">
+            <p className="text-[13px] text-[#4E657E] leading-[21px]">
               Get the latest updates, new products and resources.
             </p>
-            <form onSubmit={handleSubscribe} className="flex gap-2">
+            <form onSubmit={handleSubscribe} className="flex gap-2.5 pt-1">
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Your email address"
                 required
-                className="flex-1 px-3.5 py-2 text-xs rounded-lg border border-[#D2DFED] bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0B1F3A]"
+                className="flex-1 px-3.5 py-2.5 text-xs rounded-lg border border-[#D2DFED] bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0B1F3A]"
               />
               <button
                 type="submit"
-                className="px-5 py-2 rounded-lg bg-[#0B1F3A] text-white text-[13px] font-semibold hover:bg-[#162e52] transition-colors cursor-pointer shrink-0"
+                className="px-5 py-2.5 rounded-lg bg-[#0B1F3A] text-white text-[13px] font-semibold hover:bg-[#162e52] transition-colors cursor-pointer shrink-0"
               >
                 Subscribe
               </button>
             </form>
             {subscribed ? (
-              <p className="text-[11px] text-emerald-600 font-medium">Thank you for subscribing!</p>
+              <p className="text-[11px] text-emerald-600 font-medium pt-0.5">Thank you for subscribing!</p>
             ) : (
-              <p className="text-[11px] text-[#8B9EAF]">
+              <p className="text-[11px] text-[#8B9EAF] pt-0.5">
                 We respect your privacy. Unsubscribe anytime.
               </p>
             )}
@@ -155,7 +158,7 @@ export function Footer() {
         </div>
 
         {/* Bottom Copyright & Legal Links - Figma Node 2:29669 */}
-        <div className="border-t border-[#E2E8F0] pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-[12px] text-[#64748B]">
+        <div className="border-t border-[#E2E8F0] pt-6 sm:pt-7 flex flex-col sm:flex-row items-center justify-between gap-4 text-[12px] text-[#64748B]">
           <div className="flex flex-wrap items-center gap-3">
             <span className="text-[#94A3B8]">© 2026 PEPTECH®. All rights reserved.</span>
             <span className="text-[#CBD5E1]">|</span>

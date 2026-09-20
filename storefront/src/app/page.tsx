@@ -4,6 +4,7 @@ import React from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { useCart } from "@/components/cart/CartContext"
+import { Interactive3DPen } from "@/components/home/Interactive3DPen"
 
 // Featured Complete Pen Sets from Figma (Node 2:29339)
 const FIGMA_FEATURED_PEN_SETS = [
@@ -154,12 +155,12 @@ export default function HomePage() {
     <main className="bg-white text-slate-900 overflow-x-hidden font-sans">
       
       {/* 01. HERO SECTION - Figma Node 2:29257 */}
-      <section className="bg-[#F4F7FA] py-14 sm:py-16 border-b border-[#E2E8F0] relative">
+      <section className="bg-[#F4F7FA] pt-6 pb-12 sm:py-16 border-b border-[#E2E8F0] relative">
         <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center">
             
-            {/* Left Column: Value Proposition */}
-            <div className="lg:col-span-6 space-y-5">
+            {/* Left Column on Desktop, Second on Mobile: Value Proposition */}
+            <div className="order-2 lg:order-1 lg:col-span-6 space-y-5">
               <span className="inline-block text-[12px] font-bold text-[#16A6A3] tracking-[1.2px] uppercase">
                 RAPID TESTING. REAL IMPACT.
               </span>
@@ -215,9 +216,9 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Right Column: Hero Presentation Kit Mockup */}
-            <div className="lg:col-span-6 flex justify-center lg:justify-end">
-              <div className="relative w-full max-w-[580px] h-[340px] sm:h-[440px] flex items-center justify-center">
+            {/* Right Column on Desktop, First on Mobile: Hero Presentation Kit Mockup */}
+            <div className="order-1 lg:order-2 lg:col-span-6 flex justify-center lg:justify-end">
+              <div className="relative w-full max-w-[580px] h-[260px] xs:h-[300px] sm:h-[400px] lg:h-[440px] flex items-center justify-center">
                 <Image
                   src="/images/figma/hero-presentation-box.png"
                   alt="PEPTECH® Reusable Injection Pen System Kit Presentation"
@@ -365,12 +366,12 @@ export default function HomePage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
             
             {/* Left Spotlight Container */}
-            <div className="lg:col-span-3 bg-[#EEF5F9] rounded-[12px] p-7 flex flex-col justify-between h-full min-h-[400px]">
-              <div className="space-y-3">
+            <div className="lg:col-span-3 bg-[#EEF5F9] rounded-[12px] p-5 sm:p-7 flex flex-col justify-start lg:justify-between lg:h-full lg:min-h-[400px]">
+              <div className="space-y-2 sm:space-y-3">
                 <span className="text-[11px] font-bold text-[#16A6A3] tracking-[1.2px] uppercase">
                   INDIVIDUAL CARTRIDGES
                 </span>
-                <h2 className="text-[26px] font-bold text-[#0B1F3A] leading-[32px]">
+                <h2 className="text-[24px] sm:text-[26px] font-bold text-[#0B1F3A] leading-[30px] sm:leading-[32px]">
                   Just replace<br />the cartridge.
                 </h2>
                 <p className="text-[13px] text-[#475569] leading-[20px]">
@@ -380,7 +381,7 @@ export default function HomePage() {
 
               <Link
                 href="/refills"
-                className="w-full py-3 px-4 bg-[#0B1F3A] hover:bg-[#162e52] text-white rounded-[6px] text-[12px] font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer mt-6"
+                className="w-full py-3 px-4 bg-[#0B1F3A] hover:bg-[#162e52] text-white rounded-[6px] text-[12px] font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer mt-4 sm:mt-5 lg:mt-auto"
               >
                 <span>Shop All Cartridges</span>
                 <span>→</span>
@@ -500,15 +501,8 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Horizontal Pen Centerpiece Box */}
-            <div className="h-[150px] sm:h-[160px] w-full max-w-[1040px] relative flex items-center justify-center">
-              <Image
-                src="/images/figma/peptech-pen-horizontal.png"
-                alt="PEPTECH® Reusable Injection Pen System"
-                fill
-                className="object-contain"
-              />
-            </div>
+            {/* Interactive 3D Pen Centerpiece Box */}
+            <Interactive3DPen />
           </div>
         </div>
       </section>

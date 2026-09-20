@@ -343,11 +343,17 @@ export function Header() {
                 title={`${customer.first_name || ""} ${customer.last_name || ""}`}
               >
                 <div className="w-[22px] h-[22px] rounded-full overflow-hidden relative shrink-0 border border-slate-200">
-                  <img
-                    src={customer.metadata?.avatar_url || "/images/figma/d7ba35eef589d74712ad429f3bd1612dfa66c973.png"}
-                    alt=""
-                    className="w-full h-full object-cover"
-                  />
+                  {customer.metadata?.avatar_url ? (
+                    <img
+                      src={customer.metadata.avatar_url}
+                      alt=""
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-[#0b1f3a] text-white font-bold text-[10px] flex items-center justify-center">
+                      {((customer.first_name?.[0] || "") + (customer.last_name?.[0] || "")).toUpperCase() || "RU"}
+                    </div>
+                  )}
                 </div>
                 <span className="font-semibold text-[#0b1f3a] group-hover:text-[#16a6a3] text-[12.5px] whitespace-nowrap transition-colors">
                   {customer.metadata?.title ? `${customer.metadata.title} ` : ""}{customer.first_name} {customer.last_name ? `${customer.last_name[0]}.` : ""}

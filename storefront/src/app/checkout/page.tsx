@@ -1,9 +1,10 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useCart } from "@/components/cart/CartContext"
+import { useCustomer } from "@/context/CustomerContext"
 import {
   AppleLogo,
   GoogleLogo,
@@ -15,7 +16,8 @@ import {
 
 export default function CheckoutPage() {
   const router = useRouter()
-  const { items, subtotal, shippingCost, total, destination, setDestination } = useCart()
+  const { customer } = useCustomer()
+  const { items, subtotal, shippingCost, total, destination, setDestination, clearCart } = useCart()
   const [ruoAccepted, setRuoAccepted] = useState(false)
   const [billingSameAsShipping, setBillingSameAsShipping] = useState(true)
   const [paymentMethod, setPaymentMethod] = useState<"card" | "bank">("card")
@@ -24,23 +26,48 @@ export default function CheckoutPage() {
   const [promoCode, setPromoCode] = useState("")
   const [promoApplied, setPromoApplied] = useState(false)
   const [summaryExpanded, setSummaryExpanded] = useState(false)
+  const [placedOrder, setPlacedOrder] = useState<any>(null)
 
   // Form State
   const [formData, setFormData] = useState({
-    email: "email@example.com",
-    fullName: "Dr. Alexander Wright",
+    email: "",
+    fullName: "",
     engraving: "",
     country: destination === "UK" ? "United Kingdom" : "United States",
-    address1: "Imperial College Bioengineering Lab, South Kensington",
-    address2: "Suite 4B, Scientific Research Annex",
-    city: "London",
-    zip: "SW7 2AZ",
-    state: "Greater London",
-    phone: "+44 20 7594 6000",
-    cardNumber: "•••• •••• •••• 1234",
-    cardExpiry: "12 / 28",
-    cardCvc: "892",
+    address1: "",
+    address2: "",
+    city: "",
+    zip: "",
+    state: "",
+    phone: "",
+    cardNumber: "",
+    cardExpiry: "",
+    cardCvc: "",
   })
+
+  // Pre-fill from authenticated customer profile if available
+  useEffect(() => {
+    if (customer) {
+      const primaryAddr = customer.addresses?.[0]
+      const fullName = [
+        customer.metadata?.title,
+        customer.first_name,
+        customer.last_name,
+      ].filter(Boolean).join(" ")
+
+      setFormData((prev) => ({
+        ...prev,
+        email: prev.email || customer.email || "",
+        fullName: prev.fullName || fullName,
+        phone: prev.phone || customer.phone || "",
+        address1: prev.address1 || primaryAddr?.address_1 || "",
+        address2: prev.address2 || primaryAddr?.address_2 || "",
+        city: prev.city || primaryAddr?.city || "",
+        zip: prev.zip || primaryAddr?.postal_code || "",
+        country: primaryAddr?.country_code?.toUpperCase() === "GB" ? "United Kingdom" : (destination === "UK" ? "United Kingdom" : "United States"),
+      }))
+    }
+  }, [customer, destination])
 
   const hasSubscription = items.some((i) => i.isSubscription)
   const subscriptionSavings = items.reduce((acc, item) => {
@@ -79,13 +106,99 @@ export default function CheckoutPage() {
 
     setIsProcessing(true)
     setTimeout(() => {
+      const newOrderNumber = Math.floor(10000 + Math.random() * 90000)
+      const cleanNum = formData.cardNumber.replace(/\s+/g, "")
+      const last4 = cleanNum.slice(-4) || "4242"
+      const cardType = cleanNum.startsWith("5") ? "Mastercard" : "Visa"
+      const pMethod = paymentMethod === "card" ? `${cardType} ending in ${last4}` : "UK Faster Payments (Bank Transfer)"
+
+      const orderData = {
+        id: `PEP-${newOrderNumber}`,
+        date: new Date().toISOString(),
+        displayDate: new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }),
+        total: finalTotal,
+        status: "Cold-Chain Packing",
+        trackingNumber: `GB-RM24-PEP${newOrderNumber}-CLD`,
+        paymentMethod: pMethod,
+        items: items.map((it) => ({
+          id: it.id,
+          title: it.title,
+          subtitle: it.isSubscription ? "28-Day Refill Protocol" : "Laboratory RUO Grade",
+          price: it.price,
+          quantity: it.quantity,
+          image: it.image || "/images/figma/152e353c4afaa5945905ac686de871b57ec2a770.png",
+        })),
+        customerName: formData.fullName || (customer ? `${customer.first_name} ${customer.last_name}` : "Researcher"),
+        shippingAddress: `${formData.address1}${formData.address2 ? ", " + formData.address2 : ""}, ${formData.city}, ${formData.zip}`,
+      }
+
+      setPlacedOrder(orderData)
+
+      try {
+        sessionStorage.setItem("peptech_last_order", JSON.stringify(orderData))
+      } catch {}
+
+      if (customer?.id) {
+        // Save to customer's order history
+        try {
+          const rawOrders = localStorage.getItem(`peptech_customer_orders_${customer.id}`)
+          const existingOrders = rawOrders ? JSON.parse(rawOrders) : []
+          existingOrders.unshift(orderData)
+          localStorage.setItem(`peptech_customer_orders_${customer.id}`, JSON.stringify(existingOrders))
+        } catch {}
+
+        // If items contained subscription, save to customer subscriptions
+        if (hasSubscription) {
+          try {
+            const rawSubs = localStorage.getItem(`peptech_customer_subscriptions_${customer.id}`)
+            const existingSubs = rawSubs ? JSON.parse(rawSubs) : []
+            const subItems = items.filter(it => it.isSubscription)
+            subItems.forEach((it) => {
+              const subId = `SUB-${it.id.slice(0, 3).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`
+              const nextBilling = new Date()
+              nextBilling.setDate(nextBilling.getDate() + 28)
+              existingSubs.unshift({
+                id: subId,
+                title: it.title,
+                frequency: "Every 28 Days (Standard Cycle)",
+                status: "Active",
+                price: it.price * (1 - (it.discountPercent || 10) / 100),
+                nextBillingDate: nextBilling.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }),
+                image: it.image,
+                quantity: it.quantity,
+                cardEnding: last4,
+                shipsTo: formData.address1 ? `${formData.city} (${formData.fullName})` : "Laboratory Address",
+              })
+            })
+            localStorage.setItem(`peptech_customer_subscriptions_${customer.id}`, JSON.stringify(existingSubs))
+          } catch {}
+        }
+
+        // If paid with card, save card to saved payment cards
+        if (paymentMethod === "card" && cleanNum.length >= 4) {
+          try {
+            const rawCards = localStorage.getItem(`peptech_customer_cards_${customer.id}`)
+            const existingCards = rawCards ? JSON.parse(rawCards) : []
+            if (!existingCards.some((c: any) => c.last4 === last4)) {
+              existingCards.push({
+                id: `card_${Date.now()}`,
+                brand: cardType.toLowerCase(),
+                title: `${cardType} Corporate`,
+                last4,
+                expiry: formData.cardExpiry || "12/28",
+                cardholder: formData.fullName,
+                billingAddress: `${formData.address1}, ${formData.city}`,
+                isDefault: existingCards.length === 0,
+              })
+              localStorage.setItem(`peptech_customer_cards_${customer.id}`, JSON.stringify(existingCards))
+            }
+          } catch {}
+        }
+      }
+
+      clearCart()
       setIsProcessing(false)
       setIsSuccess(true)
-      try {
-        localStorage.removeItem("peptech_cart")
-      } catch {
-        // ignore
-      }
     }, 1200)
   }
 
@@ -160,10 +273,12 @@ export default function CheckoutPage() {
             >
               <div className="flex gap-[6px] items-center" data-node-id="52:8494">
                 <span className="text-[#64748b]" data-node-id="52:8495">Order ID:</span>
-                <span className="font-bold text-[#0b1f3a]" data-node-id="52:8496">#PEP-89241</span>
+                <span className="font-bold text-[#0b1f3a]" data-node-id="52:8496">
+                  {placedOrder?.id || "#PEP-ORD"}
+                </span>
               </div>
               <span className="text-[#94a3b8] text-[12px]" data-node-id="52:8497">
-                16 Sep 2026, 18:34 GMT
+                {placedOrder?.displayDate || new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
               </span>
             </div>
 
@@ -177,19 +292,19 @@ export default function CheckoutPage() {
               <div className="flex items-center justify-between w-full" data-node-id="52:8500">
                 <span className="text-[#64748b]" data-node-id="52:8501">Payment amount</span>
                 <span className="font-bold text-[#0b1f3a] text-[17px]" data-node-id="52:8502">
-                  £{finalTotal.toFixed(2)}
+                  £{(placedOrder?.total ?? finalTotal).toFixed(2)}
                 </span>
               </div>
               <div className="flex items-center justify-between w-full" data-node-id="52:8503">
                 <span className="text-[#64748b]" data-node-id="52:8504">Payment method</span>
                 <span className="font-medium text-[#0b1f3a] text-[13.5px]" data-node-id="52:8505">
-                  {paymentMethod === "card" ? "Visa ending in 1234" : "UK Faster Payments (Bank Transfer)"}
+                  {placedOrder?.paymentMethod || (paymentMethod === "card" ? "Authorized Payment Card" : "UK Faster Payments (Bank Transfer)")}
                 </span>
               </div>
               <div className="flex items-center justify-between w-full" data-node-id="52:8506">
                 <span className="text-[#64748b]" data-node-id="52:8507">Order items</span>
                 <span className="font-medium text-[#0b1f3a] text-[13.5px] truncate max-w-[280px]" data-node-id="52:8508">
-                  {items.map((i) => i.title).join(", ") || "Semaglutide Starter, Tirzepatide, BPC-157"}
+                  {placedOrder?.items?.map((i: any) => `${i.title} (${i.quantity}x)`).join(", ") || "Research Peptide Items"}
                 </span>
               </div>
               <div className="flex items-center justify-between w-full" data-node-id="52:8509">

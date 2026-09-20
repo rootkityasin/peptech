@@ -22,6 +22,7 @@ interface CartContextType {
   addItem: (item: Omit<CartItem, "quantity">, quantity?: number) => void
   removeItem: (id: string, isSubscription: boolean) => void
   updateQuantity: (id: string, isSubscription: boolean, delta: number) => void
+  clearCart: () => void
   isDrawerOpen: boolean
   setIsDrawerOpen: (open: boolean) => void
   itemCount: number
@@ -34,49 +35,10 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined)
 
-export const DEFAULT_CART_ITEMS: CartItem[] = [
-  {
-    id: "semaglutide-pen-set",
-    title: "Semaglutide Starter Pen Set (5mg)",
-    format: "pen-set",
-    strength: "5mg",
-    price: 145.0,
-    quantity: 1,
-    isSubscription: false,
-    sku: "PEP-SEMA-PEN-5",
-    batch: "PT-2026-081",
-    image: "/images/figma/152e353c4afaa5945905ac686de871b57ec2a770.png",
-  },
-  {
-    id: "tirzepatide-refill",
-    title: "Tirzepatide Refill Cartridge (10mg)",
-    format: "refill",
-    strength: "10mg",
-    price: 95.0,
-    quantity: 1,
-    isSubscription: true,
-    subscriptionIntervalDays: 28,
-    discountPercent: 10,
-    sku: "PEP-TIRZ-REF-10",
-    batch: "PT-2026-082",
-    image: "/images/figma/0e71e8560b9bae80ee21a3d08905300075c266b7.png",
-  },
-  {
-    id: "bpc-157-vial",
-    title: "BPC-157 Pure Research Peptide (10mg)",
-    format: "vial",
-    strength: "10mg",
-    price: 48.0,
-    quantity: 1,
-    isSubscription: false,
-    sku: "PEP-BPC-VIAL-10",
-    batch: "PT-2026-083",
-    image: "/images/figma/2d7803f97be6d80d5630dfb42abba84289ed1bb5.png",
-  },
-]
+export const DEFAULT_CART_ITEMS: CartItem[] = []
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>(DEFAULT_CART_ITEMS)
+  const [items, setItems] = useState<CartItem[]>([])
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [destination, setDestination] = useState<"UK" | "INTL">("UK")
 
@@ -137,6 +99,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     )
   }
 
+  const clearCart = () => {
+    setItems([])
+    try {
+      localStorage.removeItem("peptech_cart")
+    } catch {}
+  }
+
   const itemCount = items.reduce((acc, i) => acc + i.quantity, 0)
   const subtotal = items.reduce((acc, i) => {
     const itemPrice = i.isSubscription && i.discountPercent ? i.price * (1 - i.discountPercent / 100) : i.price
@@ -154,6 +123,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         addItem,
         removeItem,
         updateQuantity,
+        clearCart,
         isDrawerOpen,
         setIsDrawerOpen,
         itemCount,
