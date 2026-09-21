@@ -35,3 +35,9 @@ lerna-debug.log*
 .DS_Store
 *.pem
 Thumbs.db
+*.blend1
+
+# Scratch & Local Agent Tooling
+.agents/
+scratch/
+
