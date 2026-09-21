@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
+import Image from "next/image"
 
 export function ResearchDisclaimerModal() {
   const [isOpen, setIsOpen] = useState(false)
@@ -32,53 +33,54 @@ export function ResearchDisclaimerModal() {
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-      <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl max-w-lg w-full p-6 sm:p-8 shadow-2xl space-y-5 text-[var(--color-foreground)] animate-in fade-in zoom-in-95">
-        {/* Warning Badge */}
-        <div className="flex items-center gap-2.5">
-          <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xl font-bold">
-            ⚠️
-          </div>
-          <div>
-            <h2 className="font-extrabold text-base sm:text-lg tracking-tight">Research Peptide Compliance Notice</h2>
-            <p className="text-xs text-zinc-500 font-mono">18+ RESTRICTED • LABORATORY USE ONLY</p>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0B1F3A]/75 backdrop-blur-md animate-in fade-in duration-300">
+      <div className="bg-white border border-slate-200/90 rounded-2xl max-w-[420px] w-full p-6 sm:p-7 shadow-2xl relative overflow-hidden text-center space-y-4 animate-in zoom-in-95 duration-200">
+        {/* Subtle Brand Gradient Accent */}
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#0B1F3A] via-[#00C5A0] to-[#0B1F3A]" />
+
+        {/* Brand Logo & Verification Pill */}
+        <div className="flex flex-col items-center gap-2.5 pt-1">
+          <Image
+            src="/images/figma/peptech-logo.png"
+            alt="PEPTECH®"
+            width={130}
+            height={27}
+            className="object-contain"
+            priority
+          />
+          <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-[#00C5A0]/10 border border-[#00C5A0]/25 text-[#0F766E] text-[11px] font-semibold tracking-wide uppercase">
+            <span className="size-1.5 rounded-full bg-[#00C5A0]" />
+            <span>18+ • Research Use Only</span>
           </div>
         </div>
 
-        {/* Core Disclaimer Text */}
-        <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 text-xs sm:text-sm text-zinc-700 dark:text-zinc-300 space-y-2.5 leading-relaxed">
-          <p>
-            All products listed on <strong>PEPTECH®</strong> are manufactured, distributed, and supplied solely for{" "}
-            <strong className="text-zinc-900 dark:text-zinc-100 underline decoration-amber-500">
-              in-vitro laboratory, scientific, and research purposes only
-            </strong>.
+        {/* Short, Concise Notice */}
+        <div className="space-y-1.5">
+          <h2 className="text-lg font-bold text-[#0B1F3A] tracking-tight">
+            Scientific Laboratory Portal
+          </h2>
+          <p className="text-[13px] text-slate-600 leading-relaxed max-w-[320px] mx-auto">
+            All materials are strictly for in-vitro scientific research. Not for human or veterinary consumption.
           </p>
-          <ul className="list-disc list-inside space-y-1 text-xs text-zinc-600 dark:text-zinc-400">
-            <li>These compounds are strictly <strong>NOT for human or veterinary use</strong>, injection, ingestion, or consumption.</li>
-            <li>No medical, therapeutic, diagnostic, or bodybuilding claims are made or implied.</li>
-            <li>You must be at least <strong>18 years of age</strong> to browse, verify, or purchase research materials.</li>
-          </ul>
         </div>
 
         {/* Action Buttons */}
-        <div className="space-y-2.5 pt-2">
+        <div className="space-y-2 pt-2">
           <button
+            type="button"
             onClick={handleAccept}
-            className="w-full py-3 rounded-xl bg-[var(--color-brand-navy)] hover:bg-[var(--color-brand-slate)] text-white font-bold text-xs sm:text-sm transition-all shadow-md flex items-center justify-center gap-2"
+            className="btn-press w-full py-3 px-4 rounded-xl bg-[#0B1F3A] hover:bg-[#16A6A3] text-white font-semibold text-sm transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer"
           >
-            <span>I Am 18+ &amp; Acknowledge Research Use Only</span>
-            <span>✓</span>
+            <span>I Am 18+ • Enter Site</span>
+            <span>→</span>
           </button>
           <button
+            type="button"
             onClick={handleDecline}
-            className="w-full py-2.5 rounded-xl border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-600 dark:text-zinc-400 font-medium text-xs transition-colors"
+            className="w-full py-1.5 text-xs font-medium text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
           >
-            I Do Not Agree / Exit Site
+            I Do Not Agree / Exit
           </button>
-        </div>
-
-        <div className="text-center text-[10px] text-zinc-400 pt-1">
-          By proceeding, you verify compliance with UK scientific research regulations.
         </div>
       </div>
     </div>
