@@ -60,7 +60,7 @@ export default function ProductDetailPage({
       
       {/* Breadcrumbs Section (Figma Node 8:41063) */}
       <div className="bg-white flex items-start justify-center py-[18px] w-full border-b border-[#e2e8f0]" data-node-id="8:41063" data-name="Breadcrumbs Section">
-        <div className="flex items-center justify-between max-w-[1240px] w-full px-4 sm:px-6 overflow-x-auto whitespace-nowrap" data-node-id="8:41064" data-name="Breadcrumb Inner">
+        <div className="flex items-center justify-between max-w-[1240px] w-full px-4 sm:px-6 overflow-x-auto whitespace-nowrap no-scrollbar scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden" data-node-id="8:41064" data-name="Breadcrumb Inner">
           <div className="flex items-center gap-[8px]">
             <Link href="/" className="font-normal text-[#64748b] text-[13px] hover:text-[#0b1f3a] transition-colors">
               Home

@@ -95,6 +95,21 @@ body {
   background: rgba(0, 197, 160, 0.5);
 }
 
+/* Hide scrollbar while keeping element scrollable */
+.no-scrollbar,
+.scrollbar-none {
+  -ms-overflow-style: none !important; /* IE and Edge */
+  scrollbar-width: none !important; /* Firefox */
+}
+
+.no-scrollbar::-webkit-scrollbar,
+.scrollbar-none::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+}
+
 /* =========================================================================
    Interactive Animations & Button Micro-Interactions (Classy & Alive)
    ========================================================================= */
