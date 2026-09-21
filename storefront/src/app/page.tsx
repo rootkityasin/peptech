@@ -462,7 +462,7 @@ export default function HomePage() {
       {/* 05. ONE PEN ARCHITECTURE SECTION - Figma Node 2:29527 */}
       <section className="bg-white py-[40px] flex items-center justify-center">
         <div className="w-full max-w-[1240px] mx-auto px-4 sm:px-6">
-          <div className="bg-[#f2f7fa] flex flex-col gap-[32px] items-center px-[24px] sm:px-[40px] py-[36px] rounded-[16px]">
+          <div className="bg-[#f2f7fa] flex flex-col gap-[18px] sm:gap-[24px] items-center px-[24px] sm:px-[40px] pt-[28px] sm:pt-[34px] pb-[18px] sm:pb-[22px] rounded-[16px]">
             {/* Top Row: Left Header + Right 4 Features */}
             <div className="flex flex-col lg:flex-row items-center justify-between w-full max-w-[1160px] gap-8">
               {/* Left Header */}

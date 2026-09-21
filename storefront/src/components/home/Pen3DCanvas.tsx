@@ -261,7 +261,7 @@ export function Pen3DCanvas({
   return (
     <div
       ref={containerRef}
-      className={`relative w-full h-[200px] sm:h-[230px] flex items-center justify-center overflow-hidden ${className}`}
+      className={`relative w-full flex items-center justify-center overflow-hidden ${className || "h-[130px] sm:h-[150px]"}`}
     >
       {/* 3D Canvas */}
       <canvas
