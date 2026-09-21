@@ -177,13 +177,13 @@ export function CartDrawer() {
               return (
                 <div
                   key={`${item.id}-${item.isSubscription}`}
-                  className="bg-white border border-[#e2e8f0] hover:border-[#cbd5e1] flex items-center justify-between p-[14px] rounded-[10px] shrink-0 w-full shadow-xs transition-colors"
+                  className="bg-white border border-[#e2e8f0] hover:border-[#cbd5e1] flex items-start justify-between p-[14px] rounded-[10px] shrink-0 w-full shadow-xs transition-colors"
                   data-name={`Cart Item - ${item.title}`}
                 >
-                  <div className="flex flex-1 gap-[12px] items-center min-w-0" data-name="Left Content">
+                  <div className="flex flex-1 gap-[12px] items-start min-w-0" data-name="Left Content">
                     {/* Thumb Container */}
                     <div
-                      className="flex items-center justify-center rounded-[8px] shrink-0 size-[64px] bg-[#f8fafc] border border-slate-100 overflow-hidden"
+                      className="flex items-center justify-center rounded-[8px] shrink-0 size-[64px] bg-[#f8fafc] border border-slate-100 overflow-hidden mt-0.5"
                       data-name="Thumb Container"
                     >
                       <img
@@ -194,7 +194,7 @@ export function CartDrawer() {
                     </div>
 
                     {/* Info Column */}
-                    <div className="flex flex-1 flex-col gap-[6px] items-start min-w-0" data-name="Info Column">
+                    <div className="flex flex-1 flex-col gap-[5px] items-start min-w-0" data-name="Info Column">
                       <p className="font-bold text-[#0b1f3a] text-[13px] leading-snug truncate w-full">
                         {item.title}
                       </p>
@@ -202,8 +202,30 @@ export function CartDrawer() {
                         {subtitle}
                       </p>
 
+                      {/* Dynamic Chosen Options (Cartridge & Diluent/Vial) */}
+                      {item.options && item.options.length > 0 && (
+                        <div className="flex flex-col gap-1 w-full my-0.5">
+                          {item.options.map((opt, idx) => (
+                            <div
+                              key={idx}
+                              className="text-[11px] leading-snug flex items-baseline gap-1.5 w-full"
+                            >
+                              <span className="font-semibold text-[#0b1f3a] shrink-0 text-[10.5px]">
+                                {opt.label}:
+                              </span>
+                              <span
+                                className="text-[#16a6a3] font-medium text-[11px] truncate"
+                                title={opt.value}
+                              >
+                                {opt.value}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
                       {/* Price & Qty Stack */}
-                      <div className="flex flex-col gap-[6px] items-start" data-name="Price & Qty Stack">
+                      <div className="flex flex-col gap-[6px] items-start mt-0.5" data-name="Price & Qty Stack">
                         <div className="flex items-baseline gap-[6px]" data-name="Price Row">
                           <p className="font-bold text-[#0b1f3a] text-[14px] leading-none">
                             £{itemTotal.toFixed(2)}

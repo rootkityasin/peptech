@@ -431,6 +431,15 @@ export default function CheckoutPage() {
                   <p className="font-['Inter'] font-normal text-[#94a3b8] text-[11px] truncate w-full">
                     {subtitle}
                   </p>
+                  {item.options && item.options.length > 0 && (
+                    <div className="flex flex-col gap-0.5 mt-0.5">
+                      {item.options.map((opt, idx) => (
+                        <p key={idx} className="text-[10.5px] text-[#94a3b8] truncate">
+                          <span className="text-[#e2e8f0] font-medium">{opt.label}:</span> {opt.value}
+                        </p>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
               <p className="font-['Inter'] font-bold text-[14px] text-white whitespace-nowrap">

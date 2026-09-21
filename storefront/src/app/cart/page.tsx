@@ -119,6 +119,16 @@ export default function CartPage() {
                       <div className="text-xs text-[#64748b]">
                         Strength: {item.strength} • SKU: {item.sku}
                       </div>
+                      {item.options && item.options.length > 0 && (
+                        <div className="flex flex-col gap-0.5 pt-0.5">
+                          {item.options.map((opt, idx) => (
+                            <div key={idx} className="text-xs flex items-center gap-1.5 text-[#475569]">
+                              <span className="font-semibold text-[#0b1f3a]">{opt.label}:</span>
+                              <span className="text-[#16a6a3] font-medium">{opt.value}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                       {item.isSubscription ? (
                         <span className="inline-flex items-center gap-1 text-[10px] font-bold font-mono px-2 py-0.5 rounded-full bg-[#16a6a3]/10 text-[#16a6a3]">
                           🔄 28-Day Subscribe &amp; Save (10% Off)

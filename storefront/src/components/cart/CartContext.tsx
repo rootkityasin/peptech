@@ -2,6 +2,11 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react"
 
+export interface CartItemOption {
+  label: string
+  value: string
+}
+
 export interface CartItem {
   id: string
   title: string
@@ -15,6 +20,7 @@ export interface CartItem {
   sku: string
   batch?: string
   image?: string
+  options?: CartItemOption[]
 }
 
 interface CartContextType {

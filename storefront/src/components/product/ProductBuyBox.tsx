@@ -40,12 +40,23 @@ export function ProductBuyBox({
   const [isCartridgeOpen, setIsCartridgeOpen] = useState(false)
   const [isVialOpen, setIsVialOpen] = useState(false)
 
+  // Sync default cartridge if title specifies model
+  React.useEffect(() => {
+    if (title) {
+      const lower = title.toLowerCase()
+      const match = CARTRIDGE_OPTIONS.find((c) =>
+        lower.includes(c.name.toLowerCase().split(" ")[0])
+      )
+      if (match) setSelectedCartridge(match)
+    }
+  }, [title])
+
   const basePrice = purchaseType === "subscription" ? subscribePrice : price
   const totalPrice = basePrice + selectedVial.priceDelta
 
   const handleAddToCart = () => {
     addItem({
-      id: `complete-pen-set-${selectedCartridge.id}`,
+      id: `complete-pen-set-${selectedCartridge.id}-${selectedVial.id}`,
       title: "Complete PEPTECH® Pen Set",
       format: "pen-set",
       strength: `${selectedCartridge.name.split("·")[0].trim()}`,
@@ -53,8 +64,21 @@ export function ProductBuyBox({
       isSubscription: purchaseType === "subscription",
       subscriptionIntervalDays: purchaseType === "subscription" ? 28 : undefined,
       discountPercent: purchaseType === "subscription" ? 10 : undefined,
-      sku: "PPS-1000",
-      batch: "PT-PS-001",
+      sku: `PPS-${selectedCartridge.id.toUpperCase()}`,
+      batch: selectedCartridge.name.includes("Batch")
+        ? selectedCartridge.name.split("Batch")[1]?.trim().replace(/^#/, "")
+        : "PT-PS-001",
+      image: "/images/figma/152e353c4afaa5945905ac686de871b57ec2a770.png",
+      options: [
+        {
+          label: "Cartridge",
+          value: selectedCartridge.name,
+        },
+        {
+          label: "Diluent / Vial",
+          value: selectedVial.name,
+        },
+      ],
     })
     setIsDrawerOpen(true)
   }
