@@ -387,10 +387,10 @@ export default function CheckoutPage() {
   }
 
   const renderSummaryContent = () => (
-    <>
+    <div className="flex flex-col gap-5 w-full font-sans">
       {/* Itemized Items List */}
       <div
-        className="flex flex-col gap-[14px] items-start w-full"
+        className="flex flex-col gap-4 items-start w-full"
         data-node-id="50:8033"
         data-name="Itemized Items List"
       >
@@ -410,12 +410,12 @@ export default function CheckoutPage() {
           return (
             <div
               key={`${item.id}-${item.isSubscription}`}
-              className="flex items-center justify-between w-full gap-3"
+              className="flex items-start justify-between w-full gap-3.5 py-1"
               data-name={`Summary Item - ${item.title}`}
             >
-              <div className="flex flex-1 gap-[12px] items-center min-w-0" data-name="Left Item">
+              <div className="flex flex-1 gap-3.5 items-center min-w-0" data-name="Left Item">
                 <div
-                  className="bg-[rgba(255,255,255,0.08)] flex h-[48px] items-center justify-center rounded-[8px] shrink-0 size-[48px] p-1 border border-white/10"
+                  className="bg-white/[0.06] flex h-[52px] items-center justify-center rounded-xl shrink-0 size-[52px] p-1.5 border border-white/10 shadow-sm"
                   data-name="Thumb"
                 >
                   <img
@@ -424,25 +424,26 @@ export default function CheckoutPage() {
                     className="size-[42px] object-contain pointer-events-none"
                   />
                 </div>
-                <div className="flex flex-1 flex-col gap-[2px] items-start min-w-0 leading-tight" data-name="Info">
-                  <p className="font-semibold text-[13px] text-white truncate w-full">
+                <div className="flex flex-1 flex-col gap-1 items-start min-w-0" data-name="Info">
+                  <p className="font-semibold text-[14px] text-white tracking-tight truncate w-full">
                     {item.title}
                   </p>
-                  <p className="font-normal text-[#94a3b8] text-[11px] truncate w-full">
+                  <p className="font-normal text-slate-400 text-[12px] truncate w-full">
                     {subtitle}
                   </p>
                   {item.options && item.options.length > 0 && (
-                    <div className="flex flex-col gap-0.5 mt-0.5">
+                    <div className="flex flex-col gap-0.5 mt-0.5 text-[11.5px] w-full">
                       {item.options.map((opt, idx) => (
-                        <p key={idx} className="text-[10.5px] text-[#94a3b8] truncate">
-                          <span className="text-[#e2e8f0] font-medium">{opt.label}:</span> {opt.value}
+                        <p key={idx} className="truncate w-full">
+                          <span className="text-slate-400 font-normal">{opt.label}:</span>{" "}
+                          <span className="text-slate-200 font-medium">{opt.value}</span>
                         </p>
                       ))}
                     </div>
                   )}
                 </div>
               </div>
-              <p className="font-bold text-[14px] text-white whitespace-nowrap">
+              <p className="font-semibold text-[15px] text-white whitespace-nowrap tabular-nums tracking-tight mt-0.5">
                 £{lineTotal.toFixed(2)}
               </p>
             </div>
@@ -453,12 +454,12 @@ export default function CheckoutPage() {
       {/* Promo Code Row */}
       <form
         onSubmit={handleApplyPromo}
-        className="flex gap-[8px] h-[40px] items-start w-full mt-2"
+        className="flex gap-2.5 h-[44px] items-center w-full pt-1"
         data-node-id="50:8058"
         data-name="Promo Code Row"
       >
         <div
-          className="bg-[rgba(255,255,255,0.08)] border border-[rgba(255,255,255,0.14)] flex flex-1 h-full items-center px-[12px] rounded-[6px]"
+          className="bg-white/[0.06] border border-white/15 focus-within:border-[#00C5A0] focus-within:ring-1 focus-within:ring-[#00C5A0]/50 flex flex-1 h-full items-center px-3.5 rounded-xl transition-all"
           data-node-id="50:8059"
           data-name="Promo Input"
         >
@@ -467,12 +468,12 @@ export default function CheckoutPage() {
             placeholder="Add promo or coupon code"
             value={promoCode}
             onChange={(e) => setPromoCode(e.target.value)}
-            className="bg-transparent text-white text-[12.5px] w-full placeholder:text-[#94a3b8] focus:outline-none"
+            className="bg-transparent text-white text-[13px] w-full placeholder:text-slate-400 focus:outline-none"
           />
         </div>
         <button
           type="submit"
-          className="bg-[rgba(255,255,255,0.16)] hover:bg-[rgba(255,255,255,0.24)] flex h-full items-center justify-center px-[16px] rounded-[6px] text-white text-[12.5px] font-semibold transition-colors cursor-pointer shrink-0"
+          className="bg-white/[0.12] hover:bg-[#00C5A0] hover:text-[#0B1F3A] flex h-full items-center justify-center px-5 rounded-xl text-white text-[13px] font-medium transition-all duration-200 cursor-pointer shrink-0 shadow-sm active:scale-95"
           data-node-id="50:8061"
           data-name="Apply Promo Button"
         >
@@ -481,85 +482,77 @@ export default function CheckoutPage() {
       </form>
 
       {/* Divider */}
-      <div className="bg-[rgba(255,255,255,0.12)] h-px w-full my-1" data-node-id="50:8063" />
+      <div className="bg-white/[0.08] h-px w-full my-0.5" data-node-id="50:8063" />
 
       {/* Financials Box */}
       <div
-        className="flex flex-col gap-[9px] items-start w-full text-[13px]"
+        className="flex flex-col gap-3 items-start w-full text-[13.5px] pt-1"
         data-node-id="50:8064"
         data-name="Financials Box"
       >
         <div className="flex items-center justify-between w-full" data-node-id="50:8065">
-          <span className="text-[#94a3b8]" data-node-id="50:8066">Subtotal</span>
-          <span className="font-medium text-white text-[13.5px]" data-node-id="50:8067">
+          <span className="text-slate-300 font-normal" data-node-id="50:8066">Subtotal</span>
+          <span className="font-medium text-white text-[14px] tabular-nums" data-node-id="50:8067">
             £{subtotal.toFixed(2)}
           </span>
         </div>
         {subscriptionSavings > 0 && (
           <div className="flex items-center justify-between w-full" data-node-id="50:8068">
-            <span className="text-[#94a3b8]" data-node-id="50:8069">
+            <span className="text-slate-300 font-normal" data-node-id="50:8069">
               28-Day Subscription Savings (10%)
             </span>
-            <span className="font-bold text-[#2dd4bf] text-[13.5px]" data-node-id="50:8070">
+            <span className="font-semibold text-[#00C5A0] text-[14px] tabular-nums" data-node-id="50:8070">
               -£{subscriptionSavings.toFixed(2)}
             </span>
           </div>
         )}
         {promoApplied && (
           <div className="flex items-center justify-between w-full">
-            <span className="text-[#94a3b8]">Institutional Researcher Discount</span>
-            <span className="font-bold text-[#2dd4bf] text-[13.5px]">-£15.00</span>
+            <span className="text-slate-300 font-normal">Institutional Researcher Discount</span>
+            <span className="font-semibold text-[#00C5A0] text-[14px] tabular-nums">-£15.00</span>
           </div>
         )}
         <div className="flex items-center justify-between w-full" data-node-id="50:8071">
-          <span className="text-[#94a3b8]" data-node-id="50:8072">
+          <span className="text-slate-300 font-normal" data-node-id="50:8072">
             Royal Mail Special Delivery (Tracked 24)
           </span>
-          <span className="font-bold text-[#2dd4bf] text-[13.5px]" data-node-id="50:8073">
+          <span className="font-semibold text-[#00C5A0] text-[13.5px] tracking-wide" data-node-id="50:8073">
             {destination === "UK" ? "FREE" : "£15.00"}
           </span>
         </div>
         <div className="flex items-center justify-between w-full" data-node-id="50:8074">
-          <div className="flex gap-[6px] items-center" data-node-id="50:8167">
-            <span className="text-[#94a3b8]" data-node-id="50:8168">Tax</span>
+          <div className="flex gap-1.5 items-center" data-node-id="50:8167">
+            <span className="text-slate-300 font-normal" data-node-id="50:8168">Tax</span>
             <img
               src="/images/figma/c625150f6097c7e9a94871ef584d45568709e394.svg"
               alt="Info"
-              className="size-[13px] block"
+              className="size-[13px] block opacity-70"
               data-node-id="50:8169"
             />
           </div>
-          <span className="text-[#94a3b8]" data-node-id="50:8173">
+          <span className="text-slate-400 text-[12.5px]" data-node-id="50:8173">
             Included (UK VAT Exempt for RUO)
           </span>
         </div>
       </div>
 
       {/* Divider */}
-      <div className="bg-[rgba(255,255,255,0.12)] h-px w-full my-1" data-node-id="50:8077" />
+      <div className="bg-white/[0.08] h-px w-full my-0.5" data-node-id="50:8077" />
 
       {/* Total Due Row */}
       <div
-        className="flex items-center justify-between w-full text-white"
+        className="flex items-center justify-between w-full text-white pt-1"
         data-node-id="50:8078"
         data-name="Total Due Row"
       >
-        <span className="font-semibold text-[14.5px]" data-node-id="50:8079">
+        <span className="font-medium text-slate-200 text-[15px]" data-node-id="50:8079">
           Total due today
         </span>
-        <span className="font-bold text-[24px]" data-node-id="50:8080">
+        <span className="font-bold text-[26px] tracking-tight tabular-nums" data-node-id="50:8080">
           £{finalTotal.toFixed(2)}
         </span>
       </div>
-
-      {/* Cold Chain Assurance Badge */}
-      <div className="mt-2 p-3 bg-white/5 border border-white/10 rounded-lg flex items-center gap-3 text-xs text-[#94A3B8]">
-        <span className="text-base">❄️</span>
-        <span>
-          <strong className="text-white">Protected 2°C–8°C Cold-Chain:</strong> All peptides ship in insulated temperature-monitored packaging via Royal Mail Tracked 24.
-        </span>
-      </div>
-    </>
+    </div>
   )
 
   return (
@@ -600,22 +593,22 @@ export default function CheckoutPage() {
         </div>
 
         {/* Collapsible Order Summary Bar */}
-        <div className="border-t border-white/10 px-4 sm:px-6 py-2.5 bg-[#071324] flex items-center justify-between">
+        <div className="border-t border-white/10 px-4 sm:px-6 py-3 bg-[#08182E] flex items-center justify-between">
           <button
             type="button"
             onClick={() => setSummaryExpanded(!summaryExpanded)}
-            className="flex items-center gap-2 text-xs font-semibold text-[#2DD4BF] hover:text-white active:scale-95 transition-all cursor-pointer"
+            className="flex items-center gap-2 text-[13px] font-medium text-[#00C5A0] hover:text-white active:scale-95 transition-all cursor-pointer"
           >
-            <svg className="w-4 h-4 text-[#2DD4BF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-4 h-4 text-[#00C5A0]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
             <span>{summaryExpanded ? "Hide order summary" : "Show order summary"}</span>
-            <svg className={`w-3.5 h-3.5 transition-transform duration-300 transform ${summaryExpanded ? "rotate-180 text-white" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className={`w-3.5 h-3.5 transition-transform duration-300 transform text-[#00C5A0] ${summaryExpanded ? "rotate-180 text-white" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
             </svg>
           </button>
           {hasSubscription && (
-            <span className="text-[10px] bg-[#16A6A3] text-white font-bold px-2 py-0.5 rounded">
+            <span className="text-[11px] bg-[#00C5A0]/15 text-[#00C5A0] border border-[#00C5A0]/30 font-semibold px-2.5 py-1 rounded-full tracking-wide">
               28-Day Refill Included
             </span>
           )}
@@ -623,8 +616,8 @@ export default function CheckoutPage() {
 
         {/* Expanded Summary Drawer on Mobile (Smooth Accordion Transition) */}
         <div 
-          className={`overflow-hidden transition-all duration-300 ease-in-out bg-[#0a1b33] border-t border-white/10 ${
-            summaryExpanded ? "max-h-[1200px] opacity-100 py-5 px-4 sm:px-6" : "max-h-0 opacity-0 py-0 px-4 sm:px-6 pointer-events-none"
+          className={`overflow-hidden transition-all duration-300 ease-in-out bg-[#08182E] border-t border-white/10 ${
+            summaryExpanded ? "max-h-[1400px] opacity-100 py-6 px-4 sm:px-6" : "max-h-0 opacity-0 py-0 px-4 sm:px-6 pointer-events-none"
           }`}
         >
           {renderSummaryContent()}
@@ -695,12 +688,12 @@ export default function CheckoutPage() {
               </p>
               {hasSubscription && (
                 <div
-                  className="bg-[#16a6a3] flex items-center justify-center px-[8px] py-[4px] rounded-[6px]"
+                  className="bg-[#00C5A0]/15 text-[#00C5A0] border border-[#00C5A0]/30 flex items-center justify-center px-3 py-1 rounded-full shadow-sm"
                   data-node-id="50:8031"
                   data-name="Cadence Pill"
                 >
                   <span
-                    className="font-bold text-[11px] text-white whitespace-nowrap"
+                    className="font-semibold text-[11px] whitespace-nowrap tracking-wide"
                     data-node-id="50:8032"
                   >
                     28-Day Refill Included
