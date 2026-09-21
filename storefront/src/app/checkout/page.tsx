@@ -248,13 +248,13 @@ export default function CheckoutPage() {
             data-node-id="52:8427"
           >
             <h1
-              className="font-['Inter'] font-bold text-[#0b1f3a] text-[26px] leading-tight"
+              className="font-bold text-[#0b1f3a] text-[26px] leading-tight"
               data-node-id="52:8428"
             >
               Payment successful
             </h1>
             <p
-              className="font-['Inter'] font-normal text-[#64748b] text-[13.5px] max-w-[420px]"
+              className="font-normal text-[#64748b] text-[13.5px] max-w-[420px]"
               data-node-id="52:8429"
             >
               Thank you for your order. We&apos;ve sent your receipt and batch COA to your email.
@@ -333,7 +333,7 @@ export default function CheckoutPage() {
                   data-node-id="52:8515"
                 />
                 <span
-                  className="font-['Inter'] font-semibold text-[#16a6a3] text-[11.5px]"
+                  className="font-semibold text-[#16a6a3] text-[11.5px]"
                   data-node-id="52:8517"
                 >
                   Payment Verified &amp; Confirmed
@@ -352,7 +352,7 @@ export default function CheckoutPage() {
                   data-node-id="52:8519"
                 />
                 <span
-                  className="font-['Inter'] font-semibold text-[#0b1f3a] text-[12.5px]"
+                  className="font-semibold text-[#0b1f3a] text-[12.5px]"
                   data-node-id="52:8522"
                 >
                   Print Slip
@@ -368,14 +368,14 @@ export default function CheckoutPage() {
           >
             <Link
               href="/shop"
-              className="bg-[#f1f5f9] hover:bg-slate-200 flex flex-1 h-[48px] items-center justify-center rounded-[8px] text-[#0b1f3a] font-['Inter'] font-semibold text-[14px] transition-colors text-center"
+              className="bg-[#f1f5f9] hover:bg-slate-200 flex flex-1 h-[48px] items-center justify-center rounded-[8px] text-[#0b1f3a] font-semibold text-[14px] transition-colors text-center"
               data-node-id="52:8525"
             >
               Continue Shopping
             </Link>
             <Link
               href="/account"
-              className="bg-[#0b1f3a] hover:bg-[#16335a] flex flex-1 h-[48px] items-center justify-center rounded-[8px] text-white font-['Inter'] font-semibold text-[14px] transition-colors text-center shadow-sm"
+              className="bg-[#0b1f3a] hover:bg-[#16335a] flex flex-1 h-[48px] items-center justify-center rounded-[8px] text-white font-semibold text-[14px] transition-colors text-center shadow-sm"
               data-node-id="52:8527"
             >
               Go to My Account →
@@ -425,10 +425,10 @@ export default function CheckoutPage() {
                   />
                 </div>
                 <div className="flex flex-1 flex-col gap-[2px] items-start min-w-0 leading-tight" data-name="Info">
-                  <p className="font-['Inter'] font-semibold text-[13px] text-white truncate w-full">
+                  <p className="font-semibold text-[13px] text-white truncate w-full">
                     {item.title}
                   </p>
-                  <p className="font-['Inter'] font-normal text-[#94a3b8] text-[11px] truncate w-full">
+                  <p className="font-normal text-[#94a3b8] text-[11px] truncate w-full">
                     {subtitle}
                   </p>
                   {item.options && item.options.length > 0 && (
@@ -442,7 +442,7 @@ export default function CheckoutPage() {
                   )}
                 </div>
               </div>
-              <p className="font-['Inter'] font-bold text-[14px] text-white whitespace-nowrap">
+              <p className="font-bold text-[14px] text-white whitespace-nowrap">
                 £{lineTotal.toFixed(2)}
               </p>
             </div>
@@ -491,7 +491,7 @@ export default function CheckoutPage() {
       >
         <div className="flex items-center justify-between w-full" data-node-id="50:8065">
           <span className="text-[#94a3b8]" data-node-id="50:8066">Subtotal</span>
-          <span className="font-['Inter'] font-medium text-white text-[13.5px]" data-node-id="50:8067">
+          <span className="font-medium text-white text-[13.5px]" data-node-id="50:8067">
             £{subtotal.toFixed(2)}
           </span>
         </div>
@@ -500,7 +500,7 @@ export default function CheckoutPage() {
             <span className="text-[#94a3b8]" data-node-id="50:8069">
               28-Day Subscription Savings (10%)
             </span>
-            <span className="font-['Inter'] font-bold text-[#2dd4bf] text-[13.5px]" data-node-id="50:8070">
+            <span className="font-bold text-[#2dd4bf] text-[13.5px]" data-node-id="50:8070">
               -£{subscriptionSavings.toFixed(2)}
             </span>
           </div>
@@ -508,14 +508,14 @@ export default function CheckoutPage() {
         {promoApplied && (
           <div className="flex items-center justify-between w-full">
             <span className="text-[#94a3b8]">Institutional Researcher Discount</span>
-            <span className="font-['Inter'] font-bold text-[#2dd4bf] text-[13.5px]">-£15.00</span>
+            <span className="font-bold text-[#2dd4bf] text-[13.5px]">-£15.00</span>
           </div>
         )}
         <div className="flex items-center justify-between w-full" data-node-id="50:8071">
           <span className="text-[#94a3b8]" data-node-id="50:8072">
             Royal Mail Special Delivery (Tracked 24)
           </span>
-          <span className="font-['Inter'] font-bold text-[#2dd4bf] text-[13.5px]" data-node-id="50:8073">
+          <span className="font-bold text-[#2dd4bf] text-[13.5px]" data-node-id="50:8073">
             {destination === "UK" ? "FREE" : "£15.00"}
           </span>
         </div>
@@ -544,10 +544,10 @@ export default function CheckoutPage() {
         data-node-id="50:8078"
         data-name="Total Due Row"
       >
-        <span className="font-['Inter'] font-semibold text-[14.5px]" data-node-id="50:8079">
+        <span className="font-semibold text-[14.5px]" data-node-id="50:8079">
           Total due today
         </span>
-        <span className="font-['Inter'] font-bold text-[24px]" data-node-id="50:8080">
+        <span className="font-bold text-[24px]" data-node-id="50:8080">
           £{finalTotal.toFixed(2)}
         </span>
       </div>
@@ -564,7 +564,7 @@ export default function CheckoutPage() {
 
   return (
     <div
-      className="bg-white flex flex-col lg:flex-row w-full min-h-screen relative"
+      className="bg-white flex flex-col lg:flex-row w-full min-h-screen relative font-sans"
       data-node-id="50:8021"
       data-name="PEPTECH - Checkout Page Prototype"
     >
@@ -677,7 +677,7 @@ export default function CheckoutPage() {
             data-name="Hero Price Display"
           >
             <p
-              className="font-['Inter'] font-medium text-[#94a3b8] text-[13px]"
+              className="font-medium text-[#94a3b8] text-[13px]"
               data-node-id="50:8028"
             >
               Total due today
@@ -688,7 +688,7 @@ export default function CheckoutPage() {
               data-name="Hero Price Row"
             >
               <p
-                className="font-['Inter'] font-bold text-white text-[34px] leading-tight"
+                className="font-bold text-white text-[34px] leading-tight"
                 data-node-id="50:8030"
               >
                 £{finalTotal.toFixed(2)}
@@ -700,7 +700,7 @@ export default function CheckoutPage() {
                   data-name="Cadence Pill"
                 >
                   <span
-                    className="font-['Inter'] font-bold text-[11px] text-white whitespace-nowrap"
+                    className="font-bold text-[11px] text-white whitespace-nowrap"
                     data-node-id="50:8032"
                   >
                     28-Day Refill Included
@@ -732,7 +732,7 @@ export default function CheckoutPage() {
           data-name="Express Checkout Box"
         >
           <p
-            className="font-['Inter'] font-semibold text-[#64748b] text-[13px]"
+            className="font-semibold text-[#64748b] text-[13px]"
             data-node-id="50:8089"
           >
             Express Checkout
@@ -780,7 +780,7 @@ export default function CheckoutPage() {
         >
           <div className="bg-[#e2e8f0] flex-1 h-px" data-node-id="50:8096" />
           <p
-            className="font-['Inter'] font-normal text-[#94a3b8] text-[11.5px]"
+            className="font-normal text-[#94a3b8] text-[11.5px]"
             data-node-id="50:8097"
           >
             or pay with card
@@ -795,7 +795,7 @@ export default function CheckoutPage() {
           data-name="Shipping Information Section"
         >
           <p
-            className="font-['Inter'] font-bold text-[#0b1f3a] text-[15px]"
+            className="font-bold text-[#0b1f3a] text-[15px]"
             data-node-id="50:8175"
           >
             Shipping information
@@ -809,7 +809,7 @@ export default function CheckoutPage() {
           >
             <label
               htmlFor="email"
-              className="font-['Inter'] font-medium text-[#475569] text-[13px]"
+              className="font-medium text-[#475569] text-[13px]"
               data-node-id="50:8177"
             >
               Email
@@ -839,7 +839,7 @@ export default function CheckoutPage() {
           >
             <label
               htmlFor="engraving"
-              className="font-['Inter'] font-medium text-[#475569] text-[13px]"
+              className="font-medium text-[#475569] text-[13px]"
               data-node-id="50:8181"
             >
               Personal engraving
@@ -858,7 +858,7 @@ export default function CheckoutPage() {
                 placeholder="Custom laboratory ID / Pen engraving text"
               />
               <span
-                className="font-['Inter'] font-normal text-[#94a3b8] text-[13px] whitespace-nowrap ml-2"
+                className="font-normal text-[#94a3b8] text-[13px] whitespace-nowrap ml-2"
                 data-node-id="50:8185"
               >
                 Optional
@@ -873,7 +873,7 @@ export default function CheckoutPage() {
             data-name="Shipping Address Group"
           >
             <label
-              className="font-['Inter'] font-medium text-[#475569] text-[13px]"
+              className="font-medium text-[#475569] text-[13px]"
               data-node-id="50:8187"
             >
               Shipping address
@@ -910,7 +910,7 @@ export default function CheckoutPage() {
                   name="country"
                   value={formData.country}
                   onChange={handleInputChange}
-                  className="w-full text-[13px] font-['Inter'] font-medium text-[#0b1f3a] bg-transparent focus:outline-none cursor-pointer"
+                  className="w-full text-[13px] font-medium text-[#0b1f3a] bg-transparent focus:outline-none cursor-pointer"
                 >
                   <option value="United Kingdom">United Kingdom</option>
                   <option value="United States">United States</option>
@@ -1028,7 +1028,7 @@ export default function CheckoutPage() {
         >
           <div className="flex items-center justify-between w-full">
             <p
-              className="font-['Inter'] font-bold text-[#0b1f3a] text-[15px]"
+              className="font-bold text-[#0b1f3a] text-[15px]"
               data-node-id="50:8269"
             >
               Payment method
@@ -1084,7 +1084,7 @@ export default function CheckoutPage() {
                   data-node-id="50:8275"
                 />
                 <span
-                  className="font-['Inter'] font-semibold text-[#0b1f3a] text-[14px]"
+                  className="font-semibold text-[#0b1f3a] text-[14px]"
                   data-node-id="50:8279"
                 >
                   Card
@@ -1092,7 +1092,7 @@ export default function CheckoutPage() {
               </div>
 
               <p
-                className="font-['Inter'] font-medium text-[#475569] text-[12.5px]"
+                className="font-medium text-[#475569] text-[12.5px]"
                 data-node-id="50:8280"
               >
                 Card information
@@ -1188,7 +1188,7 @@ export default function CheckoutPage() {
                   )}
                 </div>
                 <span
-                  className="font-['Inter'] font-normal text-[#475569] text-[13px]"
+                  className="font-normal text-[#475569] text-[13px]"
                   data-node-id="50:8311"
                 >
                   Billing info is same as shipping
@@ -1223,7 +1223,7 @@ export default function CheckoutPage() {
         >
           <label
             htmlFor="phone"
-            className="font-['Inter'] font-medium text-[#475569] text-[13px]"
+            className="font-medium text-[#475569] text-[13px]"
             data-node-id="50:8313"
           >
             Phone number
@@ -1245,7 +1245,7 @@ export default function CheckoutPage() {
               />
             </div>
             <span
-              className="font-['Inter'] font-normal text-[#94a3b8] text-[13px] ml-2"
+              className="font-normal text-[#94a3b8] text-[13px] ml-2"
               data-node-id="50:8319"
             >
               Optional
@@ -1255,7 +1255,7 @@ export default function CheckoutPage() {
           <div className="bg-[#e2e8f0] h-px w-full" data-node-id="50:8320" />
 
           <p
-            className="font-['Inter'] font-normal text-[#64748b] text-[11.5px] leading-[16px]"
+            className="font-normal text-[#64748b] text-[11.5px] leading-[16px]"
             data-node-id="50:8321"
           >
             By providing your contact details, you agree to create a research account and save your dispatch address, subject to our Terms and Privacy Policy.
@@ -1286,7 +1286,7 @@ export default function CheckoutPage() {
             )}
           </div>
           <p
-            className="font-['Inter'] font-normal text-[#475569] text-[12.5px] leading-snug"
+            className="font-normal text-[#475569] text-[12.5px] leading-snug"
             data-node-id="50:8324"
           >
             I confirm that I am at least 18 years of age and agree to PEPTECH&apos;s{" "}
@@ -1325,7 +1325,7 @@ export default function CheckoutPage() {
             data-node-id="50:8328"
           />
           <span
-            className="font-['Inter'] font-normal text-[#475569] text-[12px] underline"
+            className="font-normal text-[#475569] text-[12px] underline"
             data-node-id="50:8330"
           >
             Free returns and exchanges on unopened laboratory hardware

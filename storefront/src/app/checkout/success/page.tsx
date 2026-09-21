@@ -23,7 +23,7 @@ export default function PaymentSuccessPage() {
 
   return (
     <div
-      className="bg-white flex flex-col items-center justify-center py-[48px] min-h-screen w-full"
+      className="bg-white flex flex-col items-center justify-center py-[48px] min-h-screen w-full font-sans"
       data-node-id="52:8419"
       data-name="PEPTECH - Payment Success Prototype"
     >
@@ -67,13 +67,13 @@ export default function PaymentSuccessPage() {
           data-node-id="52:8427"
         >
           <h1
-            className="font-['Inter'] font-bold text-[#0b1f3a] text-[26px] leading-tight"
+            className="font-bold text-[#0b1f3a] text-[26px] leading-tight"
             data-node-id="52:8428"
           >
             Payment successful
           </h1>
           <p
-            className="font-['Inter'] font-normal text-[#64748b] text-[13.5px] max-w-[420px]"
+            className="font-normal text-[#64748b] text-[13.5px] max-w-[420px]"
             data-node-id="52:8429"
           >
             Thank you for your order. We&apos;ve sent your receipt and batch COA to your email.
@@ -150,7 +150,7 @@ export default function PaymentSuccessPage() {
                 data-node-id="52:8515"
               />
               <span
-                className="font-['Inter'] font-semibold text-[#16a6a3] text-[11.5px]"
+                className="font-semibold text-[#16a6a3] text-[11.5px]"
                 data-node-id="52:8517"
               >
                 Payment Verified &amp; Confirmed
@@ -169,7 +169,7 @@ export default function PaymentSuccessPage() {
                 data-node-id="52:8519"
               />
               <span
-                className="font-['Inter'] font-semibold text-[#0b1f3a] text-[12.5px]"
+                className="font-semibold text-[#0b1f3a] text-[12.5px]"
                 data-node-id="52:8522"
               >
                 Print Slip
@@ -185,14 +185,14 @@ export default function PaymentSuccessPage() {
         >
           <Link
             href="/shop"
-            className="bg-[#f1f5f9] hover:bg-slate-200 flex flex-1 h-[48px] items-center justify-center rounded-[8px] text-[#0b1f3a] font-['Inter'] font-semibold text-[14px] transition-colors text-center"
+            className="bg-[#f1f5f9] hover:bg-slate-200 flex flex-1 h-[48px] items-center justify-center rounded-[8px] text-[#0b1f3a] font-semibold text-[14px] transition-colors text-center"
             data-node-id="52:8525"
           >
             Continue Shopping
           </Link>
           <Link
             href="/account"
-            className="bg-[#0b1f3a] hover:bg-[#16335a] flex flex-1 h-[48px] items-center justify-center rounded-[8px] text-white font-['Inter'] font-semibold text-[14px] transition-colors text-center shadow-sm"
+            className="bg-[#0b1f3a] hover:bg-[#16335a] flex flex-1 h-[48px] items-center justify-center rounded-[8px] text-white font-semibold text-[14px] transition-colors text-center shadow-sm"
             data-node-id="52:8527"
           >
             Go to My Account →
