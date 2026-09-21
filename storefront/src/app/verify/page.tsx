@@ -69,7 +69,7 @@ function VerifyContent() {
         {/* Batch Search Form Container */}
         <div className="w-full max-w-[680px]">
           <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-[12px] items-stretch w-full">
-            <div className="bg-white border border-[#cbd5e1] flex flex-1 gap-[12px] h-[52px] items-center px-[18px] rounded-[10px] shadow-2xs focus-within:border-[#16a6a3] focus-within:ring-2 focus-within:ring-[#16a6a3]/20 transition-all">
+            <div className="bg-white border border-[#cbd5e1] flex w-full sm:flex-1 shrink-0 gap-[12px] h-[52px] min-h-[52px] items-center px-[18px] rounded-[10px] shadow-2xs focus-within:border-[#16a6a3] focus-within:ring-2 focus-within:ring-[#16a6a3]/20 transition-all">
               <div className="relative shrink-0 w-[18px] h-[18px]">
                 <img
                   alt="Search"
@@ -81,8 +81,8 @@ function VerifyContent() {
                 type="text"
                 value={batchInput}
                 onChange={(e) => setBatchInput(e.target.value)}
-                placeholder="Enter Batch ID (e.g. TRZ-2026-08B, SMG-2026-04A, RT-2609A)..."
-                className="w-full bg-transparent border-none outline-hidden text-[#0b1f3a] text-[14px] sm:text-[15px] placeholder-[#94a3b8] font-normal"
+                placeholder="Enter Batch ID (e.g. RT-2609A)..."
+                className="w-full h-full bg-transparent border-none outline-hidden text-[#0b1f3a] text-[15px] placeholder-[#94a3b8] font-normal"
               />
               {batchInput && (
                 <button

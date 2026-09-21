@@ -3,6 +3,7 @@
 import React, { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
+import { TrustedBySection } from "@/components/common/TrustedBySection"
 
 const faqs = [
   {
@@ -318,6 +319,9 @@ export default function HowItWorksPage() {
           </div>
         </div>
       </section>
+
+      {/* 06 Trusted By Certification Marquee */}
+      <TrustedBySection />
     </main>
   )
 }

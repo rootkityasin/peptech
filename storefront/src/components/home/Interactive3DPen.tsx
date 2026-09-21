@@ -170,7 +170,7 @@ export function Interactive3DPen() {
             )}
 
             {/* 3D Model Dynamic Ground Shadow */}
-            <div className="w-[82%] max-w-[820px] h-[16px] sm:h-[18px] -mt-2 rounded-full bg-[#0B1F3A]/25 blur-md pointer-events-none" />
+            <div className="w-[68%] max-w-[700px] h-[16px] sm:h-[18px] -mt-2 rounded-full bg-[#0B1F3A]/25 blur-md pointer-events-none" />
 
             {/* 3D Action Strip */}
             <div className="mt-2.5 flex flex-wrap items-center justify-center gap-2">

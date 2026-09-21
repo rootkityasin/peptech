@@ -46,16 +46,19 @@ export function Pen3DCanvas({
       const fovRad = THREE.MathUtils.degToRad(cameraRef.current.fov)
       const penLength = 0.165
       
-      // Compute distance so pen fills ~86% width on desktop, ~92% on mobile
-      const targetPercent = aspect > 2.0 ? 0.86 : 0.92
-      const visibleWidth = penLength / targetPercent
+      // Natural Studio Distance & Lens Framing:
+      // Pen occupies ~68% width on desktop and ~78% on mobile with elegant breathing room
+      const targetWidthPercent = aspect > 2.0 ? 0.68 : 0.78
+      const visibleWidth = penLength / targetWidthPercent
       const halfFovRad = fovRad / 2
       const distWidth = (visibleWidth / 2) / (aspect * Math.tan(halfFovRad))
-      const distHeight = (0.020 / 0.55) / (2 * Math.tan(halfFovRad))
-      const dist = Math.max(distWidth, distHeight, 0.05)
+      const distHeight = (0.020 / 0.28) / (2 * Math.tan(halfFovRad))
+      const dist = Math.max(distWidth, distHeight, 0.12)
 
-      cameraRef.current.position.set(0, 0.002, dist)
+      cameraRef.current.position.set(0, 0.001, dist)
       controlsRef.current.target.set(0, 0, 0)
+      controlsRef.current.minDistance = dist * 0.65
+      controlsRef.current.maxDistance = dist * 1.75
     }
   }, [resetTrigger])
 
@@ -71,10 +74,10 @@ export function Pen3DCanvas({
     // 1. Scene Setup
     const scene = new THREE.Scene()
 
-    // 2. Camera Setup
+    // 2. Camera Setup - Studio Portrait Lens (22° FOV) for undistorted, clinical product perspective
     const width = container.clientWidth || 600
     const height = container.clientHeight || 200
-    const camera = new THREE.PerspectiveCamera(34, width / height, 0.01, 100)
+    const camera = new THREE.PerspectiveCamera(22, width / height, 0.01, 100)
     cameraRef.current = camera
 
     // 3. WebGL Renderer with High-Performance Settings
@@ -87,7 +90,7 @@ export function Pen3DCanvas({
     renderer.setSize(width, height)
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     renderer.toneMapping = THREE.ACESFilmicToneMapping
-    renderer.toneMappingExposure = 1.05
+    renderer.toneMappingExposure = 1.08
 
     // Photorealistic PBR metallic environment map with balanced reflection intensity
     const pmremGenerator = new THREE.PMREMGenerator(renderer)
@@ -95,33 +98,38 @@ export function Pen3DCanvas({
     const envTexture = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture
     scene.environment = envTexture
     if ('environmentIntensity' in scene) {
-      ;(scene as any).environmentIntensity = 0.22
+      ;(scene as any).environmentIntensity = 0.28
     }
 
-    // 4. Soft Studio Lighting Rig (Realistic Satin Texture & Tactile Finish)
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.95)
+    // 4. Soft Studio Lighting Rig (Accentuates Anodized Blue, Black Metal, and Mirror Chrome)
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.85)
     scene.add(ambientLight)
 
-    // Soft Key Light for gentle diffuse highlight
-    const keyLight = new THREE.DirectionalLight(0xffffff, 1.05)
-    keyLight.position.set(1.2, 3.2, 2.5)
+    // Key Light for crisp metallic specular definition
+    const keyLight = new THREE.DirectionalLight(0xffffff, 1.25)
+    keyLight.position.set(1.5, 3.0, 2.5)
     scene.add(keyLight)
 
-    // Gentle Fill Light from lower front-left for natural bounce
-    const fillLight = new THREE.DirectionalLight(0xe8eef5, 0.45)
-    fillLight.position.set(-1.5, -2.0, 2.0)
+    // Gentle Fill Light from lower front-left
+    const fillLight = new THREE.DirectionalLight(0xdce6f2, 0.55)
+    fillLight.position.set(-2.0, -1.5, 1.8)
     scene.add(fillLight)
 
-    // Soft Rim Light to outline the silhouette without over-specular blowout
-    const rimLight = new THREE.DirectionalLight(0xffffff, 0.65)
-    rimLight.position.set(0, 2.5, -2.5)
+    // Soft Rim Light to accent the top edge profile
+    const rimLight = new THREE.DirectionalLight(0xffffff, 0.85)
+    rimLight.position.set(0, 2.2, -2.5)
     scene.add(rimLight)
+
+    // Direct Front Soft Light for crisp logo and black knurl definition
+    const frontLight = new THREE.DirectionalLight(0xffffff, 0.35)
+    frontLight.position.set(0, 0.4, 3.0)
+    scene.add(frontLight)
 
     // 5. OrbitControls for Interactive Mouse & Touch Dragging
     const controls = new OrbitControls(camera, canvas)
     controls.enableDamping = true
     controls.dampingFactor = 0.06
-    controls.enableZoom = false
+    controls.enableZoom = true
     controls.enablePan = false
     // We handle autoRotate on the pen mesh itself along its X-axis so it stays horizontal!
     controls.autoRotate = false
@@ -153,15 +161,19 @@ export function Pen3DCanvas({
 
       const fovRad = THREE.MathUtils.degToRad(camera.fov)
       const penLength = 0.165
-      const targetPercent = aspect > 2.0 ? 0.86 : 0.92
-      const visibleWidth = penLength / targetPercent
+      // Natural Studio Distance & Lens Framing:
+      // Pen occupies ~68% width on desktop and ~78% on mobile with elegant breathing room
+      const targetWidthPercent = aspect > 2.0 ? 0.68 : 0.78
+      const visibleWidth = penLength / targetWidthPercent
       const halfFovRad = fovRad / 2
       const distWidth = (visibleWidth / 2) / (aspect * Math.tan(halfFovRad))
-      const distHeight = (0.020 / 0.55) / (2 * Math.tan(halfFovRad))
-      const dist = Math.max(distWidth, distHeight, 0.05)
+      const distHeight = (0.020 / 0.28) / (2 * Math.tan(halfFovRad))
+      const dist = Math.max(distWidth, distHeight, 0.12)
 
-      camera.position.set(0, 0.002, dist)
+      camera.position.set(0, 0.001, dist)
       controls.target.set(0, 0, 0)
+      controls.minDistance = dist * 0.65
+      controls.maxDistance = dist * 1.75
     }
 
     loader.load(

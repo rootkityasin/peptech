@@ -61,12 +61,19 @@ body {
 
 .animate-marquee {
   display: flex;
-  width: 200%;
-  animation: marquee 35s linear infinite;
+  width: max-content;
+  animation: marquee 28s linear infinite;
+  will-change: transform;
 }
 
 .animate-marquee:hover {
   animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee {
+    animation-play-state: paused;
+  }
 }
 
 /* Custom scrollbar for clinical feel */

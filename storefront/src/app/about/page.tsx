@@ -1,6 +1,7 @@
 import React from "react"
 import Link from "next/link"
 import Image from "next/image"
+import { TrustedBySection } from "@/components/common/TrustedBySection"
 
 export const metadata = {
   title: "About Us | PEPTECH® Precision Peptide Systems",
@@ -260,7 +261,10 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* 06 Research Compliance Gate Reminder */}
+      {/* 06 Trusted By Certification Marquee */}
+      <TrustedBySection />
+
+      {/* 07 Research Compliance Gate Reminder */}
       <section className="py-12 bg-[#0b1f3a] text-white">
         <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="space-y-2 max-w-2xl">

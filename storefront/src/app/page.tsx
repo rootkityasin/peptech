@@ -5,6 +5,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { useCart } from "@/components/cart/CartContext"
 import { Interactive3DPen } from "@/components/home/Interactive3DPen"
+import { TrustedBySection } from "@/components/common/TrustedBySection"
 
 // Featured Complete Pen Sets from Figma (Node 2:29339)
 const FIGMA_FEATURED_PEN_SETS = [
@@ -234,47 +235,69 @@ export default function HomePage() {
       </section>
 
       {/* 02. TRUST BADGES STRIP - Figma Node 2:29297 */}
-      <section className="bg-white py-10 border-b border-[#E2E8F0]">
+      <section className="bg-white py-7 sm:py-10 border-b border-[#E2E8F0]">
         <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-y-6 gap-x-4 sm:gap-6">
             
-            <div className="flex items-center gap-3.5">
-              <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center shrink-0">
-                <img src="/images/figma/icon-trusted-tech.svg" alt="Technology" className="w-6 h-6" />
+            <div className="flex flex-col sm:flex-row items-center sm:items-center text-center sm:text-left gap-2 sm:gap-3.5">
+              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-emerald-50 flex items-center justify-center shrink-0">
+                <img src="/images/figma/icon-trusted-tech.svg" alt="Technology" className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
               <div>
-                <h4 className="text-[14px] font-bold text-[#0B1F3A]">Trusted Technology</h4>
-                <p className="text-[12px] text-[#64748B]">Backed by research and real-world results</p>
+                <h4 className="text-[13px] sm:text-[14px] font-bold text-[#0B1F3A] leading-tight">
+                  <span className="sm:hidden">Trusted Tech</span>
+                  <span className="hidden sm:inline">Trusted Technology</span>
+                </h4>
+                <p className="text-[11px] sm:text-[12px] text-[#64748B] mt-0.5 sm:mt-0 leading-tight">
+                  <span className="sm:hidden">Research-backed</span>
+                  <span className="hidden sm:inline">Backed by research and real-world results</span>
+                </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3.5">
-              <div className="w-12 h-12 rounded-full bg-cyan-50 flex items-center justify-center shrink-0">
-                <img src="/images/figma/icon-wide-menu.svg" alt="Menu" className="w-6 h-6" />
+            <div className="flex flex-col sm:flex-row items-center sm:items-center text-center sm:text-left gap-2 sm:gap-3.5">
+              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-cyan-50 flex items-center justify-center shrink-0">
+                <img src="/images/figma/icon-wide-menu.svg" alt="Menu" className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
               <div>
-                <h4 className="text-[14px] font-bold text-[#0B1F3A]">Wide Test Menu</h4>
-                <p className="text-[12px] text-[#64748B]">For multiple applications and industries</p>
+                <h4 className="text-[13px] sm:text-[14px] font-bold text-[#0B1F3A] leading-tight">
+                  <span className="sm:hidden">Wide Menu</span>
+                  <span className="hidden sm:inline">Wide Test Menu</span>
+                </h4>
+                <p className="text-[11px] sm:text-[12px] text-[#64748B] mt-0.5 sm:mt-0 leading-tight">
+                  <span className="sm:hidden">Multi-industry</span>
+                  <span className="hidden sm:inline">For multiple applications and industries</span>
+                </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3.5">
-              <div className="w-12 h-12 rounded-full bg-teal-50 flex items-center justify-center shrink-0">
-                <img src="/images/figma/icon-global-standards.svg" alt="Standards" className="w-6 h-6" />
+            <div className="flex flex-col sm:flex-row items-center sm:items-center text-center sm:text-left gap-2 sm:gap-3.5">
+              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-teal-50 flex items-center justify-center shrink-0">
+                <img src="/images/figma/icon-global-standards.svg" alt="Standards" className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
               <div>
-                <h4 className="text-[14px] font-bold text-[#0B1F3A]">Global Standards</h4>
-                <p className="text-[12px] text-[#64748B]">Quality you can rely on</p>
+                <h4 className="text-[13px] sm:text-[14px] font-bold text-[#0B1F3A] leading-tight">
+                  Global Standards
+                </h4>
+                <p className="text-[11px] sm:text-[12px] text-[#64748B] mt-0.5 sm:mt-0 leading-tight">
+                  <span className="sm:hidden">Verified quality</span>
+                  <span className="hidden sm:inline">Quality you can rely on</span>
+                </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3.5">
-              <div className="w-12 h-12 rounded-full bg-sky-50 flex items-center justify-center shrink-0">
-                <img src="/images/figma/icon-dedicated-support.svg" alt="Support" className="w-6 h-6" />
+            <div className="flex flex-col sm:flex-row items-center sm:items-center text-center sm:text-left gap-2 sm:gap-3.5">
+              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-sky-50 flex items-center justify-center shrink-0">
+                <img src="/images/figma/icon-dedicated-support.svg" alt="Support" className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
               <div>
-                <h4 className="text-[14px] font-bold text-[#0B1F3A]">Dedicated Support</h4>
-                <p className="text-[12px] text-[#64748B]">Here when you need us</p>
+                <h4 className="text-[13px] sm:text-[14px] font-bold text-[#0B1F3A] leading-tight">
+                  Dedicated Support
+                </h4>
+                <p className="text-[11px] sm:text-[12px] text-[#64748B] mt-0.5 sm:mt-0 leading-tight">
+                  <span className="sm:hidden">Always available</span>
+                  <span className="hidden sm:inline">Here when you need us</span>
+                </p>
               </div>
             </div>
 
@@ -508,64 +531,7 @@ export default function HomePage() {
       </section>
 
       {/* 06. TRUSTED BY PROFESSIONALS LOGOS - Figma Node 2:29589 */}
-      <section className="bg-white py-[48px] flex flex-col items-center justify-center border-t border-[#e2e8f0]">
-        <div className="w-full max-w-[1240px] mx-auto px-4 sm:px-6 flex flex-col gap-[32px] items-center">
-          <div className="flex flex-col gap-2 items-center text-center max-w-[800px]">
-            <h2 className="text-2xl sm:text-[28px] font-bold text-[#0B1F3A] tracking-tight uppercase">
-              TRUSTED BY PROFESSIONALS
-            </h2>
-            <p className="text-[14px] sm:text-[15px] text-[#64748B]">
-              Used by leading laboratories, industries and research institutions worldwide.
-            </p>
-          </div>
-
-          {/* 6 Certification Logos Row - Optically Balanced & High-Res */}
-          <div className="w-full flex flex-wrap items-center justify-center lg:justify-between gap-6 sm:gap-8 pt-2">
-            <div className="h-[52px] w-[130px] flex items-center justify-center shrink-0">
-              <img
-                src="/images/figma/logo-nsf.svg"
-                alt="NSF Certified"
-                className="h-[46px] w-[46px] object-contain"
-              />
-            </div>
-            <div className="h-[52px] w-[130px] flex items-center justify-center shrink-0">
-              <img
-                src="/images/figma/logo-iso.svg"
-                alt="ISO 9001 Certified"
-                className="h-[44px] w-auto max-w-[56px] object-contain"
-              />
-            </div>
-            <div className="h-[52px] w-[130px] flex items-center justify-center shrink-0">
-              <img
-                src="/images/figma/logo-ce.svg"
-                alt="CE Mark"
-                className="h-[42px] w-auto max-w-[62px] object-contain"
-              />
-            </div>
-            <div className="h-[52px] w-[130px] flex items-center justify-center shrink-0">
-              <img
-                src="/images/figma/logo-fda.svg"
-                alt="FDA Facility Registered"
-                className="h-[34px] w-auto max-w-[92px] object-contain"
-              />
-            </div>
-            <div className="h-[52px] w-[140px] flex items-center justify-center shrink-0">
-              <img
-                src="/images/figma/logo-who.svg"
-                alt="World Health Organization"
-                className="h-[36px] w-auto max-w-[130px] object-contain"
-              />
-            </div>
-            <div className="h-[52px] w-[130px] flex items-center justify-center shrink-0">
-              <img
-                src="/images/figma/logo-aoac-official.png"
-                alt="AOAC International"
-                className="h-[46px] w-auto max-w-[60px] object-contain"
-              />
-            </div>
-          </div>
-        </div>
-      </section>
+      <TrustedBySection />
 
       {/* 07. BOTTOM CTA BANNER - Figma Node 2:29601 */}
       <section className="bg-white py-[40px] flex items-center justify-center">

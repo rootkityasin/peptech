@@ -37,18 +37,18 @@ const badges = [
 
 export function TrustBadgesStrip() {
   return (
-    <div className="bg-white border-y border-[#e2e8f0] flex items-center justify-center py-[30px] w-full" data-node-id="8:41646" data-name="Trust Guarantees Strip">
-      <div className="flex flex-wrap lg:flex-nowrap items-center justify-between max-w-[1240px] w-full px-4 sm:px-6 gap-6" data-node-id="8:41647" data-name="Trust Inner">
+    <div className="bg-white border-y border-[#e2e8f0] flex items-center justify-center py-[24px] sm:py-[30px] w-full" data-node-id="8:41646" data-name="Trust Guarantees Strip">
+      <div className="grid grid-cols-2 lg:flex lg:flex-nowrap items-center lg:justify-between max-w-[1240px] w-full px-4 sm:px-6 gap-x-4 sm:gap-x-8 gap-y-4 sm:gap-y-6 lg:gap-6" data-node-id="8:41647" data-name="Trust Inner">
         {badges.map((b) => (
-          <div key={b.title} className="flex gap-[12px] items-center shrink-0" data-name="Trust Item">
-            <div className={`relative shrink-0 ${b.size} flex items-center justify-center`} data-name="Icon">
-              <img alt="" className="size-full object-contain" src={b.icon} />
+          <div key={b.title} className="flex gap-[10px] sm:gap-[12px] items-center shrink-0 min-w-0" data-name="Trust Item">
+            <div className="relative shrink-0 w-[24px] h-[24px] flex items-center justify-center" data-name="Icon">
+              <img alt="" className="max-w-[22px] max-h-[22px] object-contain" src={b.icon} />
             </div>
-            <div className="flex flex-col gap-[2px] items-start leading-tight whitespace-nowrap" data-name="Text">
-              <p className="font-bold text-[#0b1f3a] text-[12px]">
+            <div className="flex flex-col gap-[2px] items-start leading-tight min-w-0" data-name="Text">
+              <p className="font-bold text-[#0b1f3a] text-[12px] whitespace-nowrap">
                 {b.title}
               </p>
-              <p className="font-normal text-[#64748b] text-[11px]">
+              <p className="font-normal text-[#64748b] text-[11px] whitespace-nowrap">
                 {b.desc}
               </p>
             </div>
