@@ -83,9 +83,6 @@ export function Header() {
     }
   }, [mobileMenuOpen])
 
-  // Do not show global header on checkout funnel pages (Figma Node 50:8021 / 52:8419)
-  if (pathname?.startsWith("/checkout")) return null
-
   // Live search suggestions from catalog
   const searchSuggestions = useMemo(() => {
     const q = searchQuery.trim().toLowerCase()
@@ -112,6 +109,9 @@ export function Header() {
       )
     }).length
   }, [searchQuery])
+
+  // Do not show global header on checkout funnel pages (Figma Node 50:8021 / 52:8419)
+  if (pathname?.startsWith("/checkout")) return null
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault()
