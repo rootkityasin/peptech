@@ -153,10 +153,10 @@ export function Header() {
       </div>
 
       {/* 02 Header Navigation - Figma Node 2:29228 */}
-      <header className={`bg-white sticky top-0 z-40 shadow-xs h-[80px] flex items-center relative transition-colors ${
+      <header className={`bg-white sticky top-0 z-50 shadow-xs h-[80px] flex items-center relative transition-colors ${
         searchOpen ? "border-b-0" : "border-b border-[#E2E8F0]"
       }`}>
-        <div className="max-w-[1240px] w-full mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
+        <div className="max-w-[1240px] w-full mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4 relative z-50 bg-white h-full">
           
           {/* Brand Logo with Slogan */}
           <div className="flex items-center gap-3">
@@ -632,7 +632,7 @@ export function Header() {
           <>
             {/* Backdrop Overlay to catch clicks anywhere else in the website */}
             <div
-              className="lg:hidden fixed inset-0 bg-black/25 backdrop-blur-[1px] z-40 transition-opacity"
+              className="lg:hidden fixed inset-0 top-[80px] bg-black/30 z-40 transition-opacity"
               onClick={() => setMobileMenuOpen(false)}
               aria-hidden="true"
             />
