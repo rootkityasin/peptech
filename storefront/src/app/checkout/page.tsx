@@ -750,7 +750,7 @@ export default function CheckoutPage() {
               data-node-id="50:8153"
               data-name="Apple Pay Button"
             >
-              <AppleLogo className="w-[19px] h-[19px] text-white" fill="white" />
+              <AppleLogo className="w-[17px] h-[21px] text-white -mt-0.5" fill="white" />
               <span className="font-bold text-[16px] text-white tracking-wide">
                 Pay
               </span>
@@ -1332,22 +1332,17 @@ export default function CheckoutPage() {
           </span>
         </div>
 
-        {/* Security Footer Row */}
+        {/* Legal Footer Links */}
         <div
-          className="flex flex-col sm:flex-row gap-3 items-center justify-between w-full text-[11.5px] text-[#64748b] pt-3 border-t border-slate-100"
+          className="flex items-center justify-center w-full text-[11.5px] text-slate-500 pt-3 border-t border-slate-100"
           data-node-id="50:8331"
-          data-name="Stripe Footer Row"
+          data-name="Checkout Footer Row"
         >
-          <div className="flex items-center gap-2" data-node-id="50:8332">
-            <span className="text-emerald-600 font-bold">🔒 256-Bit SSL</span>
-            <span className="text-slate-300">•</span>
-            <span className="font-medium text-[#0b1f3a]">3-D Secure 2.0 (SCA)</span>
-            <span className="text-slate-300">•</span>
-            <span>PCI-DSS Level 1</span>
-          </div>
-          <div className="flex gap-[12px] items-center text-slate-500" data-node-id="50:8336">
+          <div className="flex flex-wrap gap-x-4 gap-y-1 items-center justify-center text-center" data-node-id="50:8336">
             <Link href="/terms-of-sale" className="hover:text-[#0b1f3a] transition-colors">Terms of Sale</Link>
+            <span className="text-slate-300">•</span>
             <Link href="/shipping-returns" className="hover:text-[#0b1f3a] transition-colors">Shipping &amp; Returns</Link>
+            <span className="text-slate-300">•</span>
             <Link href="/contact" className="hover:text-[#0b1f3a] transition-colors">Laboratory Support</Link>
           </div>
         </div>
