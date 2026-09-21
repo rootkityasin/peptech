@@ -1,8 +1,9 @@
 "use client"
 
-import React, { useState, useMemo } from "react"
+import React, { useState, useMemo, useRef, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
+import { useSearchParams } from "next/navigation"
 import { useCart } from "@/components/cart/CartContext"
 import { CATALOG_PRODUCTS, CatalogProduct } from "@/data/catalog"
 
@@ -12,13 +13,52 @@ interface ShopCatalogProps {
 
 export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
   const { addItem, setIsDrawerOpen } = useCart()
+  const searchParams = useSearchParams()
+  const urlSearch = searchParams?.get("search") || ""
 
   // State
   const [activeTab, setActiveTab] = useState<"all" | "pen-sets" | "refills" | "vials">(initialCategory)
-  const [searchQuery, setSearchQuery] = useState("")
+  const [searchQuery, setSearchQuery] = useState(urlSearch)
   const [selectedSort, setSelectedSort] = useState<"popular" | "price-asc" | "price-desc" | "name">("popular")
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
+  const [showShopSuggestions, setShowShopSuggestions] = useState(false)
+  const shopSearchContainerRef = useRef<HTMLDivElement>(null)
+
+  // Sync searchQuery when URL search parameter changes (e.g. from navbar search)
+  useEffect(() => {
+    const q = searchParams?.get("search")
+    if (q !== null && q !== undefined) {
+      setSearchQuery(q)
+    }
+  }, [searchParams])
+
+  // Dismiss suggestions on outside click, Escape key, or scroll
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      if (shopSearchContainerRef.current && !shopSearchContainerRef.current.contains(e.target as Node)) {
+        setShowShopSuggestions(false)
+      }
+    }
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setShowShopSuggestions(false)
+      }
+    }
+    const handleScroll = () => {
+      setShowShopSuggestions(false)
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    document.addEventListener("touchstart", handleClickOutside, { passive: true })
+    window.addEventListener("keydown", handleKeyDown)
+    window.addEventListener("scroll", handleScroll, { passive: true })
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+      document.removeEventListener("touchstart", handleClickOutside)
+      window.removeEventListener("keydown", handleKeyDown)
+      window.removeEventListener("scroll", handleScroll)
+    }
+  }, [])
 
   // Sidebar filter states
   const [availability, setAvailability] = useState<"in-stock" | "all">("in-stock")
@@ -104,6 +144,20 @@ export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
     }
     return chips
   }, [availability, activeTab, selectedFormats, selectedCategories, selectedPurchaseType])
+
+  // Live autocomplete suggestions for the shop page search input
+  const shopSearchSuggestions = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase()
+    if (!q) return []
+    return CATALOG_PRODUCTS.filter((product) => {
+      return (
+        product.name.toLowerCase().includes(q) ||
+        product.description.toLowerCase().includes(q) ||
+        product.categoryLabel.toLowerCase().includes(q) ||
+        product.formatLabel.toLowerCase().includes(q)
+      )
+    }).slice(0, 5)
+  }, [searchQuery])
 
   const resetAllFilters = () => {
     setActiveTab("all")
@@ -237,20 +291,109 @@ export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
 
           {/* Controls Group */}
           <div className="flex gap-[8px] items-center w-full lg:w-auto" data-name="Controls Group">
-            {/* Search Box */}
-            <div className="bg-[#f8fafc] border border-[#e2e8f0] flex gap-[8px] items-center px-[12px] py-[8px] rounded-[6px] flex-1 min-w-0 sm:w-[220px]" data-name="Search Box">
-              <div className="size-[14px] shrink-0 text-[#64748b]">
-                <svg className="size-[14px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
+            {/* Search Box with same search icon & live suggestions */}
+            <div 
+              ref={shopSearchContainerRef}
+              className="relative bg-[#f8fafc] border border-[#e2e8f0] focus-within:border-[#16a6a3] focus-within:bg-white flex gap-[8px] items-center px-[12px] py-[8px] rounded-[6px] flex-1 min-w-0 sm:w-[240px] transition-all" 
+              data-name="Search Box"
+            >
+              {/* Exact same search icon as navbar */}
+              <div className="size-[16px] shrink-0 flex items-center justify-center pointer-events-none">
+                <img
+                  src="/images/figma/ebf52f91842a916d1e0249efbfba1688ac4e3863.svg"
+                  alt="Search"
+                  className="size-full object-contain"
+                />
               </div>
               <input
                 type="text"
                 placeholder="Search..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value)
+                  setShowShopSuggestions(true)
+                }}
+                onFocus={() => setShowShopSuggestions(true)}
                 className="bg-transparent text-[12px] text-[#0b1f3a] placeholder-[#64748b] focus:outline-hidden w-full min-w-0"
               />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery("")
+                    setShowShopSuggestions(false)
+                  }}
+                  className="text-[#94a3b8] hover:text-[#0b1f3a] text-[12px] shrink-0 font-bold px-0.5 cursor-pointer"
+                  title="Clear search"
+                >
+                  ✕
+                </button>
+              )}
+
+              {/* Shop Page Live Suggestions Dropdown */}
+              {showShopSuggestions && searchQuery.trim().length > 0 && (
+                <div 
+                  className="absolute top-full left-0 w-[min(calc(100vw-36px),340px)] mt-1.5 bg-white border border-[#e2e8f0] rounded-xl shadow-xl z-30 p-2 max-h-[320px] overflow-y-auto animate-in fade-in duration-150"
+                  data-testid="shop-search-suggestions"
+                >
+                  <div className="px-2 py-1 flex items-center justify-between border-b border-[#f1f5f9] mb-1">
+                    <span className="text-[10px] font-bold text-[#64748b] tracking-wider uppercase">
+                      Suggestions ({shopSearchSuggestions.length})
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowShopSuggestions(false)}
+                      className="text-[10px] text-[#94a3b8] hover:text-[#0b1f3a] cursor-pointer"
+                    >
+                      Close
+                    </button>
+                  </div>
+
+                  {shopSearchSuggestions.length > 0 ? (
+                    <div className="space-y-1">
+                      {shopSearchSuggestions.map((product) => (
+                        <Link
+                          key={product.id}
+                          href={`/products/${product.handle}`}
+                          onClick={() => setShowShopSuggestions(false)}
+                          className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-[#f8fafc] transition-colors group cursor-pointer"
+                        >
+                          <div className="relative size-9 rounded-md bg-[#f8fafc] border border-[#e2e8f0] p-1 shrink-0 overflow-hidden flex items-center justify-center">
+                            <Image
+                              src={product.image}
+                              alt={product.name}
+                              width={30}
+                              height={30}
+                              className="object-contain size-full"
+                            />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h5 className="text-[12px] font-semibold text-[#0b1f3a] group-hover:text-[#16a6a3] transition-colors truncate">
+                              {product.name}
+                            </h5>
+                            <div className="flex items-center justify-between mt-0.5">
+                              <span className="text-[10px] text-[#64748b]">
+                                {product.format === "complete-pen-set"
+                                  ? "Pen Set"
+                                  : product.format === "refill-cartridge"
+                                  ? "Refill"
+                                  : "Vial"}
+                              </span>
+                              <span className="text-[11.5px] font-bold text-[#0b1f3a]">
+                                £{product.price.toFixed(2)}
+                              </span>
+                            </div>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-3 text-center text-[12px] text-[#64748b]">
+                      No products match &ldquo;{searchQuery}&rdquo;
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Sort Box */}

@@ -1,11 +1,12 @@
 "use client"
 
-import React, { useState, useRef, useEffect } from "react"
+import React, { useState, useRef, useEffect, useMemo } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { useCart } from "../cart/CartContext"
 import { useCustomer } from "@/context/CustomerContext"
+import { CATALOG_PRODUCTS } from "@/data/catalog"
 
 export function Header() {
   const pathname = usePathname()
@@ -85,10 +86,38 @@ export function Header() {
   // Do not show global header on checkout funnel pages (Figma Node 50:8021 / 52:8419)
   if (pathname?.startsWith("/checkout")) return null
 
+  // Live search suggestions from catalog
+  const searchSuggestions = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase()
+    if (!q) return []
+    return CATALOG_PRODUCTS.filter((product) => {
+      return (
+        product.name.toLowerCase().includes(q) ||
+        product.description.toLowerCase().includes(q) ||
+        product.categoryLabel.toLowerCase().includes(q) ||
+        product.formatLabel.toLowerCase().includes(q)
+      )
+    }).slice(0, 6)
+  }, [searchQuery])
+
+  const totalSearchMatches = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase()
+    if (!q) return 0
+    return CATALOG_PRODUCTS.filter((product) => {
+      return (
+        product.name.toLowerCase().includes(q) ||
+        product.description.toLowerCase().includes(q) ||
+        product.categoryLabel.toLowerCase().includes(q) ||
+        product.formatLabel.toLowerCase().includes(q)
+      )
+    }).length
+  }, [searchQuery])
+
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (searchQuery.trim()) {
-      window.location.href = `/vials?search=${encodeURIComponent(searchQuery.trim())}`
+      setSearchOpen(false)
+      window.location.href = `/shop?search=${encodeURIComponent(searchQuery.trim())}`
     }
   }
 
@@ -422,10 +451,19 @@ export function Header() {
           </div>
         </div>
 
+        {/* Search Backdrop Overlay */}
+        {searchOpen && (
+          <div
+            onClick={() => setSearchOpen(false)}
+            className="fixed inset-0 top-[80px] bg-[#0b1f3a]/30 backdrop-blur-xs z-40 animate-in fade-in duration-200"
+            aria-hidden="true"
+          />
+        )}
+
         {/* Search Bar Dropdown Below Navbar (No border separating it from navbar) */}
         <div
           ref={searchContainerRef}
-          className={`absolute top-[80px] -mt-[1px] left-0 right-0 bg-white border-b border-[#E2E8F0] shadow-lg shadow-[#0b1f3a]/6 z-30 transition-all duration-300 ease-out ${
+          className={`absolute top-[80px] -mt-[1px] left-0 right-0 bg-white border-b border-[#E2E8F0] shadow-lg shadow-[#0b1f3a]/6 z-50 transition-all duration-300 ease-out ${
             searchOpen
               ? "opacity-100 translate-y-0 pointer-events-auto"
               : "opacity-0 -translate-y-2 pointer-events-none"
@@ -481,6 +519,111 @@ export function Header() {
                 </svg>
               </button>
             </form>
+
+            {/* Live Search Suggestions Dropdown */}
+            {searchQuery.trim().length > 0 && (
+              <div className="mt-3 pt-3 border-t border-[#e2e8f0] animate-in fade-in duration-150" data-testid="navbar-search-suggestions">
+                <div className="flex items-center justify-between pb-2.5 px-1">
+                  <span className="text-[11px] font-bold text-[#64748b] tracking-wider uppercase">
+                    Suggested Products ({totalSearchMatches})
+                  </span>
+                  {totalSearchMatches > 0 && (
+                    <Link
+                      href={`/shop?search=${encodeURIComponent(searchQuery.trim())}`}
+                      onClick={() => {
+                        setSearchOpen(false)
+                        setSearchQuery("")
+                      }}
+                      className="text-[11.5px] font-semibold text-[#16a6a3] hover:underline flex items-center gap-1"
+                    >
+                      <span>View all in Shop</span>
+                      <span>→</span>
+                    </Link>
+                  )}
+                </div>
+
+                {searchSuggestions.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[340px] overflow-y-auto pr-1">
+                    {searchSuggestions.map((product) => (
+                      <Link
+                        key={product.id}
+                        href={`/products/${product.handle}`}
+                        onClick={() => {
+                          setSearchOpen(false)
+                          setSearchQuery("")
+                        }}
+                        className="flex items-center gap-3 p-2.5 rounded-xl border border-[#e2e8f0] hover:border-[#16a6a3] hover:bg-[#f8fafc] transition-all group bg-white shadow-2xs cursor-pointer"
+                      >
+                        <div className="relative size-11 rounded-lg bg-[#f8fafc] p-1 shrink-0 border border-[#e2e8f0] overflow-hidden flex items-center justify-center">
+                          <Image
+                            src={product.image}
+                            alt={product.name}
+                            width={38}
+                            height={38}
+                            className="object-contain size-full group-hover:scale-105 transition-transform"
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 mb-0.5">
+                            <span className="text-[9px] font-bold tracking-wider text-[#64748b] uppercase bg-[#f1f5f9] px-1.5 py-0.5 rounded">
+                              {product.format === "complete-pen-set"
+                                ? "Pen Set"
+                                : product.format === "refill-cartridge"
+                                ? "Refill"
+                                : "Vial"}
+                            </span>
+                            <span className="text-[10.5px] text-[#94a3b8] truncate">
+                              {product.categoryLabel}
+                            </span>
+                          </div>
+                          <h4 className="text-[13px] font-semibold text-[#0b1f3a] group-hover:text-[#16a6a3] transition-colors truncate">
+                            {product.name}
+                          </h4>
+                          <span className="text-[12px] font-bold text-[#0b1f3a]">
+                            £{product.price.toFixed(2)}
+                          </span>
+                        </div>
+                        <svg className="w-4 h-4 text-[#cbd5e1] group-hover:text-[#16a6a3] group-hover:translate-x-0.5 transition-all shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                        </svg>
+                      </Link>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="py-6 text-center text-slate-500">
+                    <p className="text-[13.5px] font-medium text-[#0b1f3a]">
+                      No products found matching &ldquo;{searchQuery}&rdquo;
+                    </p>
+                    <p className="text-[12px] text-[#64748b] mt-1.5">
+                      Try searching for{" "}
+                      <button
+                        type="button"
+                        onClick={() => setSearchQuery("Semaglutide")}
+                        className="font-semibold text-[#16a6a3] hover:underline cursor-pointer"
+                      >
+                        Semaglutide
+                      </button>
+                      {", "}
+                      <button
+                        type="button"
+                        onClick={() => setSearchQuery("BPC-157")}
+                        className="font-semibold text-[#16a6a3] hover:underline cursor-pointer"
+                      >
+                        BPC-157
+                      </button>
+                      {", or "}
+                      <button
+                        type="button"
+                        onClick={() => setSearchQuery("Tirzepatide")}
+                        className="font-semibold text-[#16a6a3] hover:underline cursor-pointer"
+                      >
+                        Tirzepatide
+                      </button>
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

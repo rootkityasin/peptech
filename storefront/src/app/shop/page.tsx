@@ -1,3 +1,4 @@
+import { Suspense } from "react"
 import { ShopCatalog } from "@/components/catalog/ShopCatalog"
 
 export const metadata = {
@@ -6,5 +7,9 @@ export const metadata = {
 }
 
 export default function ShopPage() {
-  return <ShopCatalog initialCategory="all" />
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#f8fafc]" />}>
+      <ShopCatalog initialCategory="all" />
+    </Suspense>
+  )
 }
