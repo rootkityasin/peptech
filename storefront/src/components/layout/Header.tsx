@@ -18,6 +18,13 @@ export function Header() {
 
   const searchInputRef = useRef<HTMLInputElement>(null)
   const searchContainerRef = useRef<HTMLDivElement>(null)
+  const mobileMenuRef = useRef<HTMLDivElement>(null)
+  const mobileToggleRef = useRef<HTMLButtonElement>(null)
+
+  // Close mobile menu automatically on route change
+  useEffect(() => {
+    setMobileMenuOpen(false)
+  }, [pathname])
 
   // Focus input automatically when search opens
   useEffect(() => {
@@ -29,16 +36,17 @@ export function Header() {
     }
   }, [searchOpen])
 
-  // Dismiss on Escape key
+  // Dismiss search or mobile menu on Escape key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && searchOpen) {
-        setSearchOpen(false)
+      if (e.key === "Escape") {
+        if (searchOpen) setSearchOpen(false)
+        if (mobileMenuOpen) setMobileMenuOpen(false)
       }
     }
     window.addEventListener("keydown", handleKeyDown)
     return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [searchOpen])
+  }, [searchOpen, mobileMenuOpen])
 
   // Dismiss when clicking outside navbar while search is open
   useEffect(() => {
@@ -51,6 +59,28 @@ export function Header() {
     document.addEventListener("mousedown", handleClickOutside)
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [searchOpen])
+
+  // Dismiss mobile menu when clicking or tapping anywhere else on the website
+  useEffect(() => {
+    if (!mobileMenuOpen) return
+
+    const handleOutsideInteraction = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as Node
+      const isInsideMenu = mobileMenuRef.current?.contains(target)
+      const isInsideToggle = mobileToggleRef.current?.contains(target)
+
+      if (!isInsideMenu && !isInsideToggle) {
+        setMobileMenuOpen(false)
+      }
+    }
+
+    document.addEventListener("mousedown", handleOutsideInteraction)
+    document.addEventListener("touchstart", handleOutsideInteraction, { passive: true })
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideInteraction)
+      document.removeEventListener("touchstart", handleOutsideInteraction)
+    }
+  }, [mobileMenuOpen])
 
   // Do not show global header on checkout funnel pages (Figma Node 50:8021 / 52:8419)
   if (pathname?.startsWith("/checkout")) return null
@@ -102,8 +132,9 @@ export function Header() {
           {/* Brand Logo with Slogan */}
           <div className="flex items-center gap-3">
             <button
+              ref={mobileToggleRef}
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+              className="lg:hidden p-2 text-slate-700 hover:bg-slate-100 rounded-lg transition-colors relative z-50"
               aria-label="Toggle Navigation"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -455,73 +486,85 @@ export function Header() {
 
         {/* Mobile Dropdown Menu */}
         {mobileMenuOpen && (
-          <div className="lg:hidden absolute top-[80px] left-0 right-0 border-t border-slate-200 bg-white px-4 py-4 space-y-3 shadow-xl z-50">
-            <div className="space-y-1 text-sm font-semibold text-slate-800">
-              <Link
-                href="/products/complete-pen-set"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block px-3 py-2 rounded-lg hover:bg-slate-100"
-              >
-                Complete Pen Sets ($249.00)
-              </Link>
-              <Link
-                href="/refills"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block px-3 py-2 rounded-lg hover:bg-slate-100"
-              >
-                Individual Cartridges ($25 - $39)
-              </Link>
-              <Link
-                href="/vials"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block px-3 py-2 rounded-lg hover:bg-slate-100"
-              >
-                Freeze-Dried Vials
-              </Link>
-              <Link
-                href="/about"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block px-3 py-2 rounded-lg hover:bg-slate-100"
-              >
-                About Us
-              </Link>
-              <Link
-                href="/how-it-works"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block px-3 py-2 rounded-lg hover:bg-slate-100"
-              >
-                How It Works &amp; FAQs
-              </Link>
-              <Link
-                href="/verify"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block px-3 py-2 rounded-lg hover:bg-slate-100"
-              >
-                Verify Your Batch
-              </Link>
-              <Link
-                href="/lab-reports"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block px-3 py-2 rounded-lg hover:bg-slate-100"
-              >
-                Resources &amp; COA
-              </Link>
-              <Link
-                href="/contact"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block px-3 py-2 rounded-lg hover:bg-slate-100"
-              >
-                Contact Us
-              </Link>
-              <Link
-                href="/account"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block px-3 py-2 rounded-lg hover:bg-slate-100"
-              >
-                My Account / Orders
-              </Link>
+          <>
+            {/* Backdrop Overlay to catch clicks anywhere else in the website */}
+            <div
+              className="lg:hidden fixed inset-0 bg-black/25 backdrop-blur-[1px] z-40 transition-opacity"
+              onClick={() => setMobileMenuOpen(false)}
+              aria-hidden="true"
+            />
+
+            <div
+              ref={mobileMenuRef}
+              className="lg:hidden absolute top-[80px] left-0 right-0 border-t border-slate-200 bg-white px-4 py-4 space-y-3 shadow-xl z-50"
+            >
+              <div className="space-y-1 text-sm font-semibold text-slate-800">
+                <Link
+                  href="/products/complete-pen-set"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-3 py-2 rounded-lg hover:bg-slate-100"
+                >
+                  Complete Pen Sets ($249.00)
+                </Link>
+                <Link
+                  href="/refills"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-3 py-2 rounded-lg hover:bg-slate-100"
+                >
+                  Individual Cartridges ($25 - $39)
+                </Link>
+                <Link
+                  href="/vials"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-3 py-2 rounded-lg hover:bg-slate-100"
+                >
+                  Freeze-Dried Vials
+                </Link>
+                <Link
+                  href="/about"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-3 py-2 rounded-lg hover:bg-slate-100"
+                >
+                  About Us
+                </Link>
+                <Link
+                  href="/how-it-works"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-3 py-2 rounded-lg hover:bg-slate-100"
+                >
+                  How It Works &amp; FAQs
+                </Link>
+                <Link
+                  href="/verify"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-3 py-2 rounded-lg hover:bg-slate-100"
+                >
+                  Verify Your Batch
+                </Link>
+                <Link
+                  href="/lab-reports"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-3 py-2 rounded-lg hover:bg-slate-100"
+                >
+                  Resources &amp; COA
+                </Link>
+                <Link
+                  href="/contact"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-3 py-2 rounded-lg hover:bg-slate-100"
+                >
+                  Contact Us
+                </Link>
+                <Link
+                  href="/account"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-3 py-2 rounded-lg hover:bg-slate-100"
+                >
+                  My Account / Orders
+                </Link>
+              </div>
             </div>
-          </div>
+          </>
         )}
       </header>
     </>
