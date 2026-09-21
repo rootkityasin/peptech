@@ -18,6 +18,7 @@ export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedSort, setSelectedSort] = useState<"popular" | "price-asc" | "price-desc" | "name">("popular")
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
 
   // Sidebar filter states
   const [availability, setAvailability] = useState<"in-stock" | "all">("in-stock")
@@ -29,6 +30,11 @@ export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
   const penSetsCount = CATALOG_PRODUCTS.filter((p) => p.format === "complete-pen-set").length
   const refillsCount = CATALOG_PRODUCTS.filter((p) => p.format === "refill-cartridge").length
   const vialsCount = CATALOG_PRODUCTS.filter((p) => p.format === "freeze-dried-vial").length
+  const metabolicCount = CATALOG_PRODUCTS.filter((p) => p.category === "metabolic").length
+  const tissueCount = CATALOG_PRODUCTS.filter((p) => p.category === "tissue").length
+  const cellularCount = CATALOG_PRODUCTS.filter((p) => p.category === "cellular").length
+  const neuroCount = CATALOG_PRODUCTS.filter((p) => p.category === "neuro").length
+  const subCount = CATALOG_PRODUCTS.filter((p) => p.isSubscriptionEligible).length
   const totalCount = CATALOG_PRODUCTS.length
 
   // Filter logic
@@ -163,112 +169,353 @@ export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
       </div>
 
       {/* 04 Category Quick Tabs & Controls (Figma Node 37:5553) */}
-      <div className="bg-white flex flex-wrap gap-4 items-center justify-between px-4 sm:px-8 lg:px-[80px] py-[16px] w-full border-b border-[#e2e8f0]" data-node-id="37:5553" data-name="04 Category Quick Tabs & Controls">
+      <div className="bg-white flex flex-col gap-3 px-4 sm:px-8 lg:px-[80px] py-[16px] w-full border-b border-[#e2e8f0]" data-node-id="37:5553" data-name="04 Category Quick Tabs & Controls">
         
-        {/* Tabs Group */}
-        <div className="flex flex-wrap gap-[8px] items-center" data-name="Tabs Group">
-          <button
-            onClick={() => setActiveTab("all")}
-            className={`flex gap-[6px] items-center px-[14px] py-[8px] rounded-[6px] transition-colors ${
-              activeTab === "all"
-                ? "bg-[#0b1f3a] text-white font-semibold"
-                : "bg-[#f1f5f9] text-[#0b1f3a] font-medium hover:bg-slate-200"
-            }`}
-            data-name="Tab - All Products"
-          >
-            <span className="text-[13px]">All Products</span>
-            <span className={`text-[12px] ${activeTab === "all" ? "text-[#cbd5e1]" : "text-[#64748b]"}`}>
-              ({totalCount})
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab("pen-sets")}
-            className={`flex gap-[6px] items-center px-[14px] py-[8px] rounded-[6px] transition-colors ${
-              activeTab === "pen-sets"
-                ? "bg-[#0b1f3a] text-white font-semibold"
-                : "bg-[#f1f5f9] text-[#0b1f3a] font-medium hover:bg-slate-200"
-            }`}
-            data-name="Tab - Complete Pen Sets"
-          >
-            <span className="text-[13px]">Complete Pen Sets</span>
-            <span className={`text-[12px] ${activeTab === "pen-sets" ? "text-[#cbd5e1]" : "text-[#64748b]"}`}>
-              ({penSetsCount})
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab("refills")}
-            className={`flex gap-[6px] items-center px-[14px] py-[8px] rounded-[6px] transition-colors ${
-              activeTab === "refills"
-                ? "bg-[#0b1f3a] text-white font-semibold"
-                : "bg-[#f1f5f9] text-[#0b1f3a] font-medium hover:bg-slate-200"
-            }`}
-            data-name="Tab - Refill Cartridges"
-          >
-            <span className="text-[13px]">Refill Cartridges</span>
-            <span className={`text-[12px] ${activeTab === "refills" ? "text-[#cbd5e1]" : "text-[#64748b]"}`}>
-              ({refillsCount})
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab("vials")}
-            className={`flex gap-[6px] items-center px-[14px] py-[8px] rounded-[6px] transition-colors ${
-              activeTab === "vials"
-                ? "bg-[#0b1f3a] text-white font-semibold"
-                : "bg-[#f1f5f9] text-[#0b1f3a] font-medium hover:bg-slate-200"
-            }`}
-            data-name="Tab - Freeze-Dried Vials"
-          >
-            <span className="text-[13px]">Freeze-Dried Vials</span>
-            <span className={`text-[12px] ${activeTab === "vials" ? "text-[#cbd5e1]" : "text-[#64748b]"}`}>
-              ({vialsCount})
-            </span>
-          </button>
-        </div>
-
-        {/* Controls Group */}
-        <div className="flex gap-[12px] items-center w-full sm:w-auto" data-name="Controls Group">
-          {/* Search Box */}
-          <div className="bg-[#f8fafc] border border-[#e2e8f0] flex gap-[8px] items-center px-[12px] py-[8px] rounded-[6px] w-full sm:w-[220px]" data-name="Search Box">
-            <div className="size-[14px] shrink-0">
-              <img alt="" className="size-full" src="/images/figma/80d0f018dc713a0fdd94a1beaefe7ec999174673.svg" />
-            </div>
-            <input
-              type="text"
-              placeholder="Search products..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-transparent text-[12px] text-[#0b1f3a] placeholder-[#64748b] focus:outline-hidden w-full"
-            />
-          </div>
-
-          {/* Sort Box */}
-          <div className="bg-[#f8fafc] border border-[#e2e8f0] flex gap-[6px] items-center px-[12px] py-[8px] rounded-[6px] shrink-0" data-name="Sort Box">
-            <span className="font-medium text-[#64748b] text-[12px] whitespace-nowrap">
-              Sort by:
-            </span>
-            <select
-              value={selectedSort}
-              onChange={(e) => setSelectedSort(e.target.value as any)}
-              className="bg-transparent font-semibold text-[#0b1f3a] text-[12px] focus:outline-hidden cursor-pointer"
+        <div className="flex flex-col lg:flex-row gap-3 sm:gap-4 items-stretch lg:items-center justify-between w-full">
+          {/* Tabs Group - Horizontal swipeable on mobile */}
+          <div className="flex items-center gap-[8px] overflow-x-auto scrollbar-none flex-nowrap w-full lg:w-auto pb-1 -mb-1" data-name="Tabs Group">
+            <button
+              onClick={() => setActiveTab("all")}
+              className={`shrink-0 flex gap-[6px] items-center px-[14px] py-[8px] rounded-[6px] transition-colors whitespace-nowrap ${
+                activeTab === "all"
+                  ? "bg-[#0b1f3a] text-white font-semibold"
+                  : "bg-[#f1f5f9] text-[#0b1f3a] font-medium hover:bg-slate-200"
+              }`}
+              data-name="Tab - All Products"
             >
-              <option value="popular">Most Popular</option>
-              <option value="price-asc">Price: Low to High</option>
-              <option value="price-desc">Price: High to Low</option>
-              <option value="name">Product Name (A-Z)</option>
-            </select>
+              <span className="text-[13px]">All Products</span>
+              <span className={`text-[12px] ${activeTab === "all" ? "text-[#cbd5e1]" : "text-[#64748b]"}`}>
+                ({totalCount})
+              </span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab("pen-sets")}
+              className={`shrink-0 flex gap-[6px] items-center px-[14px] py-[8px] rounded-[6px] transition-colors whitespace-nowrap ${
+                activeTab === "pen-sets"
+                  ? "bg-[#0b1f3a] text-white font-semibold"
+                  : "bg-[#f1f5f9] text-[#0b1f3a] font-medium hover:bg-slate-200"
+              }`}
+              data-name="Tab - Complete Pen Sets"
+            >
+              <span className="text-[13px]">Complete Pen Sets</span>
+              <span className={`text-[12px] ${activeTab === "pen-sets" ? "text-[#cbd5e1]" : "text-[#64748b]"}`}>
+                ({penSetsCount})
+              </span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab("refills")}
+              className={`shrink-0 flex gap-[6px] items-center px-[14px] py-[8px] rounded-[6px] transition-colors whitespace-nowrap ${
+                activeTab === "refills"
+                  ? "bg-[#0b1f3a] text-white font-semibold"
+                  : "bg-[#f1f5f9] text-[#0b1f3a] font-medium hover:bg-slate-200"
+              }`}
+              data-name="Tab - Refill Cartridges"
+            >
+              <span className="text-[13px]">Refill Cartridges</span>
+              <span className={`text-[12px] ${activeTab === "refills" ? "text-[#cbd5e1]" : "text-[#64748b]"}`}>
+                ({refillsCount})
+              </span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab("vials")}
+              className={`shrink-0 flex gap-[6px] items-center px-[14px] py-[8px] rounded-[6px] transition-colors whitespace-nowrap ${
+                activeTab === "vials"
+                  ? "bg-[#0b1f3a] text-white font-semibold"
+                  : "bg-[#f1f5f9] text-[#0b1f3a] font-medium hover:bg-slate-200"
+              }`}
+              data-name="Tab - Freeze-Dried Vials"
+            >
+              <span className="text-[13px]">Freeze-Dried Vials</span>
+              <span className={`text-[12px] ${activeTab === "vials" ? "text-[#cbd5e1]" : "text-[#64748b]"}`}>
+                ({vialsCount})
+              </span>
+            </button>
+          </div>
+
+          {/* Controls Group */}
+          <div className="flex gap-[8px] items-center w-full lg:w-auto" data-name="Controls Group">
+            {/* Search Box */}
+            <div className="bg-[#f8fafc] border border-[#e2e8f0] flex gap-[8px] items-center px-[12px] py-[8px] rounded-[6px] flex-1 min-w-0 sm:w-[220px]" data-name="Search Box">
+              <div className="size-[14px] shrink-0 text-[#64748b]">
+                <svg className="size-[14px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <input
+                type="text"
+                placeholder="Search..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="bg-transparent text-[12px] text-[#0b1f3a] placeholder-[#64748b] focus:outline-hidden w-full min-w-0"
+              />
+            </div>
+
+            {/* Sort Box */}
+            <div className="bg-[#f8fafc] border border-[#e2e8f0] flex gap-[6px] items-center px-[12px] py-[8px] rounded-[6px] shrink-0" data-name="Sort Box">
+              <span className="font-medium text-[#64748b] text-[12px] whitespace-nowrap hidden sm:inline">
+                Sort by:
+              </span>
+              <select
+                value={selectedSort}
+                onChange={(e) => setSelectedSort(e.target.value as any)}
+                className="bg-transparent font-semibold text-[#0b1f3a] text-[12px] focus:outline-hidden cursor-pointer"
+              >
+                <option value="popular">Most Popular</option>
+                <option value="price-asc">Price: Low to High</option>
+                <option value="price-desc">Price: High to Low</option>
+                <option value="name">Product Name (A-Z)</option>
+              </select>
+            </div>
+
+            {/* Mobile Filter Toggle Button on Right Side */}
+            <button
+              onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
+              className={`lg:hidden flex items-center justify-center gap-1.5 px-[12px] py-[8px] rounded-[6px] border transition-all shrink-0 cursor-pointer ${
+                mobileFiltersOpen
+                  ? "bg-[#0b1f3a] text-white border-[#0b1f3a] shadow-xs"
+                  : activeFilterChips.length > 0
+                  ? "bg-[#e6fffa] text-[#0d7b78] border-[#99f6e4] font-medium"
+                  : "bg-[#f8fafc] text-[#0b1f3a] border-[#e2e8f0] hover:bg-slate-100"
+              }`}
+              aria-label="Filter products"
+              aria-expanded={mobileFiltersOpen}
+              title="Filter products"
+            >
+              {/* Funnel/Filter Icon */}
+              <svg className="size-[15px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+              </svg>
+              {/* Active Filter Count Badge */}
+              {activeFilterChips.length > 0 && (
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                  mobileFiltersOpen ? "bg-[#16a6a3] text-white" : "bg-[#16a6a3] text-white"
+                }`}>
+                  {activeFilterChips.length}
+                </span>
+              )}
+            </button>
           </div>
         </div>
+
+        {/* Mobile Filter Extension Panel (Accordion / Extension Feeling) */}
+        {mobileFiltersOpen && (
+          <div className="lg:hidden w-full pt-4 mt-2 border-t border-[#e2e8f0] flex flex-col gap-4 animate-in fade-in slide-in-from-top-2 duration-200" data-name="Mobile Filter Extension">
+            {/* Header Strip */}
+            <div className="flex items-center justify-between pb-1 border-b border-[#f1f5f9]">
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-[#0b1f3a] text-[15px]">Filters &amp; Refinements</span>
+                <span className="text-[12px] text-[#64748b]">({filteredProducts.length} matching)</span>
+              </div>
+              <div className="flex items-center gap-3">
+                {activeFilterChips.length > 0 && (
+                  <button
+                    onClick={resetAllFilters}
+                    className="text-[12px] font-semibold text-[#16a6a3] hover:underline cursor-pointer"
+                  >
+                    Reset All
+                  </button>
+                )}
+                <button
+                  onClick={() => setMobileFiltersOpen(false)}
+                  className="p-1 rounded-md text-[#64748b] hover:text-[#0b1f3a] hover:bg-slate-100 transition-colors"
+                  aria-label="Close filters"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Active Filters Box (if any) */}
+            {activeFilterChips.length > 0 && (
+              <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-[8px] p-[12px] flex flex-col gap-[8px] w-full">
+                <div className="flex items-center justify-between">
+                  <p className="font-bold text-[#64748b] text-[10px] tracking-wider uppercase">
+                    ACTIVE FILTERS
+                  </p>
+                  <span className="text-[11px] text-[#64748b]">{activeFilterChips.length} active</span>
+                </div>
+                <div className="flex flex-wrap gap-[6px] items-start w-full">
+                  {activeFilterChips.map((chip, idx) => (
+                    <button
+                      key={idx}
+                      onClick={chip.onRemove}
+                      className="bg-white border border-[#cbd5e1] hover:border-[#16a6a3] flex gap-[6px] items-center px-[8px] py-[4px] rounded-[4px] transition-colors shadow-2xs"
+                    >
+                      <span className="font-medium text-[#0b1f3a] text-[11px]">{chip.label}</span>
+                      <span className="font-semibold text-[#64748b] hover:text-[#0b1f3a] text-[10px]">✕</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Structured Filter Cards Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
+              {/* Availability Box */}
+              <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-[8px] p-[14px] flex flex-col gap-[10px] w-full">
+                <p className="font-bold text-[#64748b] text-[11px] tracking-wider uppercase">
+                  AVAILABILITY
+                </p>
+                <label className="flex items-center justify-between cursor-pointer group py-0.5">
+                  <div className="flex gap-[10px] items-center">
+                    <input
+                      type="radio"
+                      name="mobile-availability"
+                      checked={availability === "in-stock"}
+                      onChange={() => setAvailability("in-stock")}
+                      className="accent-[#0b1f3a] size-[15px]"
+                    />
+                    <span className="font-medium text-[#0b1f3a] text-[13px]">In Stock</span>
+                  </div>
+                  <span className="font-normal text-[#64748b] text-[12px] bg-white px-2 py-0.5 rounded border border-[#e2e8f0]">({totalCount})</span>
+                </label>
+                <label className="flex items-center justify-between cursor-pointer group py-0.5">
+                  <div className="flex gap-[10px] items-center">
+                    <input
+                      type="radio"
+                      name="mobile-availability"
+                      checked={availability === "all"}
+                      onChange={() => setAvailability("all")}
+                      className="accent-[#0b1f3a] size-[15px]"
+                    />
+                    <span className="font-medium text-[#0b1f3a] text-[13px]">All</span>
+                  </div>
+                  <span className="font-normal text-[#64748b] text-[12px] bg-white px-2 py-0.5 rounded border border-[#e2e8f0]">({totalCount})</span>
+                </label>
+              </div>
+
+              {/* Product Format Box */}
+              <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-[8px] p-[14px] flex flex-col gap-[10px] w-full">
+                <p className="font-bold text-[#64748b] text-[10px] tracking-wider uppercase">
+                  PRODUCT FORMAT
+                </p>
+                {[
+                  { id: "complete-pen-set", label: "Complete Pen Sets", count: penSetsCount },
+                  { id: "refill-cartridge", label: "Refill Cartridges", count: refillsCount },
+                  { id: "freeze-dried-vial", label: "Freeze-Dried Vials", count: vialsCount },
+                ].map((f) => {
+                  const checked = selectedFormats.includes(f.id)
+                  return (
+                    <label key={f.id} className="flex items-center justify-between cursor-pointer py-0.5">
+                      <div className="flex gap-[10px] items-center">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => {
+                            setSelectedFormats((prev) =>
+                              checked ? prev.filter((item) => item !== f.id) : [...prev, f.id]
+                            )
+                          }}
+                          className="accent-[#0b1f3a] size-[15px] rounded"
+                        />
+                        <span className="font-medium text-[#0b1f3a] text-[13px]">{f.label}</span>
+                      </div>
+                      <span className="font-normal text-[#64748b] text-[12px] bg-white px-2 py-0.5 rounded border border-[#e2e8f0]">({f.count})</span>
+                    </label>
+                  )
+                })}
+              </div>
+
+              {/* Research Category Box */}
+              <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-[8px] p-[14px] flex flex-col gap-[10px] w-full">
+                <p className="font-bold text-[#64748b] text-[10px] tracking-wider uppercase">
+                  CATEGORY
+                </p>
+                {[
+                  { id: "metabolic", label: "Metabolic & Glucose", count: metabolicCount },
+                  { id: "tissue", label: "Tissue Recovery", count: tissueCount },
+                  { id: "cellular", label: "Cellular Longevity", count: cellularCount },
+                  { id: "neuro", label: "Neuropeptides", count: neuroCount },
+                ].map((cat) => {
+                  const checked = selectedCategories.includes(cat.id)
+                  return (
+                    <label key={cat.id} className="flex items-center justify-between cursor-pointer py-0.5">
+                      <div className="flex gap-[8px] items-center">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => {
+                            setSelectedCategories((prev) =>
+                              checked ? prev.filter((item) => item !== cat.id) : [...prev, cat.id]
+                            )
+                          }}
+                          className="accent-[#0b1f3a] size-[15px] rounded"
+                        />
+                        <span className="font-normal text-[#475569] text-[12px]">{cat.label}</span>
+                      </div>
+                      <span className="font-normal text-[#64748b] text-[11px] bg-white px-2 py-0.5 rounded border border-[#e2e8f0]">({cat.count})</span>
+                    </label>
+                  )
+                })}
+              </div>
+
+              {/* Purchase Type Box */}
+              <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-[8px] p-[14px] flex flex-col gap-[10px] w-full">
+                <p className="font-bold text-[#64748b] text-[10px] tracking-wider uppercase">
+                  PURCHASE TYPE
+                </p>
+                <label className="flex items-center justify-between cursor-pointer py-0.5">
+                  <div className="flex gap-[8px] items-center">
+                    <input
+                      type="radio"
+                      name="mobile-purchaseType"
+                      checked={selectedPurchaseType === "sub"}
+                      onChange={() => setSelectedPurchaseType("sub")}
+                      className="accent-[#0b1f3a] size-[15px]"
+                    />
+                    <span className="font-semibold text-[#0b1f3a] text-[12px]">Subscribe &amp; Save (10% off)</span>
+                  </div>
+                  <span className="font-normal text-[#64748b] text-[11px] bg-white px-2 py-0.5 rounded border border-[#e2e8f0]">({subCount})</span>
+                </label>
+                <label className="flex items-center justify-between cursor-pointer py-0.5">
+                  <div className="flex gap-[8px] items-center">
+                    <input
+                      type="radio"
+                      name="mobile-purchaseType"
+                      checked={selectedPurchaseType === "all"}
+                      onChange={() => setSelectedPurchaseType("all")}
+                      className="accent-[#0b1f3a] size-[15px]"
+                    />
+                    <span className="font-normal text-[#475569] text-[12px]">All Purchase Options</span>
+                  </div>
+                  <span className="font-normal text-[#64748b] text-[11px] bg-white px-2 py-0.5 rounded border border-[#e2e8f0]">({totalCount})</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Bottom Action Strip */}
+            <div className="pt-2 pb-1 flex items-center justify-between gap-3 border-t border-[#f1f5f9]">
+              <button
+                type="button"
+                onClick={resetAllFilters}
+                className="px-4 py-2.5 rounded-lg border border-[#cbd5e1] text-[#64748b] hover:text-[#0b1f3a] text-[12px] font-semibold transition-colors shrink-0"
+              >
+                Clear All
+              </button>
+              <button
+                type="button"
+                onClick={() => setMobileFiltersOpen(false)}
+                className="flex-1 bg-[#0b1f3a] hover:bg-[#16a6a3] text-white py-2.5 px-4 rounded-lg font-semibold text-[13px] transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <span>View {filteredProducts.length} Products</span>
+                <span className="text-white/70">→</span>
+              </button>
+            </div>
+          </div>
+        )}
 
       </div>
 
       {/* 05 Main Catalog Section (Figma Node 37:5574) */}
       <div className="flex flex-col lg:flex-row gap-[24px] items-start pb-[48px] pt-[32px] px-4 sm:px-8 lg:px-[80px] w-full" data-node-id="37:5574" data-name="05 Main Catalog Section">
         
-        {/* Left Filter Sidebar (240px) */}
-        <aside className="w-full lg:w-[240px] shrink-0 flex flex-col gap-[14px]" data-name="Filter Sidebar">
+        {/* Left Filter Sidebar (hidden on mobile, visible on lg) */}
+        <aside className="hidden lg:flex lg:w-[240px] shrink-0 flex-col gap-[14px]" data-name="Filter Sidebar">
           
           {/* Filter Header */}
           <div className="flex items-center justify-between w-full" data-name="Filter Header">
@@ -378,10 +625,10 @@ export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
               CATEGORY
             </p>
             {[
-              { id: "metabolic", label: "Metabolic & Glucose", count: 7 },
-              { id: "tissue", label: "Tissue Recovery", count: 6 },
-              { id: "cellular", label: "Cellular Longevity", count: 5 },
-              { id: "neuro", label: "Neuropeptides", count: 4 },
+              { id: "metabolic", label: "Metabolic & Glucose", count: metabolicCount },
+              { id: "tissue", label: "Tissue Recovery", count: tissueCount },
+              { id: "cellular", label: "Cellular Longevity", count: cellularCount },
+              { id: "neuro", label: "Neuropeptides", count: neuroCount },
             ].map((cat) => {
               const checked = selectedCategories.includes(cat.id)
               return (
@@ -421,7 +668,7 @@ export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
                 />
                 <span className="font-semibold text-[#0b1f3a] text-[12px]">Subscribe &amp; Save (10% off)</span>
               </div>
-              <span className="font-normal text-[#94a3b8] text-[11px]">(18)</span>
+              <span className="font-normal text-[#94a3b8] text-[11px]">({subCount})</span>
             </label>
             <label className="flex items-center justify-between cursor-pointer">
               <div className="flex gap-[8px] items-center">
@@ -434,7 +681,7 @@ export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
                 />
                 <span className="font-normal text-[#475569] text-[12px]">All Purchase Options</span>
               </div>
-              <span className="font-normal text-[#94a3b8] text-[11px]">(24)</span>
+              <span className="font-normal text-[#94a3b8] text-[11px]">({totalCount})</span>
             </label>
           </div>
 
