@@ -219,7 +219,7 @@ export default function HomePage() {
 
             {/* Right Column on Desktop, First on Mobile: Hero Presentation Kit Mockup */}
             <div className="order-1 lg:order-2 lg:col-span-6 flex flex-col items-center lg:items-end justify-center">
-              <div className="relative w-full max-w-[580px] h-[260px] xs:h-[300px] sm:h-[380px] lg:h-[440px] flex items-center justify-center">
+              <div className="relative w-full max-w-[580px] h-[220px] xs:h-[250px] sm:h-[320px] lg:h-[440px] flex items-center justify-center">
                 <Image
                   src="/images/figma/hero-presentation-box.png"
                   alt="PEPTECH® Reusable Injection Pen System Kit Presentation"
@@ -229,19 +229,19 @@ export default function HomePage() {
                 />
               </div>
 
-              {/* Mobile / Tablet Action Buttons - Below the picture, side-by-side with original generous size & perfect shape */}
-              <div className="lg:hidden flex flex-row items-center justify-center gap-3 sm:gap-3.5 pt-5 pb-2 w-full max-w-[420px] px-3">
+              {/* Mobile / Tablet Action Buttons - Brought higher & refined slightly smaller size */}
+              <div className="lg:hidden flex flex-row items-center justify-center gap-2.5 sm:gap-3 pt-1 pb-1 w-full max-w-[360px] px-3">
                 <Link
                   href="/products/complete-pen-set"
-                  className="btn-shimmer btn-press flex-1 sm:flex-initial py-3.5 px-5 sm:px-6 rounded-xl bg-[#0B1F3A] hover:bg-[#162e52] text-white text-[14px] font-semibold transition-all shadow-md hover:shadow-xl inline-flex items-center justify-center gap-2 group cursor-pointer text-center whitespace-nowrap"
+                  className="btn-shimmer btn-press flex-1 sm:flex-initial py-2.5 sm:py-3 px-4 sm:px-5 rounded-xl bg-[#0B1F3A] hover:bg-[#162e52] text-white text-[13px] sm:text-[13.5px] font-semibold transition-all shadow-md hover:shadow-xl inline-flex items-center justify-center gap-1.5 group cursor-pointer text-center whitespace-nowrap"
                 >
                   <span>Shop All Products</span>
-                  <span className="transition-transform duration-200 group-hover:translate-x-1">→</span>
+                  <span className="transition-transform duration-200 group-hover:translate-x-0.5">→</span>
                 </Link>
                 
                 <Link
                   href="/how-it-works"
-                  className="btn-press flex-1 sm:flex-initial py-3.5 px-5 sm:px-6 rounded-xl bg-white hover:bg-slate-50 text-[#0B1F3A] border border-[#CBD5E1] hover:border-[#0B1F3A] text-[14px] font-semibold transition-all shadow-xs hover:shadow-md inline-flex items-center justify-center cursor-pointer text-center whitespace-nowrap"
+                  className="btn-press flex-1 sm:flex-initial py-2.5 sm:py-3 px-4 sm:px-5 rounded-xl bg-white hover:bg-slate-50 text-[#0B1F3A] border border-[#CBD5E1] hover:border-[#0B1F3A] text-[13px] sm:text-[13.5px] font-semibold transition-all shadow-xs hover:shadow-md inline-flex items-center justify-center cursor-pointer text-center whitespace-nowrap"
                 >
                   Learn More
                 </Link>
