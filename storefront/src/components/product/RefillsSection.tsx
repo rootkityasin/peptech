@@ -7,36 +7,40 @@ import { useCart } from "@/components/cart/CartContext"
 
 const FIGMA_REFILLS = [
   {
-    id: "cartridge-rt40",
-    name: "RT40",
-    type: "Test Cartridge",
-    price: 39.00,
-    subPrice: 35.10,
-    image: "/images/figma/2d7803f97be6d80d5630dfb42abba84289ed1bb5.png",
+    id: "cartridge-semaglutide-5mg",
+    name: "Semaglutide 5mg",
+    handle: "semaglutide-5mg-cartridge",
+    type: "1.5ml Refill Cartridge",
+    price: 69.99,
+    subPrice: 62.99,
+    image: "/images/figma/0e71e8560b9bae80ee21a3d08905300075c266b7.png",
   },
   {
-    id: "cartridge-cc1236",
-    name: "C.C-1236",
-    type: "Test Cartridge",
-    price: 39.00,
-    subPrice: 35.10,
-    image: "/images/figma/2d7803f97be6d80d5630dfb42abba84289ed1bb5.png",
+    id: "cartridge-tirzepatide-10mg",
+    name: "Tirzepatide 10mg",
+    handle: "tirzepatide-10mg-cartridge",
+    type: "1.5ml Refill Cartridge",
+    price: 89.99,
+    subPrice: 80.99,
+    image: "/images/figma/0e71e8560b9bae80ee21a3d08905300075c266b7.png",
   },
   {
-    id: "cartridge-tb330",
-    name: "TB-330",
-    type: "Test Cartridge",
-    price: 39.00,
-    subPrice: 22.50,
-    image: "/images/figma/2d7803f97be6d80d5630dfb42abba84289ed1bb5.png",
+    id: "cartridge-retatrutide-10mg",
+    name: "Retatrutide 10mg",
+    handle: "retatrutide-10mg-cartridge",
+    type: "1.5ml Refill Cartridge",
+    price: 99.99,
+    subPrice: 89.99,
+    image: "/images/figma/0e71e8560b9bae80ee21a3d08905300075c266b7.png",
   },
   {
-    id: "cartridge-ifc137",
-    name: "IFC-137",
-    type: "Test Cartridge",
-    price: 39.00,
-    subPrice: 35.10,
-    image: "/images/figma/2d7803f97be6d80d5630dfb42abba84289ed1bb5.png",
+    id: "cartridge-bpc157-10mg",
+    name: "BPC-157 10mg",
+    handle: "bpc157-10mg-cartridge",
+    type: "1.5ml Refill Cartridge",
+    price: 59.99,
+    subPrice: 53.99,
+    image: "/images/figma/0e71e8560b9bae80ee21a3d08905300075c266b7.png",
   },
 ]
 
@@ -46,13 +50,16 @@ export function RefillsSection() {
   const handleAddCartridge = (item: typeof FIGMA_REFILLS[0]) => {
     addItem({
       id: item.id,
-      title: `${item.name} Test Cartridge`,
+      title: `${item.name} Refill Cartridge`,
       format: "refill",
       strength: item.type,
-      price: item.price,
-      isSubscription: false,
-      sku: `PEP-CRT-${item.name.replace(/[^a-zA-Z0-9]/g, "").toUpperCase()}`,
+      price: item.subPrice,
+      isSubscription: true,
+      subscriptionIntervalDays: 28,
+      discountPercent: 10,
+      sku: `PEP-CRT-${item.id.replace("cartridge-", "").toUpperCase()}`,
       batch: "CRT-2026-B1",
+      image: item.image,
     })
     setIsDrawerOpen(true)
   }
@@ -135,46 +142,59 @@ export function RefillsSection() {
             {FIGMA_REFILLS.map((item) => (
               <div
                 key={item.id}
-                className="bg-white border border-[#e2e8f0] rounded-[12px] p-[16px] flex flex-col justify-between h-[380px] hover:shadow-md transition-shadow text-center"
+                className="bg-white border border-[#e2e8f0] rounded-[12px] p-[16px] flex flex-col justify-between h-[390px] hover:shadow-md transition-shadow text-center group"
               >
-                <div>
+                <Link href={`/products/${item.handle}`} className="block flex-1">
                   {/* Cartridge Photo */}
-                  <div className="h-[170px] w-full relative mb-3">
+                  <div className="h-[170px] w-full relative mb-3 bg-[#f8fafc] rounded-lg group-hover:bg-slate-100 transition-colors">
                     <Image
                       src={item.image}
                       alt={item.name}
                       fill
-                      className="object-contain p-2 hover:scale-105 transition-transform"
+                      className="object-contain p-2 group-hover:scale-105 transition-transform"
                     />
                   </div>
 
                   {/* Info */}
                   <div className="space-y-0.5">
-                    <h4 className="font-bold text-[#0b1f3a] text-[15px]">
+                    <h4 className="font-bold text-[#0b1f3a] text-[15px] group-hover:text-[#16a6a3] transition-colors">
                       {item.name}
                     </h4>
                     <p className="font-normal text-[#64748b] text-[11px]">
                       {item.type}
                     </p>
                     <p className="font-bold text-[#0b1f3a] text-[15px] pt-1">
-                      ${item.price.toFixed(2)}
+                      £{item.price.toFixed(2)}
                     </p>
                     <div className="flex items-center justify-center gap-1 text-[11px]">
-                      <span className="text-[#64748b]">Subscribe &amp; Save 10%</span>
-                      <span className="font-bold text-[#0b1f3a]">${item.subPrice.toFixed(2)}</span>
+                      <span className="text-[#64748b]">Subscribe &amp; Save</span>
+                      <span className="font-bold text-[#0d7b78] bg-[#e6fffa] px-1 py-0.5 rounded text-[10px]">£{item.subPrice.toFixed(2)}</span>
                     </div>
                   </div>
-                </div>
+                </Link>
 
-                {/* Add to Cart Button */}
-                <button
-                  type="button"
-                  onClick={() => handleAddCartridge(item)}
-                  className="btn-shimmer btn-press bg-[#0b1f3a] hover:bg-[#162e52] cursor-pointer flex items-center justify-center gap-[6px] h-[38px] rounded-lg w-full text-white font-semibold text-[12px] transition-all shadow-2xs hover:shadow-md mt-3 group"
-                >
-                  <img src="/images/figma/64d8de74a83e1fb14e8e8745813821f2e7537253.svg" alt="" className="size-[14px] transition-transform duration-200 group-hover:scale-110" />
-                  <span>Add to Cart</span>
-                </button>
+                {/* Actions: View Details & Quick Add */}
+                <div className="flex items-center gap-2 mt-3 pt-1 border-t border-slate-100">
+                  <Link
+                    href={`/products/${item.handle}`}
+                    className="btn-shimmer btn-press flex-1 bg-[#0b1f3a] hover:bg-[#16a6a3] text-white flex items-center justify-center py-2 rounded-lg text-[12px] font-semibold transition-all"
+                  >
+                    <span>Details</span>
+                    <span className="ml-1 text-[10px]">→</span>
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      handleAddCartridge(item)
+                    }}
+                    title="Quick Add to Cart"
+                    className="size-[34px] rounded-lg border border-[#cbd5e1] hover:border-[#0b1f3a] hover:bg-slate-50 flex items-center justify-center shrink-0 transition-colors cursor-pointer text-[#0b1f3a]"
+                  >
+                    <img src="/images/figma/64d8de74a83e1fb14e8e8745813821f2e7537253.svg" alt="" className="size-[14px]" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>

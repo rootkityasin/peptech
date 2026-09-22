@@ -890,83 +890,96 @@ export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
               {filteredProducts.map((product) => (
                 <div
                   key={product.id}
-                  className="bg-white border border-[#e2e8f0] rounded-[8px] p-[12px] flex flex-col justify-between h-[350px] hover:shadow-md transition-shadow text-center group"
+                  className="bg-white border border-[#e2e8f0] rounded-[10px] p-[12px] flex flex-col justify-between h-[360px] hover:shadow-md transition-shadow text-center group relative"
                 >
-                  {/* Image Box */}
-                  <Link href={`/products/${product.handle}`} className="bg-[#f8fafc] rounded-[6px] h-[145px] w-full flex items-center justify-center relative overflow-hidden mb-2">
-                    <div className="h-[130px] w-[180px] relative">
-                      <Image
-                        src={product.image}
-                        alt={product.name}
-                        fill
-                        className="object-contain p-2 group-hover:scale-105 transition-transform"
-                      />
+                  {/* Clickable Card Body: Image, Title, Specs & Price */}
+                  <Link
+                    href={`/products/${product.handle}`}
+                    className="flex flex-col items-center flex-1 w-full text-center"
+                  >
+                    {/* Image Box */}
+                    <div className="bg-[#f8fafc] rounded-[8px] h-[145px] w-full flex items-center justify-center relative overflow-hidden mb-2 group-hover:bg-[#f1f5f9] transition-colors">
+                      <div className="h-[130px] w-[180px] relative">
+                        <Image
+                          src={product.image}
+                          alt={product.name}
+                          fill
+                          className="object-contain p-2 group-hover:scale-105 transition-transform"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Info Block */}
+                    <div className="flex flex-col gap-[3px] items-center text-center w-full">
+                      <h3 className="font-bold text-[#0b1f3a] text-[15px] group-hover:text-[#16a6a3] transition-colors line-clamp-1">
+                        {product.name}
+                      </h3>
+                      <p className="font-semibold text-[#64748b] text-[10px] tracking-wide uppercase">
+                        {product.formatLabel}
+                      </p>
+                      <p className="font-normal text-[#475569] text-[11px] line-clamp-1">
+                        {product.description}
+                      </p>
+
+                      {/* Price Row */}
+                      <div className="flex gap-[6px] items-center justify-center pt-1.5 whitespace-nowrap">
+                        {product.isSubscriptionEligible && product.subscribePrice ? (
+                          <>
+                            <span className="font-bold text-[#0b1f3a] text-[15px]">
+                              £{product.subscribePrice.toFixed(2)}
+                            </span>
+                            <span className="font-normal text-[#64748b] text-[11px]">
+                              / 28 days
+                            </span>
+                            <div className="bg-[#e6fffa] border border-[#99f6e4] px-[5px] py-[2px] rounded-[4px]">
+                              <span className="font-bold text-[#0d7b78] text-[9px]">
+                                Save 10%
+                              </span>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <span className="font-bold text-[#0b1f3a] text-[15px]">
+                              £{product.price.toFixed(2)}
+                            </span>
+                            <span className="font-normal text-[#64748b] text-[11px]">
+                              One-Time Purchase
+                            </span>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </Link>
 
-                  {/* Info Block */}
-                  <div className="flex flex-col gap-[3px] items-center text-center w-full">
-                    <Link href={`/products/${product.handle}`} className="font-bold text-[#0b1f3a] text-[15px] hover:text-[#16a6a3] transition-colors line-clamp-1">
-                      {product.name}
-                    </Link>
-                    <p className="font-semibold text-[#64748b] text-[10px] tracking-wide uppercase">
-                      {product.formatLabel}
-                    </p>
-                    <p className="font-normal text-[#475569] text-[11px] line-clamp-1">
-                      {product.description}
-                    </p>
-
-                    {/* Price Row */}
-                    <div className="flex gap-[6px] items-center justify-center pt-1 whitespace-nowrap">
-                      {product.isSubscriptionEligible && product.subscribePrice ? (
-                        <>
-                          <span className="font-bold text-[#0b1f3a] text-[15px]">
-                            £{product.subscribePrice.toFixed(2)}
-                          </span>
-                          <span className="font-normal text-[#64748b] text-[11px]">
-                            / 28 days
-                          </span>
-                          <div className="bg-[#e6fffa] border border-[#99f6e4] px-[5px] py-[2px] rounded-[4px]">
-                            <span className="font-bold text-[#0d7b78] text-[9px]">
-                              Save 10%
-                            </span>
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <span className="font-bold text-[#0b1f3a] text-[15px]">
-                            £{product.price.toFixed(2)}
-                          </span>
-                          <span className="font-normal text-[#64748b] text-[11px]">
-                            One-Time Purchase
-                          </span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Action Button */}
-                  {product.format === "complete-pen-set" ? (
+                  {/* Action Buttons Row */}
+                  <div className="flex items-center gap-2 w-full mt-3 pt-1">
                     <Link
                       href={`/products/${product.handle}`}
-                      className="btn-shimmer btn-press bg-[#0b1f3a] hover:bg-[#16a6a3] text-white flex gap-[6px] items-center justify-center px-[12px] py-[10px] rounded-xl text-[12px] font-semibold transition-all shadow-xs hover:shadow-md mt-2 group cursor-pointer"
+                      className="btn-shimmer btn-press flex-1 bg-[#0b1f3a] hover:bg-[#16a6a3] text-white flex gap-[6px] items-center justify-center py-[9px] rounded-xl text-[12px] font-semibold transition-all shadow-xs hover:shadow-md cursor-pointer"
                     >
-                      <div className="size-[15px] shrink-0 transition-transform duration-200 group-hover:scale-110">
-                        <img alt="" className="size-full" src="/images/figma/27b4991e9b952fe1e43fac289265fda55a606a7f.svg" />
-                      </div>
-                      <span>View Pen Set</span>
+                      <span>
+                        {product.format === "complete-pen-set"
+                          ? "View Pen Set"
+                          : product.format === "refill-cartridge"
+                          ? "View Cartridge"
+                          : "View Vial"}
+                      </span>
+                      <span className="text-[11px]">→</span>
                     </Link>
-                  ) : (
                     <button
-                      onClick={() => handleAddToCart(product)}
-                      className="btn-shimmer btn-press bg-[#0b1f3a] hover:bg-[#16a6a3] text-white flex gap-[6px] items-center justify-center px-[12px] py-[10px] rounded-xl text-[12px] font-semibold transition-all shadow-xs hover:shadow-md mt-2 group cursor-pointer"
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        handleAddToCart(product)
+                      }}
+                      title="Quick Add to Cart"
+                      aria-label={`Add ${product.name} to Cart`}
+                      className="size-[36px] rounded-xl border border-[#cbd5e1] hover:border-[#0b1f3a] hover:bg-slate-50 flex items-center justify-center shrink-0 transition-colors cursor-pointer text-[#0b1f3a]"
                     >
-                      <div className="size-[15px] shrink-0 transition-transform duration-200 group-hover:scale-110">
-                        <img alt="" className="size-full" src="/images/figma/27b4991e9b952fe1e43fac289265fda55a606a7f.svg" />
-                      </div>
-                      <span>Add to Cart</span>
+                      <img alt="" className="size-[15px]" src="/images/figma/27b4991e9b952fe1e43fac289265fda55a606a7f.svg" />
                     </button>
-                  )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -976,20 +989,20 @@ export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
               {filteredProducts.map((product) => (
                 <div
                   key={product.id}
-                  className="bg-white border border-[#e2e8f0] rounded-[8px] p-4 flex flex-col sm:flex-row items-center justify-between gap-4 hover:shadow-md transition-shadow"
+                  className="bg-white border border-[#e2e8f0] rounded-[8px] p-4 flex flex-col sm:flex-row items-center justify-between gap-4 hover:shadow-md transition-shadow group"
                 >
-                  <div className="flex items-center gap-4">
-                    <div className="bg-[#f8fafc] rounded-[6px] size-[80px] relative shrink-0 p-1">
+                  <Link href={`/products/${product.handle}`} className="flex items-center gap-4 flex-1">
+                    <div className="bg-[#f8fafc] rounded-[6px] size-[80px] relative shrink-0 p-1 group-hover:bg-slate-100 transition-colors">
                       <Image src={product.image} alt={product.name} fill className="object-contain" />
                     </div>
                     <div className="text-left">
                       <span className="text-[10px] font-semibold text-[#64748b] tracking-wide uppercase">
                         {product.formatLabel}
                       </span>
-                      <h4 className="text-[15px] font-bold text-[#0b1f3a]">{product.name}</h4>
+                      <h4 className="text-[15px] font-bold text-[#0b1f3a] group-hover:text-[#16a6a3] transition-colors">{product.name}</h4>
                       <p className="text-[12px] text-[#475569]">{product.description}</p>
                     </div>
-                  </div>
+                  </Link>
 
                   <div className="flex items-center gap-4 shrink-0">
                     <div className="text-right">
@@ -1002,21 +1015,27 @@ export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
                         </span>
                       )}
                     </div>
-                    {product.format === "complete-pen-set" ? (
+                    <div className="flex items-center gap-2">
                       <Link
                         href={`/products/${product.handle}`}
-                        className="btn-shimmer btn-press bg-[#0b1f3a] hover:bg-[#16a6a3] text-white px-4 py-2.5 rounded-xl text-[12px] font-semibold transition-all shadow-xs hover:shadow-md cursor-pointer"
+                        className="btn-shimmer btn-press bg-[#0b1f3a] hover:bg-[#16a6a3] text-white px-3.5 py-2.5 rounded-xl text-[12px] font-semibold transition-all shadow-xs hover:shadow-md cursor-pointer"
                       >
-                        View Pen Set
+                        <span>Details</span>
+                        <span className="ml-1 text-[11px]">→</span>
                       </Link>
-                    ) : (
                       <button
-                        onClick={() => handleAddToCart(product)}
-                        className="btn-shimmer btn-press bg-[#0b1f3a] hover:bg-[#16a6a3] text-white px-4 py-2.5 rounded-xl text-[12px] font-semibold transition-all shadow-xs hover:shadow-md cursor-pointer"
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          handleAddToCart(product)
+                        }}
+                        className="size-[38px] rounded-xl border border-[#cbd5e1] hover:border-[#0b1f3a] hover:bg-slate-50 flex items-center justify-center transition-colors cursor-pointer text-[#0b1f3a]"
+                        title="Add to Cart"
                       >
-                        Add to Cart
+                        <img alt="" className="size-[15px]" src="/images/figma/27b4991e9b952fe1e43fac289265fda55a606a7f.svg" />
                       </button>
-                    )}
+                    </div>
                   </div>
                 </div>
               ))}

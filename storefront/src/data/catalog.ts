@@ -375,3 +375,49 @@ export const CATALOG_PRODUCTS: CatalogProduct[] = [
     image: "/images/figma/2d7803f97be6d80d5630dfb42abba84289ed1bb5.png",
   },
 ]
+
+export function findCatalogProduct(
+  handleOrId: string,
+  modelQuery?: string | null
+): CatalogProduct | null {
+  if (!handleOrId) return null
+  const decoded = decodeURIComponent(handleOrId).toLowerCase().trim()
+  const cleanHandle = decoded.split("?")[0]
+
+  // 1. Exact match on handle, base handle, or id
+  const exactMatch = CATALOG_PRODUCTS.find(
+    (p) =>
+      p.handle.toLowerCase() === decoded ||
+      p.handle.toLowerCase().split("?")[0] === cleanHandle ||
+      p.id.toLowerCase() === decoded
+  )
+  if (exactMatch) return exactMatch
+
+  // 2. Handle pen set model queries or generic complete-pen-set
+  if (cleanHandle === "complete-pen-set" || cleanHandle.includes("pen-set") || cleanHandle.includes("pen-system")) {
+    if (modelQuery) {
+      const q = modelQuery.toLowerCase()
+      const found = CATALOG_PRODUCTS.find(
+        (p) => p.format === "complete-pen-set" && p.name.toLowerCase().includes(q)
+      )
+      if (found) return found
+    }
+    const penMatch = CATALOG_PRODUCTS.find((p) => {
+      const target = cleanHandle.replace(/[^a-z0-9]/g, "")
+      const pHandle = p.handle.toLowerCase().replace(/[^a-z0-9]/g, "")
+      return p.format === "complete-pen-set" && (target.includes(pHandle) || pHandle.includes(target))
+    })
+    if (penMatch) return penMatch
+    return CATALOG_PRODUCTS.find((p) => p.format === "complete-pen-set") || CATALOG_PRODUCTS[0]
+  }
+
+  // 3. Fallback matching by alphanumeric normalisation (handles prefixes like cartridge- or vial-)
+  const fuzzyMatch = CATALOG_PRODUCTS.find((p) => {
+    const pClean = p.handle.toLowerCase().replace(/[^a-z0-9]/g, "")
+    const pIdClean = p.id.toLowerCase().replace(/[^a-z0-9]/g, "")
+    const target = cleanHandle.replace(/[^a-z0-9]/g, "")
+    return pClean.includes(target) || target.includes(pClean) || pIdClean.includes(target) || target.includes(pIdClean)
+  })
+
+  return fuzzyMatch || null
+}

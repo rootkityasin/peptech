@@ -419,8 +419,8 @@ export default function HomePage() {
                   className="bg-white border border-[#E2E8F0] rounded-[8px] p-3 flex flex-col justify-between h-[420px] hover:shadow-md transition-shadow group"
                 >
                   {/* Cartridge Clear Photo */}
-                  <Link href="/refills" className="block">
-                    <div className="h-[220px] w-full relative flex items-center justify-center">
+                  <Link href={`/products/${c.handle}`} className="block">
+                    <div className="h-[220px] w-full relative flex items-center justify-center bg-[#f8fafc] rounded-lg group-hover:bg-slate-100 transition-colors">
                       <Image
                         src={c.image}
                         alt={c.name}
@@ -431,10 +431,12 @@ export default function HomePage() {
                   </Link>
 
                   {/* Info Block */}
-                  <div className="text-center space-y-0.5">
-                    <h3 className="text-[14px] font-bold text-[#0B1F3A]">
-                      {c.name}
-                    </h3>
+                  <div className="text-center space-y-0.5 my-2">
+                    <Link href={`/products/${c.handle}`}>
+                      <h3 className="text-[14px] font-bold text-[#0B1F3A] hover:text-[#16A6A3] transition-colors">
+                        {c.name}
+                      </h3>
+                    </Link>
                     <p className="text-[11px] text-[#64748B]">
                       {c.type}
                     </p>
@@ -443,14 +445,23 @@ export default function HomePage() {
                     </p>
                   </div>
 
-                  {/* Add to Cart Button */}
-                  <button
-                    onClick={() => handleAddCartridge(c)}
-                    className="w-full h-[36px] bg-[#0B1F3A] hover:bg-[#162e52] text-white rounded-[6px] text-[12px] font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                  >
-                    <img src="/images/figma/icon-cart.svg" alt="" className="w-3.5 h-3.5" />
-                    <span>Add to Cart</span>
-                  </button>
+                  {/* Actions Row */}
+                  <div className="flex items-center gap-1.5 w-full">
+                    <Link
+                      href={`/products/${c.handle}`}
+                      className="flex-1 h-[36px] bg-[#0B1F3A] hover:bg-[#162e52] text-white rounded-[6px] text-[11px] font-semibold flex items-center justify-center transition-colors cursor-pointer"
+                    >
+                      <span>View</span>
+                      <span className="ml-0.5">→</span>
+                    </Link>
+                    <button
+                      onClick={() => handleAddCartridge(c)}
+                      title="Add to Cart"
+                      className="size-[36px] border border-[#CBD5E1] hover:border-[#0B1F3A] hover:bg-slate-50 text-[#0B1F3A] rounded-[6px] flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                    >
+                      <img src="/images/figma/icon-cart.svg" alt="" className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

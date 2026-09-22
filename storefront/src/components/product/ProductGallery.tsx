@@ -17,7 +17,7 @@ const DEFAULT_GALLERY_IMAGES = [
 ]
 
 export function ProductGallery({ images }: ProductGalleryProps) {
-  const displayImages = images && images.length >= 6 ? images : DEFAULT_GALLERY_IMAGES
+  const displayImages = images && images.length > 0 ? images : DEFAULT_GALLERY_IMAGES
   const [activeIndex, setActiveIndex] = useState(0)
 
   const handlePrev = () => {
@@ -42,51 +42,55 @@ export function ProductGallery({ images }: ProductGalleryProps) {
           />
         </div>
 
-        {/* Prev Button */}
-        <button
-          onClick={handlePrev}
-          type="button"
-          aria-label="Previous Image"
-          className="absolute bg-white border border-[#e2e8f0] flex items-center justify-center left-[15px] rounded-full size-[36px] top-1/2 -translate-y-1/2 hover:bg-slate-50 transition-colors cursor-pointer shadow-xs z-10"
-        >
-          <img src="/images/figma/4dfb2f4b53f3415909efe7e80dddcf2a15e5c197.svg" alt="Previous" className="size-[16px]" />
-        </button>
-
-        {/* Next Button */}
-        <button
-          onClick={handleNext}
-          type="button"
-          aria-label="Next Image"
-          className="absolute bg-white border border-[#e2e8f0] flex items-center justify-center right-[15px] rounded-full size-[36px] top-1/2 -translate-y-1/2 hover:bg-slate-50 transition-colors cursor-pointer shadow-xs z-10"
-        >
-          <img src="/images/figma/95de1cd2974339673dc3948d0a6a252ac00ba2f8.svg" alt="Next" className="size-[16px]" />
-        </button>
+        {/* Prev & Next Buttons (Only if multiple images) */}
+        {displayImages.length > 1 && (
+          <>
+            <button
+              onClick={handlePrev}
+              type="button"
+              aria-label="Previous Image"
+              className="absolute bg-white border border-[#e2e8f0] flex items-center justify-center left-[15px] rounded-full size-[36px] top-1/2 -translate-y-1/2 hover:bg-slate-50 transition-colors cursor-pointer shadow-xs z-10"
+            >
+              <img src="/images/figma/4dfb2f4b53f3415909efe7e80dddcf2a15e5c197.svg" alt="Previous" className="size-[16px]" />
+            </button>
+            <button
+              onClick={handleNext}
+              type="button"
+              aria-label="Next Image"
+              className="absolute bg-white border border-[#e2e8f0] flex items-center justify-center right-[15px] rounded-full size-[36px] top-1/2 -translate-y-1/2 hover:bg-slate-50 transition-colors cursor-pointer shadow-xs z-10"
+            >
+              <img src="/images/figma/95de1cd2974339673dc3948d0a6a252ac00ba2f8.svg" alt="Next" className="size-[16px]" />
+            </button>
+          </>
+        )}
       </div>
 
-      {/* 6 Thumbnails Row - Figma Node 8:41083 */}
-      <div className="grid grid-cols-6 gap-2 sm:gap-3 w-full">
-        {displayImages.slice(0, 6).map((img, idx) => (
-          <button
-            key={img + idx}
-            type="button"
-            onClick={() => setActiveIndex(idx)}
-            className={`bg-white flex h-[64px] sm:h-[74px] items-center justify-center overflow-hidden relative rounded-[8px] cursor-pointer transition-all p-1 ${
-              activeIndex === idx
-                ? "border-2 border-[#00d2ff] shadow-xs"
-                : "border border-[#e2e8f0] hover:border-slate-300 opacity-80 hover:opacity-100"
-            }`}
-          >
-            <div className="relative size-full">
-              <Image
-                src={img}
-                alt={`Thumbnail ${idx + 1}`}
-                fill
-                className="object-contain"
-              />
-            </div>
-          </button>
-        ))}
-      </div>
+      {/* Thumbnails Row (Only if multiple images) */}
+      {displayImages.length > 1 && (
+        <div className={`grid gap-2 sm:gap-3 w-full ${displayImages.length <= 4 ? `grid-cols-${displayImages.length}` : "grid-cols-6"}`}>
+          {displayImages.slice(0, 6).map((img, idx) => (
+            <button
+              key={img + idx}
+              type="button"
+              onClick={() => setActiveIndex(idx)}
+              className={`bg-white flex h-[64px] sm:h-[74px] items-center justify-center overflow-hidden relative rounded-[8px] cursor-pointer transition-all p-1 ${
+                activeIndex === idx
+                  ? "border-2 border-[#16a6a3] shadow-xs"
+                  : "border border-[#e2e8f0] hover:border-slate-300 opacity-80 hover:opacity-100"
+              }`}
+            >
+              <div className="relative size-full">
+                <Image
+                  src={img}
+                  alt={`Thumbnail ${idx + 1}`}
+                  fill
+                  className="object-contain"
+                />
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

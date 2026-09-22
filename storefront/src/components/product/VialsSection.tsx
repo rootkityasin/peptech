@@ -7,36 +7,40 @@ import { useCart } from "@/components/cart/CartContext"
 
 const FIGMA_VIALS = [
   {
-    id: "vial-retatrutide-10",
-    name: "Retatrutide",
-    spec: "Research Grade • 10mg",
-    price: 39.00,
-    subPrice: 35.10,
-    image: "/images/figma/138573664d114462601fdac5ccec165f33058ecc.png",
+    id: "vial-retatrutide-10mg",
+    name: "Retatrutide 10mg",
+    handle: "vial-retatrutide-10mg",
+    spec: "Research Grade • 10mg Lyophilised",
+    price: 69.99,
+    subPrice: 62.99,
+    image: "/images/figma/2d7803f97be6d80d5630dfb42abba84289ed1bb5.png",
   },
   {
-    id: "vial-tirzepatide-15",
-    name: "Tirzepatide",
-    spec: "Research Grade • 15mg",
-    price: 39.00,
-    subPrice: 35.10,
-    image: "/images/figma/138573664d114462601fdac5ccec165f33058ecc.png",
+    id: "vial-tirzepatide-15mg",
+    name: "Tirzepatide 15mg",
+    handle: "vial-tirzepatide-15mg",
+    spec: "Research Grade • 15mg Lyophilised",
+    price: 79.99,
+    subPrice: 71.99,
+    image: "/images/figma/2d7803f97be6d80d5630dfb42abba84289ed1bb5.png",
   },
   {
-    id: "vial-semaglutide-10",
-    name: "Semaglutide",
-    spec: "Research Grade • 10mg",
-    price: 39.00,
-    subPrice: 35.10,
-    image: "/images/figma/138573664d114462601fdac5ccec165f33058ecc.png",
+    id: "vial-semaglutide-10mg",
+    name: "Semaglutide 10mg",
+    handle: "vial-semaglutide-10mg",
+    spec: "Research Grade • 10mg Lyophilised",
+    price: 59.99,
+    subPrice: 53.99,
+    image: "/images/figma/2d7803f97be6d80d5630dfb42abba84289ed1bb5.png",
   },
   {
-    id: "vial-bpc157-10",
-    name: "BPC-157",
-    spec: "Research Grade • 10mg",
-    price: 39.00,
-    subPrice: 35.10,
-    image: "/images/figma/138573664d114462601fdac5ccec165f33058ecc.png",
+    id: "vial-bpc157-10mg",
+    name: "BPC-157 10mg",
+    handle: "vial-bpc157-10mg",
+    spec: "Research Grade • 10mg Lyophilised",
+    price: 39.99,
+    subPrice: 35.99,
+    image: "/images/figma/2d7803f97be6d80d5630dfb42abba84289ed1bb5.png",
   },
 ]
 
@@ -46,13 +50,16 @@ export function VialsSection() {
   const handleAddVial = (item: typeof FIGMA_VIALS[0]) => {
     addItem({
       id: item.id,
-      title: `${item.name} (${item.spec})`,
+      title: `${item.name} Lyophilised Vial`,
       format: "vial",
       strength: item.spec,
-      price: item.price,
-      isSubscription: false,
-      sku: `PEP-VIAL-${item.name.replace(/[^a-zA-Z0-9]/g, "").toUpperCase()}`,
+      price: item.subPrice,
+      isSubscription: true,
+      subscriptionIntervalDays: 28,
+      discountPercent: 10,
+      sku: `PEP-VIAL-${item.id.replace("vial-", "").toUpperCase()}`,
       batch: "VIAL-2026-B1",
+      image: item.image,
     })
     setIsDrawerOpen(true)
   }
@@ -61,14 +68,14 @@ export function VialsSection() {
     <section className="bg-white py-[20px] pb-[60px] flex items-center justify-center border-t border-[#e2e8f0]">
       <div className="w-full max-w-[1240px] mx-auto px-4 sm:px-6 flex flex-col gap-[24px]">
         
-        {/* Header Row - Figma Node 8:41539 */}
+        {/* Header Row */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex flex-col gap-[4px]">
             <h2 className="font-bold text-[#0b1f3a] text-[22px] sm:text-[24px]">
               Freeze-Dried Vials
             </h2>
             <p className="font-normal text-[#64748b] text-[13px]">
-              For laboratory and professional applications. High purity guaranteed.
+              Laboratory research vials with third-party testing reports. Reconstitution diluent available separately.
             </p>
           </div>
           <Link
@@ -80,16 +87,16 @@ export function VialsSection() {
           </Link>
         </div>
 
-        {/* Products Row - Figma Node 8:41548 */}
+        {/* Products Row */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
           
-          {/* Left Feature Box (lg:col-span-3) - Figma Node 8:41549 */}
+          {/* Left Feature Box */}
           <div className="lg:col-span-3 bg-[#f0f6fa] rounded-[12px] p-[20px] sm:p-[24px] flex flex-col justify-between h-[380px] shadow-xs">
             <div className="flex items-start gap-4 h-full">
               <div className="w-[88px] h-full relative shrink-0">
                 <Image
-                  src="/images/figma/9eac22019fa5ef074776d7d27b3528efdcf1708e.png"
-                  alt="PEPTECH Freeze-Dried Vials"
+                  src="/images/figma/2d7803f97be6d80d5630dfb42abba84289ed1bb5.png"
+                  alt="PEPTECH Freeze-Dried Vial"
                   fill
                   className="object-contain"
                 />
@@ -97,29 +104,25 @@ export function VialsSection() {
               <div className="flex flex-col justify-between h-full py-2">
                 <div>
                   <h3 className="font-bold text-[#0b1f3a] text-[16px] leading-[22px]">
-                    PEPTECH®<br />Freeze-Dried Vials
+                    Freeze-Dried<br />Vials
                   </h3>
                   
-                  <div className="flex flex-col gap-[8px] pt-3 text-[11px] text-[#475469]">
+                  <div className="flex flex-col gap-[10px] pt-4 text-[11px] text-[#475469]">
                     <div className="flex items-start gap-2">
                       <span className="text-[#16a6a3] font-bold">✓</span>
-                      <span>Multiple strengths available</span>
+                      <span>High purity research grade</span>
                     </div>
                     <div className="flex items-start gap-2">
                       <span className="text-[#16a6a3] font-bold">✓</span>
-                      <span>Long shelf life</span>
+                      <span>Third-party tested &amp; verified</span>
                     </div>
                     <div className="flex items-start gap-2">
                       <span className="text-[#16a6a3] font-bold">✓</span>
-                      <span>Laboratory tested</span>
+                      <span>28-Day subscription available</span>
                     </div>
                     <div className="flex items-start gap-2">
                       <span className="text-[#16a6a3] font-bold">✓</span>
-                      <span>Secure, batch-tracked</span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <span className="text-[#16a6a3] font-bold">✓</span>
-                      <span>For research &amp; professional use</span>
+                      <span>Discreet protective packaging</span>
                     </div>
                   </div>
                 </div>
@@ -134,51 +137,64 @@ export function VialsSection() {
             </div>
           </div>
 
-          {/* Right 4 Vials (lg:col-span-9) */}
+          {/* Right 4 Vials */}
           <div className="lg:col-span-9 grid grid-cols-2 sm:grid-cols-4 gap-4">
             {FIGMA_VIALS.map((item) => (
               <div
                 key={item.id}
-                className="bg-white border border-[#e2e8f0] rounded-[12px] p-[16px] flex flex-col justify-between h-[380px] hover:shadow-md transition-shadow text-center"
+                className="bg-white border border-[#e2e8f0] rounded-[12px] p-[16px] flex flex-col justify-between h-[390px] hover:shadow-md transition-shadow text-center group"
               >
-                <div>
+                <Link href={`/products/${item.handle}`} className="block flex-1">
                   {/* Vial Photo */}
-                  <div className="h-[160px] w-full relative mb-3 flex items-center justify-center">
+                  <div className="h-[160px] w-full relative mb-3 bg-[#f8fafc] rounded-lg group-hover:bg-slate-100 transition-colors">
                     <Image
                       src={item.image}
                       alt={item.name}
                       fill
-                      className="object-contain p-2 hover:scale-105 transition-transform"
+                      className="object-contain p-2 group-hover:scale-105 transition-transform"
                     />
                   </div>
 
                   {/* Info */}
                   <div className="space-y-0.5">
-                    <h4 className="font-bold text-[#0b1f3a] text-[15px]">
+                    <h4 className="font-bold text-[#0b1f3a] text-[15px] group-hover:text-[#16a6a3] transition-colors">
                       {item.name}
                     </h4>
                     <p className="font-normal text-[#64748b] text-[11px]">
                       {item.spec}
                     </p>
                     <p className="font-bold text-[#0b1f3a] text-[15px] pt-1">
-                      ${item.price.toFixed(2)}
+                      £{item.price.toFixed(2)}
                     </p>
                     <div className="flex items-center justify-center gap-1 text-[11px]">
-                      <span className="text-[#64748b]">Subscribe &amp; Save 10%</span>
-                      <span className="font-bold text-[#0b1f3a]">${item.subPrice.toFixed(2)}</span>
+                      <span className="text-[#64748b]">Subscribe &amp; Save</span>
+                      <span className="font-bold text-[#0d7b78] bg-[#e6fffa] px-1 py-0.5 rounded text-[10px]">£{item.subPrice.toFixed(2)}</span>
                     </div>
                   </div>
-                </div>
+                </Link>
 
-                {/* Add to Cart Button */}
-                <button
-                  type="button"
-                  onClick={() => handleAddVial(item)}
-                  className="btn-shimmer btn-press bg-[#0b1f3a] hover:bg-[#162e52] cursor-pointer flex items-center justify-center gap-[6px] h-[38px] rounded-lg w-full text-white font-semibold text-[12px] transition-all shadow-2xs hover:shadow-md mt-3 group"
-                >
-                  <img src="/images/figma/64d8de74a83e1fb14e8e8745813821f2e7537253.svg" alt="" className="size-[14px] transition-transform duration-200 group-hover:scale-110" />
-                  <span>Add to Cart</span>
-                </button>
+                {/* Actions: View Details & Quick Add */}
+                <div className="flex items-center gap-2 mt-3 pt-1 border-t border-slate-100">
+                  <Link
+                    href={`/products/${item.handle}`}
+                    className="btn-shimmer btn-press flex-1 bg-[#0b1f3a] hover:bg-[#16a6a3] text-white flex items-center justify-center py-2 rounded-lg text-[12px] font-semibold transition-all"
+                  >
+                    <span>Details</span>
+                    <span className="ml-1 text-[10px]">→</span>
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      handleAddVial(item)
+                    }}
+                    title="Quick Add to Cart"
+                    className="size-[34px] rounded-lg border border-[#cbd5e1] hover:border-[#0b1f3a] hover:bg-slate-50 flex items-center justify-center shrink-0 transition-colors cursor-pointer text-[#0b1f3a]"
+                  >
+                    <img src="/images/figma/64d8de74a83e1fb14e8e8745813821f2e7537253.svg" alt="" className="size-[14px]" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
