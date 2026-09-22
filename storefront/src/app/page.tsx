@@ -156,7 +156,7 @@ export default function HomePage() {
     <main className="bg-white text-slate-900 overflow-x-hidden font-sans">
       
       {/* 01. HERO SECTION - Figma Node 2:29257 */}
-      <section className="bg-[#F4F7FA] pt-6 pb-12 sm:py-16 border-b border-[#E2E8F0] relative">
+      <section className="bg-[#F4F7FA] pt-6 pb-0 sm:pb-12 lg:py-16 border-b border-[#E2E8F0] relative">
         <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center">
             
@@ -197,21 +197,21 @@ export default function HomePage() {
               </div>
 
               {/* 4 Micro Value Props Row - Figma Node I2:29725;2:29272 */}
-              <div className="pt-6 border-t border-[#E2E8F0] grid grid-cols-2 sm:grid-cols-4 gap-4 text-center max-w-[520px]">
-                <div className="flex flex-col items-center text-center">
-                  <img src="/images/figma/icon-target.svg" alt="Accuracy" className="w-5 h-5 mb-2" />
+              <div className="py-7 sm:py-6 border-t border-[#E2E8F0] grid grid-cols-2 sm:grid-cols-4 gap-y-8 sm:gap-y-4 gap-x-4 sm:gap-6 text-center max-w-[520px]">
+                <div className="flex flex-col items-center text-center gap-2">
+                  <img src="/images/figma/icon-target.svg" alt="Accuracy" className="w-5 h-5" />
                   <span className="text-[12px] font-bold text-[#0B1F3A] leading-tight">High Accuracy</span>
                 </div>
-                <div className="flex flex-col items-center text-center">
-                  <img src="/images/figma/icon-lightning.svg" alt="Results" className="w-5 h-5 mb-2" />
+                <div className="flex flex-col items-center text-center gap-2">
+                  <img src="/images/figma/icon-lightning.svg" alt="Results" className="w-5 h-5" />
                   <span className="text-[12px] font-bold text-[#0B1F3A] leading-tight">Fast Results</span>
                 </div>
-                <div className="flex flex-col items-center text-center">
-                  <img src="/images/figma/icon-hand.svg" alt="Usage" className="w-5 h-5 mb-2" />
+                <div className="flex flex-col items-center text-center gap-2">
+                  <img src="/images/figma/icon-hand.svg" alt="Usage" className="w-5 h-5" />
                   <span className="text-[12px] font-bold text-[#0B1F3A] leading-tight">Easy to Use</span>
                 </div>
-                <div className="flex flex-col items-center text-center">
-                  <img src="/images/figma/icon-shield.svg" alt="Consistency" className="w-5 h-5 mb-2" />
+                <div className="flex flex-col items-center text-center gap-2">
+                  <img src="/images/figma/icon-shield.svg" alt="Consistency" className="w-5 h-5" />
                   <span className="text-[12px] font-bold text-[#0B1F3A] leading-tight">Reliable &amp; Consistent</span>
                 </div>
               </div>
