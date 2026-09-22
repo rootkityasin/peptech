@@ -178,8 +178,8 @@ export default function HomePage() {
                 PEPTECH® delivers premium, ready-to-use kits and reagents designed for precision, consistency and trusted results across multiple industries.
               </p>
 
-              {/* Action Buttons */}
-              <div className="flex flex-wrap items-center gap-3.5 pt-2">
+              {/* Action Buttons - Desktop */}
+              <div className="hidden lg:flex flex-wrap items-center gap-3.5 pt-2">
                 <Link
                   href="/products/complete-pen-set"
                   className="btn-shimmer btn-press px-6 py-3.5 rounded-xl bg-[#0B1F3A] hover:bg-[#162e52] text-white text-[14px] font-semibold transition-all shadow-md hover:shadow-xl inline-flex items-center gap-2 group cursor-pointer"
@@ -219,7 +219,7 @@ export default function HomePage() {
 
             {/* Right Column on Desktop, First on Mobile: Hero Presentation Kit Mockup */}
             <div className="order-1 lg:order-2 lg:col-span-6 flex justify-center lg:justify-end">
-              <div className="relative w-full max-w-[580px] h-[260px] xs:h-[300px] sm:h-[400px] lg:h-[440px] flex items-center justify-center">
+              <div className="relative w-full max-w-[580px] h-[270px] sm:h-[400px] lg:h-[440px] flex items-center justify-center">
                 <Image
                   src="/images/figma/hero-presentation-box.png"
                   alt="PEPTECH® Reusable Injection Pen System Kit Presentation"
@@ -227,6 +227,24 @@ export default function HomePage() {
                   className="object-contain drop-shadow-xl"
                   priority
                 />
+
+                {/* Mobile / Tablet Action Buttons in Marked Portion */}
+                <div className="lg:hidden absolute left-2 xs:left-3 sm:left-5 bottom-2 sm:bottom-6 z-10 flex flex-col gap-2 w-[148px] sm:w-[175px]">
+                  <Link
+                    href="/products/complete-pen-set"
+                    className="btn-shimmer btn-press w-full py-2.5 sm:py-3 px-2.5 sm:px-4 rounded-xl bg-[#0B1F3A] hover:bg-[#162e52] text-white text-[12px] sm:text-[13px] font-bold transition-all shadow-md inline-flex items-center justify-center gap-1.5 group cursor-pointer"
+                  >
+                    <span>Shop All Products</span>
+                    <span className="transition-transform duration-200 group-hover:translate-x-0.5">→</span>
+                  </Link>
+                  
+                  <Link
+                    href="/how-it-works"
+                    className="btn-press w-full py-2 sm:py-2.5 px-2.5 sm:px-4 rounded-xl bg-white hover:bg-slate-50 text-[#0B1F3A] border border-[#CBD5E1] hover:border-[#0B1F3A] text-[12px] sm:text-[13px] font-bold transition-all shadow-xs inline-flex items-center justify-center cursor-pointer"
+                  >
+                    Learn More
+                  </Link>
+                </div>
               </div>
             </div>
 
