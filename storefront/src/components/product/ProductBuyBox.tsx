@@ -1,9 +1,11 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import { useCart } from "@/components/cart/CartContext"
+import { CatalogProduct } from "@/data/catalog"
 
 interface ProductBuyBoxProps {
+  product?: CatalogProduct
   title?: string
   subtitle?: string
   description?: string
@@ -13,16 +15,19 @@ interface ProductBuyBoxProps {
 }
 
 const CARTRIDGE_OPTIONS = [
-  { id: "trz-10", name: "Tirzepatide Cartridge (10mg) · Batch #TRZ-2026-08B", badge: "INCLUDED", priceDelta: 0 },
-  { id: "smg-5", name: "Semaglutide Cartridge (5mg) · Batch #SMG-2026-04A", badge: "INCLUDED", priceDelta: 0 },
-  { id: "rtt-10", name: "Retatrutide Cartridge (10mg) · Batch #RTT-2026-02C", badge: "INCLUDED", priceDelta: 0 },
-  { id: "bpc-10", name: "BPC-157 Cartridge (10mg) · Batch #BPC-2026-09A", badge: "INCLUDED", priceDelta: 0 },
+  { id: "smg-5", name: "Semaglutide Cartridge (5mg) · Batch #SMG-2026-04A", badge: "INCLUDED", price: 69.99, subscribePrice: 62.99, handle: "semaglutide-5mg-cartridge" },
+  { id: "trz-10", name: "Tirzepatide Cartridge (10mg) · Batch #TRZ-2026-08B", badge: "INCLUDED", price: 89.99, subscribePrice: 80.99, handle: "tirzepatide-10mg-cartridge" },
+  { id: "rtt-10", name: "Retatrutide Cartridge (10mg) · Batch #RTT-2026-02C", badge: "INCLUDED", price: 99.99, subscribePrice: 89.99, handle: "retatrutide-10mg-cartridge" },
+  { id: "bpc-10", name: "BPC-157 Cartridge (10mg) · Batch #BPC-2026-09A", badge: "INCLUDED", price: 74.99, subscribePrice: 67.49, handle: "bpc157-10mg-cartridge" },
+  { id: "tb-10", name: "TB-500 Cartridge (10mg) · Batch #TB-2026-05A", badge: "INCLUDED", price: 79.99, subscribePrice: 71.99, handle: "tb500-10mg-cartridge" },
+  { id: "nad-500", name: "NAD+ Cartridge (500mg) · Batch #NAD-2026-01D", badge: "INCLUDED", price: 84.99, subscribePrice: 76.49, handle: "nad-500mg-cartridge" },
 ]
 
 export function ProductBuyBox({
+  product,
   title = "Complete PEPTECH®\nPen Set",
   subtitle = "One system. Multiple possibilities.",
-  description = "Get started with the complete PEPTECH® system. Includes reusable pen, a compatible prefilled cartridge, full instructions and all accessories you need for accurate, reliable testing.",
+  description = "Get started with the complete PEPTECH® system. Includes reusable pen, a compatible prefilled cartridge, 14 instructions and all accessories you need for accurate, reliable testing.",
   price = 249.00,
   subscribePrice = 224.10,
   tag = "PEN SYSTEM",
@@ -31,10 +36,12 @@ export function ProductBuyBox({
   const [purchaseType, setPurchaseType] = useState<"one-time" | "subscription">("one-time")
   const [selectedCartridge, setSelectedCartridge] = useState(CARTRIDGE_OPTIONS[0])
   const [isCartridgeOpen, setIsCartridgeOpen] = useState(false)
-  const dropdownRef = React.useRef<HTMLDivElement>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  const isRefill = product?.format === "refill-cartridge" || tag === "REFILL CARTRIDGE"
 
   // Click outside listener to smoothly close dropdown
-  React.useEffect(() => {
+  useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsCartridgeOpen(false)
@@ -43,40 +50,90 @@ export function ProductBuyBox({
     document.addEventListener("mousedown", handleClickOutside)
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
-  React.useEffect(() => {
-    if (title) {
-      const lower = title.toLowerCase()
-      const match = CARTRIDGE_OPTIONS.find((c) =>
-        lower.includes(c.name.toLowerCase().split(" ")[0])
-      )
-      if (match) setSelectedCartridge(match)
-    }
-  }, [title])
 
-  const totalPrice = purchaseType === "subscription" ? subscribePrice : price
+  useEffect(() => {
+    const lookupText = (product?.name || title || "").toLowerCase()
+    const match = CARTRIDGE_OPTIONS.find((c) =>
+      lookupText.includes(c.name.toLowerCase().split(" ")[0])
+    )
+    if (match) {
+      setSelectedCartridge(match)
+    }
+  }, [product?.name, title])
+
+  const currentOneTimePrice = isRefill
+    ? (selectedCartridge.price || product?.price || price || 69.99)
+    : (price || 195.00)
+
+  const currentSubscribePrice = isRefill
+    ? (selectedCartridge.subscribePrice || product?.subscribePrice || subscribePrice || Number((currentOneTimePrice * 0.9).toFixed(2)))
+    : (subscribePrice || 175.50)
+
+  const totalPrice = purchaseType === "subscription" ? currentSubscribePrice : currentOneTimePrice
+
+  // Determine title with balanced line break matching "Complete PEPTECH®\nPen Set"
+  const rawTitle = title || (isRefill ? selectedCartridge.name.split("·")[0].trim() : "Complete PEPTECH®\nPen Set")
+  const displayTitle = rawTitle.includes("\n")
+    ? rawTitle
+    : rawTitle.includes("Refill")
+    ? rawTitle.replace(/ (Refill|Cartridge|Refill Cartridge)$/i, "\n$1")
+    : rawTitle
+
+  const displaySubtitle = subtitle || "One system. Multiple possibilities."
+  const displayDescription = description || "Get started with the complete PEPTECH® system. Includes reusable pen, a compatible prefilled cartridge, 14 instructions and all accessories you need for accurate, reliable testing."
 
   const handleAddToCart = () => {
-    addItem({
-      id: `complete-pen-set-${selectedCartridge.id}`,
-      title: "Complete PEPTECH® Pen Set",
-      format: "pen-set",
-      strength: `${selectedCartridge.name.split("·")[0].trim()}`,
-      price: totalPrice,
-      isSubscription: purchaseType === "subscription",
-      subscriptionIntervalDays: purchaseType === "subscription" ? 28 : undefined,
-      discountPercent: purchaseType === "subscription" ? 10 : undefined,
-      sku: `PPS-${selectedCartridge.id.toUpperCase()}`,
-      batch: selectedCartridge.name.includes("Batch")
+    if (isRefill) {
+      const batchNum = selectedCartridge.name.includes("Batch")
         ? selectedCartridge.name.split("Batch")[1]?.trim().replace(/^#/, "")
-        : "PT-PS-001",
-      image: "/images/figma/152e353c4afaa5945905ac686de871b57ec2a770.png",
-      options: [
-        {
-          label: "Cartridge",
-          value: selectedCartridge.name,
-        },
-      ],
-    })
+        : "CRT-2026-08B"
+
+      addItem({
+        id: `cartridge-${selectedCartridge.id}-${purchaseType}`,
+        title: selectedCartridge.name.split("·")[0].trim(),
+        format: "refill",
+        strength: selectedCartridge.name.split("·")[0].trim(),
+        price: totalPrice,
+        isSubscription: purchaseType === "subscription",
+        subscriptionIntervalDays: purchaseType === "subscription" ? 28 : undefined,
+        discountPercent: purchaseType === "subscription" ? 10 : undefined,
+        sku: `PEP-CRT-${selectedCartridge.id.toUpperCase()}`,
+        batch: batchNum,
+        image: product?.image || "/images/peptech/cartridge.webp",
+        options: [
+          {
+            label: "Cartridge",
+            value: selectedCartridge.name.split("·")[0].trim(),
+          },
+          {
+            label: "Purchase Type",
+            value: purchaseType === "subscription" ? "28-Day Subscription (10% off)" : "One-Time Purchase",
+          },
+        ],
+      })
+    } else {
+      addItem({
+        id: `complete-pen-set-${selectedCartridge.id}`,
+        title: "Complete PEPTECH® Pen Set",
+        format: "pen-set",
+        strength: `${selectedCartridge.name.split("·")[0].trim()}`,
+        price: totalPrice,
+        isSubscription: purchaseType === "subscription",
+        subscriptionIntervalDays: purchaseType === "subscription" ? 28 : undefined,
+        discountPercent: purchaseType === "subscription" ? 10 : undefined,
+        sku: `PPS-${selectedCartridge.id.toUpperCase()}`,
+        batch: selectedCartridge.name.includes("Batch")
+          ? selectedCartridge.name.split("Batch")[1]?.trim().replace(/^#/, "")
+          : "PT-PS-001",
+        image: "/images/figma/152e353c4afaa5945905ac686de871b57ec2a770.png",
+        options: [
+          {
+            label: "Cartridge",
+            value: selectedCartridge.name,
+          },
+        ],
+      })
+    }
     setIsDrawerOpen(true)
   }
 
@@ -86,7 +143,16 @@ export function ProductBuyBox({
       {/* Title & Review Rating Block - Figma Node 8:41097 */}
       <div className="flex flex-col gap-[6px] items-start w-full">
         <h1 className="font-bold text-[#0b1f3a] text-[30px] sm:text-[32px] leading-[36px] sm:leading-[38px] tracking-tight">
-          Complete PEPTECH®<br />Pen Set
+          {displayTitle.includes("\n") ? (
+            displayTitle.split("\n").map((part, i) => (
+              <React.Fragment key={i}>
+                {part}
+                {i < displayTitle.split("\n").length - 1 && <br />}
+              </React.Fragment>
+            ))
+          ) : (
+            displayTitle
+          )}
         </h1>
         
         <div className="flex gap-[8px] items-center pt-1">
@@ -108,17 +174,17 @@ export function ProductBuyBox({
 
       {/* Subtitle */}
       <p className="font-semibold text-[#0b1f3a] text-[16px]">
-        {subtitle}
+        {displaySubtitle}
       </p>
 
       {/* Description */}
       <p className="font-normal text-[#475569] text-[13px] leading-[21px] max-w-[580px]">
-        {description}
+        {displayDescription}
       </p>
 
       {/* Primary Price */}
       <div className="font-bold text-[#0b1f3a] text-[28px] tracking-tight">
-        ${totalPrice.toFixed(2)}
+        £{totalPrice.toFixed(2)}
       </div>
 
       {/* Purchase Options Box - Figma Node 8:41116 */}
@@ -148,7 +214,7 @@ export function ProductBuyBox({
             </span>
           </div>
           <span className="font-bold text-[#0b1f3a] text-[14px]">
-            ${price.toFixed(2)}
+            £{currentOneTimePrice.toFixed(2)}
           </span>
         </div>
 
@@ -186,7 +252,7 @@ export function ProductBuyBox({
             </div>
           </div>
           <span className="font-bold text-[#0b1f3a] text-[14px]">
-            ${subscribePrice.toFixed(2)}
+            £{currentSubscribePrice.toFixed(2)}
           </span>
         </div>
 
@@ -195,7 +261,7 @@ export function ProductBuyBox({
       {/* Product Dropdowns Container - Figma Node 60:11970 */}
       <div className="flex flex-col gap-[14px] items-start w-full relative z-20">
         
-        {/* Dropdown 1: Select Prefilled Cartridge */}
+        {/* Dropdown: Select Prefilled Cartridge */}
         <div ref={dropdownRef} className="flex flex-col gap-[6px] items-start w-full relative">
           <label className="font-semibold text-[#0a1f3b] text-[12px]">
             Select Prefilled Cartridge (28-Day Refill)
@@ -229,7 +295,7 @@ export function ProductBuyBox({
             </div>
           </div>
 
-          {/* Cartridge Options Menu with smooth FAQ-like transition */}
+          {/* Cartridge Options Menu with smooth transition */}
           <div
             className={`absolute top-[68px] left-0 w-full bg-white border border-[#e2e8f0] rounded-[8px] shadow-xl z-30 py-1 divide-y divide-slate-100 transition-all duration-500 ease-in-out transform origin-top ${
               isCartridgeOpen
@@ -283,7 +349,7 @@ export function ProductBuyBox({
         <div className="flex flex-col gap-[4px] items-center text-center w-[135px]">
           <img src="/images/figma/4390b9070d822ecd5eca4fa40b80170724518a5e.svg" alt="" className="size-[20px]" />
           <span className="font-bold text-[#0b1f3a] text-[12px]">Free Shipping</span>
-          <span className="font-normal text-[#64748b] text-[10px]">Orders over $200</span>
+          <span className="font-normal text-[#64748b] text-[10px]">Orders over £100</span>
         </div>
 
         <div className="flex flex-col gap-[4px] items-center text-center w-[135px]">

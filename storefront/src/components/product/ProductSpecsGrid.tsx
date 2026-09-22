@@ -143,7 +143,7 @@ export function ProductSpecsGrid() {
             {/* Certifications Box */}
             <div className="flex flex-col gap-[18px] items-start pt-[10px] w-full">
               
-              {/* Row 1: ISO, FDA, CE (Reusing Home Page High-Res SVGs) */}
+              {/* Row 1: ISO, FDA, CE */}
               <div className="flex items-center justify-between w-full">
                 <div className="h-[46px] w-[75px] flex items-center justify-center shrink-0">
                   <img

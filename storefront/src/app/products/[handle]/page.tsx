@@ -107,8 +107,15 @@ function ProductDetailContent({
     loadLiveProduct()
   }, [resolvedParams.handle, catalogProduct.handle])
 
-  const title = medusaProduct?.title || catalogProduct.name
-  const description = medusaProduct?.description || catalogProduct.description
+  const title =
+    catalogProduct.format === "refill-cartridge"
+      ? `${catalogProduct.name.replace(/ Refill$/i, "")}\nRefill Cartridge`
+      : medusaProduct?.title || catalogProduct.name
+  const description =
+    medusaProduct?.description ||
+    (catalogProduct.format === "complete-pen-set" || catalogProduct.format === "refill-cartridge"
+      ? "Get started with the complete PEPTECH® system. Includes reusable pen, a compatible prefilled cartridge, 14 instructions and all accessories you need for accurate, reliable testing."
+      : catalogProduct.description)
   const activePrice = livePrice || catalogProduct.price
   const subscribePrice =
     catalogProduct.subscribePrice || Number((activePrice * 0.9).toFixed(2))
@@ -119,9 +126,11 @@ function ProductDetailContent({
       ? COMPLETE_PEN_SET.images
       : catalogProduct.format === "refill-cartridge"
       ? [
-          catalogProduct.image,
+          catalogProduct.image || "/images/peptech/cartridge.webp",
           "/images/figma/0e71e8560b9bae80ee21a3d08905300075c266b7.png",
+          "/images/peptech/cartridge.webp",
           "/images/figma/6ae689249c306b3f6b31d8744c7c961d01964ca0.png",
+          "/images/peptech/back.webp",
         ]
       : [
           catalogProduct.image,
@@ -164,7 +173,7 @@ function ProductDetailContent({
             </Link>
             <span className="font-normal text-[#cbd5e1] text-[12px]">{`>`}</span>
             <span className="font-medium text-[#0b1f3a] text-[13px] truncate max-w-[300px]">
-              {title}
+              {title.replace("\n", " ")}
             </span>
           </div>
         </div>
@@ -181,15 +190,14 @@ function ProductDetailContent({
 
           {/* Right: Buy Box (Render format-specific buy box) */}
           <div className="w-full lg:w-[600px] shrink-0">
-            {catalogProduct.format === "refill-cartridge" ? (
-              <RefillBuyBox product={catalogProduct} />
-            ) : catalogProduct.format === "freeze-dried-vial" ? (
+            {catalogProduct.format === "freeze-dried-vial" ? (
               <VialBuyBox product={catalogProduct} />
             ) : (
               <ProductBuyBox
+                product={catalogProduct}
                 title={title}
                 subtitle="One system. Multiple possibilities."
-                description={description}
+                description="Get started with the complete PEPTECH® system. Includes reusable pen, a compatible prefilled cartridge, 14 instructions and all accessories you need for accurate, reliable testing."
                 price={activePrice}
                 subscribePrice={subscribePrice}
                 tag="PEN SYSTEM"
@@ -200,54 +208,18 @@ function ProductDetailContent({
         </div>
       </section>
 
-      {/* Format-Specific Specifications */}
-      {catalogProduct.format === "complete-pen-set" ? (
+      {/* Format-Specific Specifications & Journey Stack */}
+      {catalogProduct.format === "freeze-dried-vial" ? (
+        <>
+          <ProductTechnicalSpecs product={catalogProduct} />
+          <VialsSection />
+        </>
+      ) : (
         <>
           <ProductSpecsGrid />
           <PeptechJourney />
           <RefillsSection />
           <VialsSection />
-        </>
-      ) : (
-        <>
-          <ProductTechnicalSpecs product={catalogProduct} />
-          {/* If Refill, show sleek reusable pen hardware banner + compatible refills */}
-          {catalogProduct.format === "refill-cartridge" && (
-            <>
-              {/* Elegant Pen Compatibility & Hardware Cross-Link Banner */}
-              <div className="max-w-[1240px] mx-auto px-4 sm:px-6 my-8 w-full">
-                <div className="bg-gradient-to-r from-[#0b1f3a] via-[#0e2a47] to-[#10243e] rounded-2xl p-6 sm:p-8 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 shadow-lg border border-white/10 relative overflow-hidden">
-                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#00c5a0] to-transparent" />
-                  <div className="space-y-2 max-w-xl">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#00c5a0]/15 border border-[#00c5a0]/30 text-[#00c5a0] text-[11px] font-bold tracking-wider uppercase">
-                      <span className="size-1.5 rounded-full bg-[#00c5a0]" />
-                      <span>Reusable Hardware Compatibility</span>
-                    </div>
-                    <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
-                      Need the Reusable Precision Pen?
-                    </h3>
-                    <p className="text-slate-300 text-xs sm:text-sm leading-relaxed">
-                      This prefilled cartridge is engineered exclusively for the PEPTECH® Precision Pen system. First-time buyers can purchase the Complete Pen Set once and keep the pen for all future cartridge refills.
-                    </p>
-                  </div>
-                  <Link
-                    href="/products/complete-pen-set"
-                    className="btn-shimmer btn-press whitespace-nowrap bg-[#00c5a0] hover:bg-[#16a6a3] text-[#0b1f3a] hover:text-white font-bold text-xs sm:text-sm px-6 py-3.5 rounded-xl transition-all shadow-md shrink-0 flex items-center gap-2"
-                  >
-                    <span>View Complete Pen Set</span>
-                    <span>→</span>
-                  </Link>
-                </div>
-              </div>
-              <RefillsSection />
-            </>
-          )}
-          {/* If Vial, cross-link to other vials */}
-          {catalogProduct.format === "freeze-dried-vial" && (
-            <>
-              <VialsSection />
-            </>
-          )}
         </>
       )}
 

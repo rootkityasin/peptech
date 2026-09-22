@@ -67,7 +67,19 @@ export function ProductGallery({ images }: ProductGalleryProps) {
 
       {/* Thumbnails Row (Only if multiple images) */}
       {displayImages.length > 1 && (
-        <div className={`grid gap-2 sm:gap-3 w-full ${displayImages.length <= 4 ? `grid-cols-${displayImages.length}` : "grid-cols-6"}`}>
+        <div
+          className={`grid gap-2 sm:gap-3 w-full ${
+            displayImages.length === 2
+              ? "grid-cols-2"
+              : displayImages.length === 3
+              ? "grid-cols-3"
+              : displayImages.length === 4
+              ? "grid-cols-4"
+              : displayImages.length === 5
+              ? "grid-cols-5"
+              : "grid-cols-6"
+          }`}
+        >
           {displayImages.slice(0, 6).map((img, idx) => (
             <button
               key={img + idx}
