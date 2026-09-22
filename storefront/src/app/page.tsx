@@ -229,19 +229,19 @@ export default function HomePage() {
                 />
               </div>
 
-              {/* Mobile / Tablet Action Buttons - Below the picture, side-by-side */}
-              <div className="lg:hidden flex flex-row items-center justify-center gap-2.5 xs:gap-3 pt-4 pb-2 w-full px-2">
+              {/* Mobile / Tablet Action Buttons - Below the picture, side-by-side with original generous size & perfect shape */}
+              <div className="lg:hidden flex flex-row items-center justify-center gap-3 sm:gap-3.5 pt-5 pb-2 w-full max-w-[420px] px-3">
                 <Link
                   href="/products/complete-pen-set"
-                  className="btn-shimmer btn-press py-2.5 px-3.5 xs:px-4 sm:px-5 rounded-xl bg-[#0B1F3A] hover:bg-[#162e52] text-white text-[12px] xs:text-[13px] sm:text-[14px] font-bold transition-all shadow-md inline-flex items-center justify-center gap-1.5 group cursor-pointer text-center whitespace-nowrap"
+                  className="btn-shimmer btn-press flex-1 sm:flex-initial py-3.5 px-5 sm:px-6 rounded-xl bg-[#0B1F3A] hover:bg-[#162e52] text-white text-[14px] font-semibold transition-all shadow-md hover:shadow-xl inline-flex items-center justify-center gap-2 group cursor-pointer text-center whitespace-nowrap"
                 >
                   <span>Shop All Products</span>
-                  <span className="transition-transform duration-200 group-hover:translate-x-0.5">→</span>
+                  <span className="transition-transform duration-200 group-hover:translate-x-1">→</span>
                 </Link>
                 
                 <Link
                   href="/how-it-works"
-                  className="btn-press py-2.5 px-3.5 xs:px-4 sm:px-5 rounded-xl bg-white hover:bg-slate-50 text-[#0B1F3A] border border-[#CBD5E1] hover:border-[#0B1F3A] text-[12px] xs:text-[13px] sm:text-[14px] font-bold transition-all shadow-xs inline-flex items-center justify-center cursor-pointer text-center whitespace-nowrap"
+                  className="btn-press flex-1 sm:flex-initial py-3.5 px-5 sm:px-6 rounded-xl bg-white hover:bg-slate-50 text-[#0B1F3A] border border-[#CBD5E1] hover:border-[#0B1F3A] text-[14px] font-semibold transition-all shadow-xs hover:shadow-md inline-flex items-center justify-center cursor-pointer text-center whitespace-nowrap"
                 >
                   Learn More
                 </Link>
