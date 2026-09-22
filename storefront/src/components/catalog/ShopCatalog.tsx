@@ -955,16 +955,9 @@ export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
                   <div className="flex items-center gap-2 w-full mt-3 pt-1">
                     <Link
                       href={`/products/${product.handle}`}
-                      className="btn-shimmer btn-press flex-1 bg-[#0b1f3a] hover:bg-[#16a6a3] text-white flex gap-[6px] items-center justify-center py-[9px] rounded-xl text-[12px] font-semibold transition-all shadow-xs hover:shadow-md cursor-pointer"
+                      className="btn-shimmer btn-press flex-1 bg-[#0b1f3a] hover:bg-[#16a6a3] text-white flex items-center justify-center py-[9px] rounded-xl text-[12px] font-semibold transition-all shadow-xs hover:shadow-md cursor-pointer"
                     >
-                      <span>
-                        {product.format === "complete-pen-set"
-                          ? "View Pen Set"
-                          : product.format === "refill-cartridge"
-                          ? "View Cartridge"
-                          : "View Vial"}
-                      </span>
-                      <span className="text-[11px]">→</span>
+                      <span>Details</span>
                     </Link>
                     <button
                       type="button"

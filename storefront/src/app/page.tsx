@@ -386,14 +386,52 @@ export default function HomePage() {
                   </p>
                 </div>
 
-                {/* Add to Cart Button */}
-                <button
-                  onClick={() => handleAddPenSet(p)}
-                  className="w-full py-2 bg-[#0B1F3A] hover:bg-[#162e52] text-white rounded-[6px] text-[12px] font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                >
-                  <img src="/images/figma/icon-cart.svg" alt="" className="w-3.5 h-3.5" />
-                  <span>Add to Cart</span>
-                </button>
+                {/* Actions Row */}
+                <div className="flex items-center gap-1.5 w-full">
+                  <Link
+                    href={`/products/${p.handle}`}
+                    className="btn-shimmer btn-press flex-1 h-[36px] bg-[#0B1F3A] hover:bg-[#16A6A3] text-white rounded-[6px] text-[11px] font-semibold flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-[0.98]"
+                  >
+                    <span>Details</span>
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => handleAddPenSet(p)}
+                    title="Quick Add to Cart"
+                    aria-label={`Quick Add ${p.name} to Cart`}
+                    className="group size-[36px] rounded-[6px] border border-[#CBD5E1] hover:border-[#0B1F3A] bg-white hover:bg-slate-50 flex items-center justify-center transition-colors cursor-pointer text-[#0B1F3A] shrink-0 active:scale-95 shadow-xs"
+                  >
+                    <svg
+                      className="size-[15px] text-[#0B1F3A] group-hover:text-[#16A6A3] group-hover:scale-110 transition-all"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M6 14.6667C6.36819 14.6667 6.66667 14.3682 6.66667 14C6.66667 13.6318 6.36819 13.3333 6 13.3333C5.63181 13.3333 5.33333 13.6318 5.33333 14C5.33333 14.3682 5.63181 14.6667 6 14.6667Z"
+                        stroke="currentColor"
+                        strokeWidth="1.33333"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <path
+                        d="M13.3333 14.6667C13.7015 14.6667 14 14.3682 14 14C14 13.6318 13.7015 13.3333 13.3333 13.3333C12.9651 13.3333 12.6667 13.6318 12.6667 14C12.6667 14.3682 12.9651 14.6667 13.3333 14.6667Z"
+                        stroke="currentColor"
+                        strokeWidth="1.33333"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <path
+                        d="M1.33333 1.33333H3.33333L4.67333 8.02667C4.71905 8.25687 4.84428 8.46364 5.0271 8.61081C5.20992 8.75798 5.43867 8.83616 5.67333 8.83333H12.9333C13.168 8.83616 13.3968 8.75798 13.5796 8.61081C13.7624 8.46364 13.8876 8.25687 13.9333 8.02667L15 2.66667H4"
+                        stroke="currentColor"
+                        strokeWidth="1.33333"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -467,17 +505,46 @@ export default function HomePage() {
                   <div className="flex items-center gap-1.5 w-full">
                     <Link
                       href={`/products/${c.handle}`}
-                      className="flex-1 h-[36px] bg-[#0B1F3A] hover:bg-[#162e52] text-white rounded-[6px] text-[11px] font-semibold flex items-center justify-center transition-colors cursor-pointer"
+                      className="btn-shimmer btn-press flex-1 h-[36px] bg-[#0B1F3A] hover:bg-[#16A6A3] text-white rounded-[6px] text-[11px] font-semibold flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-[0.98]"
                     >
-                      <span>View</span>
-                      <span className="ml-0.5">→</span>
+                      <span>Details</span>
                     </Link>
                     <button
+                      type="button"
                       onClick={() => handleAddCartridge(c)}
-                      title="Add to Cart"
-                      className="size-[36px] border border-[#CBD5E1] hover:border-[#0B1F3A] hover:bg-slate-50 text-[#0B1F3A] rounded-[6px] flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                      title="Quick Add to Cart"
+                      aria-label={`Quick Add ${c.name} to Cart`}
+                      className="group size-[36px] rounded-[6px] border border-[#CBD5E1] hover:border-[#0B1F3A] bg-white hover:bg-slate-50 flex items-center justify-center transition-colors cursor-pointer text-[#0B1F3A] shrink-0 active:scale-95 shadow-xs"
                     >
-                      <img src="/images/figma/icon-cart.svg" alt="" className="w-3.5 h-3.5" />
+                      <svg
+                        className="size-[15px] text-[#0B1F3A] group-hover:text-[#16A6A3] group-hover:scale-110 transition-all"
+                        viewBox="0 0 16 16"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="M6 14.6667C6.36819 14.6667 6.66667 14.3682 6.66667 14C6.66667 13.6318 6.36819 13.3333 6 13.3333C5.63181 13.3333 5.33333 13.6318 5.33333 14C5.33333 14.3682 5.63181 14.6667 6 14.6667Z"
+                          stroke="currentColor"
+                          strokeWidth="1.33333"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        <path
+                          d="M13.3333 14.6667C13.7015 14.6667 14 14.3682 14 14C14 13.6318 13.7015 13.3333 13.3333 13.3333C12.9651 13.3333 12.6667 13.6318 12.6667 14C12.6667 14.3682 12.9651 14.6667 13.3333 14.6667Z"
+                          stroke="currentColor"
+                          strokeWidth="1.33333"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        <path
+                          d="M1.33333 1.33333H3.33333L4.67333 8.02667C4.71905 8.25687 4.84428 8.46364 5.0271 8.61081C5.20992 8.75798 5.43867 8.83616 5.67333 8.83333H12.9333C13.168 8.83616 13.3968 8.75798 13.5796 8.61081C13.7624 8.46364 13.8876 8.25687 13.9333 8.02667L15 2.66667H4"
+                          stroke="currentColor"
+                          strokeWidth="1.33333"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
                     </button>
                   </div>
                 </div>
