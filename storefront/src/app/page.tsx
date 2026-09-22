@@ -603,20 +603,40 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Right Solid Value Block */}
-            <div className="bg-[#001f54] border-t lg:border-t-0 lg:border-l border-[#0b2b6b] flex flex-col gap-[18px] items-start px-[32px] py-[36px] lg:py-[44px] w-full lg:w-[270px] h-auto lg:h-[280px] shrink-0">
-              <div className="flex gap-[12px] items-center">
-                <img src="/images/figma/icon-banner-shield.svg" alt="Shield" className="w-[24px] h-[24px]" />
-                <div className="font-bold text-[14px] text-white leading-[20px]">
-                  <p className="mb-0">Accurate.</p>
-                  <p className="mb-0">Reliable.</p>
-                  <p>Everywhere.</p>
+            {/* Right / Bottom Solid Value Block - Structured responsive layout */}
+            <div className="bg-[#001845] lg:bg-[#001f54] border-t lg:border-t-0 lg:border-l border-[#0b2b6b] flex flex-col justify-center px-4 sm:px-8 py-5 sm:py-6 lg:py-[44px] lg:px-[32px] w-full lg:w-[270px] h-auto lg:h-[280px] shrink-0">
+              <div className="grid grid-cols-2 lg:grid-cols-1 gap-3 sm:gap-4 lg:gap-[18px]">
+                {/* Feature 1: Accurate. Reliable. Everywhere. */}
+                <div className="bg-white/[0.05] lg:bg-transparent p-3.5 sm:p-4 lg:p-0 rounded-xl border border-white/[0.08] lg:border-none flex flex-col sm:flex-row lg:flex-row items-start gap-2.5 sm:gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-[#00C5A0]/15 border border-[#00C5A0]/30 flex items-center justify-center shrink-0">
+                    <img src="/images/figma/icon-banner-shield.svg" alt="Shield" className="w-[18px] h-[18px]" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-[13px] sm:text-[14px] text-white leading-[18px] sm:leading-[20px]">
+                      <p className="mb-0">Accurate.</p>
+                      <p className="mb-0">Reliable.</p>
+                      <p className="text-[#00d2ff]">Everywhere.</p>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="bg-[#00d2ff] h-[2px] w-[44px]" />
-              <div className="text-[#e2e8f0] text-[13px] font-medium leading-[18px]">
-                <p className="mb-0">Small Testing.</p>
-                <p>A Bigger Tomorrow.</p>
+
+                {/* Divider on desktop */}
+                <div className="hidden lg:block bg-[#00d2ff] h-[2px] w-[44px]" />
+
+                {/* Feature 2: Small Testing. A Bigger Tomorrow. */}
+                <div className="bg-white/[0.05] lg:bg-transparent p-3.5 sm:p-4 lg:p-0 rounded-xl border border-white/[0.08] lg:border-none flex flex-col sm:flex-row lg:flex-row items-start gap-2.5 sm:gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-[#00d2ff]/15 border border-[#00d2ff]/30 flex items-center justify-center shrink-0">
+                    <img src="/images/figma/icon-target.svg" alt="Target" className="w-[18px] h-[18px]" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-[13px] sm:text-[14px] text-white leading-[18px] sm:leading-[20px]">
+                      <p className="mb-0">Small Testing.</p>
+                    </div>
+                    <p className="text-[#94a3b8] text-[12px] sm:text-[13px] font-medium leading-[16px] sm:leading-[18px] mt-0.5">
+                      A Bigger Tomorrow.
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
