@@ -56,16 +56,35 @@ export default function CartPage() {
 
         {items.length === 0 ? (
           <div className="bg-white rounded-3xl border border-[#e2e8f0] p-12 sm:p-16 text-center space-y-6 shadow-xs max-w-2xl mx-auto">
-            <div className="w-20 h-20 rounded-full bg-[#f1f5f9] mx-auto flex items-center justify-center text-3xl">
-              🛒
+            <div className="relative w-20 h-20 mx-auto">
+              <div className="w-20 h-20 rounded-full bg-[#f1f5f9] border border-slate-200/80 mx-auto flex items-center justify-center animate-empty-cart-badge shadow-xs">
+                <svg
+                  className="w-9 h-9 text-[#0B1F3A]"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <circle cx="9" cy="21" r="1.5" fill="currentColor" stroke="currentColor" strokeWidth="1" />
+                  <circle cx="19" cy="21" r="1.5" fill="currentColor" stroke="currentColor" strokeWidth="1" />
+                </svg>
+              </div>
+              <div className="absolute inset-0 rounded-full border border-[#0B1F3A]/15 animate-ping pointer-events-none opacity-40 [animation-duration:2.5s]" />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 animate-empty-cart-text">
               <h2 className="text-xl font-bold text-[#0b1f3a]">Your Cart is Currently Empty</h2>
               <p className="text-xs sm:text-sm text-[#64748b] leading-relaxed">
                 Explore our reusable pen systems, prefilled refill cartridges, or lyophilised research vials to configure your order.
               </p>
             </div>
-            <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+            <div className="flex flex-wrap items-center justify-center gap-3 pt-2 animate-empty-cart-btn">
               <Link
                 href="/pen-sets"
                 className="px-5 py-2.5 rounded-xl bg-[#0b1f3a] hover:bg-[#16a6a3] text-white font-bold text-xs transition-colors shadow-xs"

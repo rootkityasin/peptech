@@ -140,23 +140,50 @@ export function CartDrawer() {
           data-name="02 Drawer Body - Items List"
         >
           {items.length === 0 ? (
-            <div className="flex flex-1 flex-col items-center justify-center py-16 text-center space-y-4">
-              <div className="size-16 rounded-full bg-slate-100 flex items-center justify-center text-2xl text-[#64748b]">
-                🛒
+            <div
+              key={isDrawerOpen ? "drawer-empty-open" : "drawer-empty-closed"}
+              className="flex flex-1 flex-col items-center justify-center py-16 text-center space-y-4"
+            >
+              <div className="relative">
+                <div className="w-16 h-16 rounded-full bg-slate-100/90 border border-slate-200/80 flex items-center justify-center shadow-xs animate-empty-cart-badge">
+                  <svg
+                    className="w-7 h-7 text-[#0b1f3a]"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <circle cx="9" cy="21" r="1.5" fill="currentColor" stroke="currentColor" strokeWidth="1" />
+                    <circle cx="19" cy="21" r="1.5" fill="currentColor" stroke="currentColor" strokeWidth="1" />
+                  </svg>
+                </div>
+                {/* Subtle gentle decorative pulse ring */}
+                <div className="absolute inset-0 rounded-full border border-[#0b1f3a]/15 animate-ping pointer-events-none opacity-40 [animation-duration:2.5s]" />
               </div>
-              <div className="space-y-1">
+
+              <div className="space-y-1 animate-empty-cart-text">
                 <h3 className="font-bold text-[#0b1f3a] text-base">Your cart is empty</h3>
                 <p className="text-xs text-[#64748b] max-w-[260px]">
                   Explore our Complete Pen Sets, Refill Cartridges, and Freeze-Dried Vials.
                 </p>
               </div>
-              <Link
-                href="/shop"
-                onClick={() => setIsDrawerOpen(false)}
-                className="btn-shimmer btn-press px-5 py-2.5 rounded-lg bg-[#0b1f3a] hover:bg-[#16335a] text-white font-semibold text-xs transition-colors shadow-sm"
-              >
-                Start Browsing
-              </Link>
+
+              <div className="animate-empty-cart-btn">
+                <Link
+                  href="/shop"
+                  onClick={() => setIsDrawerOpen(false)}
+                  className="btn-shimmer btn-press px-5 py-2.5 rounded-lg bg-[#0b1f3a] hover:bg-[#16335a] text-white font-semibold text-xs transition-colors shadow-sm inline-block"
+                >
+                  Start Browsing
+                </Link>
+              </div>
             </div>
           ) : (
             items.map((item) => {

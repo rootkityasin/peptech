@@ -233,3 +233,48 @@ body {
   animation: shimmer 1.1s ease-in-out infinite;
 }
 
+/* =========================================================================
+   Empty Cart Entrance Micro-Interactions & Classic Icon Animation
+   ========================================================================= */
+
+@keyframes empty-cart-entrance {
+  0% {
+    opacity: 0;
+    transform: scale(0.72) translateY(16px);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.08) translateY(-4px);
+  }
+  82% {
+    transform: scale(0.97) translateY(1px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes empty-cart-fade-up {
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-empty-cart-badge {
+  animation: empty-cart-entrance 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-empty-cart-text {
+  animation: empty-cart-fade-up 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.12s both;
+}
+
+.animate-empty-cart-btn {
+  animation: empty-cart-fade-up 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.22s both;
+}
+
