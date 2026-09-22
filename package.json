@@ -17,5 +17,8 @@
     "stripe"
   ],
   "author": "rootkityasin",
-  "license": "UNLICENSED"
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.0.0"
+  }
 }
