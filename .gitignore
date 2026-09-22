@@ -46,4 +46,6 @@ Thumbs.db
 # Scratch & Local Agent Tooling
 .agents/
 scratch/
+supabase/.temp/
+supabase/.branches/
 
