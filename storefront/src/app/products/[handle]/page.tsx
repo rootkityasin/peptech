@@ -1,6 +1,6 @@
 "use client"
 
-import React, { use, useState, useEffect } from "react"
+import React, { use, useState, useEffect, Suspense } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { COMPLETE_PEN_SET } from "@/data/products"
@@ -20,7 +20,7 @@ import { TrustBadgesStrip } from "@/components/product/TrustBadgesStrip"
 import { VerifiedReviewsSection } from "@/components/product/VerifiedReviewsSection"
 import { ResourceCardsSection } from "@/components/product/ResourceCardsSection"
 
-export default function ProductDetailPage({
+function ProductDetailContent({
   params,
 }: {
   params: Promise<{ handle: string }>
@@ -261,5 +261,17 @@ export default function ProductDetailPage({
       <ResourceCardsSection />
 
     </div>
+  )
+}
+
+export default function ProductDetailPage({
+  params,
+}: {
+  params: Promise<{ handle: string }>
+}) {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#f8fafc]" />}>
+      <ProductDetailContent params={params} />
+    </Suspense>
   )
 }

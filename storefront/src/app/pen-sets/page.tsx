@@ -1,3 +1,4 @@
+import { Suspense } from "react"
 import { ShopCatalog } from "@/components/catalog/ShopCatalog"
 
 export const metadata = {
@@ -6,6 +7,10 @@ export const metadata = {
 }
 
 export default function PenSetsPage() {
-  return <ShopCatalog initialCategory="pen-sets" />
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#f8fafc]" />}>
+      <ShopCatalog initialCategory="pen-sets" />
+    </Suspense>
+  )
 }
 
