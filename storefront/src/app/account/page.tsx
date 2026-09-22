@@ -110,35 +110,40 @@ function AccountContent() {
         } catch {}
 
         const savedToken = typeof window !== "undefined" ? localStorage.getItem("peptech_customer_token") : null
-        if (savedToken) {
-          try {
-            const medusaOrders = await getCustomerOrders(savedToken)
-            if (Array.isArray(medusaOrders) && medusaOrders.length > 0) {
-              const mapped = medusaOrders.map((mo: any) => ({
-                id: mo.display_id ? `PEP-${mo.display_id}` : mo.id.slice(0, 10).toUpperCase(),
+        try {
+          const medusaOrders = await getCustomerOrders(savedToken || undefined, customer.id, customer.email)
+          if (Array.isArray(medusaOrders) && medusaOrders.length > 0) {
+            const mapped = medusaOrders.map((mo: any) => {
+              const rawTotal = typeof mo.summary?.total === "number" ? mo.summary.total : (typeof mo.total === "number" ? mo.total : 0)
+              const displayTotal = rawTotal > 1000 ? rawTotal / 100 : rawTotal
+              const orderDisplayId = mo.display_id ? `PEP-${mo.display_id}` : mo.id.slice(0, 10).toUpperCase()
+              return {
+                id: orderDisplayId,
                 date: mo.created_at,
                 displayDate: new Date(mo.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }),
-                total: (mo.total || 0) / 100,
+                total: displayTotal,
                 status: mo.fulfillment_status === "delivered" ? "Delivered" : "Cold-Chain Packing",
-                trackingNumber: mo.metadata?.tracking_number || `GB-RM24-${mo.id.slice(0, 6).toUpperCase()}-CLD`,
-                paymentMethod: mo.metadata?.payment_method || "Secure Research Payment",
-                items: (mo.items || []).map((it: any) => ({
-                  id: it.id,
-                  title: it.title,
-                  subtitle: it.variant_title || "Standard Grade",
-                  price: (it.unit_price || 0) / 100,
-                  quantity: it.quantity,
-                  image: it.thumbnail || "/images/figma/152e353c4afaa5945905ac686de871b57ec2a770.png"
-                }))
-              }))
-              const existingIds = new Set(loadedOrders.map(o => o.id))
-              mapped.forEach(m => {
-                if (!existingIds.has(m.id)) loadedOrders.push(m)
-              })
-            }
-          } catch (e) {
-            console.warn("Could not fetch remote Medusa orders", e)
+                trackingNumber: mo.metadata?.tracking_number || `GB-RM24-${orderDisplayId.replace(/[^a-zA-Z0-9]/g, "")}-CLD`,
+                paymentMethod: mo.metadata?.payment_method || "Authorized Payment Card",
+                items: (mo.items || []).map((it: any) => {
+                  const itPrice = typeof it.unit_price === "number" ? it.unit_price : 0
+                  return {
+                    id: it.id,
+                    title: it.title,
+                    subtitle: it.variant_title || it.subtitle || "Laboratory RUO Grade",
+                    price: itPrice > 1000 ? itPrice / 100 : itPrice,
+                    quantity: it.quantity,
+                    image: it.thumbnail || "/images/figma/152e353c4afaa5945905ac686de871b57ec2a770.png"
+                  }
+                })
+              }
+            })
+            const mappedIds = new Set(mapped.map(m => m.id))
+            const dedupedLocal = loadedOrders.filter(o => !mappedIds.has(o.id))
+            loadedOrders = [...mapped, ...dedupedLocal]
           }
+        } catch (e) {
+          console.warn("Could not fetch remote Medusa orders", e)
         }
         setOrders(loadedOrders)
 

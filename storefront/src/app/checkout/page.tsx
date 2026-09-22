@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useCart } from "@/components/cart/CartContext"
 import { useCustomer } from "@/context/CustomerContext"
+import { createStoreOrder } from "@/lib/customer-api"
 import {
   AppleLogo,
   GoogleLogo,
@@ -16,7 +17,16 @@ import {
 
 export default function CheckoutPage() {
   const router = useRouter()
-  const { customer } = useCustomer()
+  const {
+    customer,
+    token,
+    isAuthenticated,
+    isLoading: isCustomerLoading,
+    login,
+    register,
+    logout,
+    addAddress,
+  } = useCustomer()
   const { items, subtotal, shippingCost, total, destination, setDestination, clearCart } = useCart()
   const [ruoAccepted, setRuoAccepted] = useState(false)
   const [billingSameAsShipping, setBillingSameAsShipping] = useState(true)
@@ -27,6 +37,20 @@ export default function CheckoutPage() {
   const [promoApplied, setPromoApplied] = useState(false)
   const [summaryExpanded, setSummaryExpanded] = useState(false)
   const [placedOrder, setPlacedOrder] = useState<any>(null)
+
+  // Researcher Authentication Gate States
+  const [authTab, setAuthTab] = useState<"signin" | "register">("signin")
+  const [authEmail, setAuthEmail] = useState("")
+  const [authPassword, setAuthPassword] = useState("")
+  const [authTitle, setAuthTitle] = useState("Dr.")
+  const [authFirstName, setAuthFirstName] = useState("")
+  const [authLastName, setAuthLastName] = useState("")
+  const [authCompany, setAuthCompany] = useState("")
+  const [authPhone, setAuthPhone] = useState("")
+  const [authComplianceAccepted, setAuthComplianceAccepted] = useState(false)
+  const [isAuthenticating, setIsAuthenticating] = useState(false)
+  const [authError, setAuthError] = useState<string | null>(null)
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null)
 
   // Form State
   const [formData, setFormData] = useState({
@@ -49,6 +73,9 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (customer) {
       const primaryAddr = customer.addresses?.[0]
+      if (primaryAddr && !selectedAddressId) {
+        setSelectedAddressId(primaryAddr.id)
+      }
       const fullName = [
         customer.metadata?.title,
         customer.first_name,
@@ -57,7 +84,7 @@ export default function CheckoutPage() {
 
       setFormData((prev) => ({
         ...prev,
-        email: prev.email || customer.email || "",
+        email: customer.email || prev.email || "",
         fullName: prev.fullName || fullName,
         phone: prev.phone || customer.phone || "",
         address1: prev.address1 || primaryAddr?.address_1 || "",
@@ -67,7 +94,84 @@ export default function CheckoutPage() {
         country: primaryAddr?.country_code?.toUpperCase() === "GB" ? "United Kingdom" : (destination === "UK" ? "United Kingdom" : "United States"),
       }))
     }
-  }, [customer, destination])
+  }, [customer, destination, selectedAddressId])
+
+  const selectSavedAddress = (addr: any) => {
+    setSelectedAddressId(addr.id)
+    const fullName = [
+      addr.first_name || customer?.first_name,
+      addr.last_name || customer?.last_name,
+    ].filter(Boolean).join(" ")
+
+    setFormData((prev) => ({
+      ...prev,
+      fullName: fullName || prev.fullName,
+      phone: addr.phone || prev.phone || customer?.phone || "",
+      address1: addr.address_1 || "",
+      address2: addr.address_2 || "",
+      city: addr.city || "",
+      zip: addr.postal_code || "",
+      country: addr.country_code?.toUpperCase() === "GB" ? "United Kingdom" : (destination === "UK" ? "United Kingdom" : "United States"),
+    }))
+  }
+
+  const handleAuthLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setAuthError(null)
+    if (!authEmail.trim() || !authPassword) {
+      setAuthError("Please provide both your institutional email and password.")
+      return
+    }
+    setIsAuthenticating(true)
+    try {
+      await login(authEmail.trim(), authPassword)
+    } catch (err: any) {
+      setAuthError(err.message || "Invalid credentials. Please verify your email and password.")
+    } finally {
+      setIsAuthenticating(false)
+    }
+  }
+
+  const handleAuthRegister = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setAuthError(null)
+    if (!authFirstName.trim() || !authLastName.trim()) {
+      setAuthError("Please enter your first and last name.")
+      return
+    }
+    if (!authEmail.trim() || !authEmail.includes("@")) {
+      setAuthError("Please enter a valid institutional email address.")
+      return
+    }
+    if (!authPassword || authPassword.length < 8) {
+      setAuthError("Password must be at least 8 characters long.")
+      return
+    }
+    if (!authComplianceAccepted) {
+      setAuthError("You must acknowledge the 18+ Research Use Only (RUO) laboratory compliance agreement.")
+      return
+    }
+    setIsAuthenticating(true)
+    try {
+      await register({
+        email: authEmail.trim(),
+        password: authPassword,
+        first_name: authFirstName.trim(),
+        last_name: authLastName.trim(),
+        company_name: authCompany.trim() || "Independent Research Laboratory",
+        phone: authPhone.trim() || undefined,
+        metadata: {
+          title: authTitle,
+          role: "Verified Clinical Researcher",
+          compliance_ack: true,
+        },
+      })
+    } catch (err: any) {
+      setAuthError(err.message || "Failed to complete researcher registration.")
+    } finally {
+      setIsAuthenticating(false)
+    }
+  }
 
   const hasSubscription = items.some((i) => i.isSubscription)
   const subscriptionSavings = items.reduce((acc, item) => {
@@ -97,28 +201,123 @@ export default function CheckoutPage() {
     }
   }
 
-  const handleSubmitOrder = (e: React.FormEvent) => {
+  const handleSubmitOrder = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!isAuthenticated || !customer) {
+      alert("Institutional researcher authentication is required to place an order. Please sign in or register.")
+      return
+    }
     if (!ruoAccepted) {
       alert("Please acknowledge and accept the 18+ Research Use Only (RUO) and Terms agreement to proceed.")
       return
     }
 
     setIsProcessing(true)
-    setTimeout(() => {
-      const newOrderNumber = Math.floor(10000 + Math.random() * 90000)
+    try {
       const cleanNum = formData.cardNumber.replace(/\s+/g, "")
       const last4 = cleanNum.slice(-4) || "4242"
       const cardType = cleanNum.startsWith("5") ? "Mastercard" : "Visa"
       const pMethod = paymentMethod === "card" ? `${cardType} ending in ${last4}` : "UK Faster Payments (Bank Transfer)"
+      const newOrderNumber = Math.floor(10000 + Math.random() * 90000)
+
+      // Step 1: Save new address to customer_address in PostgreSQL if not already present
+      if (formData.address1 && token) {
+        const addressAlreadyExists = customer.addresses?.some(
+          (a) => a.address_1?.toLowerCase().trim() === formData.address1.toLowerCase().trim() &&
+                 a.postal_code?.toLowerCase().trim() === formData.zip.toLowerCase().trim()
+        )
+        if (!addressAlreadyExists) {
+          try {
+            await addAddress({
+              first_name: customer.first_name || formData.fullName.split(" ")[0] || "Researcher",
+              last_name: customer.last_name || formData.fullName.split(" ").slice(1).join(" ") || "Account",
+              company: customer.company_name || undefined,
+              address_1: formData.address1,
+              address_2: formData.address2 || undefined,
+              city: formData.city,
+              country_code: formData.country === "United Kingdom" ? "gb" : "us",
+              postal_code: formData.zip,
+              phone: formData.phone || customer.phone || undefined,
+            })
+          } catch (addrErr) {
+            console.warn("Could not save address to customer profile:", addrErr)
+          }
+        }
+      }
+
+      // Step 2: Create real order in PostgreSQL database via Medusa 2.0 Order Module
+      const orderPayload = {
+        customer_id: customer.id,
+        email: customer.email,
+        currency_code: destination === "UK" ? "gbp" : "usd",
+        status: "pending",
+        metadata: {
+          engraving: formData.engraving || null,
+          payment_method: pMethod,
+          tracking_number: `GB-RM24-PEP${newOrderNumber}-CLD`,
+          destination,
+          ruo_verified: true,
+          ruo_acknowledged_at: new Date().toISOString(),
+          customer_name: formData.fullName || `${customer.first_name || ""} ${customer.last_name || ""}`.trim(),
+        },
+        shipping_address: {
+          first_name: customer.first_name || formData.fullName.split(" ")[0] || "Researcher",
+          last_name: customer.last_name || formData.fullName.split(" ").slice(1).join(" ") || "Account",
+          company: customer.company_name || "",
+          address_1: formData.address1,
+          address_2: formData.address2 || "",
+          city: formData.city,
+          country_code: formData.country === "United Kingdom" ? "gb" : "us",
+          postal_code: formData.zip,
+          phone: formData.phone || customer.phone || "",
+        },
+        billing_address: billingSameAsShipping ? undefined : {
+          first_name: customer.first_name || formData.fullName.split(" ")[0] || "Researcher",
+          last_name: customer.last_name || formData.fullName.split(" ").slice(1).join(" ") || "Account",
+          company: customer.company_name || "",
+          address_1: formData.address1,
+          address_2: formData.address2 || "",
+          city: formData.city,
+          country_code: formData.country === "United Kingdom" ? "gb" : "us",
+          postal_code: formData.zip,
+          phone: formData.phone || customer.phone || "",
+        },
+        items: items.map((it) => ({
+          title: it.title,
+          quantity: it.quantity,
+          unit_price: Math.round((it.isSubscription && itemDiscount(it) ? it.price * (1 - (it.discountPercent || 10) / 100) : it.price) * 100) / 100,
+          thumbnail: it.image || "/images/figma/152e353c4afaa5945905ac686de871b57ec2a770.png",
+          metadata: {
+            format: it.format,
+            is_subscription: it.isSubscription,
+            options: it.options,
+          }
+        }))
+      }
+
+      function itemDiscount(item: any) {
+        return Boolean(item.isSubscription && item.discountPercent)
+      }
+
+      let createdMedusaOrder: any = null
+      try {
+        const res = await createStoreOrder(orderPayload, token || undefined)
+        createdMedusaOrder = res?.order
+      } catch (apiErr) {
+        console.warn("Could not write order via Medusa API, writing to session store:", apiErr)
+      }
+
+      const orderDisplayId = createdMedusaOrder?.display_id ? `PEP-${createdMedusaOrder.display_id}` : `PEP-${newOrderNumber}`
+      const orderDbId = createdMedusaOrder?.id || `order_pep_${newOrderNumber}`
 
       const orderData = {
-        id: `PEP-${newOrderNumber}`,
-        date: new Date().toISOString(),
+        id: orderDisplayId,
+        dbId: orderDbId,
+        date: createdMedusaOrder?.created_at || new Date().toISOString(),
         displayDate: new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }),
         total: finalTotal,
         status: "Cold-Chain Packing",
-        trackingNumber: `GB-RM24-PEP${newOrderNumber}-CLD`,
+        trackingNumber: `GB-RM24-${orderDisplayId.replace(/[^a-zA-Z0-9]/g, "")}-CLD`,
         paymentMethod: pMethod,
         items: items.map((it) => ({
           id: it.id,
@@ -128,7 +327,7 @@ export default function CheckoutPage() {
           quantity: it.quantity,
           image: it.image || "/images/figma/152e353c4afaa5945905ac686de871b57ec2a770.png",
         })),
-        customerName: formData.fullName || (customer ? `${customer.first_name} ${customer.last_name}` : "Researcher"),
+        customerName: formData.fullName || `${customer.first_name || ""} ${customer.last_name || ""}`.trim() || "Researcher",
         shippingAddress: `${formData.address1}${formData.address2 ? ", " + formData.address2 : ""}, ${formData.city}, ${formData.zip}`,
       }
 
@@ -138,68 +337,61 @@ export default function CheckoutPage() {
         sessionStorage.setItem("peptech_last_order", JSON.stringify(orderData))
       } catch {}
 
-      if (customer?.id) {
-        // Save to customer's order history
+      // Handle subscription storage if present
+      if (hasSubscription) {
         try {
-          const rawOrders = localStorage.getItem(`peptech_customer_orders_${customer.id}`)
-          const existingOrders = rawOrders ? JSON.parse(rawOrders) : []
-          existingOrders.unshift(orderData)
-          localStorage.setItem(`peptech_customer_orders_${customer.id}`, JSON.stringify(existingOrders))
-        } catch {}
-
-        // If items contained subscription, save to customer subscriptions
-        if (hasSubscription) {
-          try {
-            const rawSubs = localStorage.getItem(`peptech_customer_subscriptions_${customer.id}`)
-            const existingSubs = rawSubs ? JSON.parse(rawSubs) : []
-            const subItems = items.filter(it => it.isSubscription)
-            subItems.forEach((it) => {
-              const subId = `SUB-${it.id.slice(0, 3).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`
-              const nextBilling = new Date()
-              nextBilling.setDate(nextBilling.getDate() + 28)
-              existingSubs.unshift({
-                id: subId,
-                title: it.title,
-                frequency: "Every 28 Days (Standard Cycle)",
-                status: "Active",
-                price: it.price * (1 - (it.discountPercent || 10) / 100),
-                nextBillingDate: nextBilling.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }),
-                image: it.image,
-                quantity: it.quantity,
-                cardEnding: last4,
-                shipsTo: formData.address1 ? `${formData.city} (${formData.fullName})` : "Laboratory Address",
-              })
+          const rawSubs = localStorage.getItem(`peptech_customer_subscriptions_${customer.id}`)
+          const existingSubs = rawSubs ? JSON.parse(rawSubs) : []
+          const subItems = items.filter(it => it.isSubscription)
+          subItems.forEach((it) => {
+            const subId = `SUB-${it.id.slice(0, 3).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`
+            const nextBilling = new Date()
+            nextBilling.setDate(nextBilling.getDate() + 28)
+            existingSubs.unshift({
+              id: subId,
+              title: it.title,
+              frequency: "Every 28 Days (Standard Cycle)",
+              status: "Active",
+              price: it.price * (1 - (it.discountPercent || 10) / 100),
+              nextBillingDate: nextBilling.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }),
+              image: it.image,
+              quantity: it.quantity,
+              cardEnding: last4,
+              shipsTo: formData.address1 ? `${formData.city} (${formData.fullName})` : "Laboratory Address",
             })
-            localStorage.setItem(`peptech_customer_subscriptions_${customer.id}`, JSON.stringify(existingSubs))
-          } catch {}
-        }
+          })
+          localStorage.setItem(`peptech_customer_subscriptions_${customer.id}`, JSON.stringify(existingSubs))
+        } catch {}
+      }
 
-        // If paid with card, save card to saved payment cards
-        if (paymentMethod === "card" && cleanNum.length >= 4) {
-          try {
-            const rawCards = localStorage.getItem(`peptech_customer_cards_${customer.id}`)
-            const existingCards = rawCards ? JSON.parse(rawCards) : []
-            if (!existingCards.some((c: any) => c.last4 === last4)) {
-              existingCards.push({
-                id: `card_${Date.now()}`,
-                brand: cardType.toLowerCase(),
-                title: `${cardType} Corporate`,
-                last4,
-                expiry: formData.cardExpiry || "12/28",
-                cardholder: formData.fullName,
-                billingAddress: `${formData.address1}, ${formData.city}`,
-                isDefault: existingCards.length === 0,
-              })
-              localStorage.setItem(`peptech_customer_cards_${customer.id}`, JSON.stringify(existingCards))
-            }
-          } catch {}
-        }
+      // If card, save payment card
+      if (paymentMethod === "card" && cleanNum.length >= 4) {
+        try {
+          const rawCards = localStorage.getItem(`peptech_customer_cards_${customer.id}`)
+          const existingCards = rawCards ? JSON.parse(rawCards) : []
+          if (!existingCards.some((c: any) => c.last4 === last4)) {
+            existingCards.push({
+              id: `card_${Date.now()}`,
+              brand: cardType.toLowerCase(),
+              title: `${cardType} Corporate`,
+              last4,
+              expiry: formData.cardExpiry || "12/28",
+              cardholder: formData.fullName,
+              billingAddress: `${formData.address1}, ${formData.city}`,
+              isDefault: existingCards.length === 0,
+            })
+            localStorage.setItem(`peptech_customer_cards_${customer.id}`, JSON.stringify(existingCards))
+          }
+        } catch {}
       }
 
       clearCart()
-      setIsProcessing(false)
       setIsSuccess(true)
-    }, 1200)
+    } catch (err: any) {
+      alert(`Order submission error: ${err.message || "Failed to place order. Please try again."}`)
+    } finally {
+      setIsProcessing(false)
+    }
   }
 
   // If order succeeded, render the 100% Figma Node 52:8419 Payment Success view
@@ -712,12 +904,265 @@ export default function CheckoutPage() {
       {/* RIGHT FORM COLUMN (Full Screen Half, White)              */}
       {/* ======================================================== */}
       <div className="w-full lg:w-[54%] xl:w-[56%] 2xl:w-[58%] bg-white min-h-screen flex justify-start">
-        <form
-          onSubmit={handleSubmitOrder}
-          className="w-full max-w-[680px] px-4 sm:px-8 lg:px-12 xl:px-16 py-6 sm:py-10 flex flex-col gap-[20px]"
-          data-node-id="50:8087"
-          data-name="Right Form Column"
-        >
+        {isCustomerLoading ? (
+          <div className="w-full max-w-[680px] px-4 sm:px-8 lg:px-12 xl:px-16 py-16 flex flex-col items-center justify-center min-h-[400px]">
+            <div className="w-8 h-8 border-2 border-[#16a6a3] border-t-transparent rounded-full animate-spin" />
+            <p className="mt-4 text-xs font-semibold text-[#64748b]">Verifying researcher session...</p>
+          </div>
+        ) : !isAuthenticated || !customer ? (
+          <div className="w-full max-w-[680px] px-4 sm:px-8 lg:px-12 xl:px-16 py-6 sm:py-10 flex flex-col gap-6">
+            {/* Header Compliance Box */}
+            <div className="flex flex-col gap-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#0b1f3a]/5 border border-[#0b1f3a]/10 w-fit">
+                <span className="w-2 h-2 rounded-full bg-[#16a6a3] animate-pulse" />
+                <span className="text-[11px] font-bold text-[#0b1f3a] uppercase tracking-wider">
+                  UK Laboratory Chemical Control Standard
+                </span>
+              </div>
+              <h2 className="text-2xl font-bold text-[#0b1f3a] tracking-tight">
+                Researcher Authentication Required
+              </h2>
+              <p className="text-[13px] text-[#64748b] leading-relaxed">
+                Per UK &amp; international laboratory peptide regulations, all orders must be associated with an authenticated institutional researcher or authorized laboratory account. Guest checkout is disabled.
+              </p>
+            </div>
+
+            {/* Auth Tab Switcher */}
+            <div className="flex rounded-xl bg-[#f1f5f9] p-1 border border-slate-200">
+              <button
+                type="button"
+                onClick={() => { setAuthTab("signin"); setAuthError(null); }}
+                className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  authTab === "signin"
+                    ? "bg-white text-[#0b1f3a] shadow-xs"
+                    : "text-[#64748b] hover:text-[#0b1f3a]"
+                }`}
+              >
+                Sign In to Existing Account
+              </button>
+              <button
+                type="button"
+                onClick={() => { setAuthTab("register"); setAuthError(null); }}
+                className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  authTab === "register"
+                    ? "bg-white text-[#0b1f3a] shadow-xs"
+                    : "text-[#64748b] hover:text-[#0b1f3a]"
+                }`}
+              >
+                Register Verified Researcher
+              </button>
+            </div>
+
+            {/* Error Notification */}
+            {authError && (
+              <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-start gap-2.5">
+                <span className="text-sm font-bold">⚠</span>
+                <span>{authError}</span>
+              </div>
+            )}
+
+            {/* Sign In Form */}
+            {authTab === "signin" ? (
+              <form onSubmit={handleAuthLogin} className="flex flex-col gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-[#475569]">
+                    Institutional Researcher Email
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={authEmail}
+                    onChange={(e) => setAuthEmail(e.target.value)}
+                    placeholder="researcher@biotech-institute.org"
+                    className="h-11 px-3.5 rounded-lg border border-[#cbd5e1] text-xs text-[#0b1f3a] focus:outline-none focus:ring-1 focus:ring-[#16a6a3] focus:border-[#16a6a3]"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-[#475569]">
+                    Account Password
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    value={authPassword}
+                    onChange={(e) => setAuthPassword(e.target.value)}
+                    placeholder="••••••••••••"
+                    className="h-11 px-3.5 rounded-lg border border-[#cbd5e1] text-xs text-[#0b1f3a] focus:outline-none focus:ring-1 focus:ring-[#16a6a3] focus:border-[#16a6a3]"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isAuthenticating}
+                  className="mt-2 h-12 rounded-xl bg-[#0b1f3a] hover:bg-[#162a45] text-white text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+                >
+                  {isAuthenticating ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Authenticating Credentials...</span>
+                    </>
+                  ) : (
+                    <span>Sign In &amp; Proceed to Checkout →</span>
+                  )}
+                </button>
+              </form>
+            ) : (
+              /* Register Form */
+              <form onSubmit={handleAuthRegister} className="flex flex-col gap-4">
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-[#475569]">Title</label>
+                    <select
+                      value={authTitle}
+                      onChange={(e) => setAuthTitle(e.target.value)}
+                      className="h-11 px-3 rounded-lg border border-[#cbd5e1] text-xs text-[#0b1f3a] bg-white focus:outline-none focus:ring-1 focus:ring-[#16a6a3]"
+                    >
+                      <option value="Dr.">Dr.</option>
+                      <option value="Prof.">Prof.</option>
+                      <option value="Mr.">Mr.</option>
+                      <option value="Ms.">Ms.</option>
+                      <option value="Mx.">Mx.</option>
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1.5 col-span-2">
+                    <label className="text-xs font-semibold text-[#475569]">First &amp; Last Name</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        type="text"
+                        required
+                        value={authFirstName}
+                        onChange={(e) => setAuthFirstName(e.target.value)}
+                        placeholder="First"
+                        className="h-11 px-3 rounded-lg border border-[#cbd5e1] text-xs text-[#0b1f3a] focus:outline-none focus:ring-1 focus:ring-[#16a6a3]"
+                      />
+                      <input
+                        type="text"
+                        required
+                        value={authLastName}
+                        onChange={(e) => setAuthLastName(e.target.value)}
+                        placeholder="Last"
+                        className="h-11 px-3 rounded-lg border border-[#cbd5e1] text-xs text-[#0b1f3a] focus:outline-none focus:ring-1 focus:ring-[#16a6a3]"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-[#475569]">
+                    Institutional / Corporate Email
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={authEmail}
+                    onChange={(e) => setAuthEmail(e.target.value)}
+                    placeholder="researcher@biotech-lab.org"
+                    className="h-11 px-3.5 rounded-lg border border-[#cbd5e1] text-xs text-[#0b1f3a] focus:outline-none focus:ring-1 focus:ring-[#16a6a3]"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-[#475569]">Laboratory / Institution</label>
+                    <input
+                      type="text"
+                      value={authCompany}
+                      onChange={(e) => setAuthCompany(e.target.value)}
+                      placeholder="e.g. Cambridge Biomedical Hub"
+                      className="h-11 px-3.5 rounded-lg border border-[#cbd5e1] text-xs text-[#0b1f3a] focus:outline-none focus:ring-1 focus:ring-[#16a6a3]"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-[#475569]">Contact Phone</label>
+                    <input
+                      type="tel"
+                      value={authPhone}
+                      onChange={(e) => setAuthPhone(e.target.value)}
+                      placeholder="+44 7911 123456"
+                      className="h-11 px-3.5 rounded-lg border border-[#cbd5e1] text-xs text-[#0b1f3a] focus:outline-none focus:ring-1 focus:ring-[#16a6a3]"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-[#475569]">
+                    Account Password (min 8 characters)
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    minLength={8}
+                    value={authPassword}
+                    onChange={(e) => setAuthPassword(e.target.value)}
+                    placeholder="••••••••••••"
+                    className="h-11 px-3.5 rounded-lg border border-[#cbd5e1] text-xs text-[#0b1f3a] focus:outline-none focus:ring-1 focus:ring-[#16a6a3]"
+                  />
+                </div>
+
+                <div className="flex items-start gap-2.5 pt-1">
+                  <input
+                    type="checkbox"
+                    id="authComplianceCheckbox"
+                    checked={authComplianceAccepted}
+                    onChange={(e) => setAuthComplianceAccepted(e.target.checked)}
+                    className="mt-1 h-4 w-4 rounded border-slate-300 text-[#16a6a3] focus:ring-[#16a6a3] cursor-pointer"
+                  />
+                  <label htmlFor="authComplianceCheckbox" className="text-[12px] text-[#64748b] leading-snug cursor-pointer">
+                    I confirm that I am 18 years of age or older, authorized to purchase laboratory research materials, and that compounds will be used strictly for in-vitro scientific evaluation.
+                  </label>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isAuthenticating}
+                  className="mt-2 h-12 rounded-xl bg-[#00C5A0] hover:bg-[#00B08E] text-[#0B1F3A] text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+                >
+                  {isAuthenticating ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-[#0B1F3A] border-t-transparent rounded-full animate-spin" />
+                      <span>Creating Researcher Profile...</span>
+                    </>
+                  ) : (
+                    <span>Register &amp; Proceed to Checkout →</span>
+                  )}
+                </button>
+              </form>
+            )}
+          </div>
+        ) : (
+          <form
+            onSubmit={handleSubmitOrder}
+            className="w-full max-w-[680px] px-4 sm:px-8 lg:px-12 xl:px-16 py-6 sm:py-10 flex flex-col gap-[20px]"
+            data-node-id="50:8087"
+            data-name="Right Form Column"
+          >
+            {/* Authenticated Researcher Status Card */}
+            <div className="bg-[#f0fdf9] border border-[#a7f3d0] rounded-xl p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-[#16a6a3] text-white flex items-center justify-center font-bold text-xs shrink-0">
+                  ✓
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[11px] font-bold text-[#0f766e] uppercase tracking-wider">
+                    Verified Researcher Account
+                  </p>
+                  <p className="text-xs font-bold text-[#0b1f3a] truncate">
+                    {[customer.metadata?.title, customer.first_name, customer.last_name].filter(Boolean).join(" ")} ({customer.email})
+                  </p>
+                  {customer.company_name && (
+                    <p className="text-[11px] text-[#64748b] truncate">{customer.company_name}</p>
+                  )}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => logout()}
+                className="text-xs font-medium text-[#64748b] hover:text-[#0b1f3a] underline underline-offset-2 transition-colors cursor-pointer shrink-0 ml-2"
+              >
+                Sign Out / Switch
+              </button>
+            </div>
         {/* Express Checkout Box */}
         <div
           className="flex flex-col gap-[8px] items-start w-full"
@@ -793,6 +1238,63 @@ export default function CheckoutPage() {
           >
             Shipping information
           </p>
+
+          {/* Saved Addresses Picker from PostgreSQL customer_address table */}
+          {customer?.addresses && customer.addresses.length > 0 && (
+            <div className="flex flex-col gap-2 w-full p-3.5 bg-[#f8fafc] border border-slate-200 rounded-xl">
+              <div className="flex items-center justify-between">
+                <span className="text-[11.5px] font-bold text-[#475569] uppercase tracking-wider">
+                  Saved Laboratory Delivery Addresses ({customer.addresses.length})
+                </span>
+                {selectedAddressId && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedAddressId(null)
+                      setFormData((prev) => ({
+                        ...prev,
+                        address1: "",
+                        address2: "",
+                        city: "",
+                        zip: "",
+                      }))
+                    }}
+                    className="text-[11.5px] text-[#16a6a3] hover:underline font-semibold cursor-pointer"
+                  >
+                    + Enter New Address
+                  </button>
+                )}
+              </div>
+              <div className="grid grid-cols-1 gap-2">
+                {customer.addresses.map((addr) => (
+                  <button
+                    key={addr.id}
+                    type="button"
+                    onClick={() => selectSavedAddress(addr)}
+                    className={`text-left p-3 rounded-lg border text-xs transition-all cursor-pointer flex items-center justify-between ${
+                      selectedAddressId === addr.id
+                        ? "border-[#16a6a3] bg-[#f0fdf9] shadow-xs ring-1 ring-[#16a6a3]"
+                        : "border-[#e2e8f0] bg-white hover:border-slate-300"
+                    }`}
+                  >
+                    <div className="min-w-0 pr-2">
+                      <p className="font-semibold text-[#0b1f3a]">
+                        {addr.first_name} {addr.last_name} {addr.company ? `• ${addr.company}` : ""}
+                      </p>
+                      <p className="text-[#64748b] truncate">
+                        {addr.address_1}{addr.address_2 ? `, ${addr.address_2}` : ""}, {addr.city}, {addr.postal_code}
+                      </p>
+                    </div>
+                    {selectedAddressId === addr.id ? (
+                      <span className="text-[#16a6a3] font-bold text-xs shrink-0">Selected ✓</span>
+                    ) : (
+                      <span className="text-slate-400 text-xs shrink-0">Use this</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Email Field Group */}
           <div
@@ -1340,7 +1842,9 @@ export default function CheckoutPage() {
           </div>
         </div>
       </form>
+    )}
     </div>
   </div>
 )
 }
+

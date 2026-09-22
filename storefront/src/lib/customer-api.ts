@@ -295,23 +295,78 @@ export async function deleteCustomerAddress(token: string, addressId: string): P
 }
 
 /**
- * Fetch authenticated customer's order history from Medusa 2.0 store API
+ * Fetch authenticated customer's order history from Medusa 2.0 PostgreSQL database
  */
-export async function getCustomerOrders(token: string): Promise<any[]> {
+export async function getCustomerOrders(token?: string, customerId?: string, email?: string): Promise<any[]> {
   try {
-    const response = await fetch(`${BACKEND_URL}/store/orders?fields=*items,*items.variant,*shipping_address`, {
+    const params = new URLSearchParams()
+    if (customerId) params.append("customer_id", customerId)
+    if (email) params.append("email", email)
+
+    const headers: Record<string, string> = {
+      "x-publishable-api-key": PUBLISHABLE_KEY,
+    }
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`
+    }
+
+    // Attempt custom order lookup directly connected to Medusa 2.0 PostgreSQL Order Module
+    const customResponse = await fetch(`${BACKEND_URL}/store/custom/orders?${params.toString()}`, {
       method: "GET",
-      headers: {
-        "Authorization": `Bearer ${token}`,
-        "x-publishable-api-key": PUBLISHABLE_KEY,
-      },
+      headers,
     })
-    if (!response.ok) return []
-    const data = await response.json()
-    return data.orders || []
+
+    if (customResponse.ok) {
+      const data = await customResponse.json()
+      if (Array.isArray(data.orders)) {
+        return data.orders
+      }
+    }
+
+    // Fallback to standard Medusa store orders if authenticated with bearer token
+    if (token) {
+      const response = await fetch(`${BACKEND_URL}/store/orders?fields=*items,*items.variant,*shipping_address`, {
+        method: "GET",
+        headers,
+      })
+      if (response.ok) {
+        const data = await response.json()
+        return data.orders || []
+      }
+    }
+
+    return []
   } catch (err) {
     console.warn("Failed to fetch customer orders from Medusa:", err)
     return []
   }
 }
+
+/**
+ * Create a new real order in Medusa 2.0 PostgreSQL database linked to customer account
+ */
+export async function createStoreOrder(payload: any, token?: string): Promise<{ order: any }> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "x-publishable-api-key": PUBLISHABLE_KEY,
+  }
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`
+  }
+
+  const response = await fetch(`${BACKEND_URL}/store/custom/orders`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(payload),
+  })
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}))
+    throw new Error(errorData.message || "Failed to persist order to the database.")
+  }
+
+  const data = await response.json()
+  return data
+}
+
 
