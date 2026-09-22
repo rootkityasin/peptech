@@ -625,8 +625,8 @@ export default function HomePage() {
 
                 {/* Feature 2: Small Testing. A Bigger Tomorrow. */}
                 <div className="bg-white/[0.05] lg:bg-transparent p-3.5 sm:p-4 lg:p-0 rounded-xl border border-white/[0.08] lg:border-none flex flex-col sm:flex-row lg:flex-row items-start gap-2.5 sm:gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-[#00d2ff]/15 border border-[#00d2ff]/30 flex items-center justify-center shrink-0">
-                    <img src="/images/figma/icon-target.svg" alt="Target" className="w-[18px] h-[18px]" />
+                  <div className="w-8 h-8 rounded-lg bg-[#00C5A0]/15 border border-[#00C5A0]/30 flex items-center justify-center shrink-0">
+                    <img src="/images/figma/icon-banner-target.svg" alt="Target" className="w-[18px] h-[18px]" />
                   </div>
                   <div>
                     <div className="font-bold text-[13px] sm:text-[14px] text-white leading-[18px] sm:leading-[20px]">
