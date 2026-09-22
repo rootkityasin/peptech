@@ -31,8 +31,18 @@ export function ProductBuyBox({
   const [purchaseType, setPurchaseType] = useState<"one-time" | "subscription">("one-time")
   const [selectedCartridge, setSelectedCartridge] = useState(CARTRIDGE_OPTIONS[0])
   const [isCartridgeOpen, setIsCartridgeOpen] = useState(false)
+  const dropdownRef = React.useRef<HTMLDivElement>(null)
 
-  // Sync default cartridge if title specifies model
+  // Click outside listener to smoothly close dropdown
+  React.useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsCartridgeOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
   React.useEffect(() => {
     if (title) {
       const lower = title.toLowerCase()
@@ -186,13 +196,17 @@ export function ProductBuyBox({
       <div className="flex flex-col gap-[14px] items-start w-full relative z-20">
         
         {/* Dropdown 1: Select Prefilled Cartridge */}
-        <div className="flex flex-col gap-[6px] items-start w-full relative">
+        <div ref={dropdownRef} className="flex flex-col gap-[6px] items-start w-full relative">
           <label className="font-semibold text-[#0a1f3b] text-[12px]">
             Select Prefilled Cartridge (28-Day Refill)
           </label>
           <div
             onClick={() => setIsCartridgeOpen(!isCartridgeOpen)}
-            className="bg-white border-[#e3e8f0] border-[1.5px] rounded-[8px] px-[16px] py-[11px] flex items-center justify-between w-full cursor-pointer hover:border-slate-400 transition-colors"
+            className={`bg-white border-[1.5px] rounded-[8px] px-[16px] py-[11px] flex items-center justify-between w-full cursor-pointer transition-all duration-300 ${
+              isCartridgeOpen
+                ? "border-[#16a6a3] shadow-xs ring-1 ring-[#16a6a3]/20"
+                : "border-[#e3e8f0] hover:border-slate-400"
+            }`}
           >
             <span className="font-medium text-[#0a1f3b] text-[13px] truncate pr-2">
               {selectedCartridge.name}
@@ -201,36 +215,46 @@ export function ProductBuyBox({
               <span className="bg-[#e6fffa] text-[#17a6a3] text-[10px] font-semibold px-[8px] py-[3px] rounded-[4px]">
                 {selectedCartridge.badge}
               </span>
-              <img
-                src="/images/figma/c0856f3300fb92c49494e087adbcfe6165132c56.svg"
-                alt=""
-                className={`size-[16px] transition-transform ${isCartridgeOpen ? "rotate-180" : ""}`}
-              />
+              <svg
+                className={`w-4 h-4 transition-transform duration-500 ease-in-out transform ${
+                  isCartridgeOpen ? "rotate-180 text-[#16a6a3]" : "rotate-0 text-[#64748b]"
+                }`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2.5}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
             </div>
           </div>
 
-          {/* Cartridge Options Menu */}
-          {isCartridgeOpen && (
-            <div className="absolute top-[68px] left-0 w-full bg-white border border-[#e2e8f0] rounded-[8px] shadow-lg z-30 py-1 divide-y divide-slate-100">
-              {CARTRIDGE_OPTIONS.map((c) => (
-                <div
-                  key={c.id}
-                  onClick={() => {
-                    setSelectedCartridge(c)
-                    setIsCartridgeOpen(false)
-                  }}
-                  className={`px-4 py-2.5 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors ${
-                    selectedCartridge.id === c.id ? "bg-cyan-50/50" : ""
-                  }`}
-                >
-                  <span className="text-[13px] font-medium text-[#0b1f3a]">{c.name}</span>
-                  <span className="bg-[#e6fffa] text-[#17a6a3] text-[10px] font-semibold px-[6px] py-[2px] rounded">
-                    {c.badge}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
+          {/* Cartridge Options Menu with smooth FAQ-like transition */}
+          <div
+            className={`absolute top-[68px] left-0 w-full bg-white border border-[#e2e8f0] rounded-[8px] shadow-xl z-30 py-1 divide-y divide-slate-100 transition-all duration-500 ease-in-out transform origin-top ${
+              isCartridgeOpen
+                ? "opacity-100 scale-y-100 translate-y-0 pointer-events-auto"
+                : "opacity-0 scale-y-95 -translate-y-2 pointer-events-none"
+            }`}
+          >
+            {CARTRIDGE_OPTIONS.map((c) => (
+              <div
+                key={c.id}
+                onClick={() => {
+                  setSelectedCartridge(c)
+                  setIsCartridgeOpen(false)
+                }}
+                className={`px-4 py-2.5 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors ${
+                  selectedCartridge.id === c.id ? "bg-cyan-50/50" : ""
+                }`}
+              >
+                <span className="text-[13px] font-medium text-[#0b1f3a]">{c.name}</span>
+                <span className="bg-[#e6fffa] text-[#17a6a3] text-[10px] font-semibold px-[6px] py-[2px] rounded">
+                  {c.badge}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
 
       </div>
