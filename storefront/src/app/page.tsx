@@ -219,7 +219,7 @@ export default function HomePage() {
 
             {/* Right Column on Desktop, First on Mobile: Hero Presentation Kit Mockup */}
             <div className="order-1 lg:order-2 lg:col-span-6 flex flex-col items-center lg:items-end justify-center">
-              <div className="relative w-full max-w-[580px] h-[220px] xs:h-[250px] sm:h-[320px] lg:h-[440px] flex items-center justify-center">
+              <div className="relative w-full max-w-[580px] h-[300px] xs:h-[340px] sm:h-[400px] lg:h-[440px] flex items-center justify-center">
                 <Image
                   src="/images/figma/hero-presentation-box.png"
                   alt="PEPTECH® Reusable Injection Pen System Kit Presentation"
@@ -227,24 +227,24 @@ export default function HomePage() {
                   className="object-contain drop-shadow-xl"
                   priority
                 />
-              </div>
 
-              {/* Mobile / Tablet Action Buttons - Brought higher & refined slightly smaller size */}
-              <div className="lg:hidden flex flex-row items-center justify-center gap-2.5 sm:gap-3 pt-1 pb-1 w-full max-w-[360px] px-3">
-                <Link
-                  href="/products/complete-pen-set"
-                  className="btn-shimmer btn-press flex-1 sm:flex-initial py-2.5 sm:py-3 px-4 sm:px-5 rounded-xl bg-[#0B1F3A] hover:bg-[#162e52] text-white text-[13px] sm:text-[13.5px] font-semibold transition-all shadow-md hover:shadow-xl inline-flex items-center justify-center gap-1.5 group cursor-pointer text-center whitespace-nowrap"
-                >
-                  <span>Shop All Products</span>
-                  <span className="transition-transform duration-200 group-hover:translate-x-0.5">→</span>
-                </Link>
-                
-                <Link
-                  href="/how-it-works"
-                  className="btn-press flex-1 sm:flex-initial py-2.5 sm:py-3 px-4 sm:px-5 rounded-xl bg-white hover:bg-slate-50 text-[#0B1F3A] border border-[#CBD5E1] hover:border-[#0B1F3A] text-[13px] sm:text-[13.5px] font-semibold transition-all shadow-xs hover:shadow-md inline-flex items-center justify-center cursor-pointer text-center whitespace-nowrap"
-                >
-                  Learn More
-                </Link>
+                {/* Mobile / Tablet Action Buttons - Overlaid on the image in empty space without blocking kit elements */}
+                <div className="lg:hidden absolute left-2.5 xs:left-3.5 sm:left-6 bottom-1.5 xs:bottom-2 sm:bottom-3 z-10 flex flex-row items-center gap-2 sm:gap-2.5 max-w-[340px]">
+                  <Link
+                    href="/products/complete-pen-set"
+                    className="btn-shimmer btn-press py-2.5 sm:py-3 px-3.5 sm:px-4 rounded-xl bg-[#0B1F3A] hover:bg-[#162e52] text-white text-[12px] sm:text-[13px] font-bold transition-all shadow-xl hover:shadow-2xl inline-flex items-center justify-center gap-1.5 group cursor-pointer whitespace-nowrap"
+                  >
+                    <span>Shop All Products</span>
+                    <span className="transition-transform duration-200 group-hover:translate-x-0.5">→</span>
+                  </Link>
+                  
+                  <Link
+                    href="/how-it-works"
+                    className="btn-press py-2.5 sm:py-3 px-3.5 sm:px-4 rounded-xl bg-white/95 hover:bg-white text-[#0B1F3A] border border-[#CBD5E1] hover:border-[#0B1F3A] text-[12px] sm:text-[13px] font-bold transition-all shadow-lg backdrop-blur-xs inline-flex items-center justify-center cursor-pointer whitespace-nowrap"
+                  >
+                    Learn More
+                  </Link>
+                </div>
               </div>
             </div>
 
