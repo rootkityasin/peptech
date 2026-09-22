@@ -45,15 +45,16 @@ export function Pen3DCanvas({
       const aspect = w / h
       const fovRad = THREE.MathUtils.degToRad(cameraRef.current.fov)
       const penLength = 0.165
+      const isMobile = w < 768
       
-      // Natural Studio Distance & Lens Framing:
-      // Pen occupies ~68% width on desktop and ~78% on mobile with elegant breathing room
-      const targetWidthPercent = aspect > 2.0 ? 0.68 : 0.78
+      // Studio Distance & Lens Framing:
+      // Pen occupies ~94% width on mobile (bold & prominent), ~68% on wide desktop
+      const targetWidthPercent = isMobile ? 0.94 : (aspect > 2.0 ? 0.68 : 0.78)
       const visibleWidth = penLength / targetWidthPercent
       const halfFovRad = fovRad / 2
       const distWidth = (visibleWidth / 2) / (aspect * Math.tan(halfFovRad))
-      const distHeight = (0.020 / 0.28) / (2 * Math.tan(halfFovRad))
-      const dist = Math.max(distWidth, distHeight, 0.12)
+      const distHeight = (0.020 / (isMobile ? 0.50 : 0.28)) / (2 * Math.tan(halfFovRad))
+      const dist = Math.max(distWidth, distHeight, 0.08)
 
       cameraRef.current.position.set(0, 0.001, dist)
       controlsRef.current.target.set(0, 0, 0)
@@ -161,14 +162,15 @@ export function Pen3DCanvas({
 
       const fovRad = THREE.MathUtils.degToRad(camera.fov)
       const penLength = 0.165
-      // Natural Studio Distance & Lens Framing:
-      // Pen occupies ~68% width on desktop and ~78% on mobile with elegant breathing room
-      const targetWidthPercent = aspect > 2.0 ? 0.68 : 0.78
+      const isMobile = w < 768
+      // Studio Distance & Lens Framing:
+      // Pen occupies ~94% width on mobile (bold & prominent), ~68% on wide desktop
+      const targetWidthPercent = isMobile ? 0.94 : (aspect > 2.0 ? 0.68 : 0.78)
       const visibleWidth = penLength / targetWidthPercent
       const halfFovRad = fovRad / 2
       const distWidth = (visibleWidth / 2) / (aspect * Math.tan(halfFovRad))
-      const distHeight = (0.020 / 0.28) / (2 * Math.tan(halfFovRad))
-      const dist = Math.max(distWidth, distHeight, 0.12)
+      const distHeight = (0.020 / (isMobile ? 0.50 : 0.28)) / (2 * Math.tan(halfFovRad))
+      const dist = Math.max(distWidth, distHeight, 0.08)
 
       camera.position.set(0, 0.001, dist)
       controls.target.set(0, 0, 0)

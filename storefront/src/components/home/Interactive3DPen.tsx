@@ -48,12 +48,12 @@ export function Interactive3DPen() {
           {isMounted && (
             <Pen3DCanvas
               autoRotate={true}
-              className="h-[130px] sm:h-[150px]"
+              className="h-[165px] xs:h-[185px] sm:h-[170px] lg:h-[160px]"
             />
           )}
 
           {/* 3D Model Dynamic Ground Shadow right under the pen body */}
-          <div className="w-[56%] max-w-[580px] h-[10px] sm:h-[12px] -mt-[46px] sm:-mt-[54px] rounded-full bg-[#0B1F3A]/22 blur-md pointer-events-none mb-1 sm:mb-2" />
+          <div className="w-[82%] sm:w-[58%] max-w-[620px] h-[14px] sm:h-[12px] -mt-[68px] xs:-mt-[74px] sm:-mt-[54px] rounded-full bg-[#0B1F3A]/24 blur-md pointer-events-none mb-1 sm:mb-2" />
         </div>
       </div>
     </div>
