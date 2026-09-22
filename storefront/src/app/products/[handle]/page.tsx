@@ -32,23 +32,61 @@ export default function ProductDetailPage({
   const [medusaProduct, setMedusaProduct] = useState<StoreProduct | null>(null)
   const [livePrice, setLivePrice] = useState<number | null>(null)
 
-  // 1. Resolve from central catalog
+  // 1. Resolve from central catalog with format-aware fallback
+  const handleLower = (resolvedParams.handle || "").toLowerCase()
+  const isCartridgeQuery = handleLower.includes("cartridge") || handleLower.includes("refill")
+  const isVialQuery = handleLower.includes("vial") || handleLower.includes("lyophilised")
+
+  const defaultFallback: CatalogProduct = isCartridgeQuery
+    ? CATALOG_PRODUCTS.find((p) => p.format === "refill-cartridge") || {
+        id: "cartridge-semaglutide-5mg",
+        name: "Semaglutide 5mg Refill",
+        handle: "semaglutide-5mg-cartridge",
+        format: "refill-cartridge",
+        formatLabel: "REFILL CARTRIDGE • FITS PEPTECH PEN",
+        category: "metabolic",
+        categoryLabel: "Metabolic & Glucose",
+        description: "1.5ml Pre-filled Cartridge • 99.4% HPLC",
+        price: 69.99,
+        subscribePrice: 62.99,
+        inStock: true,
+        isSubscriptionEligible: true,
+        image: "/images/figma/0e71e8560b9bae80ee21a3d08905300075c266b7.png",
+      }
+    : isVialQuery
+    ? CATALOG_PRODUCTS.find((p) => p.format === "freeze-dried-vial") || {
+        id: "vial-semaglutide-10mg",
+        name: "Semaglutide 10mg Lyophilised Vial",
+        handle: "vial-semaglutide-10mg",
+        format: "freeze-dried-vial",
+        formatLabel: "FREEZE-DRIED VIAL • 99.4% PURITY",
+        category: "metabolic",
+        categoryLabel: "Metabolic & Glucose",
+        description: "Pure Lyophilised Research Powder • Sealed Glass Vial",
+        price: 59.99,
+        subscribePrice: 53.99,
+        inStock: true,
+        isSubscriptionEligible: true,
+        image: "/images/figma/2d7803f97be6d80d5630dfb42abba84289ed1bb5.png",
+      }
+    : {
+        id: "complete-pen-set",
+        name: COMPLETE_PEN_SET.name,
+        handle: "complete-pen-set",
+        format: "complete-pen-set",
+        formatLabel: "COMPLETE PEN SET",
+        category: "metabolic",
+        categoryLabel: "Laboratory Research Pen System",
+        description: COMPLETE_PEN_SET.description,
+        price: COMPLETE_PEN_SET.price,
+        subscribePrice: COMPLETE_PEN_SET.subscribePrice,
+        inStock: true,
+        isSubscriptionEligible: false,
+        image: "/images/figma/152e353c4afaa5945905ac686de871b57ec2a770.png",
+      }
+
   const catalogProduct: CatalogProduct =
-    findCatalogProduct(resolvedParams.handle, modelQuery) || {
-      id: "complete-pen-set",
-      name: COMPLETE_PEN_SET.name,
-      handle: "complete-pen-set",
-      format: "complete-pen-set",
-      formatLabel: "COMPLETE PEN SET",
-      category: "metabolic",
-      categoryLabel: "Laboratory Research Pen System",
-      description: COMPLETE_PEN_SET.description,
-      price: COMPLETE_PEN_SET.price,
-      subscribePrice: COMPLETE_PEN_SET.subscribePrice,
-      inStock: true,
-      isSubscriptionEligible: false,
-      image: "/images/figma/152e353c4afaa5945905ac686de871b57ec2a770.png",
-    }
+    findCatalogProduct(resolvedParams.handle, modelQuery) || defaultFallback
 
   // 2. Fetch live Medusa product data if configured
   useEffect(() => {
@@ -173,18 +211,41 @@ export default function ProductDetailPage({
       ) : (
         <>
           <ProductTechnicalSpecs product={catalogProduct} />
-          {/* If Refill, cross-link to pen set and other refills */}
+          {/* If Refill, show sleek reusable pen hardware banner + compatible refills */}
           {catalogProduct.format === "refill-cartridge" && (
             <>
-              <CompleteSetsSection />
+              {/* Elegant Pen Compatibility & Hardware Cross-Link Banner */}
+              <div className="max-w-[1240px] mx-auto px-4 sm:px-6 my-8 w-full">
+                <div className="bg-gradient-to-r from-[#0b1f3a] via-[#0e2a47] to-[#10243e] rounded-2xl p-6 sm:p-8 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 shadow-lg border border-white/10 relative overflow-hidden">
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#00c5a0] to-transparent" />
+                  <div className="space-y-2 max-w-xl">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#00c5a0]/15 border border-[#00c5a0]/30 text-[#00c5a0] text-[11px] font-bold tracking-wider uppercase">
+                      <span className="size-1.5 rounded-full bg-[#00c5a0]" />
+                      <span>Reusable Hardware Compatibility</span>
+                    </div>
+                    <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
+                      Need the Reusable Precision Pen?
+                    </h3>
+                    <p className="text-slate-300 text-xs sm:text-sm leading-relaxed">
+                      This prefilled cartridge is engineered exclusively for the PEPTECH® Precision Pen system. First-time buyers can purchase the Complete Pen Set once and keep the pen for all future cartridge refills.
+                    </p>
+                  </div>
+                  <Link
+                    href="/products/complete-pen-set"
+                    className="btn-shimmer btn-press whitespace-nowrap bg-[#00c5a0] hover:bg-[#16a6a3] text-[#0b1f3a] hover:text-white font-bold text-xs sm:text-sm px-6 py-3.5 rounded-xl transition-all shadow-md shrink-0 flex items-center gap-2"
+                  >
+                    <span>View Complete Pen Set</span>
+                    <span>→</span>
+                  </Link>
+                </div>
+              </div>
               <RefillsSection />
             </>
           )}
-          {/* If Vial, cross-link to other vials and pen set */}
+          {/* If Vial, cross-link to other vials */}
           {catalogProduct.format === "freeze-dried-vial" && (
             <>
               <VialsSection />
-              <CompleteSetsSection />
             </>
           )}
         </>

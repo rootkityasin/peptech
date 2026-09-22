@@ -100,8 +100,92 @@ export const CATALOG_PRODUCTS: CatalogProduct[] = [
     isSubscriptionEligible: false,
     image: "/images/figma/152e353c4afaa5945905ac686de871b57ec2a770.png",
   },
+  {
+    id: "pen-set-rt40",
+    name: "RT40 Complete Pen Set",
+    handle: "pen-system-rt40",
+    format: "complete-pen-set",
+    formatLabel: "COMPLETE PEN SET",
+    category: "metabolic",
+    categoryLabel: "Food Safety Testing",
+    description: "Reusable Precision Pen + RT40 Cartridge + 10x Needles",
+    price: 249.00,
+    inStock: true,
+    isSubscriptionEligible: false,
+    image: "/images/figma/product-set-rt40.png",
+  },
+  {
+    id: "pen-set-cc1236",
+    name: "C.C-1236 Complete Pen Set",
+    handle: "pen-system-cc1236",
+    format: "complete-pen-set",
+    formatLabel: "COMPLETE PEN SET",
+    category: "metabolic",
+    categoryLabel: "Environmental Testing",
+    description: "Reusable Precision Pen + C.C-1236 Cartridge + 10x Needles",
+    price: 249.00,
+    inStock: true,
+    isSubscriptionEligible: false,
+    image: "/images/figma/product-set-cc1236.png",
+  },
+  {
+    id: "pen-set-tbs30",
+    name: "TB-S30 Complete Pen Set",
+    handle: "pen-system-tbs30",
+    format: "complete-pen-set",
+    formatLabel: "COMPLETE PEN SET",
+    category: "tissue",
+    categoryLabel: "Healthcare Testing",
+    description: "Reusable Precision Pen + TB-S30 Cartridge + 10x Needles",
+    price: 249.00,
+    inStock: true,
+    isSubscriptionEligible: false,
+    image: "/images/figma/product-set-tbs30.png",
+  },
+  {
+    id: "pen-set-ifc137",
+    name: "IFC-137 Complete Pen Set",
+    handle: "pen-system-ifc137",
+    format: "complete-pen-set",
+    formatLabel: "COMPLETE PEN SET",
+    category: "metabolic",
+    categoryLabel: "Industrial Hygiene",
+    description: "Reusable Precision Pen + IFC-137 Cartridge + 10x Needles",
+    price: 249.00,
+    inStock: true,
+    isSubscriptionEligible: false,
+    image: "/images/figma/product-set-ifc137.png",
+  },
+  {
+    id: "pen-set-gvk0050",
+    name: "GVK-00 50 Complete Pen Set",
+    handle: "pen-system-gvk0050",
+    format: "complete-pen-set",
+    formatLabel: "COMPLETE PEN SET",
+    category: "metabolic",
+    categoryLabel: "Water Quality Testing",
+    description: "Reusable Precision Pen + GVK-00 50 Cartridge + 10x Needles",
+    price: 249.00,
+    inStock: true,
+    isSubscriptionEligible: false,
+    image: "/images/figma/product-set-gvk0050.png",
+  },
+  {
+    id: "pen-set-melatoxin2",
+    name: "Melatoxin II Complete Pen Set",
+    handle: "pen-system-melatoxin2",
+    format: "complete-pen-set",
+    formatLabel: "COMPLETE PEN SET",
+    category: "tissue",
+    categoryLabel: "Mycotoxin Detection",
+    description: "Reusable Precision Pen + Melatoxin II Cartridge + 10x Needles",
+    price: 249.00,
+    inStock: true,
+    isSubscriptionEligible: false,
+    image: "/images/figma/product-set-melatoxin2.png",
+  },
 
-  // --- 2. Refill Cartridges (10 items) ---
+  // --- 2. Refill Cartridges (16 items) ---
   {
     id: "cartridge-semaglutide-5mg",
     name: "Semaglutide 5mg Refill",
@@ -252,6 +336,96 @@ export const CATALOG_PRODUCTS: CatalogProduct[] = [
     isSubscriptionEligible: true,
     image: "/images/figma/0e71e8560b9bae80ee21a3d08905300075c266b7.png",
   },
+  {
+    id: "cartridge-rt40",
+    name: "RT40 Test Cartridge",
+    handle: "cartridge-rt40",
+    format: "refill-cartridge",
+    formatLabel: "REFILL CARTRIDGE • FITS PEPTECH PEN",
+    category: "metabolic",
+    categoryLabel: "Food Safety Testing",
+    description: "1.5ml Pre-filled Test Cartridge for Food Safety Testing",
+    price: 39.00,
+    subscribePrice: 35.10,
+    inStock: true,
+    isSubscriptionEligible: true,
+    image: "/images/figma/cartridge-clear.png",
+  },
+  {
+    id: "cartridge-cc1236",
+    name: "C.C-1236 Test Cartridge",
+    handle: "cartridge-cc1236",
+    format: "refill-cartridge",
+    formatLabel: "REFILL CARTRIDGE • FITS PEPTECH PEN",
+    category: "metabolic",
+    categoryLabel: "Environmental Testing",
+    description: "1.5ml Pre-filled Test Cartridge for Environmental Testing",
+    price: 39.00,
+    subscribePrice: 35.10,
+    inStock: true,
+    isSubscriptionEligible: true,
+    image: "/images/figma/cartridge-clear.png",
+  },
+  {
+    id: "cartridge-tbs30",
+    name: "TB-S30 Test Cartridge",
+    handle: "cartridge-tbs30",
+    format: "refill-cartridge",
+    formatLabel: "REFILL CARTRIDGE • FITS PEPTECH PEN",
+    category: "tissue",
+    categoryLabel: "Healthcare Testing",
+    description: "1.5ml Pre-filled Test Cartridge for Healthcare Testing",
+    price: 25.00,
+    subscribePrice: 22.50,
+    inStock: true,
+    isSubscriptionEligible: true,
+    image: "/images/figma/cartridge-clear.png",
+  },
+  {
+    id: "cartridge-ifc137",
+    name: "IFC-137 Test Cartridge",
+    handle: "cartridge-ifc137",
+    format: "refill-cartridge",
+    formatLabel: "REFILL CARTRIDGE • FITS PEPTECH PEN",
+    category: "metabolic",
+    categoryLabel: "Industrial Hygiene",
+    description: "1.5ml Pre-filled Test Cartridge for Industrial Hygiene",
+    price: 39.00,
+    subscribePrice: 35.10,
+    inStock: true,
+    isSubscriptionEligible: true,
+    image: "/images/figma/cartridge-clear.png",
+  },
+  {
+    id: "cartridge-gvk0050",
+    name: "GVK-00 50 Test Cartridge",
+    handle: "cartridge-gvk0050",
+    format: "refill-cartridge",
+    formatLabel: "REFILL CARTRIDGE • FITS PEPTECH PEN",
+    category: "metabolic",
+    categoryLabel: "Water Quality Testing",
+    description: "1.5ml Pre-filled Test Cartridge for Water Quality Testing",
+    price: 35.00,
+    subscribePrice: 31.50,
+    inStock: true,
+    isSubscriptionEligible: true,
+    image: "/images/figma/cartridge-clear.png",
+  },
+  {
+    id: "cartridge-melatoxin2",
+    name: "Melatoxin II Test Cartridge",
+    handle: "cartridge-melatoxin2",
+    format: "refill-cartridge",
+    formatLabel: "REFILL CARTRIDGE • FITS PEPTECH PEN",
+    category: "tissue",
+    categoryLabel: "Mycotoxin Detection",
+    description: "1.5ml Pre-filled Test Cartridge for Mycotoxin Detection",
+    price: 33.00,
+    subscribePrice: 29.70,
+    inStock: true,
+    isSubscriptionEligible: true,
+    image: "/images/figma/cartridge-clear.png",
+  },
 
   // --- 3. Freeze-Dried Vials (8 items) ---
   {
@@ -393,8 +567,38 @@ export function findCatalogProduct(
   )
   if (exactMatch) return exactMatch
 
-  // 2. Handle pen set model queries or generic complete-pen-set
-  if (cleanHandle === "complete-pen-set" || cleanHandle.includes("pen-set") || cleanHandle.includes("pen-system")) {
+  // 2. Specific matching for cartridge / refill requests:
+  if (cleanHandle.includes("cartridge") || cleanHandle.includes("refill")) {
+    const target = cleanHandle.replace(/[^a-z0-9]/g, "")
+    const matched = CATALOG_PRODUCTS.find((p) => {
+      if (p.format !== "refill-cartridge") return false
+      const pHandle = p.handle.toLowerCase().replace(/[^a-z0-9]/g, "")
+      const pId = p.id.toLowerCase().replace(/[^a-z0-9]/g, "")
+      const pName = p.name.toLowerCase().replace(/[^a-z0-9]/g, "")
+      return target.includes(pHandle) || pHandle.includes(target) || target.includes(pId) || pId.includes(target) || target.includes(pName) || pName.includes(target)
+    })
+    if (matched) return matched
+    // Return first refill cartridge as fallback for generic cartridge handle
+    return CATALOG_PRODUCTS.find((p) => p.format === "refill-cartridge") || null
+  }
+
+  // 3. Specific matching for vial / lyophilised requests:
+  if (cleanHandle.includes("vial") || cleanHandle.includes("lyophilised")) {
+    const target = cleanHandle.replace(/[^a-z0-9]/g, "")
+    const matched = CATALOG_PRODUCTS.find((p) => {
+      if (p.format !== "freeze-dried-vial") return false
+      const pHandle = p.handle.toLowerCase().replace(/[^a-z0-9]/g, "")
+      const pId = p.id.toLowerCase().replace(/[^a-z0-9]/g, "")
+      const pName = p.name.toLowerCase().replace(/[^a-z0-9]/g, "")
+      return target.includes(pHandle) || pHandle.includes(target) || target.includes(pId) || pId.includes(target) || target.includes(pName) || pName.includes(target)
+    })
+    if (matched) return matched
+    // Return first freeze-dried vial as fallback
+    return CATALOG_PRODUCTS.find((p) => p.format === "freeze-dried-vial") || null
+  }
+
+  // 4. Handle pen set model queries or generic complete-pen-set
+  if (cleanHandle === "complete-pen-set" || cleanHandle.includes("pen-set") || cleanHandle.includes("pen-system") || cleanHandle.includes("pen")) {
     if (modelQuery) {
       const q = modelQuery.toLowerCase()
       const found = CATALOG_PRODUCTS.find(
@@ -403,15 +607,17 @@ export function findCatalogProduct(
       if (found) return found
     }
     const penMatch = CATALOG_PRODUCTS.find((p) => {
+      if (p.format !== "complete-pen-set") return false
       const target = cleanHandle.replace(/[^a-z0-9]/g, "")
       const pHandle = p.handle.toLowerCase().replace(/[^a-z0-9]/g, "")
-      return p.format === "complete-pen-set" && (target.includes(pHandle) || pHandle.includes(target))
+      const pId = p.id.toLowerCase().replace(/[^a-z0-9]/g, "")
+      return target.includes(pHandle) || pHandle.includes(target) || target.includes(pId) || pId.includes(target)
     })
     if (penMatch) return penMatch
     return CATALOG_PRODUCTS.find((p) => p.format === "complete-pen-set") || CATALOG_PRODUCTS[0]
   }
 
-  // 3. Fallback matching by alphanumeric normalisation (handles prefixes like cartridge- or vial-)
+  // 5. Fallback matching by alphanumeric normalisation
   const fuzzyMatch = CATALOG_PRODUCTS.find((p) => {
     const pClean = p.handle.toLowerCase().replace(/[^a-z0-9]/g, "")
     const pIdClean = p.id.toLowerCase().replace(/[^a-z0-9]/g, "")
