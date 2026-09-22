@@ -21,8 +21,14 @@ dist/
 # Environment Variables
 .env
 .env*.local
-backend/.env
-storefront/.env*.local
+.env.*
+!.env.example
+!.env.template
+**/.env
+**/.env*.local
+**/.env.*
+!**/.env.example
+!**/.env.template
 
 # Debug & Logs
 npm-debug.log*
