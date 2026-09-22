@@ -229,11 +229,11 @@ export default function HomePage() {
                 />
               </div>
 
-              {/* Mobile / Tablet Action Buttons - Below the picture, stacked in 2 lines like previous */}
-              <div className="lg:hidden flex flex-col items-center justify-center gap-2 pt-3 pb-1 w-full">
+              {/* Mobile / Tablet Action Buttons - Below the picture, side-by-side */}
+              <div className="lg:hidden flex flex-row items-center justify-center gap-2.5 xs:gap-3 pt-4 pb-2 w-full px-2">
                 <Link
                   href="/products/complete-pen-set"
-                  className="btn-shimmer btn-press w-[175px] py-2.5 px-4 rounded-xl bg-[#0B1F3A] hover:bg-[#162e52] text-white text-[13px] font-bold transition-all shadow-md inline-flex items-center justify-center gap-1.5 group cursor-pointer text-center"
+                  className="btn-shimmer btn-press py-2.5 px-3.5 xs:px-4 sm:px-5 rounded-xl bg-[#0B1F3A] hover:bg-[#162e52] text-white text-[12px] xs:text-[13px] sm:text-[14px] font-bold transition-all shadow-md inline-flex items-center justify-center gap-1.5 group cursor-pointer text-center whitespace-nowrap"
                 >
                   <span>Shop All Products</span>
                   <span className="transition-transform duration-200 group-hover:translate-x-0.5">→</span>
@@ -241,7 +241,7 @@ export default function HomePage() {
                 
                 <Link
                   href="/how-it-works"
-                  className="btn-press w-[175px] py-2 px-4 rounded-xl bg-white hover:bg-slate-50 text-[#0B1F3A] border border-[#CBD5E1] hover:border-[#0B1F3A] text-[13px] font-bold transition-all shadow-xs inline-flex items-center justify-center cursor-pointer text-center"
+                  className="btn-press py-2.5 px-3.5 xs:px-4 sm:px-5 rounded-xl bg-white hover:bg-slate-50 text-[#0B1F3A] border border-[#CBD5E1] hover:border-[#0B1F3A] text-[12px] xs:text-[13px] sm:text-[14px] font-bold transition-all shadow-xs inline-flex items-center justify-center cursor-pointer text-center whitespace-nowrap"
                 >
                   Learn More
                 </Link>
