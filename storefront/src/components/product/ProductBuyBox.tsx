@@ -19,12 +19,6 @@ const CARTRIDGE_OPTIONS = [
   { id: "bpc-10", name: "BPC-157 Cartridge (10mg) · Batch #BPC-2026-09A", badge: "INCLUDED", priceDelta: 0 },
 ]
 
-const VIAL_OPTIONS = [
-  { id: "bac-30", name: "Bacteriostatic Water USP (30ml Multi-Dose Vial)", badge: "+$18.00", priceDelta: 18.00 },
-  { id: "sterile-10", name: "Sterile Water for Injection (10ml Ampoule)", badge: "+$12.00", priceDelta: 12.00 },
-  { id: "none", name: "None (Pen & Cartridge Only)", badge: "$0.00", priceDelta: 0 },
-]
-
 export function ProductBuyBox({
   title = "Complete PEPTECH®\nPen Set",
   subtitle = "One system. Multiple possibilities.",
@@ -36,9 +30,7 @@ export function ProductBuyBox({
   const { addItem, setIsDrawerOpen } = useCart()
   const [purchaseType, setPurchaseType] = useState<"one-time" | "subscription">("one-time")
   const [selectedCartridge, setSelectedCartridge] = useState(CARTRIDGE_OPTIONS[0])
-  const [selectedVial, setSelectedVial] = useState(VIAL_OPTIONS[0])
   const [isCartridgeOpen, setIsCartridgeOpen] = useState(false)
-  const [isVialOpen, setIsVialOpen] = useState(false)
 
   // Sync default cartridge if title specifies model
   React.useEffect(() => {
@@ -51,12 +43,11 @@ export function ProductBuyBox({
     }
   }, [title])
 
-  const basePrice = purchaseType === "subscription" ? subscribePrice : price
-  const totalPrice = basePrice + selectedVial.priceDelta
+  const totalPrice = purchaseType === "subscription" ? subscribePrice : price
 
   const handleAddToCart = () => {
     addItem({
-      id: `complete-pen-set-${selectedCartridge.id}-${selectedVial.id}`,
+      id: `complete-pen-set-${selectedCartridge.id}`,
       title: "Complete PEPTECH® Pen Set",
       format: "pen-set",
       strength: `${selectedCartridge.name.split("·")[0].trim()}`,
@@ -73,10 +64,6 @@ export function ProductBuyBox({
         {
           label: "Cartridge",
           value: selectedCartridge.name,
-        },
-        {
-          label: "Diluent / Vial",
-          value: selectedVial.name,
         },
       ],
     })
@@ -151,7 +138,7 @@ export function ProductBuyBox({
             </span>
           </div>
           <span className="font-bold text-[#0b1f3a] text-[14px]">
-            ${(price + selectedVial.priceDelta).toFixed(2)}
+            ${price.toFixed(2)}
           </span>
         </div>
 
@@ -189,7 +176,7 @@ export function ProductBuyBox({
             </div>
           </div>
           <span className="font-bold text-[#0b1f3a] text-[14px]">
-            ${(subscribePrice + selectedVial.priceDelta).toFixed(2)}
+            ${subscribePrice.toFixed(2)}
           </span>
         </div>
 
@@ -201,13 +188,10 @@ export function ProductBuyBox({
         {/* Dropdown 1: Select Prefilled Cartridge */}
         <div className="flex flex-col gap-[6px] items-start w-full relative">
           <label className="font-semibold text-[#0a1f3b] text-[12px]">
-            1. Select Prefilled Cartridge (28-Day Refill)
+            Select Prefilled Cartridge (28-Day Refill)
           </label>
           <div
-            onClick={() => {
-              setIsCartridgeOpen(!isCartridgeOpen)
-              setIsVialOpen(false)
-            }}
+            onClick={() => setIsCartridgeOpen(!isCartridgeOpen)}
             className="bg-white border-[#e3e8f0] border-[1.5px] rounded-[8px] px-[16px] py-[11px] flex items-center justify-between w-full cursor-pointer hover:border-slate-400 transition-colors"
           >
             <span className="font-medium text-[#0a1f3b] text-[13px] truncate pr-2">
@@ -242,57 +226,6 @@ export function ProductBuyBox({
                   <span className="text-[13px] font-medium text-[#0b1f3a]">{c.name}</span>
                   <span className="bg-[#e6fffa] text-[#17a6a3] text-[10px] font-semibold px-[6px] py-[2px] rounded">
                     {c.badge}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Dropdown 2: Select Freeze-Dried Vial */}
-        <div className="flex flex-col gap-[6px] items-start w-full relative">
-          <label className="font-semibold text-[#0a1f3b] text-[12px]">
-            2. Select Freeze-Dried Vial / Reconstitution Diluent
-          </label>
-          <div
-            onClick={() => {
-              setIsVialOpen(!isVialOpen)
-              setIsCartridgeOpen(false)
-            }}
-            className="bg-white border-[#e3e8f0] border-[1.5px] rounded-[8px] px-[16px] py-[11px] flex items-center justify-between w-full cursor-pointer hover:border-slate-400 transition-colors"
-          >
-            <span className="font-medium text-[#0a1f3b] text-[13px] truncate pr-2">
-              {selectedVial.name}
-            </span>
-            <div className="flex gap-[10px] items-center shrink-0">
-              <span className="bg-[#f0f5fa] text-[#475469] text-[10px] font-semibold px-[8px] py-[3px] rounded-[4px]">
-                {selectedVial.badge}
-              </span>
-              <img
-                src="/images/figma/c0856f3300fb92c49494e087adbcfe6165132c56.svg"
-                alt=""
-                className={`size-[16px] transition-transform ${isVialOpen ? "rotate-180" : ""}`}
-              />
-            </div>
-          </div>
-
-          {/* Vial Options Menu */}
-          {isVialOpen && (
-            <div className="absolute top-[68px] left-0 w-full bg-white border border-[#e2e8f0] rounded-[8px] shadow-lg z-30 py-1 divide-y divide-slate-100">
-              {VIAL_OPTIONS.map((v) => (
-                <div
-                  key={v.id}
-                  onClick={() => {
-                    setSelectedVial(v)
-                    setIsVialOpen(false)
-                  }}
-                  className={`px-4 py-2.5 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors ${
-                    selectedVial.id === v.id ? "bg-slate-50" : ""
-                  }`}
-                >
-                  <span className="text-[13px] font-medium text-[#0b1f3a]">{v.name}</span>
-                  <span className="bg-[#f0f5fa] text-[#475469] text-[10px] font-semibold px-[6px] py-[2px] rounded">
-                    {v.badge}
                   </span>
                 </div>
               ))}
