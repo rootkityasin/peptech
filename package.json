@@ -4,8 +4,9 @@
   "private": true,
   "description": "PEPTECH Custom Storefront & Medusa 2.0 Admin Backend",
   "scripts": {
+    "postinstall": "npm install --prefix backend",
     "build": "npm run build --prefix backend/apps/backend",
-    "start": "npm run start --prefix backend/apps/backend",
+    "start": "node server.js",
     "dev:backend": "npm run dev --prefix backend",
     "dev:storefront": "npm run dev --prefix storefront",
     "build:backend": "npm run build --prefix backend",
