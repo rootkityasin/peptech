@@ -1,1 +1,0 @@
-import{S as s}from"./chunk-YXKJWSF3-DBKwWApO.js";import{T as i}from"./chunk-DRHDNSJA-CMFvpW24.js";import{bw as a,j as e,es as l}from"./index-MxvXud9M.js";a("promotion_method",{render:(r,o,n,t)=>{const m=o.is_automatic;return e.jsx(i,{text:t(m?"promotions.form.method.automatic.title":"promotions.form.method.code.title")})}});l("promotion_status",(r,o)=>e.jsx(s,{promotion:o}));
