@@ -1,16 +1,34 @@
+// Fix: Allow SSL connections to Supabase/cloud database poolers without rejecting intermediate certificates
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+
 const { loadEnv, defineConfig } = require('@medusajs/framework/utils');
 
 loadEnv(process.env.NODE_ENV || 'development', process.cwd());
 
-const defaultDatabaseUrl = 'postgresql://postgres.ubzoovlhbnztjwemvrwo:Peptech2026!@aws-0-eu-west-2.pooler.supabase.com:6543/postgres?sslmode=require';
-const dbUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || defaultDatabaseUrl;
+const defaultDatabaseUrl = 'postgresql://postgres.ubzoovlhbnztjwemvrwo:Peptech2026!@aws-0-eu-west-2.pooler.supabase.com:6543/postgres';
+let rawDbUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || defaultDatabaseUrl;
+
+// Strip sslmode=require / sslmode=prefer / sslmode=verify-ca from URL query string
+// because pg-connection-string parses sslmode=require as verify-full, overriding custom ssl options
+const dbUrl = rawDbUrl.replace(/([?&])sslmode=[^&]*(&|$)/gi, (match, prefix, suffix) => {
+  if (prefix === '?' && suffix === '&') return '?';
+  if (prefix === '?' && suffix === '') return '';
+  if (prefix === '&') return suffix;
+  return '';
+});
+
+// Update process.env so internal Medusa loaders read the sanitized URL
+process.env.DATABASE_URL = dbUrl;
 
 module.exports = defineConfig({
   projectConfig: {
     databaseUrl: dbUrl,
     databaseDriverOptions: dbUrl?.includes('localhost') || dbUrl?.includes('127.0.0.1')
       ? { connection: { ssl: false } }
-      : { connection: { ssl: { rejectUnauthorized: false } } },
+      : {
+          ssl: { rejectUnauthorized: false },
+          connection: { ssl: { rejectUnauthorized: false } }
+        },
     http: {
       storeCors: process.env.STORE_CORS || 'http://localhost:3000,http://localhost:8000,https://peptech.bio,https://www.peptech.bio,https://admin.peptech.bio,https://docs.medusajs.com',
       adminCors: process.env.ADMIN_CORS || 'http://localhost:5173,http://localhost:9000,https://peptech.bio,https://www.peptech.bio,https://admin.peptech.bio,https://docs.medusajs.com',

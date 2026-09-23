@@ -1,3 +1,16 @@
+// Fix: Allow SSL connections to Supabase/cloud database poolers without rejecting intermediate certificates
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+
+// Sanitize DATABASE_URL if present in environment to prevent pg-connection-string sslmode=require override
+if (process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = process.env.DATABASE_URL.replace(/([?&])sslmode=[^&]*(&|$)/gi, (m, p, s) => {
+    if (p === '?' && s === '&') return '?';
+    if (p === '?' && s === '') return '';
+    if (p === '&') return s;
+    return '';
+  });
+}
+
 const http = require('http');
 const path = require('path');
 
@@ -15,6 +28,10 @@ process.on('uncaughtException', (err) => {
 
 process.on('unhandledRejection', (reason, promise) => {
   console.error('[PEPTECH FATAL] Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+process.on('exit', (code) => {
+  console.log(`[PEPTECH] Process exiting with code: ${code}`);
 });
 
 let medusaHandler = null;
@@ -95,16 +112,9 @@ http.Server.prototype.listen = function (...args) {
   }
 
   console.log('[PEPTECH] Medusa server created. Attaching handler to active port', PORT);
-  const listeners = this.listeners('request');
-  if (listeners.length > 0) {
-    medusaHandler = listeners[0];
-  } else {
-    this.once('newListener', (event, listener) => {
-      if (event === 'request') {
-        medusaHandler = listener;
-      }
-    });
-  }
+  medusaHandler = (req, res) => {
+    this.emit('request', req, res);
+  };
 
   process.nextTick(() => {
     this.emit('listening');

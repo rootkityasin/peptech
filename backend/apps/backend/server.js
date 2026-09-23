@@ -1,11 +1,29 @@
+// Allow self-signed / intermediate SSL certificates for cloud database poolers (Supabase AWS pooler)
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+
+if (process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = process.env.DATABASE_URL.replace(/([?&])sslmode=[^&]*(&|$)/gi, (m, p, s) => {
+    if (p === '?' && s === '&') return '?';
+    if (p === '?' && s === '') return '';
+    if (p === '&') return s;
+    return '';
+  });
+}
+
 const path = require('path');
 const fs = require('fs');
 
 console.log('[PEPTECH] Backend server script executing in:', process.cwd());
 
-// Ensure 'start' argument is passed to Medusa CLI
-if (!process.argv.includes('start') && !process.argv.includes('develop')) {
-  process.argv.push('start');
+// Ensure process.argv has at least [node, scriptPath]
+while (process.argv.length < 2) {
+  process.argv.push(__filename);
+}
+
+// Ensure 'start' or 'develop' command is explicitly present
+const hasCommand = process.argv.slice(2).some(arg => !arg.startsWith('-'));
+if (!hasCommand) {
+  process.argv.splice(2, 0, 'start');
 }
 
 // Pass port from environment variable (critical for Hostinger and cloud reverse proxies)
@@ -45,4 +63,3 @@ console.log('[PEPTECH] Medusa CLI found at:', cliPath);
 console.log('[PEPTECH] Invoking Medusa CLI with args:', process.argv.slice(2));
 
 require(cliPath);
-
