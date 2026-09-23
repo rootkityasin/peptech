@@ -4,12 +4,18 @@ const path = require('path');
 
 console.log('[PEPTECH] Starting Medusa production build...');
 
-// 1. Build Medusa backend and admin dashboard
-execSync('npm run build --prefix backend/apps/backend', { stdio: 'inherit' });
+const backendDir = path.resolve(__dirname, 'backend/apps/backend');
+
+// 1. Build Medusa backend and admin dashboard inside backend directory
+execSync('npx medusa build --lint false', {
+  stdio: 'inherit',
+  cwd: backendDir,
+  env: { ...process.env, NODE_ENV: 'production' },
+});
 
 // 2. Prepare dist directory for Hostinger output directory check
 const distDir = path.resolve(__dirname, 'dist');
-const serverDir = path.resolve(__dirname, 'backend/apps/backend/.medusa/server');
+const serverDir = path.resolve(backendDir, '.medusa/server');
 
 if (fs.existsSync(serverDir)) {
   if (!fs.existsSync(distDir)) {
