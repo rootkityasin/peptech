@@ -40,19 +40,58 @@ const DEFAULT_BACKEND_URL = "http://localhost:9000"
 const DEFAULT_PUBLISHABLE_KEY = "pk_556de0f5ea4724394f147569c8b5066ecda7a0d39bd60eb15b2550b2d5c52246"
 
 /**
+ * Dynamically resolves the Medusa backend URL.
+ * In a browser environment on a production domain (e.g., https://peptech.bio),
+ * returns the current origin to use same-origin Next.js rewrites, preventing
+ * Private Network Access (PNA loopback) and CORS blocks.
+ */
+export function getMedusaBackendUrl(): string {
+  const envUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL
+  if (envUrl && !envUrl.includes("localhost") && !envUrl.includes("127.0.0.1")) {
+    return envUrl
+  }
+
+  // In the browser, if we are not on localhost (e.g. on https://peptech.bio), use same-origin to prevent loopback/PNA and CORS issues
+  if (typeof window !== "undefined") {
+    const origin = window.location.origin
+    if (!origin.includes("localhost") && !origin.includes("127.0.0.1")) {
+      return origin
+    }
+  }
+
+  return envUrl || DEFAULT_BACKEND_URL
+}
+
+/**
  * Medusa 2.0 JavaScript / TypeScript SDK Client
  * Connects Next.js storefront directly to Medusa backend & admin.
  */
 export const medusa = new Medusa({
-  baseUrl: process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || DEFAULT_BACKEND_URL,
+  baseUrl: getMedusaBackendUrl(),
   publishableKey: process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || DEFAULT_PUBLISHABLE_KEY,
   debug: process.env.NODE_ENV === "development",
 })
 
 /**
+ * Ensures the SDK client baseUrl matches the runtime origin in browser
+ */
+function ensureRuntimeBaseUrl() {
+  if (typeof window !== "undefined") {
+    const client = (medusa as any)?.client
+    if (client?.config) {
+      const activeUrl = getMedusaBackendUrl()
+      if (client.config.baseUrl !== activeUrl) {
+        client.config.baseUrl = activeUrl
+      }
+    }
+  }
+}
+
+/**
  * Helper: Fetch all published products with variants and categories
  */
 export async function getProducts(queryParams: Record<string, unknown> = {}): Promise<StoreProduct[]> {
+  ensureRuntimeBaseUrl()
   try {
     const response = await medusa.store.product.list({
       fields: "*categories,*variants,*variants.prices",
@@ -69,6 +108,7 @@ export async function getProducts(queryParams: Record<string, unknown> = {}): Pr
  * Helper: Fetch products by category handle ('complete-pen-sets', 'refill-cartridges', 'freeze-dried-vials')
  */
 export async function getProductsByCategory(categoryHandle: string): Promise<StoreProduct[]> {
+  ensureRuntimeBaseUrl()
   try {
     const response = await medusa.store.product.list({
       fields: "*categories,*variants,*variants.prices",
@@ -86,6 +126,7 @@ export async function getProductsByCategory(categoryHandle: string): Promise<Sto
  * Helper: Fetch product by handle or ID
  */
 export async function getProduct(idOrHandle: string): Promise<StoreProduct | null> {
+  ensureRuntimeBaseUrl()
   try {
     if (idOrHandle.startsWith("prod_")) {
       const response = await medusa.store.product.retrieve(idOrHandle, {
@@ -111,6 +152,7 @@ export async function getProduct(idOrHandle: string): Promise<StoreProduct | nul
  * Helper: Fetch all product categories
  */
 export async function getProductCategories(): Promise<StoreProductCategory[]> {
+  ensureRuntimeBaseUrl()
   try {
     const response = await medusa.store.category.list()
     return (response.product_categories as unknown as StoreProductCategory[]) || []
@@ -119,6 +161,7 @@ export async function getProductCategories(): Promise<StoreProductCategory[]> {
     return []
   }
 }
+
 
 /**
  * Helper: Get price in specified currency (defaults to GBP)

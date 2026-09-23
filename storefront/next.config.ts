@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 import path from "path";
 
-const medusaBackendUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
+const medusaBackendUrl = process.env.MEDUSA_BACKEND_URL || process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
 
 const nextConfig: NextConfig = {
   turbopack: {
@@ -15,8 +15,25 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async rewrites() {
+    return [
+      {
+        source: "/store/:path*",
+        destination: `${medusaBackendUrl}/store/:path*`,
+      },
+      {
+        source: "/auth/:path*",
+        destination: `${medusaBackendUrl}/auth/:path*`,
+      },
+    ];
+  },
   async redirects() {
     return [
+      {
+        source: "/privacy",
+        destination: "/privacy-policy",
+        permanent: true,
+      },
       {
         source: "/admin",
         destination: `${medusaBackendUrl}/app`,
@@ -32,3 +49,4 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+

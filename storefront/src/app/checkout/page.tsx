@@ -1789,7 +1789,7 @@ export default function CheckoutPage() {
               Terms of Service
             </Link>
             ,{" "}
-            <Link href="/privacy" onClick={(e) => e.stopPropagation()} className="underline hover:text-[#0b1f3a]">
+            <Link href="/privacy-policy" onClick={(e) => e.stopPropagation()} className="underline hover:text-[#0b1f3a]">
               Privacy Policy
             </Link>
             , and strict Research Use Only (RUO) laboratory conditions.

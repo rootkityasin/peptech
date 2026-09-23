@@ -1,5 +1,26 @@
-const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000"
 const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "pk_556de0f5ea4724394f147569c8b5066ecda7a0d39bd60eb15b2550b2d5c52246"
+
+/**
+ * Dynamically resolves the Medusa backend URL.
+ * In a browser environment on a production domain (e.g., https://peptech.bio),
+ * returns the current origin to use same-origin Next.js rewrites, preventing
+ * Private Network Access (PNA loopback) and CORS blocks.
+ */
+export function getBackendUrl(): string {
+  const envUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL
+  if (envUrl && !envUrl.includes("localhost") && !envUrl.includes("127.0.0.1")) {
+    return envUrl
+  }
+
+  if (typeof window !== "undefined") {
+    const origin = window.location.origin
+    if (!origin.includes("localhost") && !origin.includes("127.0.0.1")) {
+      return origin
+    }
+  }
+
+  return envUrl || "http://localhost:9000"
+}
 
 export interface CustomerAddress {
   id: string
@@ -86,7 +107,7 @@ export interface CustomerAddressPayload {
  */
 export async function loginCustomer(email: string, password: string): Promise<string> {
   try {
-    const response = await fetch(`${BACKEND_URL}/auth/customer/emailpass`, {
+    const response = await fetch(`${getBackendUrl()}/auth/customer/emailpass`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -124,7 +145,7 @@ export async function registerCustomer(payload: CustomerRegisterPayload): Promis
   const normalizedEmail = payload.email.trim().toLowerCase()
   try {
     // Step 1: Register auth identity
-    const authResponse = await fetch(`${BACKEND_URL}/auth/customer/emailpass/register`, {
+    const authResponse = await fetch(`${getBackendUrl()}/auth/customer/emailpass/register`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -162,7 +183,7 @@ export async function registerCustomer(payload: CustomerRegisterPayload): Promis
     const memberSince = `${monthNames[now.getMonth()]} ${now.getFullYear()}`
 
     // Step 2: Create customer record linked to this identity
-    const custResponse = await fetch(`${BACKEND_URL}/store/customers`, {
+    const custResponse = await fetch(`${getBackendUrl()}/store/customers`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -214,7 +235,7 @@ export async function registerCustomer(payload: CustomerRegisterPayload): Promis
  * Retrieve the current authenticated customer and addresses
  */
 export async function getCustomerMe(token: string): Promise<Customer> {
-  const response = await fetch(`${BACKEND_URL}/store/customers/me?fields=*addresses`, {
+  const response = await fetch(`${getBackendUrl()}/store/customers/me?fields=*addresses`, {
     method: "GET",
     headers: {
       "Authorization": `Bearer ${token}`,
@@ -234,7 +255,7 @@ export async function getCustomerMe(token: string): Promise<Customer> {
  * Update the current authenticated customer profile
  */
 export async function updateCustomerMe(token: string, payload: CustomerUpdatePayload): Promise<Customer> {
-  const response = await fetch(`${BACKEND_URL}/store/customers/me`, {
+  const response = await fetch(`${getBackendUrl()}/store/customers/me`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -257,7 +278,7 @@ export async function updateCustomerMe(token: string, payload: CustomerUpdatePay
  * Add a new shipping/billing address to the authenticated customer
  */
 export async function addCustomerAddress(token: string, address: CustomerAddressPayload): Promise<CustomerAddress> {
-  const response = await fetch(`${BACKEND_URL}/store/customers/me/addresses`, {
+  const response = await fetch(`${getBackendUrl()}/store/customers/me/addresses`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -280,7 +301,7 @@ export async function addCustomerAddress(token: string, address: CustomerAddress
  * Delete a customer address
  */
 export async function deleteCustomerAddress(token: string, addressId: string): Promise<void> {
-  const response = await fetch(`${BACKEND_URL}/store/customers/me/addresses/${addressId}`, {
+  const response = await fetch(`${getBackendUrl()}/store/customers/me/addresses/${addressId}`, {
     method: "DELETE",
     headers: {
       "Authorization": `Bearer ${token}`,
@@ -311,7 +332,7 @@ export async function getCustomerOrders(token?: string, customerId?: string, ema
     }
 
     // Attempt custom order lookup directly connected to Medusa 2.0 PostgreSQL Order Module
-    const customResponse = await fetch(`${BACKEND_URL}/store/custom/orders?${params.toString()}`, {
+    const customResponse = await fetch(`${getBackendUrl()}/store/custom/orders?${params.toString()}`, {
       method: "GET",
       headers,
     })
@@ -325,7 +346,7 @@ export async function getCustomerOrders(token?: string, customerId?: string, ema
 
     // Fallback to standard Medusa store orders if authenticated with bearer token
     if (token) {
-      const response = await fetch(`${BACKEND_URL}/store/orders?fields=*items,*items.variant,*shipping_address`, {
+      const response = await fetch(`${getBackendUrl()}/store/orders?fields=*items,*items.variant,*shipping_address`, {
         method: "GET",
         headers,
       })
@@ -354,7 +375,7 @@ export async function createStoreOrder(payload: any, token?: string): Promise<{ 
     headers["Authorization"] = `Bearer ${token}`
   }
 
-  const response = await fetch(`${BACKEND_URL}/store/custom/orders`, {
+  const response = await fetch(`${getBackendUrl()}/store/custom/orders`, {
     method: "POST",
     headers,
     body: JSON.stringify(payload),
