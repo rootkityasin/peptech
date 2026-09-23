@@ -50,12 +50,18 @@ if (fs.existsSync(serverDir)) {
 }
 
 const entryScript = `const path = require('path');
-const backendDir = path.resolve(__dirname, '../backend/apps/backend');
-process.chdir(backendDir);
-require(path.join(backendDir, 'server.js'));
+require(path.resolve(__dirname, '../server.js'));
 `;
 fs.writeFileSync(path.join(distDir, 'index.js'), entryScript);
 fs.writeFileSync(path.join(distDir, 'server.js'), entryScript);
+fs.writeFileSync(path.join(distDir, 'package.json'), JSON.stringify({
+  name: "peptech-dist",
+  version: "1.0.0",
+  private: true,
+  main: "server.js",
+  scripts: { "start": "node server.js" },
+  dependencies: { "express": "^5.2.1" }
+}, null, 2));
 
 // 4. Prepare .next/standalone & .next/static (for Hostinger 'Next.js' preset)
 const nextDir = path.resolve(__dirname, '.next');

@@ -2,6 +2,10 @@
   "name": "peptech",
   "version": "1.0.0",
   "private": true,
+  "main": "server.js",
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
   "description": "PEPTECH Custom Storefront & Medusa 2.0 Admin Backend",
   "scripts": {
     "postinstall": "npm install --prefix backend",
@@ -22,6 +26,7 @@
   "author": "rootkityasin",
   "license": "UNLICENSED",
   "dependencies": {
-    "@supabase/supabase-js": "^2.0.0"
+    "@supabase/supabase-js": "^2.0.0",
+    "express": "^5.2.1"
   }
 }

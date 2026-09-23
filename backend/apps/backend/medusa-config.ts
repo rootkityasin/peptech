@@ -2,10 +2,13 @@ import { loadEnv, defineConfig } from '@medusajs/framework/utils'
 
 loadEnv(process.env.NODE_ENV || 'development', process.cwd())
 
+const defaultDatabaseUrl = 'postgresql://postgres.ubzoovlhbnztjwemvrwo:Peptech2026!@aws-0-eu-west-2.pooler.supabase.com:6543/postgres?sslmode=require'
+const dbUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || defaultDatabaseUrl
+
 module.exports = defineConfig({
   projectConfig: {
-    databaseUrl: process.env.DATABASE_URL,
-    databaseDriverOptions: process.env.DATABASE_URL?.includes('localhost') || process.env.DATABASE_URL?.includes('127.0.0.1')
+    databaseUrl: dbUrl,
+    databaseDriverOptions: dbUrl?.includes('localhost') || dbUrl?.includes('127.0.0.1')
       ? { connection: { ssl: false } }
       : { connection: { ssl: { rejectUnauthorized: false } } },
     http: {
