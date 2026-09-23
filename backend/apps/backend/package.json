@@ -14,7 +14,7 @@
     "medusa"
   ],
   "scripts": {
-    "build": "medusa build",
+    "build": "medusa build --lint false",
     "start": "medusa start",
     "dev": "medusa develop --no-lint",
     "lint": "medusa lint",
