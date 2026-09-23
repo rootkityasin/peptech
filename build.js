@@ -6,6 +6,17 @@ console.log('[PEPTECH] Starting Medusa production build...');
 
 const backendDir = path.resolve(__dirname, 'backend/apps/backend');
 
+// 0. Sync custom admin chunks (ShopifyOrderList & ShopifyOrderDetail) before build
+const updateChunksScript = path.resolve(backendDir, 'src/admin/update_chunks.js');
+if (fs.existsSync(updateChunksScript)) {
+  try {
+    console.log('[PEPTECH] Syncing custom admin chunks...');
+    require(updateChunksScript);
+  } catch (chunkErr) {
+    console.warn('[PEPTECH WARN] Could not run update_chunks.js:', chunkErr.message);
+  }
+}
+
 // 1. Build Medusa backend and admin dashboard inside backend directory
 execSync('npx medusa build --lint false', {
   stdio: 'inherit',
@@ -16,14 +27,26 @@ execSync('npx medusa build --lint false', {
 const serverDir = path.resolve(backendDir, '.medusa/server');
 const adminPublicDir = path.join(serverDir, 'public/admin');
 
-// 2. Mirror admin build directly to root /app so web server serves /app seamlessly
+// 2. Mirror admin build directly to root /app and backend public/admin
 const rootAppDir = path.resolve(__dirname, 'app');
+const rootAppAssetsDir = path.join(rootAppDir, 'assets');
+const backendPublicAdminDir = path.join(backendDir, 'public/admin');
+const backendPublicAdminAssetsDir = path.join(backendPublicAdminDir, 'assets');
+
 if (fs.existsSync(adminPublicDir)) {
-  if (!fs.existsSync(rootAppDir)) {
-    fs.mkdirSync(rootAppDir, { recursive: true });
+  // Mirror to root /app
+  if (fs.existsSync(rootAppAssetsDir)) {
+    fs.rmSync(rootAppAssetsDir, { recursive: true, force: true });
   }
   fs.cpSync(adminPublicDir, rootAppDir, { recursive: true });
   console.log('[PEPTECH] Mirrored admin build to root /app directory.');
+
+  // Mirror to backend/apps/backend/public/admin
+  if (fs.existsSync(backendPublicAdminAssetsDir)) {
+    fs.rmSync(backendPublicAdminAssetsDir, { recursive: true, force: true });
+  }
+  fs.cpSync(adminPublicDir, backendPublicAdminDir, { recursive: true });
+  console.log('[PEPTECH] Mirrored admin build to backend/apps/backend/public/admin directory.');
 }
 
 // 3. Prepare dist directory (for Hostinger 'Other' preset)
@@ -36,6 +59,10 @@ if (fs.existsSync(serverDir)) {
 
   // Copy admin build to dist/app as well
   const distAppDir = path.join(distDir, 'app');
+  const distAppAssetsDir = path.join(distAppDir, 'assets');
+  if (fs.existsSync(distAppAssetsDir)) {
+    fs.rmSync(distAppAssetsDir, { recursive: true, force: true });
+  }
   if (fs.existsSync(adminPublicDir)) {
     fs.cpSync(adminPublicDir, distAppDir, { recursive: true });
   }
