@@ -13,16 +13,40 @@ execSync('npx medusa build --lint false', {
   env: { ...process.env, NODE_ENV: 'production' },
 });
 
-// 2. Prepare dist directory (for Hostinger 'Other' preset)
-const distDir = path.resolve(__dirname, 'dist');
 const serverDir = path.resolve(backendDir, '.medusa/server');
+const adminPublicDir = path.join(serverDir, 'public/admin');
 
+// 2. Mirror admin build directly to root /app so web server serves /app seamlessly
+const rootAppDir = path.resolve(__dirname, 'app');
+if (fs.existsSync(adminPublicDir)) {
+  if (!fs.existsSync(rootAppDir)) {
+    fs.mkdirSync(rootAppDir, { recursive: true });
+  }
+  fs.cpSync(adminPublicDir, rootAppDir, { recursive: true });
+  console.log('[PEPTECH] Mirrored admin build to root /app directory.');
+}
+
+// 3. Prepare dist directory (for Hostinger 'Other' preset)
+const distDir = path.resolve(__dirname, 'dist');
 if (fs.existsSync(serverDir)) {
   if (!fs.existsSync(distDir)) {
     fs.mkdirSync(distDir, { recursive: true });
   }
   fs.cpSync(serverDir, distDir, { recursive: true });
-  console.log('[PEPTECH] Mirrored .medusa/server to dist directory.');
+
+  // Copy admin build to dist/app as well
+  const distAppDir = path.join(distDir, 'app');
+  if (fs.existsSync(adminPublicDir)) {
+    fs.cpSync(adminPublicDir, distAppDir, { recursive: true });
+  }
+
+  // Copy root index.html and .htaccess to dist
+  const rootIndex = path.resolve(__dirname, 'index.html');
+  const rootHtaccess = path.resolve(__dirname, '.htaccess');
+  if (fs.existsSync(rootIndex)) fs.copyFileSync(rootIndex, path.join(distDir, 'index.html'));
+  if (fs.existsSync(rootHtaccess)) fs.copyFileSync(rootHtaccess, path.join(distDir, '.htaccess'));
+
+  console.log('[PEPTECH] Mirrored .medusa/server and admin routes to dist directory.');
 }
 
 const entryScript = `const path = require('path');
@@ -33,7 +57,7 @@ require(path.join(backendDir, 'server.js'));
 fs.writeFileSync(path.join(distDir, 'index.js'), entryScript);
 fs.writeFileSync(path.join(distDir, 'server.js'), entryScript);
 
-// 3. Prepare .next/standalone & .next/static (for Hostinger 'Next.js' preset)
+// 4. Prepare .next/standalone & .next/static (for Hostinger 'Next.js' preset)
 const nextDir = path.resolve(__dirname, '.next');
 const standaloneDir = path.join(nextDir, 'standalone');
 const nextStaticDir = path.join(nextDir, 'static');
@@ -46,7 +70,6 @@ if (!fs.existsSync(nextStaticDir)) {
 }
 
 // Copy public admin assets to .next/static
-const adminPublicDir = path.join(serverDir, 'public');
 if (fs.existsSync(adminPublicDir)) {
   fs.cpSync(adminPublicDir, nextStaticDir, { recursive: true });
 }
