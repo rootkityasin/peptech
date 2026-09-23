@@ -38,7 +38,11 @@ export function ProductBuyBox({
   const [isCartridgeOpen, setIsCartridgeOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  const isRefill = product?.format === "refill-cartridge" || tag === "REFILL CARTRIDGE"
+  const isRefill =
+    product?.format === "refill-cartridge" ||
+    tag === "REFILL CARTRIDGE" ||
+    product?.handle?.includes("cartridge") ||
+    (typeof title === "string" && title.toLowerCase().includes("cartridge"))
 
   // Click outside listener to smoothly close dropdown
   useEffect(() => {
@@ -62,48 +66,50 @@ export function ProductBuyBox({
   }, [product?.name, title])
 
   const currentOneTimePrice = isRefill
-    ? (selectedCartridge.price || product?.price || price || 69.99)
+    ? (product?.price || price || selectedCartridge.price || 69.99)
     : (price || 195.00)
 
   const currentSubscribePrice = isRefill
-    ? (selectedCartridge.subscribePrice || product?.subscribePrice || subscribePrice || Number((currentOneTimePrice * 0.9).toFixed(2)))
+    ? (product?.subscribePrice || subscribePrice || Number((currentOneTimePrice * 0.9).toFixed(2)))
     : (subscribePrice || 175.50)
 
   const totalPrice = purchaseType === "subscription" ? currentSubscribePrice : currentOneTimePrice
 
   // Determine title with balanced line break matching "Complete PEPTECH®\nPen Set"
-  const rawTitle = title || (isRefill ? selectedCartridge.name.split("·")[0].trim() : "Complete PEPTECH®\nPen Set")
+  const rawTitle = title || (isRefill ? (product?.name || selectedCartridge.name.split("·")[0].trim()) : "Complete PEPTECH®\nPen Set")
   const displayTitle = rawTitle.includes("\n")
     ? rawTitle
     : rawTitle.includes("Refill")
     ? rawTitle.replace(/ (Refill|Cartridge|Refill Cartridge)$/i, "\n$1")
     : rawTitle
 
-  const displaySubtitle = subtitle || "One system. Multiple possibilities."
-  const displayDescription = description || "Get started with the complete PEPTECH® system. Includes reusable pen, a compatible prefilled cartridge, 14 instructions and all accessories you need for accurate, reliable testing."
+  const displaySubtitle = subtitle || (isRefill ? "Pre-filled 1.5 mL Cartridge • Fits PEPTECH® Precision Pen" : "One system. Multiple possibilities.")
+  const displayDescription = description || (isRefill ? (product?.description || "Precision engineered pre-filled cartridge compatible with PEPTECH reusable precision pens.") : "Get started with the complete PEPTECH® system. Includes reusable pen, a compatible prefilled cartridge, 14 instructions and all accessories you need for accurate, reliable testing.")
 
   const handleAddToCart = () => {
     if (isRefill) {
+      const prodTitle = product?.name || title || selectedCartridge.name.split("·")[0].trim()
+      const cleanTitle = prodTitle.split("·")[0].trim()
       const batchNum = selectedCartridge.name.includes("Batch")
         ? selectedCartridge.name.split("Batch")[1]?.trim().replace(/^#/, "")
         : "CRT-2026-08B"
 
       addItem({
-        id: `cartridge-${selectedCartridge.id}-${purchaseType}`,
-        title: selectedCartridge.name.split("·")[0].trim(),
+        id: product?.id ? `${product.id}-${purchaseType}` : `cartridge-${selectedCartridge.id}-${purchaseType}`,
+        title: cleanTitle,
         format: "refill",
-        strength: selectedCartridge.name.split("·")[0].trim(),
+        strength: cleanTitle,
         price: totalPrice,
         isSubscription: purchaseType === "subscription",
         subscriptionIntervalDays: purchaseType === "subscription" ? 28 : undefined,
         discountPercent: purchaseType === "subscription" ? 10 : undefined,
-        sku: `PEP-CRT-${selectedCartridge.id.toUpperCase()}`,
+        sku: `PEP-CRT-${(product?.id || selectedCartridge.id).toUpperCase().replace(/[^A-Z0-9]/g, "-")}`,
         batch: batchNum,
         image: product?.image || "/images/peptech/cartridge.webp",
         options: [
           {
             label: "Cartridge",
-            value: selectedCartridge.name.split("·")[0].trim(),
+            value: cleanTitle,
           },
           {
             label: "Purchase Type",
@@ -258,72 +264,92 @@ export function ProductBuyBox({
 
       </div>
 
-      {/* Product Dropdowns Container - Figma Node 60:11970 */}
-      <div className="flex flex-col gap-[14px] items-start w-full relative z-20">
-        
-        {/* Dropdown: Select Prefilled Cartridge */}
-        <div ref={dropdownRef} className="flex flex-col gap-[6px] items-start w-full relative">
-          <label className="font-semibold text-[#0a1f3b] text-[12px]">
-            Select Prefilled Cartridge (28-Day Refill)
-          </label>
-          <div
-            onClick={() => setIsCartridgeOpen(!isCartridgeOpen)}
-            className={`bg-white border-[1.5px] rounded-[8px] px-[16px] py-[11px] flex items-center justify-between w-full cursor-pointer transition-all duration-300 ${
-              isCartridgeOpen
-                ? "border-[#16a6a3] shadow-xs ring-1 ring-[#16a6a3]/20"
-                : "border-[#e3e8f0] hover:border-slate-400"
-            }`}
-          >
-            <span className="font-medium text-[#0a1f3b] text-[13px] truncate pr-2">
-              {selectedCartridge.name}
-            </span>
-            <div className="flex gap-[10px] items-center shrink-0">
-              <span className="bg-[#e6fffa] text-[#17a6a3] text-[10px] font-semibold px-[8px] py-[3px] rounded-[4px]">
-                {selectedCartridge.badge}
+      {/* Product Dropdowns Container - Only shown for Complete Pen Set so customer can choose bundled cartridge */}
+      {!isRefill && (
+        <div className="flex flex-col gap-[14px] items-start w-full relative z-20">
+          
+          {/* Dropdown: Select Prefilled Cartridge */}
+          <div ref={dropdownRef} className="flex flex-col gap-[6px] items-start w-full relative">
+            <label className="font-semibold text-[#0a1f3b] text-[12px]">
+              Select Prefilled Cartridge (Included with Pen Set)
+            </label>
+            <div
+              onClick={() => setIsCartridgeOpen(!isCartridgeOpen)}
+              className={`bg-white border-[1.5px] rounded-[8px] px-[16px] py-[11px] flex items-center justify-between w-full cursor-pointer transition-all duration-300 ${
+                isCartridgeOpen
+                  ? "border-[#16a6a3] shadow-xs ring-1 ring-[#16a6a3]/20"
+                  : "border-[#e3e8f0] hover:border-slate-400"
+              }`}
+            >
+              <span className="font-medium text-[#0a1f3b] text-[13px] truncate pr-2">
+                {selectedCartridge.name}
               </span>
-              <svg
-                className={`w-4 h-4 transition-transform duration-500 ease-in-out transform ${
-                  isCartridgeOpen ? "rotate-180 text-[#16a6a3]" : "rotate-0 text-[#64748b]"
-                }`}
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2.5}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-              </svg>
+              <div className="flex gap-[10px] items-center shrink-0">
+                <span className="bg-[#e6fffa] text-[#17a6a3] text-[10px] font-semibold px-[8px] py-[3px] rounded-[4px]">
+                  {selectedCartridge.badge}
+                </span>
+                <svg
+                  className={`w-4 h-4 transition-transform duration-500 ease-in-out transform ${
+                    isCartridgeOpen ? "rotate-180 text-[#16a6a3]" : "rotate-0 text-[#64748b]"
+                  }`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2.5}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
+
+            {/* Cartridge Options Menu with smooth transition */}
+            <div
+              className={`absolute top-[68px] left-0 w-full bg-white border border-[#e2e8f0] rounded-[8px] shadow-xl z-30 py-1 divide-y divide-slate-100 transition-all duration-500 ease-in-out transform origin-top ${
+                isCartridgeOpen
+                  ? "opacity-100 scale-y-100 translate-y-0 pointer-events-auto"
+                  : "opacity-0 scale-y-95 -translate-y-2 pointer-events-none"
+              }`}
+            >
+              {CARTRIDGE_OPTIONS.map((c) => (
+                <div
+                  key={c.id}
+                  onClick={() => {
+                    setSelectedCartridge(c)
+                    setIsCartridgeOpen(false)
+                  }}
+                  className={`px-4 py-2.5 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors ${
+                    selectedCartridge.id === c.id ? "bg-cyan-50/50" : ""
+                  }`}
+                >
+                  <span className="text-[13px] font-medium text-[#0b1f3a]">{c.name}</span>
+                  <span className="bg-[#e6fffa] text-[#17a6a3] text-[10px] font-semibold px-[6px] py-[2px] rounded">
+                    {c.badge}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* Cartridge Options Menu with smooth transition */}
-          <div
-            className={`absolute top-[68px] left-0 w-full bg-white border border-[#e2e8f0] rounded-[8px] shadow-xl z-30 py-1 divide-y divide-slate-100 transition-all duration-500 ease-in-out transform origin-top ${
-              isCartridgeOpen
-                ? "opacity-100 scale-y-100 translate-y-0 pointer-events-auto"
-                : "opacity-0 scale-y-95 -translate-y-2 pointer-events-none"
-            }`}
-          >
-            {CARTRIDGE_OPTIONS.map((c) => (
-              <div
-                key={c.id}
-                onClick={() => {
-                  setSelectedCartridge(c)
-                  setIsCartridgeOpen(false)
-                }}
-                className={`px-4 py-2.5 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors ${
-                  selectedCartridge.id === c.id ? "bg-cyan-50/50" : ""
-                }`}
-              >
-                <span className="text-[13px] font-medium text-[#0b1f3a]">{c.name}</span>
-                <span className="bg-[#e6fffa] text-[#17a6a3] text-[10px] font-semibold px-[6px] py-[2px] rounded">
-                  {c.badge}
-                </span>
-              </div>
-            ))}
-          </div>
         </div>
+      )}
 
-      </div>
+      {/* Cartridge Compatibility Badge & Reusable Pen Cross-Link */}
+      {isRefill && (
+        <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-[10px] px-4 py-3 flex items-center justify-between w-full">
+          <div className="flex items-center gap-2">
+            <span className="inline-block w-2 h-2 rounded-full bg-[#16a6a3] animate-pulse" />
+            <span className="text-[12.5px] text-[#0b1f3a] font-medium">
+              Fits PEPTECH® Reusable Precision Pen System
+            </span>
+          </div>
+          <a
+            href="/products/complete-pen-set"
+            className="text-[12px] font-semibold text-[#16a6a3] hover:text-[#0b1f3a] transition-colors hover:underline shrink-0 ml-2"
+          >
+            Need the pen? →
+          </a>
+        </div>
+      )}
 
       {/* Add to Cart Main Button - Figma Node 8:41133 */}
       <button

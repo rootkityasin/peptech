@@ -192,6 +192,16 @@ function ProductDetailContent({
           <div className="w-full lg:w-[600px] shrink-0">
             {catalogProduct.format === "freeze-dried-vial" ? (
               <VialBuyBox product={catalogProduct} />
+            ) : catalogProduct.format === "refill-cartridge" ? (
+              <ProductBuyBox
+                product={catalogProduct}
+                title={title}
+                subtitle="Pre-filled 1.5 mL Cartridge • Fits PEPTECH® Precision Pen"
+                description={catalogProduct.description || "Precision engineered pre-filled cartridge compatible with the PEPTECH reusable precision pen system."}
+                price={activePrice}
+                subscribePrice={subscribePrice}
+                tag="REFILL CARTRIDGE"
+              />
             ) : (
               <ProductBuyBox
                 product={catalogProduct}
