@@ -7,6 +7,10 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
     const customerId = req.query.customer_id as string;
     const email = req.query.email as string;
 
+    if (!customerId && !email) {
+      return res.status(200).json({ orders: [], count: 0 });
+    }
+
     const filters: any = {};
     if (customerId) {
       filters.customer_id = customerId;

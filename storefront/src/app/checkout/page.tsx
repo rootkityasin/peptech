@@ -5,7 +5,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useCart } from "@/components/cart/CartContext"
 import { useCustomer } from "@/context/CustomerContext"
-import { createStoreOrder } from "@/lib/customer-api"
+import { createStoreOrder, updateCustomerMe } from "@/lib/customer-api"
 import {
   AppleLogo,
   GoogleLogo,
@@ -338,10 +338,11 @@ export default function CheckoutPage() {
       } catch {}
 
       // Handle subscription storage if present
-      if (hasSubscription) {
+      let updatedSubsToSync: any[] | null = null
+      if (hasSubscription && customer?.id) {
         try {
           const rawSubs = localStorage.getItem(`peptech_customer_subscriptions_${customer.id}`)
-          const existingSubs = rawSubs ? JSON.parse(rawSubs) : []
+          const existingSubs = rawSubs ? JSON.parse(rawSubs) : (Array.isArray(customer.metadata?.subscriptions) ? [...customer.metadata.subscriptions] : [])
           const subItems = items.filter(it => it.isSubscription)
           subItems.forEach((it) => {
             const subId = `SUB-${it.id.slice(0, 3).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`
@@ -354,6 +355,7 @@ export default function CheckoutPage() {
               status: "Active",
               price: it.price * (1 - (it.discountPercent || 10) / 100),
               nextBillingDate: nextBilling.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }),
+              nextDispatchDate: nextBilling.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }),
               image: it.image,
               quantity: it.quantity,
               cardEnding: last4,
@@ -361,14 +363,16 @@ export default function CheckoutPage() {
             })
           })
           localStorage.setItem(`peptech_customer_subscriptions_${customer.id}`, JSON.stringify(existingSubs))
+          updatedSubsToSync = existingSubs
         } catch {}
       }
 
       // If card, save payment card
-      if (paymentMethod === "card" && cleanNum.length >= 4) {
+      let updatedCardsToSync: any[] | null = null
+      if (paymentMethod === "card" && cleanNum.length >= 4 && customer?.id) {
         try {
           const rawCards = localStorage.getItem(`peptech_customer_cards_${customer.id}`)
-          const existingCards = rawCards ? JSON.parse(rawCards) : []
+          const existingCards = rawCards ? JSON.parse(rawCards) : (Array.isArray(customer.metadata?.payment_cards) ? [...customer.metadata.payment_cards] : [])
           if (!existingCards.some((c: any) => c.last4 === last4)) {
             existingCards.push({
               id: `card_${Date.now()}`,
@@ -381,8 +385,24 @@ export default function CheckoutPage() {
               isDefault: existingCards.length === 0,
             })
             localStorage.setItem(`peptech_customer_cards_${customer.id}`, JSON.stringify(existingCards))
+            updatedCardsToSync = existingCards
           }
         } catch {}
+      }
+
+      // Persist to PostgreSQL customer metadata via Medusa API for permanent cross-device sync
+      if (token && (updatedSubsToSync || updatedCardsToSync)) {
+        try {
+          await updateCustomerMe(token, {
+            metadata: {
+              ...(customer.metadata || {}),
+              ...(updatedSubsToSync ? { subscriptions: updatedSubsToSync } : {}),
+              ...(updatedCardsToSync ? { payment_cards: updatedCardsToSync } : {}),
+            },
+          })
+        } catch (syncErr) {
+          console.warn("Could not sync subscriptions/cards to customer metadata in database:", syncErr)
+        }
       }
 
       clearCart()

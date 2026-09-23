@@ -147,27 +147,29 @@ function AccountContent() {
         }
         setOrders(loadedOrders)
 
-        try {
-          const rawSubs = localStorage.getItem(`peptech_customer_subscriptions_${customer.id}`)
-          if (rawSubs) {
-            setSubscriptions(JSON.parse(rawSubs))
-          } else {
-            setSubscriptions([])
-          }
-        } catch {
-          setSubscriptions([])
+        // 1. Dynamic Subscriptions: remote customer metadata in PostgreSQL prioritized over local storage
+        let dynamicSubs: any[] = []
+        if (Array.isArray(customer.metadata?.subscriptions) && customer.metadata.subscriptions.length > 0) {
+          dynamicSubs = customer.metadata.subscriptions
+        } else {
+          try {
+            const rawSubs = localStorage.getItem(`peptech_customer_subscriptions_${customer.id}`)
+            if (rawSubs) dynamicSubs = JSON.parse(rawSubs)
+          } catch {}
         }
+        setSubscriptions(dynamicSubs)
 
-        try {
-          const rawCards = localStorage.getItem(`peptech_customer_cards_${customer.id}`)
-          if (rawCards) {
-            setPaymentCards(JSON.parse(rawCards))
-          } else {
-            setPaymentCards([])
-          }
-        } catch {
-          setPaymentCards([])
+        // 2. Dynamic Payment Cards: remote customer metadata in PostgreSQL prioritized over local storage
+        let dynamicCards: any[] = []
+        if (Array.isArray(customer.metadata?.payment_cards) && customer.metadata.payment_cards.length > 0) {
+          dynamicCards = customer.metadata.payment_cards
+        } else {
+          try {
+            const rawCards = localStorage.getItem(`peptech_customer_cards_${customer.id}`)
+            if (rawCards) dynamicCards = JSON.parse(rawCards)
+          } catch {}
         }
+        setPaymentCards(dynamicCards)
       } finally {
         setIsLoadingOrders(false)
       }
@@ -280,6 +282,7 @@ function AccountContent() {
     setPaymentCards(updated)
     if (customer?.id) {
       localStorage.setItem(`peptech_customer_cards_${customer.id}`, JSON.stringify(updated))
+      void updateProfile({ metadata: { ...(customer.metadata || {}), payment_cards: updated } })
     }
     setIsAddCardOpen(false)
     setCardNumber("")
@@ -294,6 +297,7 @@ function AccountContent() {
     setPaymentCards(updated)
     if (customer?.id) {
       localStorage.setItem(`peptech_customer_cards_${customer.id}`, JSON.stringify(updated))
+      void updateProfile({ metadata: { ...(customer.metadata || {}), payment_cards: updated } })
     }
   }
 
@@ -305,6 +309,59 @@ function AccountContent() {
     setPaymentCards(updated)
     if (customer?.id) {
       localStorage.setItem(`peptech_customer_cards_${customer.id}`, JSON.stringify(updated))
+      void updateProfile({ metadata: { ...(customer.metadata || {}), payment_cards: updated } })
+    }
+  }
+
+  // Dynamic Subscription Management Handlers
+  const handlePauseSubscription = async (subId: string) => {
+    const updated = subscriptions.map((s) => {
+      if (s.id === subId) {
+        const nextStatus = s.status === "Paused" ? "Active" : "Paused"
+        return { ...s, status: nextStatus }
+      }
+      return s
+    })
+    setSubscriptions(updated)
+    if (customer?.id) {
+      try {
+        localStorage.setItem(`peptech_customer_subscriptions_${customer.id}`, JSON.stringify(updated))
+        await updateProfile({ metadata: { ...(customer.metadata || {}), subscriptions: updated } })
+      } catch {}
+    }
+  }
+
+  const handleSkipSubscription = async (subId: string) => {
+    const updated = subscriptions.map((s) => {
+      if (s.id === subId) {
+        const nextDate = new Date()
+        nextDate.setDate(nextDate.getDate() + 28)
+        return {
+          ...s,
+          nextBillingDate: nextDate.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }),
+          nextDispatchDate: nextDate.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }),
+        }
+      }
+      return s
+    })
+    setSubscriptions(updated)
+    if (customer?.id) {
+      try {
+        localStorage.setItem(`peptech_customer_subscriptions_${customer.id}`, JSON.stringify(updated))
+        await updateProfile({ metadata: { ...(customer.metadata || {}), subscriptions: updated } })
+      } catch {}
+    }
+  }
+
+  const handleCancelSubscription = async (subId: string) => {
+    if (!confirm("Are you sure you want to cancel this automated 28-day refill protocol?")) return
+    const updated = subscriptions.filter((s) => s.id !== subId)
+    setSubscriptions(updated)
+    if (customer?.id) {
+      try {
+        localStorage.setItem(`peptech_customer_subscriptions_${customer.id}`, JSON.stringify(updated))
+        await updateProfile({ metadata: { ...(customer.metadata || {}), subscriptions: updated } })
+      } catch {}
     }
   }
 
@@ -974,7 +1031,7 @@ function AccountContent() {
                   </button>
                 </div>
                 <p className="font-normal text-[#64748b] text-[12.5px] sm:text-[13px]">
-                  {customer.metadata?.role || "Verified Clinical Researcher"} · Member since {customer.metadata?.member_since || "Sep 2026"} · Customer ID: {customer.metadata?.customer_id_code || customer.id}
+                  {customer.metadata?.role || "Verified Clinical Researcher"} · Member since {customer.created_at ? new Date(customer.created_at).toLocaleDateString("en-GB", { month: "short", year: "numeric" }) : (customer.metadata?.member_since || new Date().toLocaleDateString("en-GB", { month: "short", year: "numeric" }))} · Customer ID: {customer.metadata?.customer_id_code || (customer.id ? `#PEP-CUST-${customer.id.replace(/[^0-9]/g, "").slice(-4) || customer.id.slice(-4).toUpperCase()}` : "")}
                   {customer.company_name ? ` · ${customer.company_name}` : ""}
                 </p>
               </div>
@@ -983,7 +1040,7 @@ function AccountContent() {
               {subscriptions.length > 0 ? (
                 <div className="bg-[#f1f5f9] flex items-center px-[12px] py-[8px] rounded-[8px]">
                   <p className="font-medium text-[#0b1f3a] text-[12.5px] whitespace-nowrap">
-                    Next Dispatch: <span className="font-bold text-[#16a6a3]">{subscriptions[0].nextDispatchDate || "Scheduled"}</span>
+                    Next Dispatch: <span className="font-bold text-[#16a6a3]">{subscriptions[0].nextDispatchDate || subscriptions[0].nextBillingDate || "Scheduled"}</span>
                   </p>
                 </div>
               ) : (
@@ -1309,7 +1366,7 @@ function AccountContent() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => alert(`Upcoming ${subscriptions[0].nextDispatchDate} cycle skipped.`)}
+                      onClick={() => handleSkipSubscription(subscriptions[0].id)}
                       className="bg-[#f1f5f9] hover:bg-slate-200 text-[#0b1f3a] text-[12px] font-semibold px-[14px] py-[8px] rounded-[6px] transition-colors cursor-pointer"
                     >
                       Skip Next Cycle
@@ -1363,13 +1420,13 @@ function AccountContent() {
                       <div key={item.id || idx} className="bg-[#f8fafc] rounded-[8px] px-[14px] py-[10px] flex items-center justify-between">
                         <div className="flex gap-[12px] items-center flex-wrap">
                           <span className="font-bold text-[#0b1f3a] text-[13px]">
-                            Batch #{item.batchNumber || `PEP-2026-${(idx + 1) * 10}A`}
+                            {item.batchNumber ? `Batch #${item.batchNumber}` : `Batch Record #${orders[0]?.id || (idx + 1)}`}
                           </span>
                           <span className="font-medium text-[#0f172a] text-[13px]">
                             {item.title}
                           </span>
                           <span className="bg-[#e6fffa] text-[#16a6a3] text-[11px] font-bold px-[6px] py-[2px] rounded-[4px]">
-                            99.8% HPLC
+                            {item.purity || "Verified RUO"}
                           </span>
                         </div>
                         <Link
@@ -1455,11 +1512,11 @@ function AccountContent() {
                         <VisaBadge className="w-[32px] h-[20px]" monochrome />
                       )}
                       <p className="font-semibold text-[#0f172a] text-[13.5px]">
-                        {paymentCards[0].title || "Corporate Card"} ending in ...{paymentCards[0].last4 || "1234"}
+                        {paymentCards[0].title || `${paymentCards[0].brand === "mastercard" ? "Mastercard" : "Visa"} Corporate`} ending in •••• {paymentCards[0].last4}
                       </p>
                     </div>
                     <p className="font-normal text-[#64748b] text-[12px]">
-                      Expires: {paymentCards[0].expiry || "08/2028"} · Verified 3D Secure
+                      {paymentCards[0].expiry ? `Expires: ${paymentCards[0].expiry} · ` : ""}Verified 3D Secure
                     </p>
                   </div>
                 ) : (
@@ -1946,10 +2003,24 @@ function AccountContent() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => alert(`Upcoming cycle for ${sub.title} skipped.`)}
+                        onClick={() => handlePauseSubscription(sub.id)}
+                        className="bg-[#f1f5f9] hover:bg-slate-200 text-[#0b1f3a] text-[12.5px] font-semibold px-[14px] py-[8px] rounded-[6px] transition-colors cursor-pointer"
+                      >
+                        {sub.status === "Paused" ? "Resume Protocol" : "Pause Protocol"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSkipSubscription(sub.id)}
                         className="bg-[#f1f5f9] hover:bg-slate-200 text-[#0b1f3a] text-[12.5px] font-semibold px-[14px] py-[8px] rounded-[6px] transition-colors cursor-pointer"
                       >
                         Skip Next Cycle
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleCancelSubscription(sub.id)}
+                        className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-rose-200 text-[12px] font-semibold px-[12px] py-[8px] rounded-[6px] transition-colors cursor-pointer sm:ml-auto"
+                      >
+                        Cancel Protocol
                       </button>
                     </div>
 
