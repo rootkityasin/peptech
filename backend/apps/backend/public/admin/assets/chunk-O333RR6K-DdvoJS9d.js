@@ -1,0 +1,1 @@
+import{j as e}from"./index-N9q7HxLl.js";function o(){return e.jsx("div",{className:"peptech-logo-badge mb-4 flex items-center justify-center rounded-[14px] bg-[#0B1F3A] border border-[#16A6A3]/50 px-4 py-2 shadow-lg",children:e.jsx("img",{src:"/app/logo.webp",alt:"PEPTECH®",style:{height:"32px",width:"auto",objectFit:"contain",display:"block"}})})}export{o as A};

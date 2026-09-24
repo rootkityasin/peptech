@@ -8,7 +8,7 @@
   },
   "description": "PEPTECH Custom Storefront & Medusa 2.0 Admin Backend",
   "scripts": {
-    "postinstall": "npm install --prefix backend",
+    "postinstall": "npm install --prefix backend && node backend/apps/backend/src/admin/update_chunks.js",
     "build": "node build.js",
     "start": "node server.js",
     "dev:backend": "npm run dev --prefix backend",

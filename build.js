@@ -76,6 +76,50 @@ if (fs.existsSync(serverDir)) {
   console.log('[PEPTECH] Mirrored .medusa/server and admin routes to dist directory.');
 }
 
+// 4. Ensure logo.webp and PEPTECH Admin branding in index.html across all outputs
+const logoSource = path.resolve(__dirname, 'app/logo.webp');
+if (fs.existsSync(logoSource)) {
+  const logoTargets = [
+    path.join(adminPublicDir, 'logo.webp'),
+    path.join(backendPublicAdminDir, 'logo.webp'),
+    path.join(distDir, 'app/logo.webp'),
+    path.join(distDir, 'public/admin/logo.webp'),
+  ];
+  for (const lt of logoTargets) {
+    try {
+      fs.mkdirSync(path.dirname(lt), { recursive: true });
+      fs.copyFileSync(logoSource, lt);
+    } catch {}
+  }
+  console.log('[PEPTECH] Synced logo.webp across all public and dist directories.');
+}
+
+const htmlTargets = [
+  path.join(rootAppDir, 'index.html'),
+  path.join(backendPublicAdminDir, 'index.html'),
+  path.join(adminPublicDir, 'index.html'),
+  path.join(distDir, 'app/index.html'),
+];
+
+for (const ht of htmlTargets) {
+  if (fs.existsSync(ht)) {
+    let html = fs.readFileSync(ht, 'utf8');
+    let htmlMod = false;
+    if (html.includes('<title>Medusa</title>') || html.includes('<title>Medusa Admin</title>')) {
+      html = html.replace(/<title>.*?<\/title>/, '<title>PEPTECH® Admin</title>');
+      htmlMod = true;
+    }
+    if (!html.includes('/app/logo.webp')) {
+      html = html.replace('</head>', '  <link rel="icon" href="/app/logo.webp" />\n</head>');
+      htmlMod = true;
+    }
+    if (htmlMod) {
+      fs.writeFileSync(ht, html, 'utf8');
+      console.log(`[PEPTECH] Injected title and logo into ${ht}`);
+    }
+  }
+}
+
 const entryScript = `const path = require('path');
 require(path.resolve(__dirname, '../server.js'));
 `;

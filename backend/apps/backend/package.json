@@ -14,8 +14,10 @@
     "medusa"
   ],
   "scripts": {
+    "prebuild": "node src/admin/update_chunks.js",
     "build": "medusa build --lint false",
     "start": "medusa start",
+    "predev": "node src/admin/update_chunks.js",
     "dev": "medusa develop --no-lint",
     "lint": "medusa lint",
     "test:integration:http": "TEST_TYPE=integration:http NODE_OPTIONS=--experimental-vm-modules jest --silent=false --runInBand --forceExit",
