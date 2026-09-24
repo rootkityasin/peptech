@@ -14,6 +14,19 @@ console.log('[PEPTECH] Updating dashboard chunks in:', distDir);
 if (!distDir) {
   console.warn('[PEPTECH] Could not locate @medusajs/dashboard/dist directory. Checked:', possibleDistDirs);
 } else {
+  // 0. Append Dark Theme CSS to app.css
+  const darkThemeFile = path.resolve(__dirname, 'dark_theme.css');
+  const appCssFile = path.resolve(distDir, 'app.css');
+  if (fs.existsSync(darkThemeFile) && fs.existsSync(appCssFile)) {
+    const darkCss = fs.readFileSync(darkThemeFile, 'utf8');
+    let appCss = fs.readFileSync(appCssFile, 'utf8');
+    if (!appCss.includes('PEPTECH® Dark Mode Styles')) {
+      appCss += '\n\n' + darkCss;
+      fs.writeFileSync(appCssFile, appCss, 'utf8');
+      console.log('[PEPTECH] Successfully appended dark theme styles to app.css');
+    }
+  }
+
   // 1. Update Order Detail
   const detailPath = path.resolve(__dirname, 'ShopifyOrderDetail.jsx');
   const subDetailPath = path.resolve(__dirname, 'ShopifySubscriptionDetail.jsx');
@@ -45,6 +58,7 @@ if (!distDir) {
 
     const cleanDetail = detailSource
       .replace(importRegex, '')
+      .replace(/const DARK_MODE_CSS = `[\s\S]*?`;\r?\n?/, '')
       .replace('export { OrderDetail as Component };', '')
       .trim();
 

@@ -115,5 +115,29 @@ require(path.join(backendDir, 'server.js'));
 fs.writeFileSync(path.join(standaloneDir, 'server.js'), standaloneScript);
 fs.writeFileSync(path.join(standaloneDir, 'package.json'), JSON.stringify({ name: "peptech-server", private: true, main: "server.js" }, null, 2));
 
+// 5. Inject Dark Theme CSS into all admin asset bundles
+const darkThemeFile = path.resolve(backendDir, 'src/admin/dark_theme.css');
+if (fs.existsSync(darkThemeFile)) {
+  const darkCss = fs.readFileSync(darkThemeFile, 'utf8');
+  const targetDirs = [rootAppDir, backendPublicAdminDir, path.join(distDir, 'app'), nextStaticDir];
+  for (const dir of targetDirs) {
+    const assetsDir = path.join(dir, 'assets');
+    if (fs.existsSync(assetsDir)) {
+      const files = fs.readdirSync(assetsDir);
+      for (const f of files) {
+        if (f.endsWith('.css')) {
+          const cssPath = path.join(assetsDir, f);
+          let css = fs.readFileSync(cssPath, 'utf8');
+          if (!css.includes('PEPTECH® Dark Mode Styles')) {
+            fs.writeFileSync(cssPath, css + '\n\n' + darkCss, 'utf8');
+            console.log(`[PEPTECH] Injected dark theme into ${path.relative(__dirname, cssPath)}`);
+          }
+        }
+      }
+    }
+  }
+}
+
 console.log('[PEPTECH] Prepared .next/standalone and dist build outputs.');
 console.log('[PEPTECH] Production build completed successfully!');
+

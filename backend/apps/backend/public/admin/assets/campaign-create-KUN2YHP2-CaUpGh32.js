@@ -1,1 +1,0 @@
-import{a as o}from"./chunk-C36TGGI7-BDsW4eiS.js";import{j as r,R as t}from"./index-k0oaTXtb.js";import"./chunk-F6ZOHZVB-vqzPElE4.js";import"./chunk-ZNSPQGIO-BXIZ3jbV.js";import"./radio-group-DQNxkqGP.js";import"./index-IaM9hB6e.js";var n=()=>r.jsx(t,{children:r.jsx(o,{})});export{n as Component};

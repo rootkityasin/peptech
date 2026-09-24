@@ -1,0 +1,141 @@
+/* ========================================================
+   PEPTECH® Dark Mode Styles for Orders & Subscriptions
+   ======================================================== */
+
+html.dark .orders-theme-root,
+.dark .orders-theme-root,
+html.dark [class*="min-h-screen"],
+.dark [class*="min-h-screen"] {
+  background-color: #121214 !important;
+  color: #f4f4f5 !important;
+}
+
+html.dark .orders-theme-root .bg-white,
+.dark .orders-theme-root .bg-white {
+  background-color: #1c1c1f !important;
+  color: #f4f4f5 !important;
+}
+
+html.dark .orders-theme-root [class*="bg-[#f6f6f7]"],
+.dark .orders-theme-root [class*="bg-[#f6f6f7]"],
+html.dark .orders-theme-root [class*="bg-[#fafbfb]"],
+.dark .orders-theme-root [class*="bg-[#fafbfb]"],
+html.dark .orders-theme-root [class*="bg-[#f9fafb]"],
+.dark .orders-theme-root [class*="bg-[#f9fafb]"] {
+  background-color: #161618 !important;
+}
+
+html.dark .orders-theme-root [class*="border-[#e1e3e5]"],
+.dark .orders-theme-root [class*="border-[#e1e3e5]"],
+html.dark .orders-theme-root [class*="border-[#c9cccf]"],
+.dark .orders-theme-root [class*="border-[#c9cccf]"],
+html.dark .orders-theme-root [class*="divide-[#e1e3e5]"] > :not([hidden]) ~ :not([hidden]),
+.dark .orders-theme-root [class*="divide-[#e1e3e5]"] > :not([hidden]) ~ :not([hidden]) {
+  border-color: #27272a !important;
+}
+
+html.dark .orders-theme-root [class*="text-[#202223]"],
+.dark .orders-theme-root [class*="text-[#202223]"],
+html.dark .orders-theme-root h1, html.dark .orders-theme-root h2, html.dark .orders-theme-root h3,
+.dark .orders-theme-root h1, .dark .orders-theme-root h2, .dark .orders-theme-root h3 {
+  color: #f4f4f5 !important;
+}
+
+html.dark .orders-theme-root [class*="text-[#5c5f62]"],
+.dark .orders-theme-root [class*="text-[#5c5f62]"] {
+  color: #a1a1aa !important;
+}
+
+html.dark .orders-theme-root [class*="text-[#8c9196]"],
+.dark .orders-theme-root [class*="text-[#8c9196]"],
+html.dark .orders-theme-root [class*="text-[#c9cccf]"],
+.dark .orders-theme-root [class*="text-[#c9cccf]"] {
+  color: #71717a !important;
+}
+
+html.dark .orders-theme-root tr:hover,
+.dark .orders-theme-root tr:hover,
+html.dark .orders-theme-root tr[class*="hover:bg-[#f6f6f7]"]:hover,
+.dark .orders-theme-root tr[class*="hover:bg-[#f6f6f7]"]:hover {
+  background-color: #232326 !important;
+}
+
+html.dark .orders-theme-root [class*="text-[#2c6ecb]"],
+.dark .orders-theme-root [class*="text-[#2c6ecb]"] {
+  color: #60a5fa !important;
+}
+
+html.dark .orders-theme-root button.bg-white,
+.dark .orders-theme-root button.bg-white,
+html.dark .orders-theme-root button[class*="bg-white"],
+.dark .orders-theme-root button[class*="bg-white"] {
+  background-color: #232326 !important;
+  border-color: #3f3f46 !important;
+  color: #f4f4f5 !important;
+}
+
+html.dark .orders-theme-root button.bg-white:hover,
+.dark .orders-theme-root button.bg-white:hover,
+html.dark .orders-theme-root button[class*="bg-white"]:hover,
+.dark .orders-theme-root button[class*="bg-white"]:hover {
+  background-color: #2c2c30 !important;
+}
+
+html.dark .orders-theme-root input[type="text"],
+.dark .orders-theme-root input[type="text"],
+html.dark .orders-theme-root input[type="search"],
+.dark .orders-theme-root input[type="search"],
+html.dark .orders-theme-root textarea,
+.dark .orders-theme-root textarea,
+html.dark .orders-theme-root select,
+.dark .orders-theme-root select {
+  background-color: #161618 !important;
+  border-color: #3f3f46 !important;
+  color: #f4f4f5 !important;
+}
+
+html.dark .orders-theme-root input[type="text"]::placeholder,
+.dark .orders-theme-root input[type="text"]::placeholder,
+html.dark .orders-theme-root input[type="search"]::placeholder,
+.dark .orders-theme-root input[type="search"]::placeholder {
+  color: #71717a !important;
+}
+
+html.dark .orders-theme-root [class*="bg-[#e4e5e7]"],
+.dark .orders-theme-root [class*="bg-[#e4e5e7]"] {
+  background-color: #27272a !important;
+  color: #f4f4f5 !important;
+}
+
+html.dark .orders-theme-root [class*="bg-[#5c5f62]"],
+.dark .orders-theme-root [class*="bg-[#5c5f62]"] {
+  background-color: #a1a1aa !important;
+}
+
+html.dark .orders-theme-root [class*="bg-[#ffea8a]"],
+.dark .orders-theme-root [class*="bg-[#ffea8a]"] {
+  background-color: #3b2804 !important;
+  color: #fef08a !important;
+  border: 1px solid rgba(234, 179, 8, 0.25) !important;
+}
+
+html.dark .orders-theme-root [class*="bg-[#f2f7fe]"],
+.dark .orders-theme-root [class*="bg-[#f2f7fe]"],
+html.dark .orders-theme-root [class*="bg-[#eef7ff]"],
+.dark .orders-theme-root [class*="bg-[#eef7ff]"] {
+  background-color: #172554 !important;
+  color: #93c5fd !important;
+}
+
+html.dark .orders-theme-root [class*="bg-[#f1f2f3]"],
+.dark .orders-theme-root [class*="bg-[#f1f2f3]"] {
+  background-color: #27272a !important;
+  color: #e4e4e7 !important;
+  border-color: #3f3f46 !important;
+}
+
+html.dark .orders-theme-root input[type="checkbox"],
+.dark .orders-theme-root input[type="checkbox"] {
+  background-color: #27272a !important;
+  border-color: #3f3f46 !important;
+}
