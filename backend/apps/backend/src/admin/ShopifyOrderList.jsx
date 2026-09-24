@@ -153,6 +153,7 @@ export function OrderList() {
   const [selectedOrders, setSelectedOrders] = useState([]);
   const [filterPayment, setFilterPayment] = useState("all");
   const [filterFulfillment, setFilterFulfillment] = useState("all");
+  const [filterReturn, setFilterReturn] = useState("all");
   const [showFilterMenu, setShowFilterMenu] = useState(false);
   const [subscriptions, setSubscriptions] = useState([]);
   const [sortField, setSortField] = useState("date"); // "date" | "order"
@@ -243,16 +244,24 @@ export function OrderList() {
       const tags = Array.isArray(meta.tags) ? meta.tags : [];
       const paymentStatus = (meta.payment_status || (order.status === "completed" ? "paid" : "pending")).toLowerCase();
       const fulfillmentStatus = (meta.fulfillment_status || (order.fulfillments?.length > 0 ? "fulfilled" : "unfulfilled")).toLowerCase();
+      const returns = Array.isArray(meta.returns) ? meta.returns : [];
+      const returnStatus = meta.return_status || (returns.some((r) => r.status === "open") ? "return_requested" : returns.some((r) => r.status === "received") ? "returned" : null);
 
       // Tab filter
       if (activeTab === "open" && order.status === "completed") return false;
       if (activeTab === "unfulfilled" && fulfillmentStatus === "fulfilled") return false;
       if (activeTab === "unpaid" && paymentStatus === "paid") return false;
       if (activeTab === "subscriptions" && !isSubscriptionOrder(order)) return false;
+      if (activeTab === "returns" && !returnStatus && returns.length === 0) return false;
 
       // Dropdown filters
       if (filterPayment !== "all" && paymentStatus !== filterPayment) return false;
       if (filterFulfillment !== "all" && fulfillmentStatus !== filterFulfillment) return false;
+      if (filterReturn !== "all") {
+        if (filterReturn === "return_requested" && returnStatus !== "return_requested") return false;
+        if (filterReturn === "returned" && returnStatus !== "returned") return false;
+        if (filterReturn === "none" && returnStatus) return false;
+      }
 
       // Search query
       if (searchQuery.trim()) {
@@ -287,7 +296,7 @@ export function OrderList() {
       }
       return 0;
     });
-  }, [orders, activeTab, searchQuery, filterPayment, filterFulfillment, sortField, sortDirection]);
+  }, [orders, activeTab, searchQuery, filterPayment, filterFulfillment, filterReturn, sortField, sortDirection]);
 
   // Filter subscriptions for search
   const filteredSubscriptions = useMemo(() => {
@@ -328,7 +337,12 @@ export function OrderList() {
     const unpaid = orders.filter((o) => (o.metadata?.payment_status || "pending") !== "paid").length;
     const subOrdersCount = orders.filter(isSubscriptionOrder).length;
     const subscriptionsTotal = Math.max(subOrdersCount, subscriptions.length);
-    return { all, open, unfulfilled, unpaid, subscriptions: subscriptionsTotal };
+    const returnsCount = orders.filter((o) => {
+      const meta = o.metadata || {};
+      const rets = Array.isArray(meta.returns) ? meta.returns : [];
+      return meta.return_status || rets.length > 0;
+    }).length;
+    return { all, open, unfulfilled, unpaid, subscriptions: subscriptionsTotal, returns: returnsCount };
   }, [orders, subscriptions]);
 
   // Checkbox toggle
@@ -415,6 +429,7 @@ export function OrderList() {
               { key: "unfulfilled", label: "Unfulfilled", count: counts.unfulfilled },
               { key: "unpaid", label: "Unpaid", count: counts.unpaid },
               { key: "subscriptions", label: "Subscriptions", count: counts.subscriptions },
+              { key: "returns", label: "Returns", count: counts.returns },
             ].map((tab) =>
               _jsxs(
                 "button",
@@ -513,10 +528,26 @@ export function OrderList() {
                             }),
                           ],
                         }),
+                        _jsxs("div", {
+                          children: [
+                            _jsx("div", { className: "font-semibold text-[#202223] mb-1", children: "Return status" }),
+                            _jsxs("select", {
+                              value: filterReturn,
+                              onChange: (e) => setFilterReturn(e.target.value),
+                              className: "w-full border border-[#c9cccf] rounded p-1.5 text-xs bg-white",
+                              children: [
+                                _jsx("option", { value: "all", children: "All" }),
+                                _jsx("option", { value: "return_requested", children: "Return in progress" }),
+                                _jsx("option", { value: "returned", children: "Returned" }),
+                              ],
+                            }),
+                          ],
+                        }),
                         _jsx("button", {
                           onClick: () => {
                             setFilterPayment("all");
                             setFilterFulfillment("all");
+                            setFilterReturn("all");
                             setSearchQuery("");
                             setShowFilterMenu(false);
                           },
@@ -793,6 +824,10 @@ export function OrderList() {
                           const isPartiallyRefunded = paymentStatus === "partially_refunded";
                           const isPaid = paymentStatus === "paid";
                           const isFulfilled = (meta.fulfillment_status || (order.fulfillments?.length > 0 ? "fulfilled" : "unfulfilled")) === "fulfilled";
+                          const returns = Array.isArray(meta.returns) ? meta.returns : [];
+                          const returnStatus = meta.return_status || (returns.some((r) => r.status === "open") ? "return_requested" : returns.some((r) => r.status === "received") ? "returned" : null);
+                          const isReturnRequested = returnStatus === "return_requested";
+                          const isReturned = returnStatus === "returned";
                           const tags = Array.isArray(meta.tags) ? meta.tags : [];
 
                           return _jsxs(
@@ -908,24 +943,45 @@ export function OrderList() {
                                       }),
                                 }),
 
-                                // Fulfillment Status Pill
+                                // Fulfillment Status Pill + Return Pill
                                 _jsx("td", {
                                   className: "py-3 px-4",
-                                  children: isFulfilled
-                                    ? _jsxs("span", {
-                                        className: "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#e4e5e7] text-[#202223]",
-                                        children: [
-                                          _jsx("span", { className: "w-1.5 h-1.5 rounded-full bg-[#5c5f62]" }),
-                                          "Fulfilled",
-                                        ],
-                                      })
-                                    : _jsxs("span", {
-                                        className: "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#ffea8a] text-[#5c3e00]",
-                                        children: [
-                                          _jsx("span", { className: "w-1.5 h-1.5 rounded-full border border-[#8c6b00]" }),
-                                          "Unfulfilled",
-                                        ],
-                                      }),
+                                  children: _jsxs("div", {
+                                    className: "flex flex-col gap-1 items-start",
+                                    children: [
+                                      isFulfilled
+                                        ? _jsxs("span", {
+                                            className: "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#e4e5e7] text-[#202223]",
+                                            children: [
+                                              _jsx("span", { className: "w-1.5 h-1.5 rounded-full bg-[#5c5f62]" }),
+                                              "Fulfilled",
+                                            ],
+                                          })
+                                        : _jsxs("span", {
+                                            className: "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#ffea8a] text-[#5c3e00]",
+                                            children: [
+                                              _jsx("span", { className: "w-1.5 h-1.5 rounded-full border border-[#8c6b00]" }),
+                                              "Unfulfilled",
+                                            ],
+                                          }),
+                                      isReturnRequested &&
+                                        _jsxs("span", {
+                                          className: "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#e0f2fe] text-[#0369a1] border border-[#bae6fd]",
+                                          children: [
+                                            _jsx("span", { className: "w-1.5 h-1.5 rounded-full bg-[#0284c7]" }),
+                                            "Return in progress",
+                                          ],
+                                        }),
+                                      isReturned &&
+                                        _jsxs("span", {
+                                          className: "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#f0fdf4] text-[#15803d] border border-[#bbf7d0]",
+                                          children: [
+                                            _jsx("span", { className: "w-1.5 h-1.5 rounded-full bg-[#16a34a]" }),
+                                            "Returned",
+                                          ],
+                                        }),
+                                    ],
+                                  }),
                                 }),
 
                                 // Total
