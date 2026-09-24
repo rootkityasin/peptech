@@ -211,6 +211,49 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
         .eq("return_id", targetRetId);
 
       const targetReturn = existingReturns.find((r: any) => r.id === targetRetId);
+
+      // Restock items back into active inventory levels in Supabase
+      if (restock && targetReturn?.items?.length > 0) {
+        for (const retIt of targetReturn.items) {
+          try {
+            const qtyToRestock = Number(retIt.quantity || 1);
+            // 1. Try to find inventory item linked to this variant
+            const { data: pvii } = await sb
+              .from("product_variant_inventory_item")
+              .select("inventory_item_id")
+              .eq("variant_id", retIt.id)
+              .is("deleted_at", null)
+              .maybeSingle();
+
+            const targetInvId = pvii?.inventory_item_id || retIt.inventory_item_id;
+
+            if (targetInvId) {
+              const { data: lvl } = await sb
+                .from("inventory_level")
+                .select("id, stocked_quantity")
+                .eq("inventory_item_id", targetInvId)
+                .is("deleted_at", null)
+                .maybeSingle();
+
+              if (lvl) {
+                const updatedQty = Number(lvl.stocked_quantity || 0) + qtyToRestock;
+                await sb
+                  .from("inventory_level")
+                  .update({
+                    stocked_quantity: updatedQty,
+                    raw_stocked_quantity: { value: String(updatedQty), precision: 20 },
+                    updated_at: new Date().toISOString(),
+                  })
+                  .eq("id", lvl.id);
+                console.log(`[PEPTECH RESTOCK] Restocked ${qtyToRestock} units for inventory item ${targetInvId}. New stock: ${updatedQty}`);
+              }
+            }
+          } catch (restockErr: any) {
+            console.warn("[PEPTECH RESTOCK WARN]:", restockErr.message);
+          }
+        }
+      }
+
       const updatedReturns = existingReturns.map((r: any) => {
         if (r.id === targetRetId) {
           return {
