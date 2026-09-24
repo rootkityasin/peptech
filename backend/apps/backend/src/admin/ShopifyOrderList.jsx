@@ -15,10 +15,22 @@ export function OrderList() {
   const [filterFulfillment, setFilterFulfillment] = useState("all");
   const [showFilterMenu, setShowFilterMenu] = useState(false);
   const [subscriptions, setSubscriptions] = useState([]);
+  const [sortField, setSortField] = useState("date"); // "date" | "order"
+  const [sortDirection, setSortDirection] = useState("desc"); // "desc" (latest on top) | "asc"
 
-  // Fetch orders
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDirection((prev) => (prev === "desc" ? "asc" : "desc"));
+    } else {
+      setSortField(field);
+      setSortDirection("desc");
+    }
+  };
+
+  // Fetch orders (defaulting to latest first)
   const { orders = [], count = 0, isLoading, refetch } = useOrders({
-    limit: 50,
+    limit: 100,
+    order: "-created_at",
     fields: "id,display_id,created_at,email,total,currency_code,status,metadata,shipping_address,items,fulfillments",
   });
 
@@ -84,9 +96,9 @@ export function OrderList() {
     return "Elena Rostova";
   };
 
-  // Filter orders logic
+  // Filter and sort orders logic (defaults to date descending: latest on top)
   const filteredOrders = useMemo(() => {
-    return (orders || []).filter((order) => {
+    const list = (orders || []).filter((order) => {
       const meta = order.metadata || {};
       const tags = Array.isArray(meta.tags) ? meta.tags : [];
       const paymentStatus = (meta.payment_status || (order.status === "completed" ? "paid" : "pending")).toLowerCase();
@@ -116,7 +128,26 @@ export function OrderList() {
 
       return true;
     });
-  }, [orders, activeTab, searchQuery, filterPayment, filterFulfillment]);
+
+    // Explicit date-wise sort (Latest on top by default)
+    return list.sort((a, b) => {
+      if (sortField === "date") {
+        const timeA = new Date(a.created_at || 0).getTime();
+        const timeB = new Date(b.created_at || 0).getTime();
+        if (timeA !== timeB) {
+          return sortDirection === "desc" ? timeB - timeA : timeA - timeB;
+        }
+        const idA = parseInt(a.display_id, 10) || 0;
+        const idB = parseInt(b.display_id, 10) || 0;
+        return sortDirection === "desc" ? idB - idA : idA - idB;
+      } else if (sortField === "order") {
+        const idA = parseInt(a.display_id, 10) || 0;
+        const idB = parseInt(b.display_id, 10) || 0;
+        return sortDirection === "desc" ? idB - idA : idA - idB;
+      }
+      return 0;
+    });
+  }, [orders, activeTab, searchQuery, filterPayment, filterFulfillment, sortField, sortDirection]);
 
   // Filter subscriptions for search
   const filteredSubscriptions = useMemo(() => {
@@ -557,8 +588,39 @@ export function OrderList() {
                           className: "rounded border-[#c9cccf] text-[#2c6ecb] focus:ring-[#2c6ecb]",
                         }),
                       }),
-                      _jsx("th", { className: "py-3 px-4", children: "Order" }),
-                      _jsx("th", { className: "py-3 px-4", children: "Date ▾" }),
+                      _jsx("th", {
+                        className: "py-3 px-4 cursor-pointer select-none hover:text-[#202223] transition-colors",
+                        onClick: () => handleSort("order"),
+                        title: "Sort by Order Number",
+                        children: _jsxs("div", {
+                          className: "inline-flex items-center gap-1",
+                          children: [
+                            "Order",
+                            sortField === "order" &&
+                              _jsx("span", {
+                                className: "text-[#2c6ecb] font-bold text-xs",
+                                children: sortDirection === "desc" ? "▾" : "▴",
+                              }),
+                          ],
+                        }),
+                      }),
+                      _jsx("th", {
+                        className: "py-3 px-4 cursor-pointer select-none hover:text-[#202223] transition-colors",
+                        onClick: () => handleSort("date"),
+                        title: `Sort by Date (${sortDirection === "desc" ? "Latest first" : "Oldest first"})`,
+                        children: _jsxs("div", {
+                          className: "inline-flex items-center gap-1.5",
+                          children: [
+                            "Date",
+                            _jsx("span", {
+                              className: `text-xs font-bold ${
+                                sortField === "date" ? "text-[#202223]" : "text-[#8c9196]"
+                              }`,
+                              children: sortField === "date" ? (sortDirection === "desc" ? "▾" : "▴") : "▾",
+                            }),
+                          ],
+                        }),
+                      }),
                       _jsx("th", { className: "py-3 px-4", children: "Customer" }),
                       _jsx("th", { className: "py-3 px-4", children: "Payment status" }),
                       _jsx("th", { className: "py-3 px-4", children: "Fulfillment status" }),
