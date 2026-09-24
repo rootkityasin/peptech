@@ -933,21 +933,13 @@ function StandardOrderDetail({ id }) {
                           }),
                           orderPromotion &&
                             _jsxs("div", {
-                              className: "flex justify-between items-center text-[#008060] font-medium bg-[#f0fdf4] px-2.5 py-1.5 rounded border border-[#bbf7d0]",
+                              className: "flex justify-between",
                               children: [
-                                _jsxs("span", {
-                                  className: "flex items-center gap-1.5",
-                                  children: [
-                                    _jsx("span", { children: "🏷️ Promotion:" }),
-                                    _jsx("span", {
-                                      className: "font-mono font-bold text-[11px] px-1.5 py-0.5 bg-[#dcfce7] text-[#166534] rounded border border-[#86efac]",
-                                      children: orderPromotion.code || "SUB28-10",
-                                    }),
-                                    _jsx("span", { className: "text-[11px] text-[#15803d]", children: `(${orderPromotion.name || "10% Subscribe & Save"})` }),
-                                  ],
+                                _jsx("span", {
+                                  children: `Promotion (${orderPromotion.code || "SUB28-10"}${orderPromotion.name ? ` · ${orderPromotion.name}` : ""})`,
                                 }),
                                 _jsx("span", {
-                                  className: "font-semibold text-[#15803d]",
+                                  className: "font-semibold text-[#202223]",
                                   children: orderPromotion.amount ? `-${formatPrice(orderPromotion.amount)}` : `-${orderPromotion.discount_percent || 10}%`,
                                 }),
                               ],
