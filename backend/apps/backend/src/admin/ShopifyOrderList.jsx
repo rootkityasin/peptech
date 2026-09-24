@@ -154,6 +154,7 @@ export function OrderList() {
   const [filterPayment, setFilterPayment] = useState("all");
   const [filterFulfillment, setFilterFulfillment] = useState("all");
   const [filterReturn, setFilterReturn] = useState("all");
+  const [filterPromotion, setFilterPromotion] = useState("all");
   const [showFilterMenu, setShowFilterMenu] = useState(false);
   const [subscriptions, setSubscriptions] = useState([]);
   const [sortField, setSortField] = useState("date"); // "date" | "order"
@@ -261,6 +262,11 @@ export function OrderList() {
         if (filterReturn === "return_requested" && returnStatus !== "return_requested") return false;
         if (filterReturn === "returned" && returnStatus !== "returned") return false;
         if (filterReturn === "none" && returnStatus) return false;
+      }
+      if (filterPromotion !== "all") {
+        const hasSub28 = meta.promotion?.code === "SUB28-10" || meta.order_type === "subscription_renewal" || Boolean(meta.subscription_id);
+        if (filterPromotion === "SUB28-10" && !hasSub28) return false;
+        if (filterPromotion === "none" && hasSub28) return false;
       }
 
       // Search query
@@ -543,11 +549,27 @@ export function OrderList() {
                             }),
                           ],
                         }),
+                        _jsxs("div", {
+                          children: [
+                            _jsx("div", { className: "font-semibold text-[#202223] mb-1", children: "Promotion" }),
+                            _jsxs("select", {
+                              value: filterPromotion,
+                              onChange: (e) => setFilterPromotion(e.target.value),
+                              className: "w-full border border-[#c9cccf] rounded p-1.5 text-xs bg-white",
+                              children: [
+                                _jsx("option", { value: "all", children: "All orders" }),
+                                _jsx("option", { value: "SUB28-10", children: "SUB28-10 (10% Subscribe & Save)" }),
+                                _jsx("option", { value: "none", children: "No promotion applied" }),
+                              ],
+                            }),
+                          ],
+                        }),
                         _jsx("button", {
                           onClick: () => {
                             setFilterPayment("all");
                             setFilterFulfillment("all");
                             setFilterReturn("all");
+                            setFilterPromotion("all");
                             setSearchQuery("");
                             setShowFilterMenu(false);
                           },
@@ -829,6 +851,7 @@ export function OrderList() {
                           const isReturnRequested = returnStatus === "return_requested";
                           const isReturned = returnStatus === "returned";
                           const tags = Array.isArray(meta.tags) ? meta.tags : [];
+                          const hasPromo = meta.promotion?.code === "SUB28-10" || meta.order_type === "subscription_renewal" || Boolean(meta.subscription_id);
 
                           return _jsxs(
                             "tr",
@@ -889,19 +912,30 @@ export function OrderList() {
                                   children: _jsxs("div", {
                                     children: [
                                       customerName,
-                                      tags.length > 0 &&
-                                        _jsx("div", {
-                                          className: "flex flex-wrap gap-1 mt-1",
-                                          children: tags.map((tag) =>
-                                            _jsx(
-                                              "span",
-                                              {
-                                                className: "inline-block px-1.5 py-0.5 text-[10px] font-medium bg-[#e4e5e7] text-[#5c5f62] rounded",
-                                                children: tag,
-                                              },
-                                              tag
-                                            )
-                                          ),
+                                      (tags.length > 0 || hasPromo) &&
+                                        _jsxs("div", {
+                                          className: "flex flex-wrap items-center gap-1 mt-1",
+                                          children: [
+                                            hasPromo &&
+                                              _jsxs("span", {
+                                                className: "inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-semibold bg-[#e6f4ea] text-[#137333] border border-[#ceead6] rounded dark:bg-[#0f2e1b] dark:text-[#81c995] dark:border-[#1b432a]",
+                                                title: "10% Subscribe & Save Protocol Promotion Applied",
+                                                children: [
+                                                  _jsx("span", { children: "🏷️" }),
+                                                  "SUB28-10 (-10%)",
+                                                ],
+                                              }),
+                                            tags.map((tag) =>
+                                              _jsx(
+                                                "span",
+                                                {
+                                                  className: "inline-block px-1.5 py-0.5 text-[10px] font-medium bg-[#e4e5e7] text-[#5c5f62] rounded",
+                                                  children: tag,
+                                                },
+                                                tag
+                                              )
+                                            ),
+                                          ],
                                         }),
                                     ],
                                   }),

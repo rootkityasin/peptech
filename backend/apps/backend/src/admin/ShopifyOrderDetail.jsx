@@ -247,6 +247,11 @@ function StandardOrderDetail({ id }) {
   const returnStatus = meta.return_status || (returns.some((r) => r.status === "open") ? "return_requested" : returns.some((r) => r.status === "received") ? "returned" : null);
   const isReturnRequested = returnStatus === "return_requested";
   const isReturned = returnStatus === "returned";
+  const orderPromotion = meta.promotion || (meta.has_subscription ? {
+    code: "SUB28-10",
+    name: "Subscribe & Save (28-Day Protocol)",
+    discount_percent: 10,
+  } : null);
 
   // Customer info
   const shipping = order.shipping_address || {};
@@ -686,6 +691,16 @@ function StandardOrderDetail({ id }) {
                   ],
                 })
               ) : null,
+              orderPromotion ? (
+                _jsxs("span", {
+                  className: "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#f0fdf4] text-[#15803d] border border-[#bbf7d0]",
+                  children: [
+                    _jsx("span", { children: "🏷️" }),
+                    orderPromotion.code || "SUB28-10",
+                    _jsx("span", { className: "text-[11px] font-normal text-[#166534]", children: "(-10%)" }),
+                  ],
+                })
+              ) : null,
             ],
           }),
 
@@ -916,10 +931,31 @@ function StandardOrderDetail({ id }) {
                               _jsx("span", { className: "font-semibold text-[#202223]", children: formatPrice(subtotal) }),
                             ],
                           }),
+                          orderPromotion &&
+                            _jsxs("div", {
+                              className: "flex justify-between items-center text-[#008060] font-medium bg-[#f0fdf4] px-2.5 py-1.5 rounded border border-[#bbf7d0]",
+                              children: [
+                                _jsxs("span", {
+                                  className: "flex items-center gap-1.5",
+                                  children: [
+                                    _jsx("span", { children: "🏷️ Promotion:" }),
+                                    _jsx("span", {
+                                      className: "font-mono font-bold text-[11px] px-1.5 py-0.5 bg-[#dcfce7] text-[#166534] rounded border border-[#86efac]",
+                                      children: orderPromotion.code || "SUB28-10",
+                                    }),
+                                    _jsx("span", { className: "text-[11px] text-[#15803d]", children: `(${orderPromotion.name || "10% Subscribe & Save"})` }),
+                                  ],
+                                }),
+                                _jsx("span", {
+                                  className: "font-semibold text-[#15803d]",
+                                  children: orderPromotion.amount ? `-${formatPrice(orderPromotion.amount)}` : `-${orderPromotion.discount_percent || 10}%`,
+                                }),
+                              ],
+                            }),
                           _jsxs("div", {
                             className: "flex justify-between",
                             children: [
-                              _jsx("span", { children: "Shipping Cost 4.01%" }),
+                              _jsx("span", { children: "Shipping Cost" }),
                               _jsx("span", { className: "font-semibold text-[#202223]", children: formatPrice(shippingAmount) }),
                             ],
                           }),
