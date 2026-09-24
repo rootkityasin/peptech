@@ -433,7 +433,8 @@ export function OrderList() {
                                   "tr",
                                   {
                                     key: sub.id,
-                                    className: "hover:bg-[#f6f6f7] transition-colors",
+                                    className: "hover:bg-[#f6f6f7] transition-colors cursor-pointer",
+                                    onClick: () => navigate(`/orders/${sub.id}`),
                                     children: [
                                       // Subscription ID (simple link like #12)
                                       _jsx("td", {
@@ -508,8 +509,12 @@ export function OrderList() {
                                       // Simple Action Button
                                       _jsx("td", {
                                         className: "py-3 px-4 text-center",
+                                        onClick: (e) => e.stopPropagation(),
                                         children: _jsx("button", {
-                                          onClick: () => handleSubscriptionAction(sub, isActive ? "pause" : "resume"),
+                                          onClick: (e) => {
+                                            e.stopPropagation();
+                                            handleSubscriptionAction(sub, isActive ? "pause" : "resume");
+                                          },
                                           className: "px-2.5 py-1 text-xs font-medium text-[#202223] bg-white border border-[#c9cccf] hover:bg-[#f6f6f7] rounded shadow-sm transition-colors",
                                           children: isActive ? "Pause" : "Resume",
                                         }),

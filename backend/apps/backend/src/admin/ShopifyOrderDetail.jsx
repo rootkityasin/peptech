@@ -5,6 +5,25 @@ import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-run
 
 export function OrderDetail() {
   const { id } = useParams();
+
+  const isSubscription = Boolean(
+    id &&
+    (id.startsWith("SUB-") ||
+     id.startsWith("sub_") ||
+     id.toUpperCase().startsWith("SUB") ||
+     id.includes("MUED"))
+  );
+
+  if (isSubscription) {
+    if (typeof ShopifySubscriptionDetail !== "undefined") {
+      return _jsx(ShopifySubscriptionDetail, { subscriptionId: id });
+    }
+  }
+
+  return _jsx(StandardOrderDetail, { id });
+}
+
+function StandardOrderDetail({ id }) {
   const navigate = useNavigate();
 
   // Medusa order query & mutation
@@ -716,12 +735,12 @@ export function OrderDetail() {
                 ],
               }),
 
-              // Card 2: TAGS CARD (Matching RED box in user screenshot!)
+              // Card 2: TAGS CARD
               _jsxs("div", {
-                className: "bg-white rounded-lg border-2 border-[#d82c0d] shadow-sm overflow-hidden",
+                className: "bg-white rounded-lg border border-[#e1e3e5] shadow-sm overflow-hidden",
                 children: [
                   _jsx("div", {
-                    className: "p-4 border-b border-[#e1e3e5] bg-[#fff8f8]",
+                    className: "p-4 border-b border-[#e1e3e5]",
                     children: _jsxs("div", {
                       className: "flex items-center justify-between",
                       children: [
@@ -730,8 +749,8 @@ export function OrderDetail() {
                           children: "Tags",
                         }),
                         _jsx("span", {
-                          className: "text-[10px] font-bold uppercase tracking-wider text-[#d82c0d] bg-[#ffebeb] px-2 py-0.5 rounded",
-                          children: "Interactive",
+                          className: "text-[10px] text-[#8c9196]",
+                          children: `${tags.length} applied`,
                         }),
                       ],
                     }),
