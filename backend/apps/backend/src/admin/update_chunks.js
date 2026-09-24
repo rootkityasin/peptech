@@ -44,8 +44,8 @@ if (!distDir) {
   }
 
   // 1. Update Order Detail
-  const detailPath = path.resolve(__dirname, 'ShopifyOrderDetail.jsx');
-  const subDetailPath = path.resolve(__dirname, 'ShopifySubscriptionDetail.jsx');
+  const detailPath = path.resolve(__dirname, 'OrderDetail.jsx');
+  const subDetailPath = path.resolve(__dirname, 'SubscriptionDetail.jsx');
 
   if (fs.existsSync(detailPath)) {
     const detailSource = fs.readFileSync(detailPath, 'utf8');
@@ -69,7 +69,7 @@ if (!distDir) {
     const cleanSubDetail = subDetailSource
       .replace(importRegex, '')
       .replace(/export\s+default\s+[^;]+;\s*/g, '')
-      .replace(/export\s+function\s+ShopifySubscriptionDetail/g, 'function ShopifySubscriptionDetail')
+      .replace(/export\s+function\s+SubscriptionDetail/g, 'function SubscriptionDetail')
       .trim();
 
     const cleanDetail = detailSource
@@ -104,7 +104,7 @@ export {
   }
 
   // 2. Update Order List
-  const listPath = path.resolve(__dirname, 'ShopifyOrderList.jsx');
+  const listPath = path.resolve(__dirname, 'OrderList.jsx');
   if (fs.existsSync(listPath)) {
     const listSource = fs.readFileSync(listPath, 'utf8');
     const targetListFile = path.resolve(distDir, 'order-list-XGUCTQTG.mjs');

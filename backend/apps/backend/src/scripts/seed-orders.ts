@@ -10,7 +10,7 @@ export default async function seedOrders({
   const query = container.resolve(ContainerRegistrationKeys.QUERY);
   const orderModule = container.resolve(Modules.ORDER);
 
-  logger.info("=== SEEDING REALISTIC SHOPIFY-STYLE ORDERS ===");
+  logger.info("=== SEEDING REALISTIC PEPTECH ORDERS ===");
 
   // Find products to link real variants/thumbnails if available
   const { data: products } = await query.graph({

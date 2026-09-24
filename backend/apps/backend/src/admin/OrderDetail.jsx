@@ -155,8 +155,8 @@ export function OrderDetail() {
   );
 
   if (isSubscription) {
-    if (typeof ShopifySubscriptionDetail !== "undefined") {
-      return _jsx(ShopifySubscriptionDetail, { subscriptionId: id });
+    if (typeof SubscriptionDetail !== "undefined") {
+      return _jsx(SubscriptionDetail, { subscriptionId: id });
     }
   }
 

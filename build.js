@@ -6,7 +6,7 @@ console.log('[PEPTECH] Starting Medusa production build...');
 
 const backendDir = path.resolve(__dirname, 'backend/apps/backend');
 
-// 0. Sync custom admin chunks (ShopifyOrderList & ShopifyOrderDetail) before build
+// 0. Sync custom admin chunks (OrderList & OrderDetail) before build
 const updateChunksScript = path.resolve(backendDir, 'src/admin/update_chunks.js');
 if (fs.existsSync(updateChunksScript)) {
   try {

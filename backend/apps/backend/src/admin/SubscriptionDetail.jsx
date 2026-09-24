@@ -142,7 +142,7 @@ html.dark .orders-theme-root input[type="checkbox"],
 }
 `;
 
-export function ShopifySubscriptionDetail({ subscriptionId: propSubId }) {
+export function SubscriptionDetail({ subscriptionId: propSubId }) {
   const { id: paramId } = useParams();
   const subId = propSubId || paramId;
   const navigate = useNavigate();
@@ -1507,4 +1507,4 @@ export function ShopifySubscriptionDetail({ subscriptionId: propSubId }) {
   });
 }
 
-export default ShopifySubscriptionDetail;
+export default SubscriptionDetail;
