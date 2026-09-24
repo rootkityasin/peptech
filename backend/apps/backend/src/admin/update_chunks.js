@@ -27,6 +27,22 @@ if (!distDir) {
     }
   }
 
+  // 0.1 Remove Documentation and Changelog from User Menu in app.js
+  const appJsFile = path.resolve(distDir, 'app.js');
+  if (fs.existsSync(appJsFile)) {
+    let appJs = fs.readFileSync(appJsFile, 'utf8');
+    if (appJs.includes('docs.medusajs.com') || appJs.includes('medusajs.com/changelog')) {
+      const docsAndChangelogRegex = /\/\* @__PURE__ \*\/ \(0, [^)]+\)\([^)]+\.DropdownMenu\.Item, \{ asChild: true, children: \/\* @__PURE__ \*\/ \(0, [^)]+\)\([^)]+\.Link, \{ to: "https:\/\/docs\.medusajs\.com"[\s\S]*?t5\("app\.menus\.user\.changelog"\)\s*\] \}\) \}\),?/;
+      if (docsAndChangelogRegex.test(appJs)) {
+        appJs = appJs.replace(docsAndChangelogRegex, '/* docs & changelog removed */ null, null,');
+        fs.writeFileSync(appJsFile, appJs, 'utf8');
+        console.log('[PEPTECH] Successfully removed Documentation and Changelog from app.js');
+      } else {
+        console.warn('[PEPTECH WARN] docsAndChangelogRegex did not match in app.js');
+      }
+    }
+  }
+
   // 1. Update Order Detail
   const detailPath = path.resolve(__dirname, 'ShopifyOrderDetail.jsx');
   const subDetailPath = path.resolve(__dirname, 'ShopifySubscriptionDetail.jsx');

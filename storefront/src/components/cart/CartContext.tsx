@@ -37,6 +37,9 @@ interface CartContextType {
   total: number
   destination: "UK" | "INTL"
   setDestination: (dest: "UK" | "INTL") => void
+  country: string
+  setCountry: (country: string) => void
+  currency: "GBP" | "USD" | "EUR"
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined)
@@ -46,7 +49,19 @@ export const DEFAULT_CART_ITEMS: CartItem[] = []
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([])
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
-  const [destination, setDestination] = useState<"UK" | "INTL">("UK")
+  const [country, setCountry] = useState<string>("United Kingdom")
+  const [destination, setDestinationState] = useState<"UK" | "INTL">("UK")
+
+  const setDestination = (dest: "UK" | "INTL") => {
+    setDestinationState(dest)
+    if (dest === "UK") setCountry("United Kingdom")
+    else if (country === "United Kingdom") setCountry("United States")
+  }
+
+  const handleSetCountry = (newCountry: string) => {
+    setCountry(newCountry)
+    setDestinationState(newCountry === "United Kingdom" ? "UK" : "INTL")
+  }
 
   // Load from local storage
   useEffect(() => {
@@ -122,6 +137,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const shippingCost = items.length > 0 ? (destination === "UK" ? (subtotal >= 100 ? 0 : 4.95) : 15.0) : 0
   const total = subtotal + shippingCost
 
+  const currency = country === "United Kingdom" ? "GBP" : (["Germany", "France", "Italy", "Spain", "Netherlands", "Ireland", "Sweden", "Denmark", "Belgium", "Austria", "Finland", "Portugal", "Poland", "Czech Republic"].includes(country) ? "EUR" : "USD")
+
   return (
     <CartContext.Provider
       value={{
@@ -138,6 +155,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         total,
         destination,
         setDestination,
+        country,
+        setCountry: handleSetCountry,
+        currency,
       }}
     >
       {children}

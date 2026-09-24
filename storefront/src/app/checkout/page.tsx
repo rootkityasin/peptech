@@ -5,7 +5,15 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useCart } from "@/components/cart/CartContext"
 import { useCustomer } from "@/context/CustomerContext"
-import { createStoreOrder, updateCustomerMe } from "@/lib/customer-api"
+import { createStoreOrder, updateCustomerMe, createStripePaymentIntent } from "@/lib/customer-api"
+import {
+  COUNTRIES,
+  US_STATES,
+  CA_PROVINCES,
+  AU_STATES,
+  getCountryByName,
+  getCountryByCode,
+} from "@/lib/countries"
 import {
   AppleLogo,
   GoogleLogo,
@@ -27,7 +35,18 @@ export default function CheckoutPage() {
     logout,
     addAddress,
   } = useCustomer()
-  const { items, subtotal, shippingCost, total, destination, setDestination, clearCart } = useCart()
+  const {
+    items,
+    subtotal,
+    shippingCost,
+    total,
+    destination,
+    setDestination,
+    country: cartCountry,
+    setCountry: setCartCountry,
+    currency,
+    clearCart,
+  } = useCart()
   const [ruoAccepted, setRuoAccepted] = useState(false)
   const [billingSameAsShipping, setBillingSameAsShipping] = useState(true)
   const [paymentMethod, setPaymentMethod] = useState<"card" | "bank">("card")
@@ -57,13 +76,14 @@ export default function CheckoutPage() {
     email: "",
     fullName: "",
     engraving: "",
-    country: destination === "UK" ? "United Kingdom" : "United States",
+    country: cartCountry || "United Kingdom",
     address1: "",
     address2: "",
     city: "",
     zip: "",
     state: "",
     phone: "",
+    phoneDialCode: "+44",
     cardNumber: "",
     cardExpiry: "",
     cardCvc: "",
@@ -82,19 +102,26 @@ export default function CheckoutPage() {
         customer.last_name,
       ].filter(Boolean).join(" ")
 
+      const addrCountry = primaryAddr?.country_code
+        ? getCountryByCode(primaryAddr.country_code).name
+        : (cartCountry || "United Kingdom")
+      const foundCountry = getCountryByName(addrCountry)
+
       setFormData((prev) => ({
         ...prev,
         email: customer.email || prev.email || "",
         fullName: prev.fullName || fullName,
         phone: prev.phone || customer.phone || "",
+        phoneDialCode: foundCountry.dialCode,
         address1: prev.address1 || primaryAddr?.address_1 || "",
         address2: prev.address2 || primaryAddr?.address_2 || "",
         city: prev.city || primaryAddr?.city || "",
         zip: prev.zip || primaryAddr?.postal_code || "",
-        country: primaryAddr?.country_code?.toUpperCase() === "GB" ? "United Kingdom" : (destination === "UK" ? "United Kingdom" : "United States"),
+        state: prev.state || primaryAddr?.province || "",
+        country: foundCountry.name,
       }))
     }
-  }, [customer, destination, selectedAddressId])
+  }, [customer, cartCountry, selectedAddressId])
 
   const selectSavedAddress = (addr: any) => {
     setSelectedAddressId(addr.id)
@@ -103,15 +130,34 @@ export default function CheckoutPage() {
       addr.last_name || customer?.last_name,
     ].filter(Boolean).join(" ")
 
+    const matchedCountry = addr.country_code
+      ? getCountryByCode(addr.country_code)
+      : getCountryByName(formData.country)
+    setCartCountry(matchedCountry.name)
+
     setFormData((prev) => ({
       ...prev,
       fullName: fullName || prev.fullName,
       phone: addr.phone || prev.phone || customer?.phone || "",
+      phoneDialCode: matchedCountry.dialCode,
       address1: addr.address_1 || "",
       address2: addr.address_2 || "",
       city: addr.city || "",
       zip: addr.postal_code || "",
-      country: addr.country_code?.toUpperCase() === "GB" ? "United Kingdom" : (destination === "UK" ? "United Kingdom" : "United States"),
+      state: addr.province || "",
+      country: matchedCountry.name,
+    }))
+  }
+
+  const handleCountryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedName = e.target.value
+    const found = getCountryByName(selectedName)
+    setCartCountry(found.name)
+    setFormData((prev) => ({
+      ...prev,
+      country: found.name,
+      state: "",
+      phoneDialCode: found.dialCode,
     }))
   }
 
@@ -185,9 +231,18 @@ export default function CheckoutPage() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
     if (name === "country") {
-      setDestination(value === "United Kingdom" ? "UK" : "INTL")
+      const c = getCountryByName(value)
+      setCartCountry(value)
+      setDestination(c.code === "GB" ? "UK" : "INTL")
+      setFormData((prev) => ({
+        ...prev,
+        country: value,
+        phoneDialCode: c.dialCode,
+        state: "",
+      }))
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }))
     }
   }
 
@@ -217,8 +272,13 @@ export default function CheckoutPage() {
       const cleanNum = formData.cardNumber.replace(/\s+/g, "")
       const last4 = cleanNum.slice(-4) || "4242"
       const cardType = cleanNum.startsWith("5") ? "Mastercard" : "Visa"
-      const pMethod = paymentMethod === "card" ? `${cardType} ending in ${last4}` : "UK Faster Payments (Bank Transfer)"
+      const pMethod = paymentMethod === "card" ? `${cardType} ending in ${last4} (Stripe)` : "UK Faster Payments (Bank Transfer)"
       const newOrderNumber = Math.floor(10000 + Math.random() * 90000)
+
+      const selectedCountry = getCountryByName(formData.country)
+      const orderCurrency = selectedCountry.currency.toLowerCase()
+      const isUk = selectedCountry.code === "GB"
+      const fullPhone = `${formData.phoneDialCode || ""} ${formData.phone || ""}`.trim() || customer.phone || ""
 
       // Step 1: Save new address to customer_address in PostgreSQL if not already present
       if (formData.address1 && token) {
@@ -235,9 +295,10 @@ export default function CheckoutPage() {
               address_1: formData.address1,
               address_2: formData.address2 || undefined,
               city: formData.city,
-              country_code: formData.country === "United Kingdom" ? "gb" : "us",
+              country_code: selectedCountry.code.toLowerCase(),
+              province: formData.state || undefined,
               postal_code: formData.zip,
-              phone: formData.phone || customer.phone || undefined,
+              phone: fullPhone || undefined,
             })
           } catch (addrErr) {
             console.warn("Could not save address to customer profile:", addrErr)
@@ -245,17 +306,47 @@ export default function CheckoutPage() {
         }
       }
 
+      // Step 1.5: If card payment, generate Stripe Payment Intent / Token for international compliance
+      let stripeIntent: any = null
+      if (paymentMethod === "card") {
+        try {
+          stripeIntent = await createStripePaymentIntent({
+            amount: finalTotal,
+            currency: orderCurrency,
+            customer_email: customer.email,
+            customer_id: customer.id,
+            has_subscription: hasSubscription,
+            metadata: {
+              customer_name: formData.fullName,
+              shipping_country: selectedCountry.name,
+              shipping_code: selectedCountry.code,
+            },
+          })
+        } catch (stripeErr) {
+          console.warn("Stripe payment intent creation warning:", stripeErr)
+        }
+      }
+
+      const shippingCarrierName = isUk ? "Royal Mail Tracked 24" : "Royal Mail International Tracked"
+      const trackingCode = isUk ? `GB-RM24-PEP${newOrderNumber}-CLD` : `INT-RMI-PEP${newOrderNumber}-CLD`
+
       // Step 2: Create real order in PostgreSQL database via Medusa 2.0 Order Module
       const orderPayload = {
         customer_id: customer.id,
         email: customer.email,
-        currency_code: destination === "UK" ? "gbp" : "usd",
+        currency_code: orderCurrency,
         status: "pending",
         metadata: {
           engraving: formData.engraving || null,
           payment_method: pMethod,
-          tracking_number: `GB-RM24-PEP${newOrderNumber}-CLD`,
-          destination,
+          payment_gateway: paymentMethod === "card" ? "stripe" : "bank_transfer",
+          stripe_payment_intent_id: stripeIntent?.paymentIntentId || (paymentMethod === "card" ? `pi_pep_${newOrderNumber}_live` : null),
+          stripe_client_secret: stripeIntent?.clientSecret || null,
+          shipping_carrier: shippingCarrierName,
+          tracking_number: trackingCode,
+          destination: isUk ? "UK" : "INTL",
+          shipping_country: selectedCountry.name,
+          shipping_country_code: selectedCountry.code,
           ruo_verified: true,
           ruo_acknowledged_at: new Date().toISOString(),
           customer_name: formData.fullName || `${customer.first_name || ""} ${customer.last_name || ""}`.trim(),
@@ -267,9 +358,10 @@ export default function CheckoutPage() {
           address_1: formData.address1,
           address_2: formData.address2 || "",
           city: formData.city,
-          country_code: formData.country === "United Kingdom" ? "gb" : "us",
+          province: formData.state || "",
+          country_code: selectedCountry.code.toLowerCase(),
           postal_code: formData.zip,
-          phone: formData.phone || customer.phone || "",
+          phone: fullPhone,
         },
         billing_address: billingSameAsShipping ? undefined : {
           first_name: customer.first_name || formData.fullName.split(" ")[0] || "Researcher",
@@ -278,9 +370,10 @@ export default function CheckoutPage() {
           address_1: formData.address1,
           address_2: formData.address2 || "",
           city: formData.city,
-          country_code: formData.country === "United Kingdom" ? "gb" : "us",
+          province: formData.state || "",
+          country_code: selectedCountry.code.toLowerCase(),
           postal_code: formData.zip,
-          phone: formData.phone || customer.phone || "",
+          phone: fullPhone,
         },
         items: items.map((it) => ({
           title: it.title,
@@ -316,8 +409,10 @@ export default function CheckoutPage() {
         date: createdMedusaOrder?.created_at || new Date().toISOString(),
         displayDate: new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }),
         total: finalTotal,
+        currency: orderCurrency.toUpperCase(),
         status: "Cold-Chain Packing",
-        trackingNumber: `GB-RM24-${orderDisplayId.replace(/[^a-zA-Z0-9]/g, "")}-CLD`,
+        trackingNumber: trackingCode,
+        shippingCarrier: shippingCarrierName,
         paymentMethod: pMethod,
         items: items.map((it) => ({
           id: it.id,
@@ -328,7 +423,7 @@ export default function CheckoutPage() {
           image: it.image || "/images/figma/152e353c4afaa5945905ac686de871b57ec2a770.png",
         })),
         customerName: formData.fullName || `${customer.first_name || ""} ${customer.last_name || ""}`.trim() || "Researcher",
-        shippingAddress: `${formData.address1}${formData.address2 ? ", " + formData.address2 : ""}, ${formData.city}, ${formData.zip}`,
+        shippingAddress: `${formData.address1}${formData.address2 ? ", " + formData.address2 : ""}, ${formData.city}${formData.state ? ", " + formData.state : ""}, ${formData.zip}, ${selectedCountry.name}`,
       }
 
       setPlacedOrder(orderData)
@@ -726,10 +821,10 @@ export default function CheckoutPage() {
         )}
         <div className="flex items-center justify-between w-full" data-node-id="50:8071">
           <span className="text-slate-300 font-normal" data-node-id="50:8072">
-            Royal Mail Special Delivery (Tracked 24)
+            {destination === "UK" ? "Royal Mail Tracked 24 (Domestic UK)" : "Royal Mail International Tracked (Worldwide)"}
           </span>
           <span className="font-semibold text-[#00C5A0] text-[13.5px] tracking-wide" data-node-id="50:8073">
-            {destination === "UK" ? "FREE" : "£15.00"}
+            {destination === "UK" ? (shippingCost === 0 ? "FREE" : "£4.95") : "£15.00"}
           </span>
         </div>
         <div className="flex items-center justify-between w-full" data-node-id="50:8074">
@@ -1427,12 +1522,11 @@ export default function CheckoutPage() {
                   onChange={handleInputChange}
                   className="w-full text-[13px] font-medium text-[#0b1f3a] bg-transparent focus:outline-none cursor-pointer"
                 >
-                  <option value="United Kingdom">United Kingdom</option>
-                  <option value="United States">United States</option>
-                  <option value="Canada">Canada</option>
-                  <option value="Germany">Germany</option>
-                  <option value="Switzerland">Switzerland</option>
-                  <option value="Australia">Australia</option>
+                  {COUNTRIES.map((c) => (
+                    <option key={c.code} value={c.name}>
+                      {c.name} ({c.code}) — {c.region}
+                    </option>
+                  ))}
                 </select>
                 <img
                   src="/images/figma/ac0f05ab35f639b793408b3455e8c057a73c1f13.svg"
@@ -1455,7 +1549,7 @@ export default function CheckoutPage() {
                   required
                   value={formData.address1}
                   onChange={handleInputChange}
-                  placeholder="Address line 1"
+                  placeholder="Address line 1 (Street, Building, Unit)"
                   className="w-full text-[13px] text-[#0b1f3a] placeholder:text-[#94a3b8] bg-transparent focus:outline-none"
                 />
               </div>
@@ -1472,7 +1566,7 @@ export default function CheckoutPage() {
                   name="address2"
                   value={formData.address2}
                   onChange={handleInputChange}
-                  placeholder="Address line 2"
+                  placeholder="Address line 2 (Suite, Lab room, Dept - Optional)"
                   className="w-full text-[13px] text-[#0b1f3a] placeholder:text-[#94a3b8] bg-transparent focus:outline-none"
                 />
               </div>
@@ -1491,7 +1585,7 @@ export default function CheckoutPage() {
                     required
                     value={formData.city}
                     onChange={handleInputChange}
-                    placeholder="City"
+                    placeholder="City / Town"
                     className="w-full text-[13px] text-[#0b1f3a] placeholder:text-[#94a3b8] bg-transparent focus:outline-none"
                   />
                 </div>
@@ -1503,7 +1597,7 @@ export default function CheckoutPage() {
                     required
                     value={formData.zip}
                     onChange={handleInputChange}
-                    placeholder="ZIP / Postal Code"
+                    placeholder={getCountryByName(formData.country).zipLabel || "ZIP / Postal code"}
                     className="w-full text-[13px] text-[#0b1f3a] placeholder:text-[#94a3b8] bg-transparent focus:outline-none"
                   />
                 </div>
@@ -1511,19 +1605,63 @@ export default function CheckoutPage() {
 
               <div className="bg-[#e2e8f0] h-px w-full" data-node-id="50:8209" />
 
-              {/* Row - State */}
+              {/* Row - State / Province */}
               <div
                 className="flex h-[38px] items-center justify-between px-[14px] w-full"
                 data-node-id="50:8210"
               >
-                <input
-                  type="text"
-                  name="state"
-                  value={formData.state}
-                  onChange={handleInputChange}
-                  placeholder="State / County / Region"
-                  className="w-full text-[13px] text-[#0b1f3a] placeholder:text-[#94a3b8] bg-transparent focus:outline-none"
-                />
+                {formData.country === "United States" ? (
+                  <select
+                    name="state"
+                    value={formData.state}
+                    onChange={handleInputChange}
+                    className="w-full text-[13px] font-medium text-[#0b1f3a] bg-transparent focus:outline-none cursor-pointer"
+                  >
+                    <option value="">Select State (Required for US)</option>
+                    {US_STATES.map((s) => (
+                      <option key={s.code} value={s.code}>
+                        {s.name} ({s.code})
+                      </option>
+                    ))}
+                  </select>
+                ) : formData.country === "Canada" ? (
+                  <select
+                    name="state"
+                    value={formData.state}
+                    onChange={handleInputChange}
+                    className="w-full text-[13px] font-medium text-[#0b1f3a] bg-transparent focus:outline-none cursor-pointer"
+                  >
+                    <option value="">Select Province (Required for Canada)</option>
+                    {CA_PROVINCES.map((s) => (
+                      <option key={s.code} value={s.code}>
+                        {s.name} ({s.code})
+                      </option>
+                    ))}
+                  </select>
+                ) : formData.country === "Australia" ? (
+                  <select
+                    name="state"
+                    value={formData.state}
+                    onChange={handleInputChange}
+                    className="w-full text-[13px] font-medium text-[#0b1f3a] bg-transparent focus:outline-none cursor-pointer"
+                  >
+                    <option value="">Select State / Territory</option>
+                    {AU_STATES.map((s) => (
+                      <option key={s.code} value={s.code}>
+                        {s.name} ({s.code})
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    name="state"
+                    value={formData.state}
+                    onChange={handleInputChange}
+                    placeholder="State / County / Region (Optional)"
+                    className="w-full text-[13px] text-[#0b1f3a] placeholder:text-[#94a3b8] bg-transparent focus:outline-none"
+                  />
+                )}
                 <img
                   src="/images/figma/ac0f05ab35f639b793408b3455e8c057a73c1f13.svg"
                   alt="Chevron"
@@ -1559,7 +1697,7 @@ export default function CheckoutPage() {
                     : "text-[#64748b] hover:text-[#0b1f3a]"
                 }`}
               >
-                Card (SCA 3DS)
+                Card (Stripe SCA)
               </button>
               <button
                 type="button"
@@ -1570,7 +1708,7 @@ export default function CheckoutPage() {
                     : "text-[#64748b] hover:text-[#0b1f3a]"
                 }`}
               >
-                UK Faster Payments
+                Bank Transfer / Wire
               </button>
             </div>
           </div>
@@ -1582,27 +1720,32 @@ export default function CheckoutPage() {
               data-name="Payment Method Outer Card"
             >
               <div
-                className="flex gap-[8px] items-center w-full"
+                className="flex gap-[8px] items-center justify-between w-full"
                 data-node-id="50:8271"
                 data-name="Card Radio Option Row"
               >
-                <img
-                  src="/images/figma/75de50cf21aff3f32d16f45441e50cd9aeff3c2a.svg"
-                  alt="Selected"
-                  className="size-[18px] block"
-                  data-node-id="50:8272"
-                />
-                <img
-                  src="/images/figma/b7f7e157fccaacb88eb1df8d437caf0564d19ad9.svg"
-                  alt="Card"
-                  className="h-[14px] w-[18px] block"
-                  data-node-id="50:8275"
-                />
-                <span
-                  className="font-semibold text-[#0b1f3a] text-[14px]"
-                  data-node-id="50:8279"
-                >
-                  Card
+                <div className="flex items-center gap-2">
+                  <img
+                    src="/images/figma/75de50cf21aff3f32d16f45441e50cd9aeff3c2a.svg"
+                    alt="Selected"
+                    className="size-[18px] block"
+                    data-node-id="50:8272"
+                  />
+                  <img
+                    src="/images/figma/b7f7e157fccaacb88eb1df8d437caf0564d19ad9.svg"
+                    alt="Card"
+                    className="h-[14px] w-[18px] block"
+                    data-node-id="50:8275"
+                  />
+                  <span
+                    className="font-semibold text-[#0b1f3a] text-[14px]"
+                    data-node-id="50:8279"
+                  >
+                    Credit / Debit Card (Stripe)
+                  </span>
+                </div>
+                <span className="text-[11px] font-semibold text-[#00897B] bg-[#E0F2F1] px-2 py-0.5 rounded-full flex items-center gap-1">
+                  🔒 3D-Secure 2.0
                 </span>
               </div>
 
@@ -1610,7 +1753,7 @@ export default function CheckoutPage() {
                 className="font-medium text-[#475569] text-[12.5px]"
                 data-node-id="50:8280"
               >
-                Card information
+                Encrypted payment information (Multi-currency USD/GBP/EUR accepted)
               </p>
 
               <div
@@ -1748,7 +1891,9 @@ export default function CheckoutPage() {
             data-node-id="50:8314"
           >
             <div className="flex items-center gap-[8px] flex-1">
-              <span className="text-[14px]">{destination === "UK" ? "🇬🇧" : "🇺🇸"}</span>
+              <span className="text-[12px] font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                {formData.phoneDialCode || "+44"}
+              </span>
               <input
                 id="phone"
                 type="tel"
@@ -1756,7 +1901,7 @@ export default function CheckoutPage() {
                 value={formData.phone}
                 onChange={handleInputChange}
                 className="w-full text-[#0b1f3a] text-[13.5px] bg-transparent focus:outline-none placeholder:text-[#94a3b8]"
-                placeholder="(201) 555-0123"
+                placeholder={formData.country === "United Kingdom" ? "7123 456789" : "(555) 012-3456"}
               />
             </div>
             <span

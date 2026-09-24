@@ -976,6 +976,24 @@ function StandardOrderDetail({ id }) {
                               }),
                             ],
                           }),
+                          _jsxs("div", {
+                            className: "flex justify-between pt-1 text-[11px] text-[#5c5f62]",
+                            children: [
+                              _jsx("span", { children: "Payment Gateway" }),
+                              _jsx("span", {
+                                className: "font-medium text-[#202223]",
+                                children: meta.payment_method || (meta.payment_gateway === "stripe" ? "Stripe (Card / SCA)" : "Bank Transfer"),
+                              }),
+                            ],
+                          }),
+                          meta.stripe_payment_intent_id &&
+                            _jsxs("div", {
+                              className: "flex justify-between pt-0.5 text-[10px] text-[#5c5f62] font-mono",
+                              children: [
+                                _jsx("span", { children: "Stripe Intent ID" }),
+                                _jsx("span", { className: "text-[#2c6ecb]", children: meta.stripe_payment_intent_id }),
+                              ],
+                            }),
                           refundedTotal > 0 &&
                             _jsxs("div", {
                               className: "flex justify-between pt-1 text-xs text-[#d72c0d] font-semibold",
@@ -1559,7 +1577,7 @@ function StandardOrderDetail({ id }) {
                       _jsx("div", { children: customerName }),
                       _jsx("div", { children: shipping.address_1 || "34 Birch street" }),
                       _jsxs("div", { children: [shipping.city || "Old Cairo", " ", shipping.province || "MS", " ", shipping.postal_code || "38829"] }),
-                      _jsx("div", { children: (shipping.country_code || "us").toUpperCase() === "US" ? "United States" : "United Kingdom" }),
+                      _jsx("div", { children: order.metadata?.shipping_country || (shipping.country_code ? shipping.country_code.toUpperCase() : "United Kingdom") }),
                       _jsx("div", { children: customerPhone }),
                     ],
                   }),
@@ -1718,11 +1736,11 @@ function StandardOrderDetail({ id }) {
                         onChange: (e) => setFulfillCarrier(e.target.value),
                         className: "w-full border border-[#c9cccf] rounded p-2 text-xs bg-white",
                         children: [
-                          _jsx("option", { value: "Royal Mail Tracked", children: "Royal Mail Tracked (£4.95 UK)" }),
-                          _jsx("option", { value: "Royal Mail International", children: "Royal Mail International (£15.00)" }),
-                          _jsx("option", { value: "FedEx", children: "FedEx" }),
-                          _jsx("option", { value: "DHL Express", children: "DHL Express" }),
-                          _jsx("option", { value: "UPS", children: "UPS" }),
+                          _jsx("option", { value: "Royal Mail Tracked 24 / 48", children: "Royal Mail Tracked 24 / 48 (Domestic UK - £4.95)" }),
+                          _jsx("option", { value: "Royal Mail International Tracked", children: "Royal Mail International Tracked (Worldwide - £15.00)" }),
+                          _jsx("option", { value: "FedEx International Priority", children: "FedEx International Priority" }),
+                          _jsx("option", { value: "DHL Express Worldwide", children: "DHL Express Worldwide" }),
+                          _jsx("option", { value: "UPS Worldwide Saver", children: "UPS Worldwide Saver" }),
                         ],
                       }),
                     ],

@@ -6,7 +6,7 @@ import Image from "next/image"
 import { useCart } from "@/components/cart/CartContext"
 
 export default function CartPage() {
-  const { items, removeItem, updateQuantity, subtotal } = useCart()
+  const { items, removeItem, updateQuantity, subtotal, destination, setDestination } = useCart()
   const [promoCode, setPromoCode] = useState("")
   const [promoApplied, setPromoApplied] = useState(false)
   const [promoError, setPromoError] = useState("")
@@ -26,7 +26,7 @@ export default function CartPage() {
 
   const discountAmount = promoApplied ? subtotal * 0.1 : 0
   const finalSubtotal = subtotal - discountAmount
-  const shippingCost = finalSubtotal >= 100 || finalSubtotal === 0 ? 0 : 4.95
+  const shippingCost = items.length === 0 ? 0 : destination === "UK" ? (finalSubtotal >= 100 ? 0 : 4.95) : 15.0
   const total = finalSubtotal + shippingCost
 
   return (
@@ -260,11 +260,30 @@ export default function CartPage() {
                     </div>
                   )}
 
-                  <div className="flex justify-between">
-                    <span>Royal Mail Tracked 24</span>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <span>{destination === "UK" ? "Royal Mail Tracked 24" : "Royal Mail International Tracked"}</span>
+                      <div className="flex gap-2 text-[10px] text-slate-500 mt-0.5">
+                        <button
+                          type="button"
+                          onClick={() => setDestination("UK")}
+                          className={`hover:underline cursor-pointer ${destination === "UK" ? "font-bold text-[#0b1f3a]" : "text-slate-400"}`}
+                        >
+                          UK (£4.95 / Free &gt; £100)
+                        </button>
+                        <span>•</span>
+                        <button
+                          type="button"
+                          onClick={() => setDestination("INTL")}
+                          className={`hover:underline cursor-pointer ${destination === "INTL" ? "font-bold text-[#0b1f3a]" : "text-slate-400"}`}
+                        >
+                          Worldwide (£15.00)
+                        </button>
+                      </div>
+                    </div>
                     <span className="font-mono text-[#0b1f3a]">
                       {shippingCost === 0 ? (
-                        <span className="text-emerald-600 font-bold uppercase">Free (Over £100)</span>
+                        <span className="text-emerald-600 font-bold uppercase">Free</span>
                       ) : (
                         `£${shippingCost.toFixed(2)}`
                       )}

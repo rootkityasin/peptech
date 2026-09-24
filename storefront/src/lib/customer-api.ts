@@ -95,6 +95,7 @@ export interface CustomerAddressPayload {
   address_1: string
   address_2?: string
   city: string
+  province?: string
   country_code: string
   postal_code: string
   phone?: string
@@ -388,6 +389,52 @@ export async function createStoreOrder(payload: any, token?: string): Promise<{ 
 
   const data = await response.json()
   return data
+}
+
+/**
+ * Initialize a Stripe payment intent or setup intent for international card & subscription payments
+ */
+export async function createStripePaymentIntent(payload: {
+  amount: number
+  currency?: string
+  email?: string
+  customer_email?: string
+  customer_id?: string
+  is_subscription?: boolean
+  has_subscription?: boolean
+  metadata?: Record<string, any>
+}): Promise<{
+  client_secret: string
+  payment_intent_id: string
+  customer_id?: string | null
+  amount: number
+  currency: string
+  mode: string
+}> {
+  const normalizedPayload = {
+    amount: payload.amount,
+    currency: payload.currency,
+    email: payload.email || payload.customer_email,
+    customer_id: payload.customer_id,
+    is_subscription: payload.is_subscription ?? payload.has_subscription ?? false,
+    metadata: payload.metadata,
+  }
+
+  const response = await fetch(`${getBackendUrl()}/store/custom/stripe-intent`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-publishable-api-key": PUBLISHABLE_KEY,
+    },
+    body: JSON.stringify(normalizedPayload),
+  })
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}))
+    throw new Error(errorData.message || "Failed to initialize Stripe payment session.")
+  }
+
+  return await response.json()
 }
 
 

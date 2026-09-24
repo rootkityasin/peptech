@@ -1,0 +1,1 @@
+import{M as m}from"./chunk-NANNVVYP-bML609_p.js";import{ar as d,eC as u,eL as p,j as e,al as I}from"./index-DoROOF21.js";var x=()=>{const{id:t}=d(),{inventory_item:a,isPending:r,isError:s,error:n}=u(t??""),{mutateAsync:o,isPending:i}=p(t??"");if(s)throw n;return e.jsx(I,{children:e.jsx(m,{isPending:r,isMutating:i,hook:o,metadata:a?.metadata})})};export{x as Component};

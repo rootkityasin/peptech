@@ -139,3 +139,16 @@ html.dark .orders-theme-root input[type="checkbox"],
   background-color: #27272a !important;
   border-color: #3f3f46 !important;
 }
+
+/* ========================================================
+   Hide Documentation & Changelog from Admin User Menu
+   ======================================================== */
+a[href*="docs.medusajs.com"],
+a[href*="medusajs.com/changelog"],
+[data-radix-collection-item]:has(a[href*="docs.medusajs.com"]),
+[data-radix-collection-item]:has(a[href*="medusajs.com/changelog"]),
+div[role="menuitem"]:has(a[href*="docs.medusajs.com"]),
+div[role="menuitem"]:has(a[href*="medusajs.com/changelog"]) {
+  display: none !important;
+}
+
