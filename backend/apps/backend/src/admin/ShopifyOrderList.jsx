@@ -492,6 +492,8 @@ export function OrderList() {
                                 _jsx("option", { value: "all", children: "All" }),
                                 _jsx("option", { value: "paid", children: "Paid" }),
                                 _jsx("option", { value: "pending", children: "Pending / Unpaid" }),
+                                _jsx("option", { value: "refunded", children: "Refunded" }),
+                                _jsx("option", { value: "partially_refunded", children: "Partially refunded" }),
                               ],
                             }),
                           ],
@@ -786,7 +788,10 @@ export function OrderList() {
                           const meta = order.metadata || {};
                           const isSelected = selectedOrders.includes(order.id);
                           const customerName = getCustomerName(order);
-                          const isPaid = (meta.payment_status || (order.status === "completed" ? "paid" : "pending")) === "paid";
+                          const paymentStatus = (meta.payment_status || (order.status === "completed" ? "paid" : "pending")).toLowerCase();
+                          const isRefunded = paymentStatus === "refunded";
+                          const isPartiallyRefunded = paymentStatus === "partially_refunded";
+                          const isPaid = paymentStatus === "paid";
                           const isFulfilled = (meta.fulfillment_status || (order.fulfillments?.length > 0 ? "fulfilled" : "unfulfilled")) === "fulfilled";
                           const tags = Array.isArray(meta.tags) ? meta.tags : [];
 
@@ -870,7 +875,23 @@ export function OrderList() {
                                 // Payment Status Pill
                                 _jsx("td", {
                                   className: "py-3 px-4",
-                                  children: isPaid
+                                  children: isRefunded
+                                    ? _jsxs("span", {
+                                        className: "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#f1f2f3] text-[#5c5f62] border border-[#d2d5d8]",
+                                        children: [
+                                          _jsx("span", { className: "w-1.5 h-1.5 rounded-full bg-[#8c9196]" }),
+                                          "Refunded",
+                                        ],
+                                      })
+                                    : isPartiallyRefunded
+                                    ? _jsxs("span", {
+                                        className: "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#fff8e6] text-[#8a6116] border border-[#ffea8a]",
+                                        children: [
+                                          _jsx("span", { className: "w-1.5 h-1.5 rounded-full bg-[#ffb800]" }),
+                                          "Partially refunded",
+                                        ],
+                                      })
+                                    : isPaid
                                     ? _jsxs("span", {
                                         className: "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#e4e5e7] text-[#202223]",
                                         children: [

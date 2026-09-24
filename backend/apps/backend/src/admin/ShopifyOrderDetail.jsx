@@ -189,6 +189,21 @@ function StandardOrderDetail({ id }) {
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [editAddress, setEditAddress] = useState({});
 
+  // Refund modal state
+  const [showRefundModal, setShowRefundModal] = useState(false);
+  const [isRefunding, setIsRefunding] = useState(false);
+  const [refundReasons, setRefundReasons] = useState([
+    { id: "refr_shipping_issue", code: "shipping_issue", label: "Shipping Issue" },
+    { id: "refr_customer_care", code: "customer_care_adjustment", label: "Customer Care Adjustment" },
+    { id: "refr_pricing_error", code: "pricing_error", label: "Pricing Error" },
+    { id: "refr_product_defect", code: "product_defect", label: "Product Defect / Return" },
+  ]);
+  const [selectedReasonId, setSelectedReasonId] = useState("refr_customer_care");
+  const [refundNote, setRefundNote] = useState("");
+  const [restockItems, setRestockItems] = useState(true);
+  const [itemRefundQuantities, setItemRefundQuantities] = useState({});
+  const [shippingRefundAmount, setShippingRefundAmount] = useState("0");
+
   if (isLoading || !order) {
     return _jsx("div", {
       className: "min-h-screen bg-[#f6f6f7] p-8 flex items-center justify-center text-[#5c5f62]",
@@ -202,7 +217,12 @@ function StandardOrderDetail({ id }) {
   const notes = meta.notes || `Order# ${order.display_id || order.id.slice(-6)}\nShipping: Royal Mail Tracked UK / Worldwide`;
   const fulfillments = meta.fulfillments || (order.fulfillments && order.fulfillments.length > 0 ? order.fulfillments : []);
   const isFulfilled = (meta.fulfillment_status || (fulfillments.length > 0 ? "fulfilled" : "unfulfilled")) === "fulfilled";
-  const isPaid = (meta.payment_status || (order.status === "completed" ? "paid" : "pending")) === "paid";
+  const paymentStatus = (meta.payment_status || (order.status === "completed" ? "paid" : "pending")).toLowerCase();
+  const isRefunded = paymentStatus === "refunded";
+  const isPartiallyRefunded = paymentStatus === "partially_refunded";
+  const isPaid = paymentStatus === "paid";
+  const refunds = Array.isArray(meta.refunds) ? meta.refunds : [];
+  const refundedTotal = Number(meta.refunded_total || 0);
 
   // Customer info
   const shipping = order.shipping_address || {};
@@ -333,6 +353,92 @@ function StandardOrderDetail({ id }) {
   const shippingAmount = order.shipping_methods?.[0]?.amount || 1.96;
   const total = order.total || subtotal + shippingAmount;
 
+  const openRefundModal = async () => {
+    const initialQtys = {};
+    items.forEach((it) => {
+      initialQtys[it.id] = 0;
+    });
+    setItemRefundQuantities(initialQtys);
+    setShippingRefundAmount("0");
+    setRefundNote("");
+    setShowRefundModal(true);
+
+    try {
+      const res = await fetch("/admin/custom/refund");
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.refund_reasons) && data.refund_reasons.length > 0) {
+          setRefundReasons(data.refund_reasons);
+          setSelectedReasonId(data.refund_reasons[0].id);
+        }
+      }
+    } catch (e) {
+      // Keep preloaded reasons
+    }
+  };
+
+  const calculatedItemsTotal = items.reduce((acc, it) => {
+    const qty = Number(itemRefundQuantities[it.id] || 0);
+    const maxQty = it.quantity || 1;
+    const unitPrice = it.unit_price != null ? Number(it.unit_price) : (it.total ? Number(it.total) / maxQty : 0);
+    return acc + (qty * unitPrice);
+  }, 0);
+
+  const calculatedTotalRefund = Number((calculatedItemsTotal + Number(shippingRefundAmount || 0)).toFixed(2));
+
+  const handleProcessRefund = async () => {
+    if (calculatedTotalRefund <= 0) {
+      alert("Please select at least one item quantity or enter a shipping amount to refund.");
+      return;
+    }
+    const maxRefundable = Math.max(0, total - refundedTotal);
+    if (calculatedTotalRefund > maxRefundable + 0.05) {
+      alert(`The maximum remaining amount you can refund for this order is ${formatPrice(maxRefundable)}.`);
+      return;
+    }
+    setIsRefunding(true);
+    try {
+      const selectedReasonObj = refundReasons.find((r) => r.id === selectedReasonId);
+      const refundItemsList = items
+        .filter((it) => (itemRefundQuantities[it.id] || 0) > 0)
+        .map((it) => ({
+          id: it.id,
+          title: it.title,
+          quantity: itemRefundQuantities[it.id],
+          unit_price: it.unit_price != null ? Number(it.unit_price) : (it.total ? Number(it.total) / (it.quantity || 1) : 0),
+        }));
+
+      const res = await fetch("/admin/custom/refund", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          order_id: order.id,
+          amount: calculatedTotalRefund,
+          refund_reason_id: selectedReasonId,
+          reason_label: selectedReasonObj?.label || "Customer Care Adjustment",
+          items: refundItemsList,
+          note: refundNote.trim(),
+          restock: restockItems,
+          shipping_refund: Number(shippingRefundAmount || 0),
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to process refund");
+      }
+
+      setShowRefundModal(false);
+      await refetch();
+      alert(`Refund of ${formatPrice(calculatedTotalRefund)} was successfully processed!`);
+    } catch (err) {
+      console.error("Refund error:", err);
+      alert(`Error processing refund: ${err.message}`);
+    } finally {
+      setIsRefunding(false);
+    }
+  };
+
   return _jsxs("div", {
     className: "min-h-screen bg-[#f6f6f7] p-6 text-[#202223] font-sans antialiased orders-theme-root",
     children: [
@@ -368,6 +474,39 @@ function StandardOrderDetail({ id }) {
                 className: "text-xs text-[#5c5f62]",
                 children: formatDate(order.created_at),
               }),
+              isRefunded ? (
+                _jsxs("span", {
+                  className: "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#f1f2f3] text-[#5c5f62] border border-[#d2d5d8]",
+                  children: [
+                    _jsx("span", { className: "w-1.5 h-1.5 rounded-full bg-[#8c9196]" }),
+                    "Refunded",
+                  ],
+                })
+              ) : isPartiallyRefunded ? (
+                _jsxs("span", {
+                  className: "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#fff8e6] text-[#8a6116] border border-[#ffea8a]",
+                  children: [
+                    _jsx("span", { className: "w-1.5 h-1.5 rounded-full bg-[#ffb800]" }),
+                    "Partially refunded",
+                  ],
+                })
+              ) : isPaid ? (
+                _jsxs("span", {
+                  className: "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#e4e5e7] text-[#202223]",
+                  children: [
+                    _jsx("span", { className: "w-1.5 h-1.5 rounded-full bg-[#5c5f62]" }),
+                    "Paid",
+                  ],
+                })
+              ) : (
+                _jsxs("span", {
+                  className: "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#ffea8a] text-[#5c3e00]",
+                  children: [
+                    _jsx("span", { className: "w-1.5 h-1.5 rounded-full border border-[#8c6b00]" }),
+                    "Pending",
+                  ],
+                })
+              ),
             ],
           }),
 
@@ -375,6 +514,26 @@ function StandardOrderDetail({ id }) {
           _jsxs("div", {
             className: "flex items-center gap-2",
             children: [
+              !isRefunded && _jsxs("button", {
+                type: "button",
+                onClick: openRefundModal,
+                className: "px-3 py-1.5 text-xs font-medium bg-white border border-[#c9cccf] hover:bg-[#f6f6f7] text-[#202223] rounded shadow-sm flex items-center gap-1.5 transition",
+                children: [
+                  _jsx("svg", {
+                    className: "w-3.5 h-3.5 text-[#5c5f62]",
+                    fill: "none",
+                    viewBox: "0 0 24 24",
+                    stroke: "currentColor",
+                    children: _jsx("path", {
+                      strokeLinecap: "round",
+                      strokeLinejoin: "round",
+                      strokeWidth: 2,
+                      d: "M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6",
+                    }),
+                  }),
+                  "Refund items",
+                ],
+              }),
               _jsx("button", {
                 onClick: () => window.print(),
                 className: "px-3 py-1.5 text-xs font-medium bg-white border border-[#c9cccf] hover:bg-[#f6f6f7] rounded shadow-sm",
@@ -577,11 +736,81 @@ function StandardOrderDetail({ id }) {
                             children: [
                               _jsx("span", { children: "Paid by customer" }),
                               _jsx("span", {
-                                className: `font-semibold ${isPaid ? "text-[#008060]" : "text-[#5c5f62]"}`,
-                                children: isPaid ? formatPrice(total) : "$0.00",
+                                className: `font-semibold ${isPaid || isRefunded || isPartiallyRefunded ? "text-[#008060]" : "text-[#5c5f62]"}`,
+                                children: (isPaid || isRefunded || isPartiallyRefunded) ? formatPrice(total) : "$0.00",
                               }),
                             ],
                           }),
+                          refundedTotal > 0 &&
+                            _jsxs("div", {
+                              className: "flex justify-between pt-1 text-xs text-[#d72c0d] font-semibold",
+                              children: [
+                                _jsx("span", { children: "Refunded" }),
+                                _jsx("span", { children: `-${formatPrice(refundedTotal)}` }),
+                              ],
+                            }),
+                          refundedTotal > 0 &&
+                            _jsxs("div", {
+                              className: "flex justify-between pt-1 text-xs font-bold text-[#202223] border-t border-[#e1e3e5] mt-1 pt-1",
+                              children: [
+                                _jsx("span", { children: "Net payment" }),
+                                _jsx("span", { children: formatPrice(Math.max(0, total - refundedTotal)) }),
+                              ],
+                            }),
+                          _jsxs("div", {
+                            className: "flex items-center justify-between pt-2 mt-2 border-t border-[#e1e3e5]",
+                            children: [
+                              _jsx("span", {
+                                className: "text-[11px] text-[#5c5f62]",
+                                children: isRefunded
+                                  ? "Order fully refunded"
+                                  : isPartiallyRefunded
+                                  ? `${refunds.length} partial refund(s) issued`
+                                  : "Need to issue a refund?",
+                              }),
+                              !isRefunded &&
+                                _jsx("button", {
+                                  type: "button",
+                                  onClick: openRefundModal,
+                                  className: "text-xs font-semibold text-[#008060] hover:underline",
+                                  children: "Refund payment",
+                                }),
+                            ],
+                          }),
+                          refunds.length > 0 &&
+                            _jsx("div", {
+                              className: "mt-3 space-y-1.5 pt-2 border-t border-[#e1e3e5]",
+                              children: refunds.map((ref) =>
+                                _jsxs(
+                                  "div",
+                                  {
+                                    className: "p-2 rounded bg-[#f6f6f7] border border-[#e1e3e5] text-xs",
+                                    children: [
+                                      _jsxs("div", {
+                                        className: "flex justify-between font-medium text-[#202223]",
+                                        children: [
+                                          _jsx("span", { children: ref.reason_label || "Refund issued" }),
+                                          _jsxs("span", {
+                                            className: "text-[#d72c0d] font-semibold",
+                                            children: ["-", formatPrice(ref.amount)],
+                                          }),
+                                        ],
+                                      }),
+                                      ref.note &&
+                                        _jsxs("p", {
+                                          className: "text-[11px] text-[#5c5f62] italic mt-0.5",
+                                          children: ['"', ref.note, '"'],
+                                        }),
+                                      _jsx("p", {
+                                        className: "text-[10px] text-[#8c9196] mt-0.5",
+                                        children: formatDate(ref.created_at),
+                                      }),
+                                    ],
+                                  },
+                                  ref.id
+                                )
+                              ),
+                            }),
                         ],
                       }),
                     ],
@@ -1051,6 +1280,250 @@ function StandardOrderDetail({ id }) {
                     disabled: isFulfilling,
                     className: "px-4 py-2 text-xs font-semibold text-white bg-[#008060] hover:bg-[#006e52] rounded shadow-sm",
                     children: isFulfilling ? "Fulfilling..." : "Confirm & Fulfill",
+                  }),
+                ],
+              }),
+            ],
+          }),
+        }),
+
+      // Refund Modal
+      showRefundModal &&
+        _jsx("div", {
+          className: "fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto",
+          children: _jsxs("div", {
+            className: "bg-white rounded-lg shadow-2xl border border-[#e1e3e5] max-w-xl w-full p-6 space-y-4 my-8",
+            children: [
+              // Modal Header
+              _jsxs("div", {
+                className: "flex items-center justify-between border-b pb-3",
+                children: [
+                  _jsxs("div", {
+                    children: [
+                      _jsxs("h3", {
+                        className: "text-base font-bold text-[#202223]",
+                        children: ["Refund items — #", order.display_id || order.id.slice(-4)],
+                      }),
+                      _jsx("p", {
+                        className: "text-xs text-[#5c5f62] mt-0.5",
+                        children: "Select items, quantities, and reasons to refund.",
+                      }),
+                    ],
+                  }),
+                  _jsx("button", {
+                    onClick: () => setShowRefundModal(false),
+                    className: "text-[#8c9196] hover:text-[#202223] text-lg font-bold",
+                    children: "✕",
+                  }),
+                ],
+              }),
+
+              // Items Table
+              _jsxs("div", {
+                className: "space-y-2",
+                children: [
+                  _jsx("label", {
+                    className: "block text-xs font-semibold text-[#202223]",
+                    children: "Items to refund",
+                  }),
+                  _jsx("div", {
+                    className: "border border-[#e1e3e5] rounded overflow-hidden max-h-52 overflow-y-auto",
+                    children: _jsxs("table", {
+                      className: "w-full text-left border-collapse text-xs",
+                      children: [
+                        _jsx("thead", {
+                          children: _jsxs("tr", {
+                            className: "bg-[#f6f6f7] border-b border-[#e1e3e5] text-[#5c5f62]",
+                            children: [
+                              _jsx("th", { className: "p-2 font-medium", children: "Product" }),
+                              _jsx("th", { className: "p-2 font-medium text-right", children: "Price" }),
+                              _jsx("th", { className: "p-2 font-medium text-center", children: "Refund Qty" }),
+                              _jsx("th", { className: "p-2 font-medium text-right", children: "Subtotal" }),
+                            ],
+                          }),
+                        }),
+                        _jsx("tbody", {
+                          className: "divide-y divide-[#e1e3e5]",
+                          children: items.map((it) => {
+                            const maxQty = it.quantity || 1;
+                            const unitPrice = it.unit_price != null ? Number(it.unit_price) : (it.total ? Number(it.total) / maxQty : 0);
+                            const currentQty = itemRefundQuantities[it.id] || 0;
+                            const lineTotal = currentQty * unitPrice;
+                            return _jsxs("tr", {
+                              className: "hover:bg-[#fafbfb]",
+                              children: [
+                                _jsxs("td", {
+                                  className: "p-2",
+                                  children: [
+                                    _jsx("div", { className: "font-medium text-[#202223]", children: it.title }),
+                                    it.variant_title && _jsx("div", { className: "text-[11px] text-[#71717a]", children: it.variant_title }),
+                                    _jsxs("div", { className: "text-[10px] text-[#8c9196]", children: ["Ordered: ", maxQty] }),
+                                  ],
+                                }),
+                                _jsx("td", { className: "p-2 text-right text-[#5c5f62]", children: formatPrice(unitPrice) }),
+                                _jsx("td", {
+                                  className: "p-2 text-center",
+                                  children: _jsx("input", {
+                                    type: "number",
+                                    min: "0",
+                                    max: String(maxQty),
+                                    value: currentQty,
+                                    onChange: (e) => {
+                                      const val = Math.max(0, Math.min(maxQty, parseInt(e.target.value) || 0));
+                                      setItemRefundQuantities({ ...itemRefundQuantities, [it.id]: val });
+                                    },
+                                    className: "w-16 p-1 border border-[#c9cccf] rounded text-center text-xs bg-white text-[#202223]",
+                                  }),
+                                }),
+                                _jsx("td", { className: "p-2 text-right font-semibold text-[#202223]", children: formatPrice(lineTotal) }),
+                              ],
+                            }, it.id);
+                          }),
+                        }),
+                      ],
+                    }),
+                  }),
+                ],
+              }),
+
+              // Shipping & Reason
+              _jsxs("div", {
+                className: "grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1",
+                children: [
+                  _jsxs("div", {
+                    children: [
+                      _jsxs("label", {
+                        className: "block text-xs font-semibold text-[#202223] mb-1",
+                        children: ["Refund shipping (", formatPrice(shippingAmount), " max)"],
+                      }),
+                      _jsxs("div", {
+                        className: "relative",
+                        children: [
+                          _jsx("span", { className: "absolute left-2.5 top-2 text-xs text-[#5c5f62]", children: "£" }),
+                          _jsx("input", {
+                            type: "number",
+                            step: "0.01",
+                            min: "0",
+                            max: String(shippingAmount),
+                            value: shippingRefundAmount,
+                            onChange: (e) => setShippingRefundAmount(e.target.value),
+                            placeholder: "0.00",
+                            className: "w-full pl-6 pr-2 py-1.5 border border-[#c9cccf] rounded text-xs bg-white text-[#202223]",
+                          }),
+                        ],
+                      }),
+                    ],
+                  }),
+                  _jsxs("div", {
+                    children: [
+                      _jsx("label", {
+                        className: "block text-xs font-semibold text-[#202223] mb-1",
+                        children: "Reason for refund",
+                      }),
+                      _jsx("select", {
+                        value: selectedReasonId,
+                        onChange: (e) => setSelectedReasonId(e.target.value),
+                        className: "w-full border border-[#c9cccf] rounded p-1.5 text-xs bg-white text-[#202223]",
+                        children: refundReasons.map((r) =>
+                          _jsx("option", { value: r.id, children: r.label }, r.id)
+                        ),
+                      }),
+                    ],
+                  }),
+                ],
+              }),
+
+              // Restock Checkbox
+              _jsxs("div", {
+                className: "flex items-center gap-2 pt-1",
+                children: [
+                  _jsx("input", {
+                    type: "checkbox",
+                    id: "restock_items_check",
+                    checked: restockItems,
+                    onChange: (e) => setRestockItems(e.target.checked),
+                    className: "rounded border-[#c9cccf] text-[#008060] focus:ring-[#008060]",
+                  }),
+                  _jsx("label", {
+                    htmlFor: "restock_items_check",
+                    className: "text-xs text-[#202223] select-none cursor-pointer",
+                    children: "Restock items back into available inventory",
+                  }),
+                ],
+              }),
+
+              // Note Textarea
+              _jsxs("div", {
+                children: [
+                  _jsx("label", {
+                    className: "block text-xs font-semibold text-[#202223] mb-1",
+                    children: "Staff note (reason for customer refund)",
+                  }),
+                  _jsx("textarea", {
+                    rows: 2,
+                    value: refundNote,
+                    onChange: (e) => setRefundNote(e.target.value),
+                    placeholder: "E.g. Customer cancelled order prior to dispatch / courier transit delay.",
+                    className: "w-full border border-[#c9cccf] rounded p-2 text-xs resize-none bg-white text-[#202223]",
+                  }),
+                ],
+              }),
+
+              // Summary Box
+              _jsxs("div", {
+                className: "bg-[#fafbfb] border border-[#e1e3e5] rounded p-3 text-xs space-y-1.5",
+                children: [
+                  _jsxs("div", {
+                    className: "flex justify-between text-[#5c5f62]",
+                    children: [
+                      _jsx("span", { children: "Items to refund:" }),
+                      _jsx("span", { children: formatPrice(calculatedItemsTotal) }),
+                    ],
+                  }),
+                  _jsxs("div", {
+                    className: "flex justify-between text-[#5c5f62]",
+                    children: [
+                      _jsx("span", { children: "Shipping to refund:" }),
+                      _jsx("span", { children: formatPrice(Number(shippingRefundAmount || 0)) }),
+                    ],
+                  }),
+                  _jsxs("div", {
+                    className: "flex justify-between font-bold text-sm text-[#d72c0d] border-t border-[#e1e3e5] pt-1.5 mt-1.5",
+                    children: [
+                      _jsx("span", { children: "Total refund amount:" }),
+                      _jsxs("span", { children: ["-", formatPrice(calculatedTotalRefund)] }),
+                    ],
+                  }),
+                  _jsxs("div", {
+                    className: "flex justify-between text-[11px] text-[#5c5f62] pt-0.5",
+                    children: [
+                      _jsx("span", { children: "Remaining order balance after refund:" }),
+                      _jsx("span", { children: formatPrice(Math.max(0, total - (refundedTotal + calculatedTotalRefund))) }),
+                    ],
+                  }),
+                ],
+              }),
+
+              // Modal Footer Buttons
+              _jsxs("div", {
+                className: "flex items-center justify-end gap-2 pt-3 border-t",
+                children: [
+                  _jsx("button", {
+                    type: "button",
+                    onClick: () => setShowRefundModal(false),
+                    className: "px-4 py-2 text-xs font-medium text-[#202223] bg-white border border-[#c9cccf] rounded hover:bg-[#f6f6f7]",
+                    children: "Cancel",
+                  }),
+                  _jsx("button", {
+                    type: "button",
+                    disabled: isRefunding || calculatedTotalRefund <= 0,
+                    onClick: handleProcessRefund,
+                    className: `px-4 py-2 text-xs font-semibold text-white rounded shadow-sm transition ${
+                      calculatedTotalRefund <= 0 || isRefunding
+                        ? "bg-[#c9cccf] cursor-not-allowed"
+                        : "bg-[#d72c0d] hover:bg-[#bc2200]"
+                    }`,
+                    children: isRefunding ? "Processing refund..." : `Refund ${formatPrice(calculatedTotalRefund)}`,
                   }),
                 ],
               }),
