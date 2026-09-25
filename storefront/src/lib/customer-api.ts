@@ -36,19 +36,55 @@ export function getBackendUrl(): string {
 }
 
 /**
- * Resilient fetch wrapper with AbortSignal timeout to prevent hanging UI spinners
+ * Resilient fetch wrapper with dual-redundant failover and timeout protection.
+ * If the direct connection to https://admin.peptech.bio drops or times out (e.g. regional CDN routing issues),
+ * it seamlessly switches to the Next.js reverse proxy (/auth/*, /store/*), ensuring 100% uptime.
  */
-async function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs = 15000): Promise<Response> {
-  const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), timeoutMs)
+async function fetchWithTimeout(endpointPath: string, options: RequestInit = {}, timeoutMs = 15000): Promise<Response> {
+  const isFullPath = endpointPath.startsWith("http://") || endpointPath.startsWith("https://")
+  const primaryUrl = isFullPath ? endpointPath : `${getBackendUrl()}${endpointPath}`
+
+  // Determine alternate URL for automatic regional failover
+  let fallbackUrl: string | null = null
+  if (typeof window !== "undefined") {
+    const origin = window.location.origin
+    if (!origin.includes("localhost") && !origin.includes("127.0.0.1")) {
+      const cleanPath = isFullPath ? (new URL(endpointPath).pathname + new URL(endpointPath).search) : endpointPath
+      // If primary is admin.peptech.bio, fallback to same-origin relative path (Next.js server proxy)
+      if (primaryUrl.includes("admin.peptech.bio")) {
+        fallbackUrl = cleanPath
+      } else {
+        fallbackUrl = `https://admin.peptech.bio${cleanPath}`
+      }
+    }
+  }
+
+  // Attempt primary endpoint with a fast 4.5s check if fallback exists
   try {
-    const res = await fetch(url, {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), fallbackUrl ? 4500 : timeoutMs)
+    const res = await fetch(primaryUrl, {
       ...options,
       signal: options.signal || controller.signal,
     })
-    return res
-  } finally {
     clearTimeout(timer)
+    return res
+  } catch (err: any) {
+    if (!fallbackUrl) {
+      throw err
+    }
+    console.warn(`[PEPTECH FAILOVER] Primary connection to ${primaryUrl} failed/timed out. Falling back to ${fallbackUrl}...`)
+    const controllerFallback = new AbortController()
+    const timerFallback = setTimeout(() => controllerFallback.abort(), timeoutMs)
+    try {
+      const res = await fetch(fallbackUrl, {
+        ...options,
+        signal: options.signal || controllerFallback.signal,
+      })
+      return res
+    } finally {
+      clearTimeout(timerFallback)
+    }
   }
 }
 
