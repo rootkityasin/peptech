@@ -2,24 +2,36 @@ const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "pk_55
 
 /**
  * Dynamically resolves the Medusa backend URL.
- * In a browser environment on a production domain (e.g., https://peptech.bio),
- * returns the current origin to use same-origin Next.js rewrites, preventing
- * Private Network Access (PNA loopback) and CORS blocks.
+ * In a browser environment, returns an empty string to use same-origin Next.js rewrites
+ * (/store/* and /auth/* mapped in next.config.ts), preventing CORS errors and
+ * Private Network Access (PNA) blocks across all hostnames (localhost, 127.0.0.1, or domain).
  */
 export function getBackendUrl(): string {
-  const envUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL
-  if (envUrl && !envUrl.includes("localhost") && !envUrl.includes("127.0.0.1")) {
-    return envUrl
-  }
-
   if (typeof window !== "undefined") {
-    const origin = window.location.origin
-    if (!origin.includes("localhost") && !origin.includes("127.0.0.1")) {
-      return origin
-    }
+    return ""
   }
+  return (
+    process.env.MEDUSA_BACKEND_URL ||
+    process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL ||
+    "http://localhost:9000"
+  )
+}
 
-  return envUrl || "http://localhost:9000"
+/**
+ * Resilient fetch wrapper with AbortSignal timeout to prevent hanging UI spinners
+ */
+async function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs = 8000): Promise<Response> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
+  try {
+    const res = await fetch(url, {
+      ...options,
+      signal: options.signal || controller.signal,
+    })
+    return res
+  } finally {
+    clearTimeout(timer)
+  }
 }
 
 export interface CustomerAddress {
@@ -108,14 +120,14 @@ export interface CustomerAddressPayload {
  */
 export async function loginCustomer(email: string, password: string): Promise<string> {
   try {
-    const response = await fetch(`${getBackendUrl()}/auth/customer/emailpass`, {
+    const response = await fetchWithTimeout(`${getBackendUrl()}/auth/customer/emailpass`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "x-publishable-api-key": PUBLISHABLE_KEY,
       },
       body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
-    })
+    }, 8000)
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
@@ -132,6 +144,9 @@ export async function loginCustomer(email: string, password: string): Promise<st
     }
     return data.token
   } catch (err: any) {
+    if (err.name === "AbortError") {
+      throw new Error("Connection timed out while contacting PEPTECH Research Server. Please try again.")
+    }
     if (err.message && !err.message.includes("fetch") && !err.message.includes("Failed to fetch")) {
       throw err
     }
@@ -146,7 +161,7 @@ export async function registerCustomer(payload: CustomerRegisterPayload): Promis
   const normalizedEmail = payload.email.trim().toLowerCase()
   try {
     // Step 1: Register auth identity
-    const authResponse = await fetch(`${getBackendUrl()}/auth/customer/emailpass/register`, {
+    const authResponse = await fetchWithTimeout(`${getBackendUrl()}/auth/customer/emailpass/register`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -156,7 +171,7 @@ export async function registerCustomer(payload: CustomerRegisterPayload): Promis
         email: normalizedEmail,
         password: payload.password,
       }),
-    })
+    }, 8000)
 
     if (!authResponse.ok) {
       const errorData = await authResponse.json().catch(() => ({}))
@@ -172,8 +187,8 @@ export async function registerCustomer(payload: CustomerRegisterPayload): Promis
     }
 
     const authData = await authResponse.json()
-    const token = authData.token
-    if (!token) {
+    const tempToken = authData.token
+    if (!tempToken) {
       throw new Error("Registration token was not returned.")
     }
 
@@ -184,11 +199,11 @@ export async function registerCustomer(payload: CustomerRegisterPayload): Promis
     const memberSince = `${monthNames[now.getMonth()]} ${now.getFullYear()}`
 
     // Step 2: Create customer record linked to this identity
-    const custResponse = await fetch(`${getBackendUrl()}/store/customers`, {
+    const custResponse = await fetchWithTimeout(`${getBackendUrl()}/store/customers`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`,
+        "Authorization": `Bearer ${tempToken}`,
         "x-publishable-api-key": PUBLISHABLE_KEY,
       },
       body: JSON.stringify({
@@ -208,7 +223,7 @@ export async function registerCustomer(payload: CustomerRegisterPayload): Promis
           ...(payload.metadata || {}),
         },
       }),
-    })
+    }, 8000)
 
     if (!custResponse.ok) {
       const err = await custResponse.json().catch(() => ({}))
@@ -216,15 +231,28 @@ export async function registerCustomer(payload: CustomerRegisterPayload): Promis
     }
 
     const custData = await custResponse.json()
-    // Re-authenticate to ensure token contains full customer actor_id
-    let activeToken = token
+
+    // Step 3: Re-authenticate to ensure token contains full customer actor_id
+    let activeToken = tempToken
     try {
       activeToken = await loginCustomer(normalizedEmail, payload.password)
     } catch {
-      // fallback to auth token
+      // Keep tempToken
     }
-    return { token: activeToken, customer: custData.customer }
+
+    // Step 4: Retrieve fully loaded customer object with addresses
+    let fullCustomer = custData.customer
+    try {
+      fullCustomer = await getCustomerMe(activeToken)
+    } catch {
+      // Keep custData.customer
+    }
+
+    return { token: activeToken, customer: fullCustomer }
   } catch (err: any) {
+    if (err.name === "AbortError") {
+      throw new Error("Connection timed out while registering account. Please try again.")
+    }
     if (err.message && !err.message.includes("fetch") && !err.message.includes("Failed to fetch")) {
       throw err
     }
@@ -236,13 +264,13 @@ export async function registerCustomer(payload: CustomerRegisterPayload): Promis
  * Retrieve the current authenticated customer and addresses
  */
 export async function getCustomerMe(token: string): Promise<Customer> {
-  const response = await fetch(`${getBackendUrl()}/store/customers/me?fields=*addresses`, {
+  const response = await fetchWithTimeout(`${getBackendUrl()}/store/customers/me?fields=*addresses`, {
     method: "GET",
     headers: {
       "Authorization": `Bearer ${token}`,
       "x-publishable-api-key": PUBLISHABLE_KEY,
     },
-  })
+  }, 7000)
 
   if (!response.ok) {
     throw new Error("Session expired or invalid. Please sign in again.")
@@ -256,7 +284,7 @@ export async function getCustomerMe(token: string): Promise<Customer> {
  * Update the current authenticated customer profile
  */
 export async function updateCustomerMe(token: string, payload: CustomerUpdatePayload): Promise<Customer> {
-  const response = await fetch(`${getBackendUrl()}/store/customers/me`, {
+  const response = await fetchWithTimeout(`${getBackendUrl()}/store/customers/me`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -264,7 +292,7 @@ export async function updateCustomerMe(token: string, payload: CustomerUpdatePay
       "x-publishable-api-key": PUBLISHABLE_KEY,
     },
     body: JSON.stringify(payload),
-  })
+  }, 8000)
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}))
@@ -279,7 +307,7 @@ export async function updateCustomerMe(token: string, payload: CustomerUpdatePay
  * Add a new shipping/billing address to the authenticated customer
  */
 export async function addCustomerAddress(token: string, address: CustomerAddressPayload): Promise<CustomerAddress> {
-  const response = await fetch(`${getBackendUrl()}/store/customers/me/addresses`, {
+  const response = await fetchWithTimeout(`${getBackendUrl()}/store/customers/me/addresses`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -287,7 +315,7 @@ export async function addCustomerAddress(token: string, address: CustomerAddress
       "x-publishable-api-key": PUBLISHABLE_KEY,
     },
     body: JSON.stringify(address),
-  })
+  }, 8000)
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}))
@@ -302,13 +330,13 @@ export async function addCustomerAddress(token: string, address: CustomerAddress
  * Delete a customer address
  */
 export async function deleteCustomerAddress(token: string, addressId: string): Promise<void> {
-  const response = await fetch(`${getBackendUrl()}/store/customers/me/addresses/${addressId}`, {
+  const response = await fetchWithTimeout(`${getBackendUrl()}/store/customers/me/addresses/${addressId}`, {
     method: "DELETE",
     headers: {
       "Authorization": `Bearer ${token}`,
       "x-publishable-api-key": PUBLISHABLE_KEY,
     },
-  })
+  }, 8000)
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}))
@@ -333,10 +361,10 @@ export async function getCustomerOrders(token?: string, customerId?: string, ema
     }
 
     // Attempt custom order lookup directly connected to Medusa 2.0 PostgreSQL Order Module
-    const customResponse = await fetch(`${getBackendUrl()}/store/custom/orders?${params.toString()}`, {
+    const customResponse = await fetchWithTimeout(`${getBackendUrl()}/store/custom/orders?${params.toString()}`, {
       method: "GET",
       headers,
-    })
+    }, 7000)
 
     if (customResponse.ok) {
       const data = await customResponse.json()
@@ -347,10 +375,10 @@ export async function getCustomerOrders(token?: string, customerId?: string, ema
 
     // Fallback to standard Medusa store orders if authenticated with bearer token
     if (token) {
-      const response = await fetch(`${getBackendUrl()}/store/orders?fields=*items,*items.variant,*shipping_address`, {
+      const response = await fetchWithTimeout(`${getBackendUrl()}/store/orders?fields=*items,*items.variant,*shipping_address`, {
         method: "GET",
         headers,
-      })
+      }, 7000)
       if (response.ok) {
         const data = await response.json()
         return data.orders || []
@@ -376,11 +404,11 @@ export async function createStoreOrder(payload: any, token?: string): Promise<{ 
     headers["Authorization"] = `Bearer ${token}`
   }
 
-  const response = await fetch(`${getBackendUrl()}/store/custom/orders`, {
+  const response = await fetchWithTimeout(`${getBackendUrl()}/store/custom/orders`, {
     method: "POST",
     headers,
     body: JSON.stringify(payload),
-  })
+  }, 10000)
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}))
@@ -420,14 +448,14 @@ export async function createStripePaymentIntent(payload: {
     metadata: payload.metadata,
   }
 
-  const response = await fetch(`${getBackendUrl()}/store/custom/stripe-intent`, {
+  const response = await fetchWithTimeout(`${getBackendUrl()}/store/custom/stripe-intent`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       "x-publishable-api-key": PUBLISHABLE_KEY,
     },
     body: JSON.stringify(normalizedPayload),
-  })
+  }, 10000)
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}))

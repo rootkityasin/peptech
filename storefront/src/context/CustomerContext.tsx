@@ -44,7 +44,9 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
       setToken(authToken)
     } catch (err) {
       console.warn("Failed to restore customer session:", err)
-      localStorage.removeItem(TOKEN_KEY)
+      if (typeof window !== "undefined") {
+        localStorage.removeItem(TOKEN_KEY)
+      }
       setCustomer(null)
       setToken(null)
     } finally {
@@ -53,38 +55,44 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   useEffect(() => {
+    let isMounted = true
     const savedToken = typeof window !== "undefined" ? localStorage.getItem(TOKEN_KEY) : null
     if (savedToken) {
-      void fetchCustomer(savedToken)
+      // Safety timeout: if restoring session takes more than 3.5s, drop spinner and show portal
+      const fallbackTimer = setTimeout(() => {
+        if (isMounted) {
+          setIsLoading(false)
+        }
+      }, 3500)
+
+      fetchCustomer(savedToken).finally(() => {
+        clearTimeout(fallbackTimer)
+      })
     } else {
-      const timer = setTimeout(() => setIsLoading(false), 0)
-      return () => clearTimeout(timer)
+      setIsLoading(false)
+    }
+    return () => {
+      isMounted = false
     }
   }, [fetchCustomer])
 
   const login = async (email: string, password: string) => {
-    setIsLoading(true)
-    try {
-      const receivedToken = await loginCustomer(email, password)
+    const receivedToken = await loginCustomer(email, password)
+    if (typeof window !== "undefined") {
       localStorage.setItem(TOKEN_KEY, receivedToken)
-      setToken(receivedToken)
-      const data = await getCustomerMe(receivedToken)
-      setCustomer(data)
-    } finally {
-      setIsLoading(false)
     }
+    setToken(receivedToken)
+    const data = await getCustomerMe(receivedToken)
+    setCustomer(data)
   }
 
   const register = async (payload: CustomerRegisterPayload) => {
-    setIsLoading(true)
-    try {
-      const result = await registerCustomer(payload)
+    const result = await registerCustomer(payload)
+    if (typeof window !== "undefined") {
       localStorage.setItem(TOKEN_KEY, result.token)
-      setToken(result.token)
-      setCustomer(result.customer)
-    } finally {
-      setIsLoading(false)
     }
+    setToken(result.token)
+    setCustomer(result.customer)
   }
 
   const logout = () => {

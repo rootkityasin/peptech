@@ -168,6 +168,231 @@ export default function AvatarBox({ checked }: { checked?: boolean }) {
     }
   }
 
+  // 0.8 Enhance Thumbnail component in dashboard with fallback and error handling
+  const thumbnailMjsFile = path.resolve(distDir, 'chunk-MNXC6Q4F.mjs');
+  if (fs.existsSync(thumbnailMjsFile)) {
+    const peptechThumbnailMjs = `// src/components/common/thumbnail/thumbnail.tsx
+import { Photo } from "@medusajs/icons";
+import { clx } from "@medusajs/ui";
+import { jsx } from "react/jsx-runtime";
+var resolveThumbnail = (s, a) => {
+  const title = (a || "").toLowerCase();
+  const defaultImg = title.includes("pen") || title.includes("set")
+    ? "/images/peptech/mockup1.webp"
+    : title.includes("vial") || title.includes("lyophilised")
+    ? "/images/peptech/mockup2.webp"
+    : "/images/peptech/cartridge.webp";
+  if (!s || s === "null") return defaultImg;
+  let clean = s.replace("cartridge.png", "peptech/cartridge.webp");
+  if (clean.includes("localhost:3000/images/")) {
+    clean = clean.replace(/https?:\\/\\/localhost:3000/, "");
+  }
+  return clean;
+};
+var Thumbnail = ({ src, alt, size = "base" }) => {
+  const imgSrc = resolveThumbnail(src, alt);
+  return /* @__PURE__ */ jsx(
+    "div",
+    {
+      className: clx(
+        "bg-ui-bg-component border-ui-border-base flex items-center justify-center overflow-hidden rounded border",
+        {
+          "h-8 w-6": size === "base",
+          "h-5 w-4": size === "small"
+        }
+      ),
+      children: /* @__PURE__ */ jsx(
+        "img",
+        {
+          src: imgSrc,
+          alt,
+          className: "h-full w-full object-cover object-center",
+          onError: (e) => {
+            e.currentTarget.onerror = null;
+            const t = (alt || "").toLowerCase();
+            e.currentTarget.src = t.includes("pen") || t.includes("set")
+              ? "/images/peptech/mockup1.webp"
+              : t.includes("vial") || t.includes("lyophilised")
+              ? "/images/peptech/mockup2.webp"
+              : "/images/peptech/cartridge.webp";
+          }
+        }
+      )
+    }
+  );
+};
+export {
+  Thumbnail
+};
+`;
+    fs.writeFileSync(thumbnailMjsFile, peptechThumbnailMjs, 'utf8');
+    console.log('[PEPTECH] Successfully updated Thumbnail with fallback in chunk-MNXC6Q4F.mjs');
+  }
+
+  const thumbnailTsxFile = path.resolve(dashboardRoot, 'src/components/common/thumbnail/thumbnail.tsx');
+  if (fs.existsSync(thumbnailTsxFile)) {
+    const peptechThumbnailTsx = `import { Photo } from "@medusajs/icons"
+import { clx } from "@medusajs/ui"
+
+type ThumbnailProps = {
+  src?: string | null
+  alt?: string
+  size?: "small" | "base"
+}
+
+const resolveThumbnail = (s?: string | null, a?: string) => {
+  const title = (a || "").toLowerCase()
+  const defaultImg = title.includes("pen") || title.includes("set")
+    ? "/images/peptech/mockup1.webp"
+    : title.includes("vial") || title.includes("lyophilised")
+    ? "/images/peptech/mockup2.webp"
+    : "/images/peptech/cartridge.webp"
+
+  if (!s || s === "null") return defaultImg
+
+  let clean = s.replace("cartridge.png", "peptech/cartridge.webp")
+  if (clean.includes("localhost:3000/images/")) {
+    clean = clean.replace(/https?:\\/\\/localhost:3000/, "")
+  }
+  return clean
+}
+
+export const Thumbnail = ({ src, alt, size = "base" }: ThumbnailProps) => {
+  const imgSrc = resolveThumbnail(src, alt)
+  return (
+    <div
+      className={clx(
+        "bg-ui-bg-component border-ui-border-base flex items-center justify-center overflow-hidden rounded border",
+        {
+          "h-8 w-6": size === "base",
+          "h-5 w-4": size === "small",
+        }
+      )}
+    >
+      <img
+        src={imgSrc}
+        alt={alt}
+        className="h-full w-full object-cover object-center"
+        onError={(e) => {
+          e.currentTarget.onerror = null
+          const t = (alt || "").toLowerCase()
+          e.currentTarget.src = t.includes("pen") || t.includes("set")
+            ? "/images/peptech/mockup1.webp"
+            : t.includes("vial") || t.includes("lyophilised")
+            ? "/images/peptech/mockup2.webp"
+            : "/images/peptech/cartridge.webp"
+        }}
+      />
+    </div>
+  )
+}
+`;
+    fs.writeFileSync(thumbnailTsxFile, peptechThumbnailTsx, 'utf8');
+    console.log('[PEPTECH] Successfully updated source thumbnail.tsx with fallback');
+  }
+
+  // 0.9 Enhance Product Detail and Variant Media Galleries with resilient error fallbacks
+  const prodDetailMjsFile = path.resolve(distDir, 'product-detail-7NWBD52L.mjs');
+  if (fs.existsSync(prodDetailMjsFile)) {
+    let pd = fs.readFileSync(prodDetailMjsFile, 'utf8');
+    const targetImg = '/* @__PURE__ */ jsx4(\n              "img",\n              {\n                src: i.url,\n                alt: `${product.title} image`,\n                className: "size-full object-cover"\n              }\n            )';
+    const replacementImg = `/* @__PURE__ */ jsx4(
+              "img",
+              {
+                src: i.url,
+                alt: \`\${product.title} image\`,
+                className: "size-full object-cover",
+                onError: (e) => {
+                  e.currentTarget.onerror = null;
+                  const t = (product?.title || "").toLowerCase();
+                  e.currentTarget.src = t.includes("pen") || t.includes("set")
+                    ? "/images/peptech/mockup1.webp"
+                    : t.includes("vial") || t.includes("lyophilised")
+                    ? "/images/peptech/mockup2.webp"
+                    : "/images/peptech/cartridge.webp";
+                }
+              }
+            )`;
+    if (pd.includes('src: i.url') && !pd.includes('e.currentTarget.src = t.includes("pen")')) {
+      pd = pd.replace(targetImg, replacementImg);
+      fs.writeFileSync(prodDetailMjsFile, pd, 'utf8');
+      console.log('[PEPTECH] Successfully updated product-detail-7NWBD52L.mjs with media fallback');
+    }
+  }
+
+  const prodMediaSectionTsx = path.resolve(dashboardRoot, 'src/routes/products/product-detail/components/product-media-section/product-media-section.tsx');
+  if (fs.existsSync(prodMediaSectionTsx)) {
+    let pms = fs.readFileSync(prodMediaSectionTsx, 'utf8');
+    if (!pms.includes('e.currentTarget.src = t.includes("pen")')) {
+      const oldImg = `<img\n                    src={i.url}\n                    alt={\`\${product.title} image\`}\n                    className="size-full object-cover"\n                  />`;
+      const newImg = `<img
+                    src={i.url}
+                    alt={\`\${product.title} image\`}
+                    className="size-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null
+                      const t = (product?.title || "").toLowerCase()
+                      e.currentTarget.src = t.includes("pen") || t.includes("set")
+                        ? "/images/peptech/mockup1.webp"
+                        : t.includes("vial") || t.includes("lyophilised")
+                        ? "/images/peptech/mockup2.webp"
+                        : "/images/peptech/cartridge.webp"
+                    }}
+                  />`;
+      pms = pms.replace(oldImg, newImg);
+      fs.writeFileSync(prodMediaSectionTsx, pms, 'utf8');
+      console.log('[PEPTECH] Successfully updated source product-media-section.tsx with fallback');
+    }
+  }
+
+  const variantDetailMjsFile = path.resolve(distDir, 'product-variant-detail-SALD6PSA.mjs');
+  if (fs.existsSync(variantDetailMjsFile)) {
+    let vd = fs.readFileSync(variantDetailMjsFile, 'utf8');
+    const oldVd = '/* @__PURE__ */ jsx6("img", { src: i.url, className: "size-full object-cover" })';
+    const newVd = `/* @__PURE__ */ jsx6("img", {
+                  src: i.url,
+                  className: "size-full object-cover",
+                  onError: (e) => {
+                    e.currentTarget.onerror = null;
+                    const t = (variant?.title || "").toLowerCase();
+                    e.currentTarget.src = t.includes("pen") || t.includes("set")
+                      ? "/images/peptech/mockup1.webp"
+                      : t.includes("vial") || t.includes("lyophilised")
+                      ? "/images/peptech/mockup2.webp"
+                      : "/images/peptech/cartridge.webp";
+                  }
+                })`;
+    if (vd.includes(oldVd)) {
+      vd = vd.replace(oldVd, newVd);
+      fs.writeFileSync(variantDetailMjsFile, vd, 'utf8');
+      console.log('[PEPTECH] Successfully updated product-variant-detail-SALD6PSA.mjs with media fallback');
+    }
+  }
+
+  const variantMediaSectionTsx = path.resolve(dashboardRoot, 'src/routes/product-variants/product-variant-detail/components/variant-media-section/variant-media-section.tsx');
+  if (fs.existsSync(variantMediaSectionTsx)) {
+    let vms = fs.readFileSync(variantMediaSectionTsx, 'utf8');
+    const oldVms = '<img src={i.url} className="size-full object-cover" />';
+    const newVms = `<img
+                  src={i.url}
+                  className="size-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.onerror = null
+                    const t = (variant?.title || "").toLowerCase()
+                    e.currentTarget.src = t.includes("pen") || t.includes("set")
+                      ? "/images/peptech/mockup1.webp"
+                      : t.includes("vial") || t.includes("lyophilised")
+                      ? "/images/peptech/mockup2.webp"
+                      : "/images/peptech/cartridge.webp"
+                  }}
+                />`;
+    if (vms.includes(oldVms)) {
+      vms = vms.replace(oldVms, newVms);
+      fs.writeFileSync(variantMediaSectionTsx, vms, 'utf8');
+      console.log('[PEPTECH] Successfully updated source variant-media-section.tsx with fallback');
+    }
+  }
+
   // 1. Update Order Detail
   const detailPath = path.resolve(__dirname, 'OrderDetail.jsx');
   const subDetailPath = path.resolve(__dirname, 'SubscriptionDetail.jsx');

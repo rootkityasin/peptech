@@ -142,6 +142,26 @@ html.dark .orders-theme-root input[type="checkbox"],
 }
 `;
 
+function resolveSubItemThumbnail(item) {
+  let thumb = item?.thumbnail;
+  const title = (item?.title || "").toLowerCase();
+  const defaultImg = title.includes("pen") || title.includes("set")
+    ? "/images/peptech/mockup1.webp"
+    : title.includes("vial") || title.includes("lyophilised")
+    ? "/images/peptech/mockup2.webp"
+    : "/images/peptech/cartridge.webp";
+
+  if (!thumb || thumb === "null") {
+    return defaultImg;
+  }
+
+  let clean = thumb.replace('cartridge.png', 'peptech/cartridge.webp');
+  if (clean.includes('localhost:3000/images/')) {
+    clean = clean.replace(/https?:\/\/localhost:3000/, '');
+  }
+  return clean;
+}
+
 export function SubscriptionDetail({ subscriptionId: propSubId }) {
   const { id: paramId } = useParams();
   const subId = propSubId || paramId;
@@ -612,16 +632,20 @@ export function SubscriptionDetail({ subscriptionId: propSubId }) {
                                   children: [
                                     _jsx("div", {
                                       className: "w-12 h-12 rounded border border-[#e1e3e5] bg-[#f6f6f7] overflow-hidden flex-shrink-0 flex items-center justify-center",
-                                      children: item.thumbnail
-                                        ? _jsx("img", {
-                                            src: item.thumbnail,
-                                            alt: item.title,
-                                            className: "w-full h-full object-cover",
-                                          })
-                                        : _jsx("div", {
-                                            className: "w-full h-full bg-[#16A6A3] flex items-center justify-center text-white text-[10px] font-bold text-center px-1",
-                                            children: "PEPTECH",
-                                          }),
+                                      children: _jsx("img", {
+                                        src: resolveSubItemThumbnail(item),
+                                        alt: item.title || subscription?.title || "Product",
+                                        className: "w-full h-full object-cover",
+                                        onError: (e) => {
+                                          e.currentTarget.onerror = null;
+                                          const t = (item?.title || subscription?.title || "").toLowerCase();
+                                          e.currentTarget.src = t.includes("pen") || t.includes("set")
+                                            ? "/images/peptech/mockup1.webp"
+                                            : t.includes("vial") || t.includes("lyophilised")
+                                            ? "/images/peptech/mockup2.webp"
+                                            : "/images/peptech/cartridge.webp";
+                                        },
+                                      }),
                                     }),
                                     _jsxs("div", {
                                       className: "min-w-0",

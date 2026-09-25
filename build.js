@@ -94,6 +94,29 @@ if (fs.existsSync(logoSource)) {
   console.log('[PEPTECH] Synced logo.webp across all public and dist directories.');
 }
 
+// 4.1 Sync images across all public and dist directories
+const imagesSource = path.resolve(__dirname, 'storefront/public/images');
+if (fs.existsSync(imagesSource)) {
+  const imagesTargets = [
+    path.join(backendDir, 'public/images'),
+    path.join(backendDir, 'public/admin/images'),
+    path.join(serverDir, 'public/images'),
+    path.join(serverDir, 'public/admin/images'),
+    path.join(rootAppDir, 'images'),
+    path.join(distDir, 'images'),
+    path.join(distDir, 'public/images'),
+    path.join(distDir, 'public/admin/images'),
+    path.join(distDir, 'app/images'),
+  ];
+  for (const it of imagesTargets) {
+    try {
+      fs.mkdirSync(it, { recursive: true });
+      fs.cpSync(imagesSource, it, { recursive: true });
+    } catch {}
+  }
+  console.log('[PEPTECH] Synced images across all public and dist directories.');
+}
+
 const htmlTargets = [
   path.join(rootAppDir, 'index.html'),
   path.join(backendPublicAdminDir, 'index.html'),

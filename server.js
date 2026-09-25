@@ -13,8 +13,89 @@ if (process.env.DATABASE_URL) {
 
 const http = require('http');
 const path = require('path');
+const fs = require('fs');
 
 const PORT = parseInt(process.env.PORT || '9000', 10);
+
+const mimeTypes = {
+  '.webp': 'image/webp',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.svg': 'image/svg+xml',
+  '.gif': 'image/gif',
+  '.ico': 'image/x-icon',
+};
+
+function serveStaticImage(req, res) {
+  let urlPath = (req.url || '').split('?')[0];
+  try {
+    urlPath = decodeURIComponent(urlPath);
+  } catch {}
+
+  const isImageRequest = 
+    urlPath.startsWith('/images/') || 
+    urlPath.startsWith('/app/images/') || 
+    urlPath.startsWith('/admin/images/') ||
+    urlPath.startsWith('/app/admin/images/');
+
+  if (!isImageRequest) {
+    return false;
+  }
+
+  let cleanPath = urlPath.replace(/^\/app/, '').replace(/^\/admin/, '');
+  if (cleanPath === '/images/cartridge.png') {
+    cleanPath = '/images/peptech/cartridge.webp';
+  }
+
+  const cleanPathsToTry = [cleanPath];
+  if (cleanPath.endsWith('.png') || cleanPath.endsWith('.jpg')) {
+    cleanPathsToTry.push(cleanPath.replace(/\.(png|jpg)$/, '.webp'));
+  }
+
+  const baseDirs = [
+    path.join(__dirname, 'storefront/public'),
+    path.join(__dirname, 'backend/apps/backend/public'),
+    path.join(__dirname, 'app'),
+    path.join(__dirname, 'dist/public'),
+    path.join(__dirname, 'dist/app'),
+    path.join(__dirname, 'public'),
+  ];
+
+  let filePath = null;
+  for (const cPath of cleanPathsToTry) {
+    for (const bDir of baseDirs) {
+      const candidate = path.join(bDir, cPath);
+      try {
+        if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
+          filePath = candidate;
+          break;
+        }
+      } catch {}
+    }
+    if (filePath) break;
+  }
+
+  const defaultFallback = path.join(__dirname, 'storefront/public/images/peptech/cartridge.webp');
+  const targetPath = filePath || (fs.existsSync(defaultFallback) ? defaultFallback : null);
+
+  if (targetPath) {
+    const ext = path.extname(targetPath).toLowerCase();
+    res.writeHead(200, {
+      'Content-Type': mimeTypes[ext] || 'image/webp',
+      'Cache-Control': 'public, max-age=86400',
+      'Access-Control-Allow-Origin': '*',
+    });
+    if (req.method === 'HEAD') {
+      res.end();
+      return true;
+    }
+    fs.createReadStream(targetPath).pipe(res);
+    return true;
+  }
+
+  return false;
+}
 
 console.log('----------------------------------------------------');
 console.log('[PEPTECH] PEPTECH Medusa 2.0 Unified Server Booting...');
@@ -38,6 +119,11 @@ let medusaHandler = null;
 
 // 1. Create main server and listen IMMEDIATELY on PORT (< 5ms)
 const server = http.createServer((req, res) => {
+  // Handle static product and admin images with high performance
+  if (serveStaticImage(req, res)) {
+    return;
+  }
+
   // If Medusa is ready, pass request directly to Medusa in-memory
   if (medusaHandler) {
     medusaHandler(req, res);

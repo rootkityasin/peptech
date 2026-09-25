@@ -143,6 +143,28 @@ html.dark .orders-theme-root input[type="checkbox"],
 }
 `;
 
+function resolveItemThumbnail(item) {
+  let thumb = item?.thumbnail;
+  const title = (item?.title || "").toLowerCase();
+  const defaultImg = title.includes("pen") || title.includes("set")
+    ? "/images/peptech/mockup1.webp"
+    : title.includes("vial") || title.includes("lyophilised")
+    ? "/images/peptech/mockup2.webp"
+    : "/images/peptech/cartridge.webp";
+
+  if (!thumb || thumb === "null") {
+    return defaultImg;
+  }
+
+  // Normalize cartridge.png typo
+  let clean = thumb.replace('cartridge.png', 'peptech/cartridge.webp');
+  // Normalize localhost:3000
+  if (clean.includes('localhost:3000/images/')) {
+    clean = clean.replace(/https?:\/\/localhost:3000/, '');
+  }
+  return clean;
+}
+
 export function OrderDetail() {
   const { id } = useParams();
 
@@ -233,7 +255,6 @@ function StandardOrderDetail({ id }) {
 
   const meta = order.metadata || {};
   const tags = Array.isArray(meta.tags) ? meta.tags : [];
-  const source = meta.source || "Online Store";
   const notes = meta.notes || `Order# ${order.display_id || order.id.slice(-6)}\nShipping: Royal Mail Tracked UK / Worldwide`;
   const fulfillments = meta.fulfillments || (order.fulfillments && order.fulfillments.length > 0 ? order.fulfillments : []);
   const isFulfilled = (meta.fulfillment_status || (fulfillments.length > 0 ? "fulfilled" : "unfulfilled")) === "fulfilled";
@@ -771,28 +792,12 @@ function StandardOrderDetail({ id }) {
                 className: "bg-white rounded-lg border border-[#e1e3e5] shadow-sm overflow-hidden",
                 children: [
                   // Card Header
-                  _jsxs("div", {
+                  _jsx("div", {
                     className: "p-4 border-b border-[#e1e3e5] flex items-center justify-between",
-                    children: [
-                      _jsx("h2", {
-                        className: "text-base font-semibold text-[#202223]",
-                        children: "Order details",
-                      }),
-                      _jsxs("div", {
-                        className: "flex items-center gap-1.5 text-xs text-[#5c5f62]",
-                        children: [
-                          _jsx("svg", {
-                            className: "w-3.5 h-3.5 text-[#8c9196]",
-                            fill: "none",
-                            viewBox: "0 0 24 24",
-                            stroke: "currentColor",
-                            strokeWidth: 2,
-                            children: _jsx("path", { strokeLinecap: "round", strokeLinejoin: "round", d: "M13 10V3L4 14h7v7l9-11h-7z" }),
-                          }),
-                          `Imported via ${source}`,
-                        ],
-                      }),
-                    ],
+                    children: _jsx("h2", {
+                      className: "text-base font-semibold text-[#202223]",
+                      children: "Order details",
+                    }),
                   }),
 
                   // Fulfillment Status Bar & Action
@@ -849,16 +854,20 @@ function StandardOrderDetail({ id }) {
                               children: [
                                 _jsx("div", {
                                   className: "w-12 h-12 rounded border border-[#e1e3e5] bg-[#f6f6f7] overflow-hidden flex-shrink-0 flex items-center justify-center",
-                                  children: item.thumbnail
-                                    ? _jsx("img", {
-                                        src: item.thumbnail,
-                                        alt: item.title,
-                                        className: "w-full h-full object-cover",
-                                      })
-                                    : _jsx("div", {
-                                        className: "w-full h-full bg-[#6941C6] flex items-center justify-center text-white text-[10px] font-bold text-center px-1",
-                                        children: "PEPTECH",
-                                      }),
+                                  children: _jsx("img", {
+                                    src: resolveItemThumbnail(item),
+                                    alt: item.title,
+                                    className: "w-full h-full object-cover",
+                                    onError: (e) => {
+                                      e.currentTarget.onerror = null;
+                                      const t = (item?.title || "").toLowerCase();
+                                      e.currentTarget.src = t.includes("pen") || t.includes("set")
+                                        ? "/images/peptech/mockup1.webp"
+                                        : t.includes("vial") || t.includes("lyophilised")
+                                        ? "/images/peptech/mockup2.webp"
+                                        : "/images/peptech/cartridge.webp";
+                                    },
+                                  }),
                                 }),
                                 _jsxs("div", {
                                   className: "min-w-0",

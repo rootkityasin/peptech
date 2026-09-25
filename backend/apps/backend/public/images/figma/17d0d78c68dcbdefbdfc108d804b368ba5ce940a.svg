@@ -1,0 +1,11 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="26" height="16" viewBox="0 0 26 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="AMEX Logo" clip-path="url(#clip0_111_4913)">
+<path id="Vector" d="M23.4 -1.19209e-07H2.6C1.27452 -1.19209e-07 0.2 1.07452 0.2 2.4V13.6C0.2 14.9255 1.27452 16 2.6 16H23.4C24.7255 16 25.8 14.9255 25.8 13.6V2.4C25.8 1.07452 24.7255 -1.19209e-07 23.4 -1.19209e-07Z" fill="#006FCF" stroke="#CBD5E1" stroke-width="0.96"/>
+<path id="Vector_2" d="M4.2 10.8L7 5.2H9.4L7.24 9.44L9.4 10.8H7.8L6.76 10.08L5.64 10.8H4.2ZM6.12 8.4L6.76 7.04L7.4 8.4H6.12ZM9.8 10.8L11.4 5.2H13.16L14.2 8.96L15.24 5.2H17L18.6 10.8H17.16L16.36 7.6L15.24 10.8H13.96L12.84 7.6L12.04 10.8H9.8ZM19 10.8V5.2H23V6.4H20.2V7.36H22.6V8.56H20.2V9.6H23V10.8H19Z" fill="white"/>
+</g>
+<defs>
+<clipPath id="clip0_111_4913">
+<rect width="26" height="16" fill="white"/>
+</clipPath>
+</defs>
+</svg>
