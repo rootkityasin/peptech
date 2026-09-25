@@ -1,7 +1,11 @@
 import type { NextConfig } from "next";
 import path from "path";
 
-const medusaBackendUrl = process.env.MEDUSA_BACKEND_URL || process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
+const isProd = process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
+const medusaBackendUrl =
+  process.env.MEDUSA_BACKEND_URL ||
+  process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL ||
+  (isProd ? "https://admin.peptech.bio" : "http://localhost:9000");
 
 const nextConfig: NextConfig = {
   turbopack: {

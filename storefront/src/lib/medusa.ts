@@ -48,15 +48,19 @@ const DEFAULT_PUBLISHABLE_KEY = "pk_556de0f5ea4724394f147569c8b5066ecda7a0d39bd6
 export function getMedusaBackendUrl(): string {
   const envUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL
   if (envUrl && !envUrl.includes("localhost") && !envUrl.includes("127.0.0.1")) {
-    return envUrl
+    return envUrl.replace(/\/$/, "")
   }
 
-  // In the browser, if we are not on localhost (e.g. on https://peptech.bio), use same-origin to prevent loopback/PNA and CORS issues
+  // In the browser, on production domains (e.g. https://peptech.bio), connect directly to the Medusa API at admin.peptech.bio
   if (typeof window !== "undefined") {
     const origin = window.location.origin
     if (!origin.includes("localhost") && !origin.includes("127.0.0.1")) {
-      return origin
+      return "https://admin.peptech.bio"
     }
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    return "https://admin.peptech.bio"
   }
 
   return envUrl || DEFAULT_BACKEND_URL

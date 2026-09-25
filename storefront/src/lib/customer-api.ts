@@ -2,17 +2,35 @@ const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "pk_55
 
 /**
  * Dynamically resolves the Medusa backend URL.
- * In a browser environment, returns an empty string to use same-origin Next.js rewrites
- * (/store/* and /auth/* mapped in next.config.ts), preventing CORS errors and
- * Private Network Access (PNA) blocks across all hostnames (localhost, 127.0.0.1, or domain).
+ * In a browser environment on production domains (e.g., https://peptech.bio),
+ * returns https://admin.peptech.bio directly (where Medusa is hosted), bypassing
+ * hanging Next.js reverse proxies on containerized hosts like Hostinger.
+ * In local development, returns "" to use same-origin Next.js dev rewrites.
  */
 export function getBackendUrl(): string {
+  const envUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL
+  if (envUrl && !envUrl.includes("localhost") && !envUrl.includes("127.0.0.1")) {
+    return envUrl.replace(/\/$/, "")
+  }
+
   if (typeof window !== "undefined") {
+    const origin = window.location.origin
+    // In production browser, connect directly to the live Medusa API
+    if (!origin.includes("localhost") && !origin.includes("127.0.0.1")) {
+      return "https://admin.peptech.bio"
+    }
+    // In local development browser, use relative paths to route through Next.js proxy
     return ""
   }
+
+  // Server-side (Node.js / SSR) resolution
+  if (process.env.NODE_ENV === "production") {
+    return "https://admin.peptech.bio"
+  }
+
   return (
     process.env.MEDUSA_BACKEND_URL ||
-    process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL ||
+    envUrl ||
     "http://localhost:9000"
   )
 }
@@ -20,7 +38,7 @@ export function getBackendUrl(): string {
 /**
  * Resilient fetch wrapper with AbortSignal timeout to prevent hanging UI spinners
  */
-async function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs = 8000): Promise<Response> {
+async function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs = 15000): Promise<Response> {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeoutMs)
   try {
@@ -223,7 +241,7 @@ export async function registerCustomer(payload: CustomerRegisterPayload): Promis
           ...(payload.metadata || {}),
         },
       }),
-    }, 8000)
+    })
 
     if (!custResponse.ok) {
       const err = await custResponse.json().catch(() => ({}))
@@ -270,7 +288,7 @@ export async function getCustomerMe(token: string): Promise<Customer> {
       "Authorization": `Bearer ${token}`,
       "x-publishable-api-key": PUBLISHABLE_KEY,
     },
-  }, 7000)
+  })
 
   if (!response.ok) {
     throw new Error("Session expired or invalid. Please sign in again.")
@@ -292,7 +310,7 @@ export async function updateCustomerMe(token: string, payload: CustomerUpdatePay
       "x-publishable-api-key": PUBLISHABLE_KEY,
     },
     body: JSON.stringify(payload),
-  }, 8000)
+  })
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}))
@@ -315,7 +333,7 @@ export async function addCustomerAddress(token: string, address: CustomerAddress
       "x-publishable-api-key": PUBLISHABLE_KEY,
     },
     body: JSON.stringify(address),
-  }, 8000)
+  })
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}))
@@ -336,7 +354,7 @@ export async function deleteCustomerAddress(token: string, addressId: string): P
       "Authorization": `Bearer ${token}`,
       "x-publishable-api-key": PUBLISHABLE_KEY,
     },
-  }, 8000)
+  })
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}))
@@ -364,7 +382,7 @@ export async function getCustomerOrders(token?: string, customerId?: string, ema
     const customResponse = await fetchWithTimeout(`${getBackendUrl()}/store/custom/orders?${params.toString()}`, {
       method: "GET",
       headers,
-    }, 7000)
+    })
 
     if (customResponse.ok) {
       const data = await customResponse.json()
@@ -378,7 +396,7 @@ export async function getCustomerOrders(token?: string, customerId?: string, ema
       const response = await fetchWithTimeout(`${getBackendUrl()}/store/orders?fields=*items,*items.variant,*shipping_address`, {
         method: "GET",
         headers,
-      }, 7000)
+      })
       if (response.ok) {
         const data = await response.json()
         return data.orders || []
@@ -408,7 +426,7 @@ export async function createStoreOrder(payload: any, token?: string): Promise<{ 
     method: "POST",
     headers,
     body: JSON.stringify(payload),
-  }, 10000)
+  })
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}))
