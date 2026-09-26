@@ -1037,17 +1037,10 @@ function AccountContent() {
               </div>
             </div>
             <div className="flex items-center gap-3 shrink-0">
-              {subscriptions.length > 0 ? (
+              {subscriptions.length > 0 && (
                 <div className="bg-[#f1f5f9] flex items-center px-[12px] py-[8px] rounded-[8px]">
                   <p className="font-medium text-[#0b1f3a] text-[12.5px] whitespace-nowrap">
                     Next Dispatch: <span className="font-bold text-[#16a6a3]">{subscriptions[0].nextDispatchDate || subscriptions[0].nextBillingDate || "Scheduled"}</span>
-                  </p>
-                </div>
-              ) : (
-                <div className="bg-[#e6fffa] border border-[#a7f4d0]/60 flex items-center gap-2 px-[12px] py-[8px] rounded-[8px]">
-                  <span className="w-2 h-2 rounded-full bg-[#16a6a3] animate-pulse" />
-                  <p className="font-semibold text-[#0b1f3a] text-[12px] whitespace-nowrap">
-                    Verified Research Account
                   </p>
                 </div>
               )}
@@ -1062,15 +1055,15 @@ function AccountContent() {
           </div>
 
           {/* Tabs Navigation Row */}
-          <div className="flex gap-[24px] sm:gap-[32px] items-center overflow-x-auto no-scrollbar w-full border-b border-transparent">
+          <div className="flex gap-[20px] sm:gap-[32px] items-end overflow-x-auto no-scrollbar w-full -mb-px">
             {/* Dashboard Overview */}
             <button
               type="button"
               onClick={() => handleTabChange("overview")}
-              className={`flex items-center pb-[14px] cursor-pointer whitespace-nowrap border-b-2 transition-all ${
+              className={`flex items-center pb-[14px] pt-1 cursor-pointer whitespace-nowrap border-b-2 transition-all shrink-0 -mb-px ${
                 activeTab === "overview"
-                  ? "border-[#0b1f3a] text-[#0b1f3a] font-bold text-[14px]"
-                  : "border-transparent text-[#64748b] hover:text-[#0b1f3a] font-medium text-[14px]"
+                  ? "border-[#0b1f3a] text-[#0b1f3a] font-bold text-[13.5px] sm:text-[14px]"
+                  : "border-transparent text-[#64748b] hover:text-[#0b1f3a] hover:border-slate-300 font-medium text-[13.5px] sm:text-[14px]"
               }`}
             >
               Dashboard Overview
@@ -1080,10 +1073,10 @@ function AccountContent() {
             <button
               type="button"
               onClick={() => handleTabChange("orders")}
-              className={`flex items-center gap-[6px] pb-[14px] cursor-pointer whitespace-nowrap border-b-2 transition-all ${
+              className={`flex items-center gap-[6px] pb-[14px] pt-1 cursor-pointer whitespace-nowrap border-b-2 transition-all shrink-0 -mb-px ${
                 activeTab === "orders"
-                  ? "border-[#0b1f3a] text-[#0b1f3a] font-bold text-[14px]"
-                  : "border-transparent text-[#64748b] hover:text-[#0b1f3a] font-medium text-[14px]"
+                  ? "border-[#0b1f3a] text-[#0b1f3a] font-bold text-[13.5px] sm:text-[14px]"
+                  : "border-transparent text-[#64748b] hover:text-[#0b1f3a] hover:border-slate-300 font-medium text-[13.5px] sm:text-[14px]"
               }`}
             >
               <span>Orders &amp; Tracking</span>
@@ -1102,10 +1095,10 @@ function AccountContent() {
             <button
               type="button"
               onClick={() => handleTabChange("subscriptions")}
-              className={`flex items-center gap-[6px] pb-[14px] cursor-pointer whitespace-nowrap border-b-2 transition-all ${
+              className={`flex items-center gap-[6px] pb-[14px] pt-1 cursor-pointer whitespace-nowrap border-b-2 transition-all shrink-0 -mb-px ${
                 activeTab === "subscriptions"
-                  ? "border-[#0b1f3a] text-[#0b1f3a] font-bold text-[14px]"
-                  : "border-transparent text-[#64748b] hover:text-[#0b1f3a] font-medium text-[14px]"
+                  ? "border-[#0b1f3a] text-[#0b1f3a] font-bold text-[13.5px] sm:text-[14px]"
+                  : "border-transparent text-[#64748b] hover:text-[#0b1f3a] hover:border-slate-300 font-medium text-[13.5px] sm:text-[14px]"
               }`}
             >
               <span>Active Subscriptions</span>
@@ -1124,10 +1117,10 @@ function AccountContent() {
             <button
               type="button"
               onClick={() => handleTabChange("addresses")}
-              className={`flex items-center pb-[14px] cursor-pointer whitespace-nowrap border-b-2 transition-all ${
+              className={`flex items-center pb-[14px] pt-1 cursor-pointer whitespace-nowrap border-b-2 transition-all shrink-0 -mb-px ${
                 activeTab === "addresses"
-                  ? "border-[#0b1f3a] text-[#0b1f3a] font-bold text-[14px]"
-                  : "border-transparent text-[#64748b] hover:text-[#0b1f3a] font-medium text-[14px]"
+                  ? "border-[#0b1f3a] text-[#0b1f3a] font-bold text-[13.5px] sm:text-[14px]"
+                  : "border-transparent text-[#64748b] hover:text-[#0b1f3a] hover:border-slate-300 font-medium text-[13.5px] sm:text-[14px]"
               }`}
             >
               Saved Addresses
@@ -1137,10 +1130,10 @@ function AccountContent() {
             <button
               type="button"
               onClick={() => handleTabChange("payment")}
-              className={`flex items-center pb-[14px] cursor-pointer whitespace-nowrap border-b-2 transition-all ${
+              className={`flex items-center pb-[14px] pt-1 cursor-pointer whitespace-nowrap border-b-2 transition-all shrink-0 -mb-px ${
                 activeTab === "payment"
-                  ? "border-[#0b1f3a] text-[#0b1f3a] font-bold text-[14px]"
-                  : "border-transparent text-[#64748b] hover:text-[#0b1f3a] font-medium text-[14px]"
+                  ? "border-[#0b1f3a] text-[#0b1f3a] font-bold text-[13.5px] sm:text-[14px]"
+                  : "border-transparent text-[#64748b] hover:text-[#0b1f3a] hover:border-slate-300 font-medium text-[13.5px] sm:text-[14px]"
               }`}
             >
               Payment Methods
@@ -1547,14 +1540,14 @@ function AccountContent() {
             <div className="flex flex-col gap-[24px] w-full lg:flex-1">
               {/* Filter Pills & Search Bar */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full">
-                <div className="flex gap-[8px] items-center">
+                <div className="flex gap-[8px] items-center overflow-x-auto no-scrollbar w-full sm:w-auto pb-1 sm:pb-0">
                   <button
                     type="button"
                     onClick={() => setOrdersFilter("all")}
-                    className={`h-[36px] px-[16px] rounded-full text-[13px] font-semibold transition-all cursor-pointer ${
+                    className={`px-[14px] py-[7px] rounded-full text-[12.5px] font-semibold transition-all cursor-pointer shrink-0 whitespace-nowrap ${
                       ordersFilter === "all"
-                        ? "bg-[#0b1f3a] text-white"
-                        : "bg-white border border-[#e2e8f0] text-[#0f172a] hover:border-slate-300"
+                        ? "bg-[#0b1f3a] text-white shadow-2xs"
+                        : "bg-white border border-[#e2e8f0] text-[#0f172a] hover:border-slate-300 font-medium"
                     }`}
                   >
                     All Orders ({orders.length})
@@ -1562,10 +1555,10 @@ function AccountContent() {
                   <button
                     type="button"
                     onClick={() => setOrdersFilter("transit")}
-                    className={`h-[36px] px-[16px] rounded-full text-[13px] font-medium transition-all cursor-pointer ${
+                    className={`px-[14px] py-[7px] rounded-full text-[12.5px] transition-all cursor-pointer shrink-0 whitespace-nowrap ${
                       ordersFilter === "transit"
-                        ? "bg-[#0b1f3a] text-white"
-                        : "bg-white border border-[#e2e8f0] text-[#0f172a] hover:border-slate-300"
+                        ? "bg-[#0b1f3a] text-white shadow-2xs font-semibold"
+                        : "bg-white border border-[#e2e8f0] text-[#0f172a] hover:border-slate-300 font-medium"
                     }`}
                   >
                     In Transit ({orders.filter(o => o.status !== "Delivered").length})
@@ -1573,21 +1566,21 @@ function AccountContent() {
                   <button
                     type="button"
                     onClick={() => setOrdersFilter("delivered")}
-                    className={`h-[36px] px-[16px] rounded-full text-[13px] font-medium transition-all cursor-pointer ${
+                    className={`px-[14px] py-[7px] rounded-full text-[12.5px] transition-all cursor-pointer shrink-0 whitespace-nowrap ${
                       ordersFilter === "delivered"
-                        ? "bg-[#0b1f3a] text-white"
-                        : "bg-white border border-[#e2e8f0] text-[#0f172a] hover:border-slate-300"
+                        ? "bg-[#0b1f3a] text-white shadow-2xs font-semibold"
+                        : "bg-white border border-[#e2e8f0] text-[#0f172a] hover:border-slate-300 font-medium"
                     }`}
                   >
                     Delivered ({orders.filter(o => o.status === "Delivered").length})
                   </button>
                 </div>
 
-                <div className="flex gap-[8px] items-center">
-                  <div className="bg-white border border-[#e2e8f0] flex gap-[8px] h-[36px] items-center px-[14px] rounded-[8px] w-full sm:w-[250px] shadow-2xs">
+                <div className="flex gap-[8px] items-center w-full sm:w-auto">
+                  <div className="bg-white border border-[#e2e8f0] flex gap-[8px] h-[35px] items-center px-[12px] rounded-[8px] flex-1 sm:w-[250px] shadow-2xs">
                     <img
                       alt=""
-                      className="w-[14px] h-[14px] opacity-60"
+                      className="w-[14px] h-[14px] opacity-60 shrink-0"
                       src="/images/figma/e3f62c52a7fc2f0b8e680fc2bac1e48528c872a0.svg"
                     />
                     <input
@@ -1600,7 +1593,7 @@ function AccountContent() {
                   </div>
                   <button
                     type="button"
-                    className="bg-[#0b1f3a] hover:bg-[#162a45] text-white font-semibold text-[12.5px] px-[18px] h-[36px] rounded-[8px] transition-colors cursor-pointer"
+                    className="bg-[#0b1f3a] hover:bg-[#162a45] text-white font-semibold text-[12.5px] px-[16px] h-[35px] rounded-[8px] transition-colors cursor-pointer shrink-0"
                   >
                     Track
                   </button>
@@ -1864,15 +1857,15 @@ function AccountContent() {
             {/* Left Main Column */}
             <div className="flex flex-col gap-[24px] w-full lg:flex-1">
               {/* Filter Pills & Add CTA */}
-              <div className="flex items-center justify-between w-full">
-                <div className="flex gap-[8px] items-center">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full">
+                <div className="flex gap-[8px] items-center overflow-x-auto no-scrollbar w-full sm:w-auto pb-1 sm:pb-0">
                   <button
                     type="button"
                     onClick={() => setSubFilter("active")}
-                    className={`px-[14px] py-[7px] rounded-full text-[12.5px] font-semibold transition-all cursor-pointer ${
+                    className={`px-[14px] py-[7px] rounded-full text-[12.5px] font-semibold transition-all cursor-pointer shrink-0 whitespace-nowrap ${
                       subFilter === "active"
-                        ? "bg-[#0b1f3a] text-white"
-                        : "bg-white border border-[#e2e8f0] text-[#0f172a] hover:border-slate-300"
+                        ? "bg-[#0b1f3a] text-white shadow-2xs"
+                        : "bg-white border border-[#e2e8f0] text-[#0f172a] hover:border-slate-300 font-medium"
                     }`}
                   >
                     Active Protocols ({subscriptions.length})
@@ -1880,10 +1873,10 @@ function AccountContent() {
                   <button
                     type="button"
                     onClick={() => setSubFilter("paused")}
-                    className={`px-[14px] py-[7px] rounded-full text-[12.5px] font-medium transition-all cursor-pointer ${
+                    className={`px-[14px] py-[7px] rounded-full text-[12.5px] transition-all cursor-pointer shrink-0 whitespace-nowrap ${
                       subFilter === "paused"
-                        ? "bg-[#0b1f3a] text-white"
-                        : "bg-white border border-[#e2e8f0] text-[#0f172a] hover:border-slate-300"
+                        ? "bg-[#0b1f3a] text-white shadow-2xs font-semibold"
+                        : "bg-white border border-[#e2e8f0] text-[#0f172a] hover:border-slate-300 font-medium"
                     }`}
                   >
                     Paused (0)
@@ -1891,10 +1884,10 @@ function AccountContent() {
                   <button
                     type="button"
                     onClick={() => setSubFilter("ended")}
-                    className={`px-[14px] py-[7px] rounded-full text-[12.5px] font-medium transition-all cursor-pointer ${
+                    className={`px-[14px] py-[7px] rounded-full text-[12.5px] transition-all cursor-pointer shrink-0 whitespace-nowrap ${
                       subFilter === "ended"
-                        ? "bg-[#0b1f3a] text-white"
-                        : "bg-white border border-[#e2e8f0] text-[#0f172a] hover:border-slate-300"
+                        ? "bg-[#0b1f3a] text-white shadow-2xs font-semibold"
+                        : "bg-white border border-[#e2e8f0] text-[#0f172a] hover:border-slate-300 font-medium"
                     }`}
                   >
                     Past / Ended (0)
@@ -1902,7 +1895,7 @@ function AccountContent() {
                 </div>
                 <Link
                   href="/refills"
-                  className="bg-[#0b1f3a] hover:bg-[#162a45] text-white text-[12.5px] font-semibold px-[14px] py-[8px] rounded-[6px] transition-colors"
+                  className="bg-[#0b1f3a] hover:bg-[#162a45] text-white text-[12.5px] font-semibold px-[14px] py-[8px] rounded-[6px] transition-colors shrink-0 text-center sm:text-left self-start sm:self-auto"
                 >
                   + Add Cartridge Refill
                 </Link>
