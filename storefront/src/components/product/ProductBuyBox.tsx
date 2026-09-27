@@ -148,7 +148,7 @@ export function ProductBuyBox({
       
       {/* Title & Review Rating Block - Figma Node 8:41097 */}
       <div className="flex flex-col gap-[6px] items-start w-full">
-        <h1 className="font-bold text-[#0b1f3a] text-[30px] sm:text-[32px] leading-[36px] sm:leading-[38px] tracking-tight">
+        <h1 className="font-extrabold text-[#0b1f3a] text-[28px] sm:text-[34px] leading-[36px] sm:leading-[40px] tracking-tight">
           {displayTitle.includes("\n") ? (
             displayTitle.split("\n").map((part, i) => (
               <React.Fragment key={i}>

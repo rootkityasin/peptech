@@ -181,7 +181,7 @@ export default function HomePage() {
               {/* Action Buttons - Desktop */}
               <div className="hidden lg:flex flex-wrap items-center gap-3.5 pt-2">
                 <Link
-                  href="/products/complete-pen-set"
+                  href="/shop"
                   className="btn-shimmer btn-press px-6 py-3.5 rounded-xl bg-[#0B1F3A] hover:bg-[#162e52] text-white text-[14px] font-semibold transition-all shadow-md hover:shadow-xl inline-flex items-center gap-2 group cursor-pointer"
                 >
                   <span>Shop All Products</span>
@@ -231,7 +231,7 @@ export default function HomePage() {
                 {/* Mobile / Tablet Action Buttons - Overlaid on the image in empty space without blocking kit elements */}
                 <div className="lg:hidden absolute left-2.5 xs:left-3.5 sm:left-6 bottom-1.5 xs:bottom-2 sm:bottom-3 z-10 flex flex-row items-center gap-2 sm:gap-2.5 max-w-[340px]">
                   <Link
-                    href="/products/complete-pen-set"
+                    href="/shop"
                     className="btn-shimmer btn-press py-2.5 sm:py-3 px-3.5 sm:px-4 rounded-xl bg-[#0B1F3A] hover:bg-[#162e52] text-white text-[12px] sm:text-[13px] font-bold transition-all shadow-xl hover:shadow-2xl inline-flex items-center justify-center gap-1.5 group cursor-pointer whitespace-nowrap"
                   >
                     <span>Shop All Products</span>
@@ -341,7 +341,7 @@ export default function HomePage() {
               </p>
             </div>
             <Link
-              href="/products/complete-pen-set"
+              href="/shop"
               className="text-[14px] font-semibold text-[#0B1F3A] hover:text-[#16A6A3] transition-colors inline-flex items-center gap-1.5 shrink-0"
             >
               <span>View All Products</span>

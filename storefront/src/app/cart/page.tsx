@@ -46,10 +46,13 @@ export default function CartPage() {
 
       <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16">
         <div className="space-y-2 mb-8">
-          <h1 className="text-2xl sm:text-3xl font-black text-[#0b1f3a]">
+          <span className="inline-block text-[12px] font-bold text-[#16A6A3] tracking-[1.2px] uppercase">
+            ORDER SUMMARY
+          </span>
+          <h1 className="text-3xl sm:text-4xl lg:text-[40px] font-extrabold text-[#0B1F3A] leading-[1.15] tracking-tight uppercase">
             Laboratory Order Review
           </h1>
-          <p className="text-xs sm:text-sm text-[#64748b]">
+          <p className="text-xs sm:text-[14px] text-[#64748B] leading-[22px]">
             Review compounds and quantities before proceeding to cold-chain dispatch checkout.
           </p>
         </div>
@@ -114,7 +117,7 @@ export default function CartPage() {
                 <span className="font-bold text-sm text-[#0b1f3a]">
                   Selected Items ({items.reduce((acc, i) => acc + i.quantity, 0)})
                 </span>
-                <span className="text-xs text-[#64748b] font-mono">
+                <span className="text-xs text-[#64748b]">
                   Cold-Chain Verified
                 </span>
               </div>
@@ -149,7 +152,7 @@ export default function CartPage() {
                         </div>
                       )}
                       {item.isSubscription ? (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold font-mono px-2 py-0.5 rounded-full bg-[#16a6a3]/10 text-[#16a6a3]">
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#16a6a3]/10 text-[#16a6a3]">
                           🔄 28-Day Subscribe &amp; Save (10% Off)
                         </span>
                       ) : (
@@ -169,7 +172,7 @@ export default function CartPage() {
                       >
                         −
                       </button>
-                      <span className="px-3 py-1.5 text-xs font-mono font-bold text-[#0b1f3a]">
+                      <span className="px-3 py-1.5 text-xs font-bold text-[#0b1f3a]">
                         {item.quantity}
                       </span>
                       <button
@@ -182,7 +185,7 @@ export default function CartPage() {
 
                     {/* Price Subtotal */}
                     <div className="text-right min-w-[80px]">
-                      <div className="font-mono font-bold text-sm text-[#0b1f3a]">
+                      <div className="font-bold text-sm text-[#0b1f3a]">
                         £{(item.price * item.quantity).toFixed(2)}
                       </div>
                       <div className="text-[11px] text-[#94a3b8]">
@@ -225,7 +228,7 @@ export default function CartPage() {
                       placeholder="Promo code (try RESEARCH10)"
                       value={promoCode}
                       onChange={(e) => setPromoCode(e.target.value)}
-                      className="w-full px-3.5 py-2 rounded-xl border border-[#e2e8f0] text-xs font-mono focus:outline-hidden focus:border-[#16a6a3]"
+                      className="w-full px-3.5 py-2 rounded-xl border border-[#e2e8f0] text-xs focus:outline-hidden focus:border-[#16a6a3]"
                     />
                     <button
                       type="submit"
@@ -250,13 +253,13 @@ export default function CartPage() {
                 <div className="space-y-2.5 text-xs text-[#64748b] border-t border-[#e2e8f0] pt-4">
                   <div className="flex justify-between">
                     <span>Subtotal</span>
-                    <span className="font-mono text-[#0b1f3a] font-semibold">£{subtotal.toFixed(2)}</span>
+                    <span className="text-[#0b1f3a] font-semibold">£{subtotal.toFixed(2)}</span>
                   </div>
 
                   {promoApplied && (
                     <div className="flex justify-between text-emerald-600 font-semibold">
                       <span>Promotional Discount (10%)</span>
-                      <span className="font-mono">-£{discountAmount.toFixed(2)}</span>
+                      <span>-£{discountAmount.toFixed(2)}</span>
                     </div>
                   )}
 
@@ -281,7 +284,7 @@ export default function CartPage() {
                         </button>
                       </div>
                     </div>
-                    <span className="font-mono text-[#0b1f3a]">
+                    <span className="text-[#0b1f3a] font-medium">
                       {shippingCost === 0 ? (
                         <span className="text-emerald-600 font-bold uppercase">Free</span>
                       ) : (
@@ -292,7 +295,7 @@ export default function CartPage() {
 
                   <div className="border-t border-[#e2e8f0] pt-3 flex justify-between items-baseline">
                     <span className="font-bold text-sm text-[#0b1f3a]">Estimated Total</span>
-                    <span className="font-mono text-xl font-black text-[#0b1f3a]">
+                    <span className="text-xl font-extrabold text-[#0b1f3a]">
                       £{total.toFixed(2)}
                     </span>
                   </div>

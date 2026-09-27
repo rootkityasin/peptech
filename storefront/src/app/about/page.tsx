@@ -25,28 +25,30 @@ export default function AboutPage() {
       {/* 02 Hero Section */}
       <section className="bg-gradient-to-b from-[#f8fafc] to-white border-b border-[#e2e8f0] py-16 sm:py-24">
         <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-3xl space-y-6">
+          <div className="max-w-3xl space-y-5">
+            <span className="inline-block text-[12px] font-bold text-[#16A6A3] tracking-[1.2px] uppercase">
+              ABOUT PEPTECH®
+            </span>
 
-
-            <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-[#0b1f3a] leading-[1.15]">
+            <h1 className="text-3xl sm:text-4xl lg:text-[44px] font-extrabold text-[#0B1F3A] leading-[1.15] tracking-tight uppercase">
               Pioneering Precision Peptide Architecture
             </h1>
 
-            <p className="text-base sm:text-lg text-[#475569] leading-relaxed">
+            <p className="text-xs sm:text-[14px] text-[#64748B] leading-[22px] max-w-2xl">
               PEPTECH® was established in Cambridge, United Kingdom with a singular scientific mission: elevating laboratory peptide research through durable reusable engineering, rigorous cold-chain integrity, and uncompromising analytical transparency.
             </p>
 
             <div className="flex flex-wrap items-center gap-4 pt-2">
               <Link
                 href="/shop"
-                className="px-6 py-3.5 rounded-xl bg-[#0b1f3a] hover:bg-[#16a6a3] text-white font-bold text-sm transition-all shadow-md inline-flex items-center gap-2"
+                className="btn-shimmer btn-press px-6 py-3.5 rounded-xl bg-[#0B1F3A] hover:bg-[#162e52] text-white text-[14px] font-semibold transition-all shadow-md hover:shadow-xl inline-flex items-center gap-2 group cursor-pointer"
               >
                 <span>Explore Catalog</span>
-                <span>→</span>
+                <span className="transition-transform duration-200 group-hover:translate-x-1">→</span>
               </Link>
               <Link
                 href="/lab-reports"
-                className="px-6 py-3.5 rounded-xl bg-white border border-[#e2e8f0] hover:border-[#0b1f3a] text-[#0b1f3a] font-bold text-sm transition-all shadow-xs"
+                className="btn-press px-6 py-3.5 rounded-xl bg-white hover:bg-slate-50 text-[#0B1F3A] border border-[#CBD5E1] hover:border-[#0B1F3A] text-[14px] font-semibold transition-all shadow-xs hover:shadow-md inline-flex items-center cursor-pointer"
               >
                 Inspect COA Vault
               </Link>
@@ -60,27 +62,27 @@ export default function AboutPage() {
         <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             <div className="space-y-1">
-              <div className="font-mono text-3xl sm:text-4xl font-black text-[#0b1f3a]">≥99.2%</div>
-              <div className="text-xs font-bold text-[#16a6a3] uppercase tracking-wider">HPLC Purity Floor</div>
-              <p className="text-xs text-[#64748b]">Every synthetic batch third-party verified.</p>
+              <div className="text-3xl sm:text-4xl font-extrabold text-[#0B1F3A] tracking-tight">≥99.2%</div>
+              <div className="text-[12px] font-bold text-[#16A6A3] tracking-[1.2px] uppercase">HPLC Purity Floor</div>
+              <p className="text-xs sm:text-[13px] text-[#64748B]">Every synthetic batch third-party verified.</p>
             </div>
 
             <div className="space-y-1">
-              <div className="font-mono text-3xl sm:text-4xl font-black text-[#0b1f3a]">10,000+</div>
-              <div className="text-xs font-bold text-[#16a6a3] uppercase tracking-wider">Dial Calibration Cycles</div>
-              <p className="text-xs text-[#64748b]">Aviation-grade aluminum alloy pen body.</p>
+              <div className="text-3xl sm:text-4xl font-extrabold text-[#0B1F3A] tracking-tight">10,000+</div>
+              <div className="text-[12px] font-bold text-[#16A6A3] tracking-[1.2px] uppercase">Dial Calibration Cycles</div>
+              <p className="text-xs sm:text-[13px] text-[#64748B]">Aviation-grade aluminum alloy pen body.</p>
             </div>
 
             <div className="space-y-1">
-              <div className="font-mono text-3xl sm:text-4xl font-black text-[#0b1f3a]">100%</div>
-              <div className="text-xs font-bold text-[#16a6a3] uppercase tracking-wider">Cryptographic Lots</div>
-              <p className="text-xs text-[#64748b]">Holographic seal &amp; QR lot verification.</p>
+              <div className="text-3xl sm:text-4xl font-extrabold text-[#0B1F3A] tracking-tight">100%</div>
+              <div className="text-[12px] font-bold text-[#16A6A3] tracking-[1.2px] uppercase">Cryptographic Lots</div>
+              <p className="text-xs sm:text-[13px] text-[#64748B]">Holographic seal &amp; QR lot verification.</p>
             </div>
 
             <div className="space-y-1">
-              <div className="font-mono text-3xl sm:text-4xl font-black text-[#0b1f3a]">2°C – 8°C</div>
-              <div className="text-xs font-bold text-[#16a6a3] uppercase tracking-wider">Monitored Cold-Chain</div>
-              <p className="text-xs text-[#64748b]">Thermal insulation with Royal Mail Tracked.</p>
+              <div className="text-3xl sm:text-4xl font-extrabold text-[#0B1F3A] tracking-tight">2°C – 8°C</div>
+              <div className="text-[12px] font-bold text-[#16A6A3] tracking-[1.2px] uppercase">Monitored Cold-Chain</div>
+              <p className="text-xs sm:text-[13px] text-[#64748B]">Thermal insulation with Royal Mail Tracked.</p>
             </div>
           </div>
         </div>
@@ -89,11 +91,12 @@ export default function AboutPage() {
       {/* 04 The Three Core Pillars */}
       <section className="py-16 sm:py-24 bg-[#f8fafc]">
         <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-          <div className="text-center max-w-2xl mx-auto space-y-3">
-            <h3 className="text-2xl sm:text-4xl font-extrabold text-[#0b1f3a] tracking-tight">
+          <div className="text-center max-w-2xl mx-auto space-y-2">
+            <span className="text-[12px] font-bold text-[#16A6A3] tracking-[1.2px] uppercase">OUR FOUNDATION</span>
+            <h2 className="text-2xl sm:text-[28px] font-bold text-[#0B1F3A]">
               The Three Pillars of PEPTECH®
-            </h3>
-            <p className="text-sm text-[#64748b]">
+            </h2>
+            <p className="text-[14px] text-[#64748B]">
               Engineered to replace fragmented, disposable peptide workflows with a cohesive, sustainable laboratory standard.
             </p>
           </div>
@@ -181,11 +184,14 @@ export default function AboutPage() {
       <section className="py-16 sm:py-24 bg-white border-b border-[#e2e8f0]">
         <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-            <div className="lg:col-span-6 space-y-6">
-              <h3 className="text-2xl sm:text-4xl font-extrabold text-[#0b1f3a] tracking-tight">
+            <div className="lg:col-span-6 space-y-5">
+              <span className="text-[12px] font-bold text-[#16A6A3] tracking-[1.2px] uppercase">
+                CAMBRIDGE BIOCLUSTER
+              </span>
+              <h2 className="text-2xl sm:text-[28px] font-bold text-[#0B1F3A]">
                 Operating from the Heart of Cambridge Bioscience
-              </h3>
-              <p className="text-sm text-[#475569] leading-relaxed">
+              </h2>
+              <p className="text-[14px] text-[#64748B] leading-[22px]">
                 Situated within the Cambridge Science Park ecosystem, PEPTECH works alongside leading analytical laboratories, bio-incubators, and clinical researchers across Europe and North America.
               </p>
               

@@ -1772,7 +1772,7 @@ export default function CheckoutPage() {
                     value={formData.cardNumber}
                     onChange={handleInputChange}
                     placeholder="1234 1234 1234 1234"
-                    className="w-full text-[15px] sm:text-[13.5px] text-[#0b1f3a] placeholder:text-[#94a3b8] bg-transparent focus:outline-none font-mono"
+                    className="w-full text-[15px] sm:text-[13.5px] text-[#0b1f3a] placeholder:text-[#94a3b8] bg-transparent focus:outline-none"
                   />
                   <div
                     className="flex gap-1.5 items-center shrink-0"
@@ -1864,7 +1864,7 @@ export default function CheckoutPage() {
               <p className="text-xs text-[#64748b]">
                 Account instructions and unique payment reference will be issued immediately upon order submission. Orders dispatch via Royal Mail Tracked once automated bank settlement is detected.
               </p>
-              <div className="bg-white p-3 rounded-lg border border-slate-200 text-xs font-mono text-slate-700 space-y-1">
+              <div className="bg-white p-3 rounded-lg border border-slate-200 text-xs text-slate-700 space-y-1">
                 <div>Bank: Barclays Bank UK PLC</div>
                 <div>Account Name: PEPTECH INDUSTRIES LTD</div>
                 <div>Reference Code: PT-REQ-INST</div>

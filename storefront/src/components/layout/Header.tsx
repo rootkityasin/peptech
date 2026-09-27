@@ -124,7 +124,7 @@ export function Header() {
   return (
     <>
       {/* 01 Top Announcement Bar - Figma Node 2:29210 */}
-      <div className="bg-[#0e2a47] text-white text-[12px] h-[38px] flex items-center px-4 sm:px-8 border-b border-white/10 z-50 relative">
+      <div className="w-full bg-[#0e2a47] text-white text-[12px] h-[38px] flex items-center px-4 sm:px-8 border-b border-white/10 z-50 relative">
         <div className="max-w-[1240px] w-full mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="font-normal text-[#e2e8f0]">Precision Today. Better Tomorrow.</span>
@@ -153,10 +153,16 @@ export function Header() {
       </div>
 
       {/* 02 Header Navigation - Figma Node 2:29228 */}
-      <header className={`bg-white sticky top-0 z-50 shadow-xs h-[80px] flex items-center relative transition-colors ${
-        searchOpen ? "border-b-0" : "border-b border-[#E2E8F0]"
-      }`}>
-        <div className="max-w-[1240px] w-full mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4 relative z-50 bg-white h-full">
+      <header
+        style={{ backgroundColor: "#ffffff" }}
+        className={`w-full bg-white sticky top-0 z-50 shadow-xs h-[80px] relative transition-colors ${
+          searchOpen ? "border-b-0" : "border-b border-[#E2E8F0]"
+        }`}
+      >
+        <div
+          style={{ backgroundColor: "#ffffff" }}
+          className="max-w-[1240px] w-full mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4 relative z-10 bg-white h-full"
+        >
           
           {/* Brand Logo with Slogan */}
           <div className="flex items-center gap-3">
@@ -451,19 +457,11 @@ export function Header() {
           </div>
         </div>
 
-        {/* Search Backdrop Overlay */}
-        {searchOpen && (
-          <div
-            onClick={() => setSearchOpen(false)}
-            className="fixed inset-0 top-[80px] bg-[#0b1f3a]/30 backdrop-blur-xs z-40 animate-in fade-in duration-200"
-            aria-hidden="true"
-          />
-        )}
-
         {/* Search Bar Dropdown Below Navbar (No border separating it from navbar) */}
         <div
           ref={searchContainerRef}
-          className={`absolute top-[80px] -mt-[1px] left-0 right-0 bg-white border-b border-[#E2E8F0] shadow-lg shadow-[#0b1f3a]/6 z-50 transition-all duration-300 ease-out ${
+          style={{ backgroundColor: "#ffffff" }}
+          className={`absolute top-full -mt-px left-0 right-0 w-full bg-white border-b border-[#E2E8F0] shadow-lg shadow-[#0b1f3a]/6 z-50 transition-all duration-300 ease-out ${
             searchOpen
               ? "opacity-100 translate-y-0 pointer-events-auto"
               : "opacity-0 -translate-y-2 pointer-events-none"
@@ -632,14 +630,14 @@ export function Header() {
           <>
             {/* Backdrop Overlay to catch clicks anywhere else in the website */}
             <div
-              className="lg:hidden fixed inset-0 top-[80px] bg-black/30 z-40 transition-opacity"
+              className="lg:hidden fixed inset-0 top-[118px] bg-black/30 z-40 transition-opacity"
               onClick={() => setMobileMenuOpen(false)}
               aria-hidden="true"
             />
 
             <div
               ref={mobileMenuRef}
-              className="lg:hidden absolute top-[80px] left-0 right-0 border-t border-slate-200 bg-white px-4 py-4 space-y-3 shadow-xl z-50"
+              className="lg:hidden absolute top-full left-0 right-0 border-t border-slate-200 bg-white px-4 py-4 space-y-3 shadow-xl z-50"
             >
               <div className="space-y-1 text-sm font-semibold text-slate-800">
                 <Link

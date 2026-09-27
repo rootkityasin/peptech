@@ -63,13 +63,15 @@ export default function HowItWorksPage() {
       {/* 02 Hero Section */}
       <section className="bg-gradient-to-b from-[#f8fafc] to-white border-b border-[#e2e8f0] py-16 sm:py-24 text-center">
         <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8 space-y-4 max-w-3xl">
+          <span className="inline-block text-[12px] font-bold text-[#16A6A3] tracking-[1.2px] uppercase">
+            PRECISION REUSABLE ARCHITECTURE
+          </span>
 
-
-          <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-[#0b1f3a] leading-tight">
+          <h1 className="text-3xl sm:text-4xl lg:text-[44px] font-extrabold text-[#0B1F3A] leading-[1.15] tracking-tight uppercase">
             How The PEPTECH® System Works
           </h1>
 
-          <p className="text-sm sm:text-base text-[#475569] leading-relaxed">
+          <p className="text-xs sm:text-[14px] text-[#64748B] leading-[22px] max-w-2xl mx-auto">
             Our reusable precision delivery system was created to bridge laboratory durability with repeatable scientific accuracy, eliminating disposable plastic waste while locking in pure research consistency.
           </p>
         </div>
@@ -79,16 +81,19 @@ export default function HowItWorksPage() {
       <section className="py-16 sm:py-20 border-b border-[#e2e8f0] bg-white">
         <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
           <div className="text-center max-w-xl mx-auto space-y-2">
-            <h3 className="text-2xl sm:text-3xl font-extrabold text-[#0b1f3a]">
+            <span className="text-[12px] font-bold text-[#16A6A3] tracking-[1.2px] uppercase">
+              3-STEP LIFECYCLE
+            </span>
+            <h2 className="text-2xl sm:text-[28px] font-bold text-[#0B1F3A]">
               One Pen. Endless Compatible Compounds.
-            </h3>
+            </h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Step 1 */}
             <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-3xl p-8 space-y-5 flex flex-col justify-between relative shadow-xs hover:border-[#0b1f3a] transition-all">
               <div className="space-y-4">
-                <div className="w-12 h-12 rounded-2xl bg-[#0b1f3a] text-white flex items-center justify-center font-mono font-black text-lg shadow-sm">
+                <div className="w-12 h-12 rounded-2xl bg-[#0b1f3a] text-white flex items-center justify-center font-extrabold text-lg shadow-sm">
                   01
                 </div>
                 <h4 className="text-lg font-bold text-[#0b1f3a]">
@@ -111,7 +116,7 @@ export default function HowItWorksPage() {
             {/* Step 2 */}
             <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-3xl p-8 space-y-5 flex flex-col justify-between relative shadow-xs hover:border-[#16a6a3] transition-all">
               <div className="space-y-4">
-                <div className="w-12 h-12 rounded-2xl bg-[#16a6a3] text-white flex items-center justify-center font-mono font-black text-lg shadow-sm">
+                <div className="w-12 h-12 rounded-2xl bg-[#16a6a3] text-white flex items-center justify-center font-extrabold text-lg shadow-sm">
                   02
                 </div>
                 <h4 className="text-lg font-bold text-[#0b1f3a]">
@@ -131,7 +136,7 @@ export default function HowItWorksPage() {
             {/* Step 3 */}
             <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-3xl p-8 space-y-5 flex flex-col justify-between relative shadow-xs hover:border-[#00c5a0] transition-all">
               <div className="space-y-4">
-                <div className="w-12 h-12 rounded-2xl bg-[#0e2a47] text-[#00c5a0] flex items-center justify-center font-mono font-black text-lg shadow-sm border border-[#00c5a0]/20">
+                <div className="w-12 h-12 rounded-2xl bg-[#0e2a47] text-[#00c5a0] flex items-center justify-center font-extrabold text-lg shadow-sm border border-[#00c5a0]/20">
                   03
                 </div>
                 <h4 className="text-lg font-bold text-[#0b1f3a]">
@@ -158,9 +163,12 @@ export default function HowItWorksPage() {
       <section className="py-16 sm:py-20 bg-[#f8fafc] border-b border-[#e2e8f0]">
         <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
           <div className="text-center max-w-xl mx-auto space-y-2">
-            <h3 className="text-2xl sm:text-3xl font-extrabold text-[#0b1f3a]">
+            <span className="text-[12px] font-bold text-[#16A6A3] tracking-[1.2px] uppercase">
+              HARDWARE ENGINEERING
+            </span>
+            <h2 className="text-2xl sm:text-[28px] font-bold text-[#0B1F3A]">
               Engineered for Clinical Repeatability
-            </h3>
+            </h2>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -242,11 +250,14 @@ export default function HowItWorksPage() {
       {/* 05 Comprehensive FAQ Accordion */}
       <section className="py-16 sm:py-24 bg-white" id="faqs">
         <div className="max-w-[900px] mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
-          <div className="text-center space-y-3">
-            <h3 className="text-2xl sm:text-4xl font-extrabold text-[#0b1f3a]">
+          <div className="text-center space-y-2">
+            <span className="text-[12px] font-bold text-[#16A6A3] tracking-[1.2px] uppercase">
+              FREQUENTLY ASKED QUESTIONS
+            </span>
+            <h2 className="text-2xl sm:text-[28px] font-bold text-[#0B1F3A]">
               Everything You Need to Know
-            </h3>
-            <p className="text-xs sm:text-sm text-[#64748b]">
+            </h2>
+            <p className="text-[14px] text-[#64748B]">
               Have questions regarding orders, hardware maintenance, or analytical purity?
             </p>
           </div>

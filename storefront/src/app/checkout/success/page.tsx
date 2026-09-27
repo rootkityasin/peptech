@@ -67,10 +67,10 @@ export default function PaymentSuccessPage() {
           data-node-id="52:8427"
         >
           <h1
-            className="font-bold text-[#0b1f3a] text-[26px] leading-tight"
+            className="font-extrabold text-[#0b1f3a] text-2xl sm:text-[32px] leading-tight uppercase tracking-tight"
             data-node-id="52:8428"
           >
-            Payment successful
+            Payment Successful
           </h1>
           <p
             className="font-normal text-[#64748b] text-[13.5px] max-w-[420px]"

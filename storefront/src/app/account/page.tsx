@@ -615,7 +615,7 @@ function AccountContent() {
         <div className="max-w-[480px] w-full bg-white rounded-[20px] p-6 sm:p-9 border border-[#e2e8f0] shadow-sm flex flex-col gap-6">
           {/* Top Header */}
           <div className="text-center">
-            <h1 className="text-[24px] font-bold text-[#0b1f3a] tracking-tight">
+            <h1 className="text-2xl sm:text-[28px] font-extrabold text-[#0b1f3a] tracking-tight uppercase">
               Login
             </h1>
           </div>
@@ -1018,7 +1018,7 @@ function AccountContent() {
               </div>
               <div className="flex flex-col gap-[4px] items-start">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h1 className="font-bold text-[#0b1f3a] text-[20px] sm:text-[22px] tracking-tight">
+                  <h1 className="font-extrabold text-[#0b1f3a] text-[20px] sm:text-[24px] tracking-tight">
                     {customer.metadata?.title ? `${customer.metadata.title} ` : ""}
                     {customer.first_name} {customer.last_name}
                   </h1>

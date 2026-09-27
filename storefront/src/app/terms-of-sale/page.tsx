@@ -16,7 +16,7 @@ function LegalSidebar() {
   return (
     <aside className="space-y-6">
       <div className="bg-white rounded-3xl border border-[#e2e8f0] p-6 shadow-xs space-y-4">
-        <h4 className="text-xs font-bold text-[#0b1f3a] uppercase tracking-wider font-mono">
+        <h4 className="text-xs font-bold text-[#0b1f3a] uppercase tracking-wider">
           LEGAL &amp; COMPLIANCE DIRECTORY
         </h4>
         <nav className="space-y-1.5">
@@ -33,7 +33,7 @@ function LegalSidebar() {
                 }`}
               >
                 <span>{link.label}</span>
-                <span className={`text-[10px] font-mono px-2 py-0.5 rounded-md ${
+                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-md ${
                   active ? "bg-white/20 text-white" : "bg-[#f1f5f9] text-[#64748b]"
                 }`}>
                   {link.badge}
@@ -46,7 +46,7 @@ function LegalSidebar() {
 
       {/* Support & Legal Officer Card */}
       <div className="bg-[#f8fafc] rounded-3xl border border-[#e2e8f0] p-6 shadow-xs space-y-3 text-xs">
-        <span className="text-[10px] font-bold text-[#16a6a3] font-mono uppercase tracking-wider">
+        <span className="text-[10px] font-bold text-[#16a6a3] uppercase tracking-wider">
           LEGAL COUNSEL &amp; DPO
         </span>
         <h5 className="font-bold text-[#0b1f3a]">PEPTECH BioSciences Ltd</h5>
@@ -57,7 +57,7 @@ function LegalSidebar() {
         <div className="pt-2 border-t border-[#e2e8f0]">
           <a
             href="mailto:info@peptech.bio"
-            className="font-mono text-[#16a6a3] hover:underline font-semibold"
+            className="text-[#16a6a3] hover:underline font-semibold"
           >
             info@peptech.bio
           </a>
@@ -84,13 +84,13 @@ export default function TermsOfSalePage() {
       {/* 02 Header Hero */}
       <section className="bg-white border-b border-[#e2e8f0] py-12 sm:py-16">
         <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
-
-
-          <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-[#0b1f3a]">
+          <span className="inline-block text-[12px] font-bold text-[#16A6A3] tracking-[1.2px] uppercase">
+            TERMS &amp; CONDITIONS
+          </span>
+          <h1 className="text-3xl sm:text-4xl lg:text-[44px] font-extrabold text-[#0B1F3A] leading-[1.15] tracking-tight uppercase">
             Terms of Sale &amp; Service
           </h1>
-
-          <p className="text-sm sm:text-base text-[#475569] max-w-3xl leading-relaxed">
+          <p className="text-xs sm:text-[14px] text-[#64748B] leading-[22px] max-w-3xl">
             Please review these terms carefully before placing an order on <code>peptech.bio</code>. These terms govern all purchases of research peptide systems, prefilled cartridges, and automated subscription replenishment.
           </p>
         </div>
@@ -123,7 +123,7 @@ export default function TermsOfSalePage() {
               {/* Section 1 */}
               <section className="space-y-3 border-b border-[#f1f5f9] pb-6">
                 <h3 className="text-lg font-bold text-[#0b1f3a] flex items-center gap-2">
-                  <span className="text-xs font-mono font-bold text-[#16a6a3] bg-[#16a6a3]/10 px-2 py-0.5 rounded-md">01</span>
+                  <span className="text-xs font-bold text-[#16a6a3] bg-[#16a6a3]/10 px-2 py-0.5 rounded-md">01</span>
                   Eligibility &amp; Customer Representations
                 </h3>
                 <p>
@@ -140,7 +140,7 @@ export default function TermsOfSalePage() {
               {/* Section 2 */}
               <section className="space-y-3 border-b border-[#f1f5f9] pb-6">
                 <h3 className="text-lg font-bold text-[#0b1f3a] flex items-center gap-2">
-                  <span className="text-xs font-mono font-bold text-[#16a6a3] bg-[#16a6a3]/10 px-2 py-0.5 rounded-md">02</span>
+                  <span className="text-xs font-bold text-[#16a6a3] bg-[#16a6a3]/10 px-2 py-0.5 rounded-md">02</span>
                   28-Day Subscribe &amp; Save Terms
                 </h3>
                 <p>
@@ -159,7 +159,7 @@ export default function TermsOfSalePage() {
               {/* Section 3 */}
               <section className="space-y-3 border-b border-[#f1f5f9] pb-6">
                 <h3 className="text-lg font-bold text-[#0b1f3a] flex items-center gap-2">
-                  <span className="text-xs font-mono font-bold text-[#16a6a3] bg-[#16a6a3]/10 px-2 py-0.5 rounded-md">03</span>
+                  <span className="text-xs font-bold text-[#16a6a3] bg-[#16a6a3]/10 px-2 py-0.5 rounded-md">03</span>
                   Payment Security &amp; High-Risk Gateway Compliance
                 </h3>
                 <p>
@@ -175,7 +175,7 @@ export default function TermsOfSalePage() {
               {/* Section 4 */}
               <section className="space-y-3 border-b border-[#f1f5f9] pb-6">
                 <h3 className="text-lg font-bold text-[#0b1f3a] flex items-center gap-2">
-                  <span className="text-xs font-mono font-bold text-[#16a6a3] bg-[#16a6a3]/10 px-2 py-0.5 rounded-md">04</span>
+                  <span className="text-xs font-bold text-[#16a6a3] bg-[#16a6a3]/10 px-2 py-0.5 rounded-md">04</span>
                   Royal Mail Shipping &amp; Cold-Chain Dispatch
                 </h3>
                 <p>
@@ -192,7 +192,7 @@ export default function TermsOfSalePage() {
               {/* Section 5 */}
               <section className="space-y-3 border-b border-[#f1f5f9] pb-6">
                 <h3 className="text-lg font-bold text-[#0b1f3a] flex items-center gap-2">
-                  <span className="text-xs font-mono font-bold text-[#16a6a3] bg-[#16a6a3]/10 px-2 py-0.5 rounded-md">05</span>
+                  <span className="text-xs font-bold text-[#16a6a3] bg-[#16a6a3]/10 px-2 py-0.5 rounded-md">05</span>
                   Returns, Warranties &amp; Tamper Seals
                 </h3>
                 <p>
@@ -208,7 +208,7 @@ export default function TermsOfSalePage() {
               {/* Section 6 */}
               <section className="space-y-3">
                 <h3 className="text-lg font-bold text-[#0b1f3a] flex items-center gap-2">
-                  <span className="text-xs font-mono font-bold text-[#16a6a3] bg-[#16a6a3]/10 px-2 py-0.5 rounded-md">06</span>
+                  <span className="text-xs font-bold text-[#16a6a3] bg-[#16a6a3]/10 px-2 py-0.5 rounded-md">06</span>
                   Governing Law &amp; Jurisdiction
                 </h3>
                 <p>

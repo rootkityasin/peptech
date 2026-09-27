@@ -16,7 +16,7 @@ function LegalSidebar() {
   return (
     <aside className="space-y-6">
       <div className="bg-white rounded-3xl border border-[#e2e8f0] p-6 shadow-xs space-y-4">
-        <h4 className="text-xs font-bold text-[#0b1f3a] uppercase tracking-wider font-mono">
+        <h4 className="text-xs font-bold text-[#0b1f3a] uppercase tracking-wider">
           LEGAL &amp; COMPLIANCE DIRECTORY
         </h4>
         <nav className="space-y-1.5">
@@ -33,7 +33,7 @@ function LegalSidebar() {
                 }`}
               >
                 <span>{link.label}</span>
-                <span className={`text-[10px] font-mono px-2 py-0.5 rounded-md ${
+                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-md ${
                   active ? "bg-white/20 text-white" : "bg-[#f1f5f9] text-[#64748b]"
                 }`}>
                   {link.badge}
@@ -46,7 +46,7 @@ function LegalSidebar() {
 
       {/* Compliance Officer Card */}
       <div className="bg-[#f8fafc] rounded-3xl border border-[#e2e8f0] p-6 shadow-xs space-y-3 text-xs">
-        <span className="text-[10px] font-bold text-amber-600 font-mono uppercase tracking-wider">
+        <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">
           STATUTORY RUO OVERSIGHT
         </span>
         <h5 className="font-bold text-[#0b1f3a]">Regulatory Affairs Liaison</h5>
@@ -84,13 +84,13 @@ export default function ResearchDisclaimerPage() {
       {/* 02 Header Hero */}
       <section className="bg-white border-b border-[#e2e8f0] py-12 sm:py-16">
         <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
-
-
-          <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-[#0b1f3a]">
+          <span className="inline-block text-[12px] font-bold text-[#16A6A3] tracking-[1.2px] uppercase">
+            STATUTORY COMPLIANCE
+          </span>
+          <h1 className="text-3xl sm:text-4xl lg:text-[44px] font-extrabold text-[#0B1F3A] leading-[1.15] tracking-tight uppercase">
             Research Use Only (RUO) Disclaimer
           </h1>
-
-          <p className="text-sm sm:text-base text-[#475569] max-w-3xl leading-relaxed">
+          <p className="text-xs sm:text-[14px] text-[#64748B] leading-[22px] max-w-3xl">
             All biochemical formulations, prefilled cartridges, and lyophilised peptides supplied by PEPTECH® are manufactured and supplied strictly for in-vitro scientific, educational, and laboratory research purposes.
           </p>
         </div>
@@ -111,7 +111,7 @@ export default function ResearchDisclaimerPage() {
               
               {/* Highlight Warning Box */}
               <div className="p-6 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-950 space-y-3">
-                <div className="flex items-center gap-2 font-black text-sm text-amber-900 tracking-wide uppercase">
+                <div className="flex items-center gap-2 font-extrabold text-sm text-amber-900 tracking-wide uppercase">
                   <span>⚠️</span>
                   <span>MANDATORY STATUTORY REGULATORY NOTICE</span>
                 </div>
@@ -126,7 +126,7 @@ export default function ResearchDisclaimerPage() {
               {/* Section 1 */}
               <section className="space-y-3 border-b border-[#f1f5f9] pb-6">
                 <h3 className="text-lg font-bold text-[#0b1f3a] flex items-center gap-2">
-                  <span className="text-xs font-mono font-bold text-[#16a6a3] bg-[#16a6a3]/10 px-2 py-0.5 rounded-md">01</span>
+                  <span className="text-xs font-bold text-[#16a6a3] bg-[#16a6a3]/10 px-2 py-0.5 rounded-md">01</span>
                   Age Requirement &amp; Purchaser Qualifications
                 </h3>
                 <p>
@@ -142,7 +142,7 @@ export default function ResearchDisclaimerPage() {
               {/* Section 2 */}
               <section className="space-y-3 border-b border-[#f1f5f9] pb-6">
                 <h3 className="text-lg font-bold text-[#0b1f3a] flex items-center gap-2">
-                  <span className="text-xs font-mono font-bold text-[#16a6a3] bg-[#16a6a3]/10 px-2 py-0.5 rounded-md">02</span>
+                  <span className="text-xs font-bold text-[#16a6a3] bg-[#16a6a3]/10 px-2 py-0.5 rounded-md">02</span>
                   Strict Prohibition of Human &amp; Veterinary Administration
                 </h3>
                 <p>
@@ -158,7 +158,7 @@ export default function ResearchDisclaimerPage() {
               {/* Section 3 */}
               <section className="space-y-3 border-b border-[#f1f5f9] pb-6">
                 <h3 className="text-lg font-bold text-[#0b1f3a] flex items-center gap-2">
-                  <span className="text-xs font-mono font-bold text-[#16a6a3] bg-[#16a6a3]/10 px-2 py-0.5 rounded-md">03</span>
+                  <span className="text-xs font-bold text-[#16a6a3] bg-[#16a6a3]/10 px-2 py-0.5 rounded-md">03</span>
                   Zero Dosing Protocols or Medical Claims
                 </h3>
                 <p>
@@ -172,7 +172,7 @@ export default function ResearchDisclaimerPage() {
               {/* Section 4 */}
               <section className="space-y-3 border-b border-[#f1f5f9] pb-6">
                 <h3 className="text-lg font-bold text-[#0b1f3a] flex items-center gap-2">
-                  <span className="text-xs font-mono font-bold text-[#16a6a3] bg-[#16a6a3]/10 px-2 py-0.5 rounded-md">04</span>
+                  <span className="text-xs font-bold text-[#16a6a3] bg-[#16a6a3]/10 px-2 py-0.5 rounded-md">04</span>
                   Laboratory Safety, Hazard Handling &amp; Disposal
                 </h3>
                 <p>
@@ -186,7 +186,7 @@ export default function ResearchDisclaimerPage() {
               {/* Section 5 */}
               <section className="space-y-3">
                 <h3 className="text-lg font-bold text-[#0b1f3a] flex items-center gap-2">
-                  <span className="text-xs font-mono font-bold text-[#16a6a3] bg-[#16a6a3]/10 px-2 py-0.5 rounded-md">05</span>
+                  <span className="text-xs font-bold text-[#16a6a3] bg-[#16a6a3]/10 px-2 py-0.5 rounded-md">05</span>
                   Indemnification &amp; Limitation of Liability
                 </h3>
                 <p>

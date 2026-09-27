@@ -72,7 +72,7 @@ export function VialBuyBox({ product }: VialBuyBoxProps) {
 
       {/* Product Name Header */}
       <div className="flex flex-col gap-[4px] items-start w-full">
-        <h1 className="font-bold text-[#0b1f3a] text-[28px] sm:text-[32px] leading-[34px] sm:leading-[38px] tracking-tight">
+        <h1 className="font-extrabold text-[#0b1f3a] text-[28px] sm:text-[34px] leading-[36px] sm:leading-[40px] tracking-tight">
           {product.name}
         </h1>
         <p className="font-semibold text-[#16a6a3] text-[14px]">

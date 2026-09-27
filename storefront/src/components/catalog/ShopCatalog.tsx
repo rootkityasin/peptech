@@ -206,8 +206,11 @@ export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
             </>
           )}
         </div>
-        <div>
-          <h1 className="text-[24px] sm:text-[28px] font-bold text-[#0b1f3a] tracking-tight">
+        <div className="mt-1">
+          <span className="inline-block text-[12px] font-bold text-[#16A6A3] tracking-[1.2px] uppercase mb-1">
+            LABORATORY REAGENTS &amp; SYSTEMS
+          </span>
+          <h1 className="text-2xl sm:text-[32px] font-extrabold text-[#0b1f3a] tracking-tight uppercase">
             {activeTab === "all"
               ? "PEPTECH® Master Catalog"
               : activeTab === "pen-sets"
@@ -216,7 +219,7 @@ export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
               ? "Compatible Refill Cartridges"
               : "Lyophilised Research Vials"}
           </h1>
-          <p className="text-[13px] text-[#64748b] mt-1">
+          <p className="text-xs sm:text-[14px] text-[#64748b] leading-[22px] mt-1">
             Precision-engineered laboratory research systems, cartridges, and pure lyophilised peptides.
           </p>
         </div>
