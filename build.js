@@ -77,7 +77,9 @@ if (fs.existsSync(serverDir)) {
 }
 
 // 4. Ensure logo.webp and PEPTECH Admin branding in index.html across all outputs
-const logoSource = path.resolve(__dirname, 'app/logo.webp');
+const logoSource = fs.existsSync(path.resolve(__dirname, 'storefront/public/logo.webp'))
+  ? path.resolve(__dirname, 'storefront/public/logo.webp')
+  : path.resolve(__dirname, 'app/logo.webp');
 if (fs.existsSync(logoSource)) {
   const logoTargets = [
     path.join(adminPublicDir, 'logo.webp'),
