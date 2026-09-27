@@ -17,6 +17,7 @@ export function Header() {
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
 
+  const headerRef = useRef<HTMLElement>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const searchContainerRef = useRef<HTMLDivElement>(null)
   const mobileMenuRef = useRef<HTMLDivElement>(null)
@@ -53,7 +54,7 @@ export function Header() {
   useEffect(() => {
     if (!searchOpen) return
     const handleClickOutside = (e: MouseEvent) => {
-      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+      if (headerRef.current && !headerRef.current.contains(e.target as Node)) {
         setSearchOpen(false)
       }
     }
@@ -154,15 +155,16 @@ export function Header() {
 
       {/* 02 Header Navigation - Figma Node 2:29228 */}
       <header
+        ref={headerRef}
         style={{ backgroundColor: "#ffffff" }}
-        className={`w-full bg-white sticky top-0 z-50 shadow-xs h-[80px] relative transition-colors ${
-          searchOpen ? "border-b-0" : "border-b border-[#E2E8F0]"
-        }`}
+        className="w-full bg-white sticky top-0 z-50 shadow-xs relative transition-all duration-200 border-b border-[#E2E8F0]"
       >
-        <div
-          style={{ backgroundColor: "#ffffff" }}
-          className="max-w-[1240px] w-full mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4 relative z-10 bg-white h-full"
-        >
+        {/* Main Navbar Row (80px) */}
+        <div style={{ backgroundColor: "#ffffff" }} className="w-full bg-white">
+          <div
+            style={{ backgroundColor: "#ffffff" }}
+            className="max-w-[1240px] w-full mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4 relative z-10 bg-white h-[80px]"
+          >
           
           {/* Brand Logo with Slogan */}
           <div className="flex items-center gap-3">
@@ -456,18 +458,19 @@ export function Header() {
             </button>
           </div>
         </div>
+      </div>
 
-        {/* Search Bar Dropdown Below Navbar (No border separating it from navbar) */}
-        <div
-          ref={searchContainerRef}
-          style={{ backgroundColor: "#ffffff" }}
-          className={`absolute top-full -mt-px left-0 right-0 w-full bg-white border-b border-[#E2E8F0] shadow-lg shadow-[#0b1f3a]/6 z-50 transition-all duration-300 ease-out ${
-            searchOpen
-              ? "opacity-100 translate-y-0 pointer-events-auto"
-              : "opacity-0 -translate-y-2 pointer-events-none"
-          }`}
-        >
-          <div className="max-w-[840px] w-full mx-auto px-4 sm:px-6 py-4">
+      {/* Integrated Full-Width White Search Row - Seamless Part of Header */}
+        {searchOpen && (
+          <div
+            ref={searchContainerRef}
+            style={{ backgroundColor: "#ffffff" }}
+            className="w-full bg-white border-t border-[#f1f5f9] animate-in fade-in slide-in-from-top-1 duration-200 relative z-20"
+          >
+            <div
+              style={{ backgroundColor: "#ffffff" }}
+              className="max-w-[840px] w-full mx-auto px-4 sm:px-6 py-4 bg-white"
+            >
             <form onSubmit={handleSearchSubmit} className="flex items-center gap-3 w-full">
               {/* Input container with embedded icon and submit button */}
               <div className="relative flex-1 flex items-center">
@@ -624,6 +627,7 @@ export function Header() {
             )}
           </div>
         </div>
+      )}
 
         {/* Mobile Dropdown Menu */}
         {mobileMenuOpen && (
