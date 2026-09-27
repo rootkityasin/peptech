@@ -907,6 +907,7 @@ export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
                           src={product.image}
                           alt={product.name}
                           fill
+                          sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 180px"
                           className="object-contain p-2 group-hover:scale-105 transition-transform"
                         />
                       </div>
@@ -1017,7 +1018,7 @@ export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
                 >
                   <Link href={`/products/${product.handle}`} className="flex items-center gap-4 flex-1">
                     <div className="bg-[#f8fafc] rounded-[6px] size-[80px] relative shrink-0 p-1 group-hover:bg-slate-100 transition-colors">
-                      <Image src={product.image} alt={product.name} fill className="object-contain" />
+                      <Image src={product.image} alt={product.name} fill sizes="80px" className="object-contain" />
                     </div>
                     <div className="text-left">
                       <span className="text-[10px] font-semibold text-[#64748b] tracking-wide uppercase">

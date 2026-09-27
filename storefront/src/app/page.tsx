@@ -199,19 +199,19 @@ export default function HomePage() {
               {/* 4 Micro Value Props Row - Figma Node I2:29725;2:29272 */}
               <div className="py-7 sm:py-6 border-t border-[#E2E8F0] grid grid-cols-2 sm:grid-cols-4 gap-y-8 sm:gap-y-4 gap-x-4 sm:gap-6 text-center max-w-[520px]">
                 <div className="flex flex-col items-center text-center gap-2">
-                  <img src="/images/figma/icon-target.svg" alt="Accuracy" className="w-5 h-5" />
+                  <img src="/images/figma/icon-target.svg" alt="Accuracy" className="w-5 h-5" loading="lazy" decoding="async" />
                   <span className="text-[12px] font-bold text-[#0B1F3A] leading-tight">High Accuracy</span>
                 </div>
                 <div className="flex flex-col items-center text-center gap-2">
-                  <img src="/images/figma/icon-lightning.svg" alt="Results" className="w-5 h-5" />
+                  <img src="/images/figma/icon-lightning.svg" alt="Results" className="w-5 h-5" loading="lazy" decoding="async" />
                   <span className="text-[12px] font-bold text-[#0B1F3A] leading-tight">Fast Results</span>
                 </div>
                 <div className="flex flex-col items-center text-center gap-2">
-                  <img src="/images/figma/icon-hand.svg" alt="Usage" className="w-5 h-5" />
+                  <img src="/images/figma/icon-hand.svg" alt="Usage" className="w-5 h-5" loading="lazy" decoding="async" />
                   <span className="text-[12px] font-bold text-[#0B1F3A] leading-tight">Easy to Use</span>
                 </div>
                 <div className="flex flex-col items-center text-center gap-2">
-                  <img src="/images/figma/icon-shield.svg" alt="Consistency" className="w-5 h-5" />
+                  <img src="/images/figma/icon-shield.svg" alt="Consistency" className="w-5 h-5" loading="lazy" decoding="async" />
                   <span className="text-[12px] font-bold text-[#0B1F3A] leading-tight">Reliable &amp; Consistent</span>
                 </div>
               </div>
@@ -224,6 +224,7 @@ export default function HomePage() {
                   src="/images/figma/hero-presentation-box.png"
                   alt="PEPTECH® Reusable Injection Pen System Kit Presentation"
                   fill
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 580px"
                   className="object-contain drop-shadow-xl"
                   priority
                 />
@@ -259,7 +260,7 @@ export default function HomePage() {
             
             <div className="flex flex-col sm:flex-row items-center sm:items-center text-center sm:text-left gap-2 sm:gap-3.5">
               <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-emerald-50 flex items-center justify-center shrink-0">
-                <img src="/images/figma/icon-trusted-tech.svg" alt="Technology" className="w-5 h-5 sm:w-6 sm:h-6" />
+                <img src="/images/figma/icon-trusted-tech.svg" alt="Technology" className="w-5 h-5 sm:w-6 sm:h-6" loading="lazy" decoding="async" />
               </div>
               <div>
                 <h4 className="text-[13px] sm:text-[14px] font-bold text-[#0B1F3A] leading-tight">
@@ -275,7 +276,7 @@ export default function HomePage() {
 
             <div className="flex flex-col sm:flex-row items-center sm:items-center text-center sm:text-left gap-2 sm:gap-3.5">
               <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-cyan-50 flex items-center justify-center shrink-0">
-                <img src="/images/figma/icon-wide-menu.svg" alt="Menu" className="w-5 h-5 sm:w-6 sm:h-6" />
+                <img src="/images/figma/icon-wide-menu.svg" alt="Menu" className="w-5 h-5 sm:w-6 sm:h-6" loading="lazy" decoding="async" />
               </div>
               <div>
                 <h4 className="text-[13px] sm:text-[14px] font-bold text-[#0B1F3A] leading-tight">
@@ -291,7 +292,7 @@ export default function HomePage() {
 
             <div className="flex flex-col sm:flex-row items-center sm:items-center text-center sm:text-left gap-2 sm:gap-3.5">
               <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-teal-50 flex items-center justify-center shrink-0">
-                <img src="/images/figma/icon-global-standards.svg" alt="Standards" className="w-5 h-5 sm:w-6 sm:h-6" />
+                <img src="/images/figma/icon-global-standards.svg" alt="Standards" className="w-5 h-5 sm:w-6 sm:h-6" loading="lazy" decoding="async" />
               </div>
               <div>
                 <h4 className="text-[13px] sm:text-[14px] font-bold text-[#0B1F3A] leading-tight">
@@ -306,7 +307,7 @@ export default function HomePage() {
 
             <div className="flex flex-col sm:flex-row items-center sm:items-center text-center sm:text-left gap-2 sm:gap-3.5">
               <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-sky-50 flex items-center justify-center shrink-0">
-                <img src="/images/figma/icon-dedicated-support.svg" alt="Support" className="w-5 h-5 sm:w-6 sm:h-6" />
+                <img src="/images/figma/icon-dedicated-support.svg" alt="Support" className="w-5 h-5 sm:w-6 sm:h-6" loading="lazy" decoding="async" />
               </div>
               <div>
                 <h4 className="text-[13px] sm:text-[14px] font-bold text-[#0B1F3A] leading-tight">
@@ -363,6 +364,7 @@ export default function HomePage() {
                       src={p.image}
                       alt={p.name}
                       fill
+                      sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 160px"
                       className="object-contain p-1 group-hover:scale-105 transition-transform"
                     />
                   </div>
@@ -481,6 +483,7 @@ export default function HomePage() {
                         src={c.image}
                         alt={c.name}
                         fill
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 280px"
                         className="object-contain p-2 group-hover:scale-105 transition-transform"
                       />
                     </div>
@@ -576,7 +579,7 @@ export default function HomePage() {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 items-center justify-between w-full lg:w-[680px]">
                 <div className="flex flex-col gap-[8px] items-center text-center">
                   <div className="w-[22px] h-[22px]">
-                    <img src="/images/figma/icon-reusable-pen.svg" alt="Reusable Pen" className="w-full h-full object-contain" />
+                    <img src="/images/figma/icon-reusable-pen.svg" alt="Reusable Pen" className="w-full h-full object-contain" loading="lazy" decoding="async" />
                   </div>
                   <p className="font-bold text-[#0b1f3a] text-[13px]">Reusable Pen</p>
                   <div className="text-[#64748b] text-[11px] leading-[15px]">
@@ -587,7 +590,7 @@ export default function HomePage() {
 
                 <div className="flex flex-col gap-[8px] items-center text-center">
                   <div className="w-[22px] h-[22px]">
-                    <img src="/images/figma/icon-simple-workflow.svg" alt="Simple Workflow" className="w-full h-full object-contain" />
+                    <img src="/images/figma/icon-simple-workflow.svg" alt="Simple Workflow" className="w-full h-full object-contain" loading="lazy" decoding="async" />
                   </div>
                   <p className="font-bold text-[#0b1f3a] text-[13px]">Simple Workflow</p>
                   <div className="text-[#64748b] text-[11px] leading-[15px]">
@@ -598,7 +601,7 @@ export default function HomePage() {
 
                 <div className="flex flex-col gap-[8px] items-center text-center">
                   <div className="w-[22px] h-[22px]">
-                    <img src="/images/figma/icon-reliable-results.svg" alt="Reliable Results" className="w-full h-full object-contain" />
+                    <img src="/images/figma/icon-reliable-results.svg" alt="Reliable Results" className="w-full h-full object-contain" loading="lazy" decoding="async" />
                   </div>
                   <p className="font-bold text-[#0b1f3a] text-[13px]">Reliable Results</p>
                   <div className="text-[#64748b] text-[11px] leading-[15px]">
@@ -609,7 +612,7 @@ export default function HomePage() {
 
                 <div className="flex flex-col gap-[8px] items-center text-center">
                   <div className="w-[22px] h-[22px]">
-                    <img src="/images/figma/icon-multiple-apps.svg" alt="Multiple Applications" className="w-full h-full object-contain" />
+                    <img src="/images/figma/icon-multiple-apps.svg" alt="Multiple Applications" className="w-full h-full object-contain" loading="lazy" decoding="async" />
                   </div>
                   <p className="font-bold text-[#0b1f3a] text-[13px]">Multiple Applications</p>
                   <div className="text-[#64748b] text-[11px] leading-[15px]">
@@ -639,6 +642,7 @@ export default function HomePage() {
                 src="/images/figma/lab-banner-photo.png"
                 alt="Laboratory research background"
                 fill
+                sizes="(max-width: 1024px) 100vw, 970px"
                 className="object-cover"
               />
               <div
@@ -664,7 +668,7 @@ export default function HomePage() {
                     className="bg-white hover:bg-slate-100 flex gap-[8px] items-center justify-center px-[22px] py-[12px] rounded-[6px] text-[#0b1f3a] text-[13px] font-semibold transition-colors shadow-sm"
                   >
                     <span>Get Started</span>
-                    <img src="/images/figma/icon-arrow.svg" alt="" className="w-4 h-4" />
+                    <img src="/images/figma/icon-arrow.svg" alt="" className="w-4 h-4" loading="lazy" decoding="async" />
                   </Link>
                 </div>
               </div>
@@ -676,7 +680,7 @@ export default function HomePage() {
                 {/* Feature 1: Accurate. Reliable. Everywhere. */}
                 <div className="bg-white/[0.05] lg:bg-transparent p-3.5 sm:p-4 lg:p-0 rounded-xl border border-white/[0.08] lg:border-none flex flex-col sm:flex-row lg:flex-row items-start gap-2.5 sm:gap-3">
                   <div className="w-8 h-8 rounded-lg bg-[#00C5A0]/15 border border-[#00C5A0]/30 flex items-center justify-center shrink-0">
-                    <img src="/images/figma/icon-banner-shield.svg" alt="Shield" className="w-[18px] h-[18px]" />
+                    <img src="/images/figma/icon-banner-shield.svg" alt="Shield" className="w-[18px] h-[18px]" loading="lazy" decoding="async" />
                   </div>
                   <div>
                     <div className="font-bold text-[13px] sm:text-[14px] text-white leading-[18px] sm:leading-[20px]">
@@ -693,7 +697,7 @@ export default function HomePage() {
                 {/* Feature 2: Small Testing. A Bigger Tomorrow. */}
                 <div className="bg-white/[0.05] lg:bg-transparent p-3.5 sm:p-4 lg:p-0 rounded-xl border border-white/[0.08] lg:border-none flex flex-col sm:flex-row lg:flex-row items-start gap-2.5 sm:gap-3">
                   <div className="w-8 h-8 rounded-lg bg-[#00C5A0]/15 border border-[#00C5A0]/30 flex items-center justify-center shrink-0">
-                    <img src="/images/figma/icon-banner-target.svg" alt="Target" className="w-[18px] h-[18px]" />
+                    <img src="/images/figma/icon-banner-target.svg" alt="Target" className="w-[18px] h-[18px]" loading="lazy" decoding="async" />
                   </div>
                   <div>
                     <div className="font-bold text-[13px] sm:text-[14px] text-white leading-[18px] sm:leading-[20px]">

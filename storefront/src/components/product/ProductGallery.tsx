@@ -37,6 +37,7 @@ export function ProductGallery({ images }: ProductGalleryProps) {
             src={displayImages[activeIndex]}
             alt="PEPTECH® Complete Pen Set"
             fill
+            sizes="(max-width: 768px) 100vw, 580px"
             className="object-contain p-4 transition-all duration-300"
             priority
           />

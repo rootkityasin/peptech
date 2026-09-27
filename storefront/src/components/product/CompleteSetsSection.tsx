@@ -91,6 +91,7 @@ export function CompleteSetsSection() {
                   src="/images/figma/2fc8ae919de84fe5269092b52f019438e68ce3c8.png"
                   alt="PEPTECH Complete Pen Set"
                   fill
+                  sizes="(max-width: 1024px) 100vw, 380px"
                   className="object-contain p-2"
                 />
                 <div className="absolute top-[12px] right-[12px] bg-[#16a6a3] px-[10px] py-[4px] rounded-[4px]">
@@ -201,6 +202,7 @@ export function CompleteSetsSection() {
               src="/images/figma/a899cee28c9a7dbe981b12963dd7556e80bb5a76.png"
               alt="One Pen Multiple Possibilities"
               fill
+              sizes="(max-width: 1024px) 100vw, 320px"
               className="object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-white/90 via-white/40 to-transparent" />

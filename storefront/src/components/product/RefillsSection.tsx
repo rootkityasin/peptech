@@ -98,6 +98,7 @@ export function RefillsSection() {
                   src="/images/figma/0e71e8560b9bae80ee21a3d08905300075c266b7.png"
                   alt="PEPTECH Refill Cartridge"
                   fill
+                  sizes="88px"
                   className="object-contain"
                 />
               </div>
@@ -151,6 +152,7 @@ export function RefillsSection() {
                       src={item.image}
                       alt={item.name}
                       fill
+                      sizes="(max-width: 640px) 45vw, (max-width: 1024px) 25vw, 220px"
                       className="object-contain p-2 group-hover:scale-105 transition-transform"
                     />
                   </div>

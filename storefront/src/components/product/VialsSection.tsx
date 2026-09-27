@@ -98,6 +98,7 @@ export function VialsSection() {
                   src="/images/figma/2d7803f97be6d80d5630dfb42abba84289ed1bb5.png"
                   alt="PEPTECH Freeze-Dried Vial"
                   fill
+                  sizes="88px"
                   className="object-contain"
                 />
               </div>
@@ -151,6 +152,7 @@ export function VialsSection() {
                       src={item.image}
                       alt={item.name}
                       fill
+                      sizes="(max-width: 640px) 45vw, (max-width: 1024px) 25vw, 220px"
                       className="object-contain p-2 group-hover:scale-105 transition-transform"
                     />
                   </div>
