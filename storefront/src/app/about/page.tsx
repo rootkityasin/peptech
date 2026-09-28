@@ -104,11 +104,12 @@ export default function AboutPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Pillar 1 */}
             <div className="bg-white rounded-3xl overflow-hidden border border-[#e2e8f0] shadow-xs flex flex-col justify-between group hover:shadow-xl hover:border-[#16a6a3]/40 transition-all min-h-[460px]">
-              <div className="relative h-52 w-full overflow-hidden bg-slate-100 shrink-0">
+              <div className="relative h-52 min-h-[208px] w-full overflow-hidden bg-slate-100 shrink-0">
                 <Image
                   src="/images/about/pillar-purity.jpg"
                   alt="Absolute Chemical Purity"
                   fill
+                  sizes="(max-width: 768px) 100vw, 33vw"
                   className="object-cover object-center group-hover:scale-105 transition-transform duration-700"
                 />
               </div>
@@ -129,11 +130,12 @@ export default function AboutPage() {
 
             {/* Pillar 2 */}
             <div className="bg-white rounded-3xl overflow-hidden border border-[#e2e8f0] shadow-xs flex flex-col justify-between group hover:shadow-xl hover:border-[#16a6a3]/40 transition-all min-h-[460px]">
-              <div className="relative h-52 w-full overflow-hidden bg-slate-100 shrink-0">
+              <div className="relative h-52 min-h-[208px] w-full overflow-hidden bg-slate-100 shrink-0">
                 <Image
                   src="/images/about/cnc-lathe.jpg"
                   alt="Reusable Aluminum Architecture"
                   fill
+                  sizes="(max-width: 768px) 100vw, 33vw"
                   className="object-cover object-center group-hover:scale-105 transition-transform duration-700"
                 />
               </div>
@@ -154,11 +156,12 @@ export default function AboutPage() {
 
             {/* Pillar 3 */}
             <div className="bg-white rounded-3xl overflow-hidden border border-[#e2e8f0] shadow-xs flex flex-col justify-between group hover:shadow-xl hover:border-[#16a6a3]/40 transition-all min-h-[460px]">
-              <div className="relative h-52 w-full overflow-hidden bg-slate-100 shrink-0">
+              <div className="relative h-52 min-h-[208px] w-full overflow-hidden bg-slate-100 shrink-0">
                 <Image
                   src="/images/about/hologram-textured.jpg"
                   alt="Cryptographic Traceability"
                   fill
+                  sizes="(max-width: 768px) 100vw, 33vw"
                   className="object-cover object-center group-hover:scale-105 transition-transform duration-700"
                 />
               </div>

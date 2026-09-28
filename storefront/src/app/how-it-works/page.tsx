@@ -174,11 +174,12 @@ export default function HowItWorksPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {/* Card 1: Precision Dialing */}
             <div className="bg-white rounded-3xl overflow-hidden border border-[#e2e8f0] shadow-xs flex flex-col group hover:shadow-xl hover:border-[#16a6a3]/40 transition-all">
-              <div className="relative h-44 w-full overflow-hidden bg-slate-900 shrink-0 border-b border-slate-100">
+              <div className="relative h-44 min-h-[176px] w-full overflow-hidden bg-slate-900 shrink-0 border-b border-slate-100">
                 <Image
                   src="/images/how-it-works/precision-dialing.jpg"
                   alt="Precision Dialing Mechanism"
                   fill
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                   className="object-cover object-center group-hover:scale-105 transition-transform duration-700"
                 />
               </div>
@@ -192,11 +193,12 @@ export default function HowItWorksPage() {
 
             {/* Card 2: Anodized Alloy */}
             <div className="bg-white rounded-3xl overflow-hidden border border-[#e2e8f0] shadow-xs flex flex-col group hover:shadow-xl hover:border-[#16a6a3]/40 transition-all">
-              <div className="relative h-44 w-full overflow-hidden bg-slate-900 shrink-0 border-b border-slate-100">
+              <div className="relative h-44 min-h-[176px] w-full overflow-hidden bg-slate-900 shrink-0 border-b border-slate-100">
                 <Image
                   src="/images/about/cnc-lathe.jpg"
                   alt="6061-T6 Anodized Aluminum Alloy"
                   fill
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                   className="object-cover object-center group-hover:scale-105 transition-transform duration-700"
                 />
               </div>
@@ -210,11 +212,12 @@ export default function HowItWorksPage() {
 
             {/* Card 3: Type I Borosilicate */}
             <div className="bg-white rounded-3xl overflow-hidden border border-[#e2e8f0] shadow-xs flex flex-col group hover:shadow-xl hover:border-[#16a6a3]/40 transition-all">
-              <div className="relative h-44 w-full overflow-hidden bg-slate-900 shrink-0 border-b border-slate-100">
+              <div className="relative h-44 min-h-[176px] w-full overflow-hidden bg-slate-900 shrink-0 border-b border-slate-100">
                 <Image
                   src="/images/how-it-works/borosilicate-vials.jpg"
                   alt="Type I Neutral Borosilicate Cartridge"
                   fill
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                   className="object-cover object-center group-hover:scale-105 transition-transform duration-700"
                 />
               </div>
@@ -228,11 +231,12 @@ export default function HowItWorksPage() {
 
             {/* Card 4: Insulated Transit */}
             <div className="bg-white rounded-3xl overflow-hidden border border-[#e2e8f0] shadow-xs flex flex-col group hover:shadow-xl hover:border-[#16a6a3]/40 transition-all">
-              <div className="relative h-44 w-full overflow-hidden bg-slate-900 shrink-0 border-b border-slate-100">
+              <div className="relative h-44 min-h-[176px] w-full overflow-hidden bg-slate-900 shrink-0 border-b border-slate-100">
                 <Image
                   src="/images/how-it-works/cold-chain-packaging.jpg"
                   alt="Thermal Insulated Cold-Chain Transit"
                   fill
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                   className="object-cover object-center group-hover:scale-105 transition-transform duration-700"
                 />
               </div>

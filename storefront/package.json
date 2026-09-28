@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@medusajs/js-sdk": "^2.21.0",
+    "@stripe/react-stripe-js": "^6.12.0",
+    "@stripe/stripe-js": "^9.17.0",
     "@supabase/supabase-js": "^2.0.0",
     "@types/three": "^0.186.0",
     "next": "16.3.5",

@@ -23,6 +23,9 @@ export function getBackendUrl(): string {
     return ""
   }
 
+  // Explicit environment configuration also applies to local production previews.
+  if (process.env.MEDUSA_BACKEND_URL || envUrl) return (process.env.MEDUSA_BACKEND_URL || envUrl)!.replace(/\/$/, "")
+
   // Server-side (Node.js / SSR) resolution
   if (process.env.NODE_ENV === "production") {
     return "https://admin.peptech.bio"
@@ -70,7 +73,7 @@ async function fetchWithTimeout(endpointPath: string, options: RequestInit = {},
     clearTimeout(timer)
     return res
   } catch (err: any) {
-    if (!fallbackUrl) {
+    if (!fallbackUrl || (options.method && options.method !== "GET")) {
       throw err
     }
     console.warn(`[PEPTECH FAILOVER] Primary connection to ${primaryUrl} failed/timed out. Falling back to ${fallbackUrl}...`)
@@ -267,14 +270,15 @@ export async function registerCustomer(payload: CustomerRegisterPayload): Promis
         company_name: (payload.company_name || "").trim(),
         phone: payload.phone ? payload.phone.trim() : null,
         metadata: {
-          role: "Verified Clinical Researcher",
+          role: "Research account — review pending",
           title: payload.metadata?.title || "Dr.",
           avatar_url: payload.metadata?.avatar_url || null,
           member_since: memberSince,
           customer_id_code: generatedCustCode,
-          compliance_ack: true,
+          compliance_ack: payload.metadata?.compliance_ack === true,
+          compliance_version: "ruo-signup-v1",
           registered_via: "PEPTECH Storefront Portal",
-          ...(payload.metadata || {}),
+          // Eligibility is a self-declaration, not independent certification.
         },
       }),
     })
@@ -472,51 +476,4 @@ export async function createStoreOrder(payload: any, token?: string): Promise<{ 
   const data = await response.json()
   return data
 }
-
-/**
- * Initialize a Stripe payment intent or setup intent for international card & subscription payments
- */
-export async function createStripePaymentIntent(payload: {
-  amount: number
-  currency?: string
-  email?: string
-  customer_email?: string
-  customer_id?: string
-  is_subscription?: boolean
-  has_subscription?: boolean
-  metadata?: Record<string, any>
-}): Promise<{
-  client_secret: string
-  payment_intent_id: string
-  customer_id?: string | null
-  amount: number
-  currency: string
-  mode: string
-}> {
-  const normalizedPayload = {
-    amount: payload.amount,
-    currency: payload.currency,
-    email: payload.email || payload.customer_email,
-    customer_id: payload.customer_id,
-    is_subscription: payload.is_subscription ?? payload.has_subscription ?? false,
-    metadata: payload.metadata,
-  }
-
-  const response = await fetchWithTimeout(`${getBackendUrl()}/store/custom/stripe-intent`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-publishable-api-key": PUBLISHABLE_KEY,
-    },
-    body: JSON.stringify(normalizedPayload),
-  }, 10000)
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}))
-    throw new Error(errorData.message || "Failed to initialize Stripe payment session.")
-  }
-
-  return await response.json()
-}
-
 

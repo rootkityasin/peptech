@@ -8,6 +8,8 @@ export interface CartItemOption {
 }
 
 export interface CartItem {
+  variantId?: string
+  productHandle?: string
   id: string
   title: string
   format: "pen-set" | "refill" | "vial"
@@ -29,6 +31,7 @@ interface CartContextType {
   removeItem: (id: string, isSubscription: boolean) => void
   updateQuantity: (id: string, isSubscription: boolean, delta: number) => void
   clearCart: () => void
+  clearCartIfUnchanged: (snapshot: string) => void
   isDrawerOpen: boolean
   setIsDrawerOpen: (open: boolean) => void
   itemCount: number
@@ -48,6 +51,7 @@ export const DEFAULT_CART_ITEMS: CartItem[] = []
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([])
+  const [loaded, setLoaded] = useState(false)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [country, setCountry] = useState<string>("United Kingdom")
   const [destination, setDestinationState] = useState<"UK" | "INTL">("UK")
@@ -76,16 +80,18 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     } catch {
       // ignore
     }
+    setLoaded(true)
   }, [])
 
   // Save to local storage
   useEffect(() => {
+    if (!loaded) return
     try {
       localStorage.setItem("peptech_cart", JSON.stringify(items))
     } catch {
       // ignore
     }
-  }, [items])
+  }, [items, loaded])
 
   const addItem = (itemData: Omit<CartItem, "quantity">, quantity = 1) => {
     setItems((prev) => {
@@ -127,14 +133,23 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     } catch {}
   }
 
+  const clearCartIfUnchanged = (snapshot: string) => {
+    setItems(current => {
+      // Preserve additions/changes from another tab or a later basket revision.
+      if (JSON.stringify(current) !== snapshot || localStorage.getItem("peptech_cart") !== snapshot) return current
+      localStorage.removeItem("peptech_cart")
+      return []
+    })
+  }
+
   const itemCount = items.reduce((acc, i) => acc + i.quantity, 0)
   const subtotal = items.reduce((acc, i) => {
     const itemPrice = i.isSubscription && i.discountPercent ? i.price * (1 - i.discountPercent / 100) : i.price
     return acc + itemPrice * i.quantity
   }, 0)
 
-  // Royal Mail rates: Free UK over £100 / £4.95 UK standard / £15.00 International
-  const shippingCost = items.length > 0 ? (destination === "UK" ? (subtotal >= 100 ? 0 : 4.95) : 15.0) : 0
+  // Royal Mail rates: £4.95 UK / £15 approved international destinations
+  const shippingCost = items.length > 0 ? (destination === "UK" ? 4.95 : 15.0) : 0
   const total = subtotal + shippingCost
 
   const currency = country === "United Kingdom" ? "GBP" : (["Germany", "France", "Italy", "Spain", "Netherlands", "Ireland", "Sweden", "Denmark", "Belgium", "Austria", "Finland", "Portugal", "Poland", "Czech Republic"].includes(country) ? "EUR" : "USD")
@@ -147,6 +162,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         removeItem,
         updateQuantity,
         clearCart,
+      clearCartIfUnchanged,
         isDrawerOpen,
         setIsDrawerOpen,
         itemCount,

@@ -121,11 +121,12 @@ export function ProductSpecsGrid() {
             
             {/* Header Row */}
             <div className="flex gap-[14px] items-center">
-              <div className="size-[56px] relative shrink-0">
+              <div className="w-[56px] h-[56px] min-w-[56px] min-h-[56px] relative shrink-0">
                 <Image
                   src="/images/figma/193d65bceacadbc722edc3f3480325e2589acdd5.png"
                   alt="Quality Shield"
                   fill
+                  sizes="56px"
                   className="object-contain"
                 />
               </div>
@@ -172,11 +173,12 @@ export function ProductSpecsGrid() {
 
               {/* Row 2: GMP Certified + Facility Notice */}
               <div className="flex gap-[18px] items-center justify-center w-full">
-                <div className="size-[56px] relative shrink-0">
+                <div className="w-[56px] h-[56px] min-w-[56px] min-h-[56px] relative shrink-0">
                   <Image
                     src="/images/figma/1dc687223f02fed54dba36db7e7bf6b45a6f76f8.png"
                     alt="GMP Certified"
                     fill
+                    sizes="56px"
                     className="object-contain"
                   />
                 </div>

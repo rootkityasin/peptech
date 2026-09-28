@@ -31,14 +31,16 @@ export function ProductGallery({ images }: ProductGalleryProps) {
   return (
     <div className="flex flex-col gap-[16px] items-start w-full max-w-[580px]">
       {/* Main Image Box - Figma Node 8:41075 */}
-      <div className="bg-[#f4f8fb] border border-[#e2e8f0] h-[440px] sm:h-[520px] overflow-hidden relative rounded-[16px] w-full flex items-center justify-center">
-        <div className="relative w-full h-full p-6">
+      <div className="bg-[#f4f8fb] border border-[#e2e8f0] h-[440px] sm:h-[520px] min-h-[440px] overflow-hidden relative rounded-[16px] w-full flex items-center justify-center">
+        <div className="relative w-full h-[440px] sm:h-[520px] min-h-[440px] p-6 flex items-center justify-center">
           <Image
             src={displayImages[activeIndex]}
             alt="PEPTECH® Complete Pen Set"
             fill
+            sizes="(max-width: 768px) 100vw, 580px"
             className="object-contain p-4 transition-all duration-300"
             priority
+            loading="eager"
           />
         </div>
 
@@ -96,6 +98,7 @@ export function ProductGallery({ images }: ProductGalleryProps) {
                   src={img}
                   alt={`Thumbnail ${idx + 1}`}
                   fill
+                  sizes="(max-width: 640px) 16vw, 80px"
                   className="object-contain"
                 />
               </div>

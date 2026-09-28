@@ -6,6 +6,7 @@ import Image from "next/image"
 import { useCart } from "@/components/cart/CartContext"
 import { Interactive3DPen } from "@/components/home/Interactive3DPen"
 import { TrustedBySection } from "@/components/common/TrustedBySection"
+import { useLiveProducts } from "@/lib/medusa"
 
 // Featured Complete Pen Sets from Figma (Node 2:29339)
 const FIGMA_FEATURED_PEN_SETS = [
@@ -119,14 +120,37 @@ const FIGMA_CARTRIDGES = [
 
 export default function HomePage() {
   const { addItem, setIsDrawerOpen } = useCart()
+  const { products } = useLiveProducts()
+
+  // Dynamically resolve featured products from live Medusa API with fallback
+  const livePenSets = products.filter((p) => p.format === "complete-pen-set").slice(0, 6)
+  const displayPenSets = livePenSets.length > 0 ? livePenSets.map((p) => ({
+    id: p.id,
+    name: p.name,
+    handle: p.handle,
+    tag: "PEN SYSTEM",
+    application: p.categoryLabel || "Research Peptide",
+    price: p.price,
+    image: p.image || "/images/figma/hero-presentation-box.png",
+  })) : FIGMA_FEATURED_PEN_SETS
+
+  const liveCartridges = products.filter((p) => p.format === "refill-cartridge").slice(0, 6)
+  const displayCartridges = liveCartridges.length > 0 ? liveCartridges.map((c) => ({
+    id: c.id,
+    name: c.name,
+    handle: c.handle,
+    type: c.categoryLabel || "Test Cartridge",
+    price: c.price,
+    image: c.image || "/images/figma/cartridge-clear.png",
+  })) : FIGMA_CARTRIDGES
 
   // Handle Add to Cart for Complete Pen Sets
-  const handleAddPenSet = (product: typeof FIGMA_FEATURED_PEN_SETS[0]) => {
+  const handleAddPenSet = (product: { id: string; name: string; handle: string; application?: string; price: number; image: string }) => {
     addItem({
       id: product.id,
       title: `${product.name} Complete Pen Set`,
       format: "pen-set",
-      strength: product.application,
+      strength: product.application || "Standard",
       price: product.price,
       isSubscription: false,
       sku: `PEP-PEN-${product.name.replace(/[^a-zA-Z0-9]/g, "").toUpperCase()}`,
@@ -137,12 +161,12 @@ export default function HomePage() {
   }
 
   // Handle Add to Cart for Cartridges
-  const handleAddCartridge = (cartridge: typeof FIGMA_CARTRIDGES[0]) => {
+  const handleAddCartridge = (cartridge: { id: string; name: string; handle: string; type?: string; price: number; image: string }) => {
     addItem({
       id: cartridge.id,
       title: `${cartridge.name} Test Cartridge`,
       format: "refill",
-      strength: cartridge.type,
+      strength: cartridge.type || "Cartridge",
       price: cartridge.price,
       isSubscription: false,
       sku: `PEP-CRT-${cartridge.name.replace(/[^a-zA-Z0-9]/g, "").toUpperCase()}`,
@@ -219,11 +243,12 @@ export default function HomePage() {
 
             {/* Right Column on Desktop, First on Mobile: Hero Presentation Kit Mockup */}
             <div className="order-1 lg:order-2 lg:col-span-6 flex flex-col items-center lg:items-end justify-center">
-              <div className="relative w-full max-w-[580px] h-[300px] xs:h-[340px] sm:h-[400px] lg:h-[440px] flex items-center justify-center">
+              <div className="relative w-full max-w-[580px] h-[300px] sm:h-[400px] lg:h-[440px] min-h-[300px] flex items-center justify-center">
                 <Image
                   src="/images/figma/hero-presentation-box.png"
                   alt="PEPTECH® Reusable Injection Pen System Kit Presentation"
                   fill
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 580px"
                   className="object-contain drop-shadow-xl"
                   priority
                 />
@@ -351,18 +376,19 @@ export default function HomePage() {
 
           {/* 6 Product Cards Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-            {FIGMA_FEATURED_PEN_SETS.map((p) => (
+            {displayPenSets.map((p) => (
               <div
                 key={p.id}
                 className="bg-white border border-[#E2E8F0] rounded-[8px] p-3 flex flex-col justify-between hover:shadow-md transition-shadow group"
               >
                 {/* Product Box Image */}
                 <Link href={`/products/${p.handle}`} className="block">
-                  <div className="h-[125px] w-full relative flex items-center justify-center mb-2">
+                  <div className="h-[125px] min-h-[125px] w-full relative flex items-center justify-center mb-2">
                     <Image
                       src={p.image}
                       alt={p.name}
                       fill
+                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 180px"
                       className="object-contain p-1 group-hover:scale-105 transition-transform"
                     />
                   </div>
@@ -469,18 +495,19 @@ export default function HomePage() {
 
             {/* Right 6-Card Cartridge Grid */}
             <div className="lg:col-span-9 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
-              {FIGMA_CARTRIDGES.map((c) => (
+              {displayCartridges.map((c) => (
                 <div
                   key={c.id}
                   className="bg-white border border-[#E2E8F0] rounded-[8px] p-3 flex flex-col justify-between h-[420px] hover:shadow-md transition-shadow group"
                 >
                   {/* Cartridge Clear Photo */}
                   <Link href={`/products/${c.handle}`} className="block">
-                    <div className="h-[220px] w-full relative flex items-center justify-center bg-[#f8fafc] rounded-lg group-hover:bg-slate-100 transition-colors">
+                    <div className="h-[220px] min-h-[220px] w-full relative flex items-center justify-center bg-[#f8fafc] rounded-lg group-hover:bg-slate-100 transition-colors">
                       <Image
                         src={c.image}
                         alt={c.name}
                         fill
+                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 180px"
                         className="object-contain p-2 group-hover:scale-105 transition-transform"
                       />
                     </div>
@@ -634,11 +661,12 @@ export default function HomePage() {
         <div className="w-full max-w-[1240px] mx-auto px-4 sm:px-6">
           <div className="bg-[#001845] flex flex-col lg:flex-row h-auto lg:h-[280px] items-center justify-between overflow-hidden rounded-[16px] w-full shadow-xl">
             {/* Left Photo Banner */}
-            <div className="relative w-full lg:w-[970px] h-[280px] overflow-hidden shrink-0">
+            <div className="relative w-full lg:w-[970px] h-[320px] sm:h-[300px] lg:h-[280px] min-h-[280px] overflow-hidden shrink-0">
               <Image
                 src="/images/figma/lab-banner-photo.png"
                 alt="Laboratory research background"
                 fill
+                sizes="(max-width: 1024px) 100vw, 970px"
                 className="object-cover"
               />
               <div

@@ -1,5 +1,5 @@
 // Allow self-signed / intermediate SSL certificates for cloud database poolers (Supabase AWS pooler)
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+
 
 if (process.env.DATABASE_URL) {
   process.env.DATABASE_URL = process.env.DATABASE_URL.replace(/([?&])sslmode=[^&]*(&|$)/gi, (m, p, s) => {

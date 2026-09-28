@@ -1,4 +1,6 @@
 export interface CatalogProduct {
+  variantId?: string
+  sku?: string
   id: string
   name: string
   handle: string

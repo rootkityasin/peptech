@@ -1,0 +1,9 @@
+{
+  "captured_at": "2026-09-27T12:21:44.233Z",
+  "backend_source": "local Medusa API; not an audit of the public production site",
+  "backend_products": 17,
+  "storefront_source": "storefront/src/data/catalog.ts",
+  "storefront_records": 36,
+  "worksheet_rows": 53,
+  "candidate_match_policy": "exact handle only; all identities require client approval"
+}
