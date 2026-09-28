@@ -56,6 +56,11 @@ export async function reconcileSession(scope:any,ledger:CommerceService,sessionI
   if(session.mode==="subscription" && session.subscription) {
     await syncSubscription(ledger,objectId(session.subscription)!)
     if(session.invoice) await reconcileInvoice(scope,ledger,objectId(session.invoice)!)
+    const latestAttempt = await ledger.get(attempt.id)
+    if (latestAttempt && latestAttempt.state === "open" && (session.payment_status === "paid" || session.status === "complete")) {
+      latestAttempt.state = "confirmed"
+      await ledger.save(latestAttempt)
+    }
     return
   }
   if(session.payment_status!=="paid") return

@@ -1,7 +1,7 @@
 import type { CartItem } from "@/components/cart/CartContext"
 import { getBackendUrl } from "./customer-api"
 
-const publishableKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
+const publishableKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "pk_556de0f5ea4724394f147569c8b5066ecda7a0d39bd60eb15b2550b2d5c52246"
 
 export type CheckoutSession = {
   attemptId: string
@@ -40,14 +40,18 @@ export type CheckoutAddress = {
   phone?: string
 }
 
-export async function commerceRequest(path: string, token: string, body?: unknown, method = "POST") {
+export async function commerceRequest(path: string, token?: string | null, body?: unknown, method = "POST") {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "x-publishable-api-key": publishableKey,
+  }
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`
+  }
+
   const response = await fetch(`${getBackendUrl()}${path}`, {
     method: body === undefined ? "GET" : method,
-    headers: {
-      "Content-Type": "application/json",
-      "x-publishable-api-key": publishableKey,
-      Authorization: `Bearer ${token}`,
-    },
+    headers,
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     cache: "no-store",
   })

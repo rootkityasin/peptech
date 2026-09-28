@@ -1,6 +1,42 @@
 import { createHash } from "node:crypto"
 import { AsyncLocalStorage } from "node:async_hooks"
 const { Pool } = require("pg")
+
+let sharedCommercePool: any = null
+let sharedCommerceLockPool: any = null
+
+function getSharedPool(databaseUrl: string) {
+  if (!sharedCommercePool) {
+    sharedCommercePool = new Pool({
+      connectionString: databaseUrl,
+      max: 4,
+      idleTimeoutMillis: 10000,
+      connectionTimeoutMillis: 5000,
+      application_name: "peptech-commerce",
+    })
+    sharedCommercePool.on("error", (err: any) => {
+      console.warn("[CommerceService Pool Error]:", err?.message || err)
+    })
+  }
+  return sharedCommercePool
+}
+
+function getSharedLockPool(databaseUrl: string) {
+  if (!sharedCommerceLockPool) {
+    sharedCommerceLockPool = new Pool({
+      connectionString: databaseUrl,
+      max: 2,
+      idleTimeoutMillis: 10000,
+      connectionTimeoutMillis: 5000,
+      application_name: "peptech-commerce-locks",
+    })
+    sharedCommerceLockPool.on("error", (err: any) => {
+      console.warn("[CommerceService LockPool Error]:", err?.message || err)
+    })
+  }
+  return sharedCommerceLockPool
+}
+
 export type LedgerRecord<T = Record<string, any>> = {
   id: string; kind: string; profile: string; owner_id: string | null; state: string;
   data: T; created_at: Date; updated_at: Date
@@ -14,11 +50,10 @@ export default class CommerceService {
   private lockContext = new AsyncLocalStorage<any>()
   constructor(_container: unknown, options: { databaseUrl: string }) {
     if (!options.databaseUrl) throw new Error("Commerce database URL is required")
-    this.pool = new Pool({ connectionString: options.databaseUrl, max: 6,
-      connectionTimeoutMillis: 5000, application_name: "peptech-commerce" })
-    this.lockPool = new Pool({ connectionString: options.databaseUrl, max: 2, connectionTimeoutMillis: 5000, application_name: "peptech-commerce-locks" })
+    this.pool = getSharedPool(options.databaseUrl)
+    this.lockPool = getSharedLockPool(options.databaseUrl)
   }
-  async __onApplicationShutdown() { await Promise.all([this.pool.end(), this.lockPool.end()]) }
+  async __onApplicationShutdown() { /* shared pools stay alive across transient lifecycles */ }
   async get<T = Record<string, any>>(id: string): Promise<LedgerRecord<T> | null> {
     return (await this.pool.query("SELECT * FROM peptech_commerce_record WHERE id=$1", [id])).rows[0] || null
   }

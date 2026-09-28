@@ -37,6 +37,7 @@ export function Footer() {
                   width={125}
                   height={26}
                   className="object-contain"
+                  style={{ width: "auto", height: "auto" }}
                 />
               </div>
             </Link>

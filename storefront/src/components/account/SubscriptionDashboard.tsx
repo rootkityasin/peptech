@@ -22,19 +22,53 @@ function CardBrandBadge({ brand, className = "w-[36px] h-[22px]" }: { brand?: st
   return <VisaBadge className={className} monochrome />
 }
 
+import { useCustomer } from "@/context/CustomerContext"
+
 export interface SubscriptionDashboardProps {
-  token: string
+  token?: string | null
+  customerId?: string | null
+  customerEmail?: string | null
+  customerAddresses?: any[]
+  customerName?: string | null
+  initialSubscriptions?: any[]
+  initialPaymentMethods?: any[]
+  onUpdateSubscription?: (sub: any) => void
   onSwitchTab?: (tab: any) => void
 }
 
-export function SubscriptionDashboard({ token, onSwitchTab }: SubscriptionDashboardProps) {
-  const [subscriptions, setSubscriptions] = useState<any[]>([])
-  const [paymentMethods, setPaymentMethods] = useState<any[]>([])
+export function SubscriptionDashboard({
+  token,
+  customerId,
+  customerEmail,
+  customerAddresses,
+  customerName,
+  initialSubscriptions,
+  initialPaymentMethods,
+  onUpdateSubscription,
+  onSwitchTab,
+}: SubscriptionDashboardProps) {
+  const { customer, token: ctxToken } = useCustomer()
+  const [subscriptions, setSubscriptions] = useState<any[]>(() => initialSubscriptions || [])
+  const [paymentMethods, setPaymentMethods] = useState<any[]>(() => initialPaymentMethods || [])
   const [savedAddresses, setSavedAddresses] = useState<any[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(() => initialSubscriptions === undefined)
   const [error, setError] = useState("")
   const [successMsg, setSuccessMsg] = useState("")
   const [busySubId, setBusySubId] = useState<string | null>(null)
+
+  // Sync props if provided by parent
+  useEffect(() => {
+    if (initialSubscriptions !== undefined) {
+      setSubscriptions(initialSubscriptions)
+      setIsLoading(false)
+    }
+  }, [initialSubscriptions])
+
+  useEffect(() => {
+    if (initialPaymentMethods !== undefined) {
+      setPaymentMethods(initialPaymentMethods)
+    }
+  }, [initialPaymentMethods])
 
   // Filters: "active" | "paused" | "past"
   const [filter, setFilter] = useState<"active" | "paused" | "past">("active")
@@ -48,11 +82,15 @@ export function SubscriptionDashboard({ token, onSwitchTab }: SubscriptionDashbo
   const fetchData = useCallback(async () => {
     setIsLoading(true)
     setError("")
+    const activeToken = token || ctxToken || (typeof window !== "undefined" ? localStorage.getItem("peptech_customer_token") : null)
+    const effectiveCustId = customerId || customer?.id || ""
+    const queryStr = effectiveCustId ? `?customer_id=${encodeURIComponent(effectiveCustId)}` : ""
+
     try {
       const [subsRes, pmsRes, addrsRes] = await Promise.all([
-        commerceRequest("/store/custom/subscriptions", token).catch(() => ({ subscriptions: [] })),
-        commerceRequest("/store/custom/payment-methods", token).catch(() => ({ payment_methods: [] })),
-        commerceRequest("/store/customers/me/addresses", token).catch(() => ({ addresses: [] })),
+        commerceRequest(`/store/custom/subscriptions${queryStr}`, activeToken).catch(() => ({ subscriptions: [] })),
+        commerceRequest(`/store/custom/payment-methods${queryStr}`, activeToken).catch(() => ({ payment_methods: [] })),
+        commerceRequest("/store/customers/me/addresses", activeToken).catch(() => ({ addresses: [] })),
       ])
 
       if (Array.isArray(subsRes?.subscriptions)) {
@@ -61,19 +99,25 @@ export function SubscriptionDashboard({ token, onSwitchTab }: SubscriptionDashbo
       if (Array.isArray(pmsRes?.payment_methods)) {
         setPaymentMethods(pmsRes.payment_methods)
       }
-      if (Array.isArray(addrsRes?.addresses)) {
+      if (Array.isArray(addrsRes?.addresses) && addrsRes.addresses.length > 0) {
         setSavedAddresses(addrsRes.addresses)
+      } else if (Array.isArray(customerAddresses) && customerAddresses.length > 0) {
+        setSavedAddresses(customerAddresses)
+      } else if (Array.isArray(customer?.addresses) && customer.addresses.length > 0) {
+        setSavedAddresses(customer.addresses)
       }
     } catch (e: any) {
       setError(e instanceof Error ? e.message : "Failed to load subscription protocols")
     } finally {
       setIsLoading(false)
     }
-  }, [token])
+  }, [token, ctxToken, customerId, customerEmail, customer?.id, customer?.email, customer?.addresses, customerAddresses])
 
   useEffect(() => {
-    fetchData()
-  }, [fetchData])
+    if (initialSubscriptions === undefined) {
+      fetchData()
+    }
+  }, [fetchData, initialSubscriptions])
 
   // Execute subscription command (pause, resume, skip, cancel, change_cadence, change_date, update_dosage)
   const handleCommand = async (subId: string, action: string, extraPayload: Record<string, any> = {}) => {
@@ -120,7 +164,7 @@ export function SubscriptionDashboard({ token, onSwitchTab }: SubscriptionDashbo
 
   const primarySub = displayedSubs[0] || subscriptions[0] || null
   const defaultCard = paymentMethods[0] || null
-  const defaultAddress = savedAddresses[0] || null
+  const defaultAddress = savedAddresses[0] || (primarySub?.shipping_address?.address_1 ? primarySub.shipping_address : null)
 
   return (
     <div className="flex flex-col gap-6 sm:gap-8 w-full animate-in fade-in duration-200">

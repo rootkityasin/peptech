@@ -14,10 +14,8 @@
     "medusa"
   ],
   "scripts": {
-    "prebuild": "node src/admin/update_chunks.js",
     "build": "medusa build --lint false",
     "start": "medusa start",
-    "predev": "node src/admin/update_chunks.js",
     "dev": "medusa develop --no-lint",
     "lint": "medusa lint",
     "test:integration:http": "TEST_TYPE=integration:http NODE_OPTIONS=--experimental-vm-modules jest --silent=false --runInBand --forceExit",
@@ -33,7 +31,7 @@
     "@medusajs/draft-order": "2.21.0",
     "@medusajs/framework": "2.21.0",
     "@medusajs/medusa": "2.21.0",
-    "@medusajs/payment-stripe": "^2.21.0",
+    "@medusajs/payment-stripe": "2.21.0",
     "@medusajs/ui": "4.2.4",
     "@supabase/supabase-js": "^2.49.1",
     "@tanstack/react-query": "5.64.2",

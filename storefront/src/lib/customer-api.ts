@@ -450,7 +450,6 @@ export async function getCustomerOrders(token?: string, customerId?: string, ema
   try {
     const params = new URLSearchParams()
     if (customerId) params.append("customer_id", customerId)
-    if (email) params.append("email", email)
 
     const headers: Record<string, string> = {
       "x-publishable-api-key": PUBLISHABLE_KEY,

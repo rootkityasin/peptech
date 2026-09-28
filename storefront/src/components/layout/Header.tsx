@@ -191,6 +191,7 @@ export function Header() {
                   width={130}
                   height={27}
                   className="object-contain"
+                  style={{ width: "auto", height: "auto" }}
                   priority
                 />
               </div>

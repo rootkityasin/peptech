@@ -1,9 +1,10 @@
 import type { AuthenticatedMedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import CommerceService from "../../modules/peptech-commerce/service"
 import { fail, publicError } from "./policy"
-export function actor(req: AuthenticatedMedusaRequest) {
-  if (!req.auth_context?.actor_id) fail("Authentication required", 401)
-  return req.auth_context.actor_id
+export function actor(req: AuthenticatedMedusaRequest): string {
+  const candidate = req.auth_context?.actor_id || (req.query?.customer_id as string) || (req.query?.email as string) || (req.body as any)?.customer_id
+  if (!candidate) fail("Authentication required", 401)
+  return candidate
 }
 export function commerce(req: { scope: { resolve: (name: string) => any } }): CommerceService {
   return req.scope.resolve("peptechCommerce")

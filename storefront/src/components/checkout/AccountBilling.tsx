@@ -20,27 +20,61 @@ function CardBrandBadge({ brand, className = "w-[36px] h-[22px]" }: { brand?: st
   return <VisaBadge className={className} monochrome />
 }
 
+import { useCustomer } from "@/context/CustomerContext"
+
 export function AccountBilling({
   token,
+  customerId,
+  customerEmail,
+  customerName,
+  customerAddresses,
+  initialPaymentMethods,
+  initialSubscriptions,
   subscriptionsOnly = false,
 }: {
-  token: string
+  token?: string | null
+  customerId?: string | null
+  customerEmail?: string | null
+  customerName?: string | null
+  customerAddresses?: any[]
+  initialPaymentMethods?: any[]
+  initialSubscriptions?: any[]
   subscriptionsOnly?: boolean
 }) {
-  const [subscriptions, setSubscriptions] = useState<any[]>([])
-  const [paymentMethods, setPaymentMethods] = useState<any[]>([])
-  const [isLoadingPaymentMethods, setIsLoadingPaymentMethods] = useState(true)
-  const [isLoadingSubscriptions, setIsLoadingSubscriptions] = useState(true)
+  const { customer, token: ctxToken } = useCustomer()
+  const [subscriptions, setSubscriptions] = useState<any[]>(() => initialSubscriptions || [])
+  const [paymentMethods, setPaymentMethods] = useState<any[]>(() => initialPaymentMethods || [])
+  const [isLoadingPaymentMethods, setIsLoadingPaymentMethods] = useState(() => !initialPaymentMethods)
+  const [isLoadingSubscriptions, setIsLoadingSubscriptions] = useState(() => !initialSubscriptions)
   const [error, setError] = useState("")
   const [successMsg, setSuccessMsg] = useState("")
   const [busy, setBusy] = useState("")
   const [dates, setDates] = useState<Record<string, string>>({})
 
+  // Sync props from parent if passed
+  useEffect(() => {
+    if (initialPaymentMethods !== undefined) {
+      setPaymentMethods(initialPaymentMethods)
+      setIsLoadingPaymentMethods(false)
+    }
+  }, [initialPaymentMethods])
+
+  useEffect(() => {
+    if (initialSubscriptions !== undefined) {
+      setSubscriptions(initialSubscriptions)
+      setIsLoadingSubscriptions(false)
+    }
+  }, [initialSubscriptions])
+
   const fetchPaymentMethods = useCallback(async () => {
     if (subscriptionsOnly) return
     setIsLoadingPaymentMethods(true)
+    const activeToken = token || ctxToken || (typeof window !== "undefined" ? localStorage.getItem("peptech_customer_token") : null)
+    const effectiveCustId = customerId || customer?.id || ""
+    const queryStr = effectiveCustId ? `?customer_id=${encodeURIComponent(effectiveCustId)}` : ""
+
     try {
-      const res = await commerceRequest("/store/custom/payment-methods", token)
+      const res = await commerceRequest(`/store/custom/payment-methods${queryStr}`, activeToken)
       if (Array.isArray(res?.payment_methods)) {
         const seen = new Set<string>()
         const deduped = res.payment_methods.filter((pm: any) => {
@@ -56,12 +90,16 @@ export function AccountBilling({
     } finally {
       setIsLoadingPaymentMethods(false)
     }
-  }, [token, subscriptionsOnly])
+  }, [token, ctxToken, customerId, customer?.id, subscriptionsOnly])
 
   const fetchSubscriptions = useCallback(async () => {
     setIsLoadingSubscriptions(true)
+    const activeToken = token || ctxToken || (typeof window !== "undefined" ? localStorage.getItem("peptech_customer_token") : null)
+    const effectiveCustId = customerId || customer?.id || ""
+    const queryStr = effectiveCustId ? `?customer_id=${encodeURIComponent(effectiveCustId)}` : ""
+
     try {
-      const res = await commerceRequest("/store/custom/subscriptions", token)
+      const res = await commerceRequest(`/store/custom/subscriptions${queryStr}`, activeToken)
       if (Array.isArray(res?.subscriptions)) {
         setSubscriptions(res.subscriptions)
       }
@@ -72,20 +110,16 @@ export function AccountBilling({
     } finally {
       setIsLoadingSubscriptions(false)
     }
-  }, [token, subscriptionsOnly])
+  }, [token, ctxToken, customerId, customerEmail, customer?.id, customer?.email, subscriptionsOnly])
 
   useEffect(() => {
-    let active = true
     if (subscriptionsOnly) {
-      fetchSubscriptions()
+      if (initialSubscriptions === undefined) fetchSubscriptions()
     } else {
-      fetchPaymentMethods()
-      fetchSubscriptions()
+      if (initialPaymentMethods === undefined) fetchPaymentMethods()
+      if (initialSubscriptions === undefined) fetchSubscriptions()
     }
-    return () => {
-      active = false
-    }
-  }, [token, subscriptionsOnly, fetchSubscriptions, fetchPaymentMethods])
+  }, [token, subscriptionsOnly, initialSubscriptions, initialPaymentMethods, fetchSubscriptions, fetchPaymentMethods])
 
   const command = async (id: string, action: string) => {
     if (busy) return

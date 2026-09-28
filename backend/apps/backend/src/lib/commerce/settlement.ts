@@ -140,14 +140,13 @@ export async function settleReceipt(scope:any,ledger:CommerceService,attempt:Led
 }
 export async function paymentEvidence(stripe:any,invoice:any) {
   if(invoice.status!=="paid") return null
-  const payments=await stripe.invoicePayments.list({invoice:invoice.id,limit:100})
-  const succeeded=payments.data.filter((p:any)=>p.status==="paid" && p.payment?.type==="payment_intent")
-  if(succeeded.length!==1) {
-    if(invoice.total===0 && invoice.amount_paid===0) return {payment_intent_id:null,amount:0,receipt_url:invoice.hosted_invoice_url||null}
-    fail("Invoice settlement requires manual reconciliation",409)
+  const piId = objectId(invoice.payment_intent)
+  if(piId) {
+    const pi = await stripe.paymentIntents.retrieve(piId, { expand: ["latest_charge"] })
+    if(pi.status!=="succeeded" || pi.amount_received!==invoice.total) fail("Invoice payment is not settled", 409)
+    const chargeReceipt = typeof pi.latest_charge === "object" ? (pi.latest_charge as any)?.receipt_url : null
+    return { payment_intent_id: pi.id, amount: pi.amount_received, receipt_url: chargeReceipt || invoice.hosted_invoice_url || null }
   }
-  const pi=await stripe.paymentIntents.retrieve(objectId(succeeded[0].payment.payment_intent),{expand:["latest_charge"]})
-  if(pi.status!=="succeeded" || pi.amount_received!==invoice.total) fail("Invoice payment is not settled",409)
-  const chargeReceipt=typeof pi.latest_charge==="object"?(pi.latest_charge as any)?.receipt_url:null
-  return {payment_intent_id:pi.id,amount:pi.amount_received,receipt_url:chargeReceipt||invoice.hosted_invoice_url||null}
+  if(invoice.total===0 && invoice.amount_paid===0) return { payment_intent_id: null, amount: 0, receipt_url: invoice.hosted_invoice_url || null }
+  fail("Invoice settlement requires manual reconciliation", 409)
 }

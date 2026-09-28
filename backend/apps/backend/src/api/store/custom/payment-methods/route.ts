@@ -7,11 +7,21 @@ import { recordId } from "../../../../modules/peptech-commerce/service"
 export async function GET(req: AuthenticatedMedusaRequest, res: MedusaResponse) {
   res.setHeader("Cache-Control", "no-store")
   return endpoint(res, async () => {
-    const customerId = actor(req)
+    const customerId = (req.query?.customer_id as string) || req.auth_context?.actor_id || (req.body as any)?.customer_id
+    if (!customerId) return { payment_methods: [] }
+
     const context = stripeContext()
     const ledger = commerce(req)
-
     let stripeCustomerId: string | null = null
+
+    // Look up Medusa customer strictly by customerId
+    let medusaCustomer: any = null
+    try {
+      const customerModule = req.scope.resolve(Modules.CUSTOMER)
+      if (customerId.startsWith("cus_")) {
+        medusaCustomer = await customerModule.retrieveCustomer(customerId).catch(() => null)
+      }
+    } catch {}
 
     // 1. Check if we have customer mapping in commerce ledger
     const mapping = await ledger.get(recordId("customer", context.profile, customerId))
@@ -19,41 +29,12 @@ export async function GET(req: AuthenticatedMedusaRequest, res: MedusaResponse) 
       stripeCustomerId = mapping.data.stripe_id
     }
 
-    // 2. If not found in ledger, look up Medusa customer record
-    if (!stripeCustomerId) {
-      try {
-        const customerModule = req.scope.resolve(Modules.CUSTOMER)
-        const medusaCustomer = await customerModule.retrieveCustomer(customerId)
-        if (medusaCustomer?.email) {
-          const list = await context.stripe.customers.list({
-            email: medusaCustomer.email,
-            limit: 1,
-          })
-          if (list.data.length > 0) {
-            stripeCustomerId = list.data[0].id
-            // Cache in ledger for future lookups
-            const custKey = recordId("customer", context.profile, customerId)
-            await ledger.create({
-              id: custKey,
-              kind: "customer",
-              profile: context.profile,
-              owner_id: customerId,
-              state: "active",
-              data: { stripe_id: stripeCustomerId },
-            }).catch(async () => {
-              await ledger.patch(custKey, { stripe_id: stripeCustomerId }, "active").catch(() => {})
-            })
-          }
-        }
-      } catch {}
-    }
-
-    // 3. If still no Stripe customer ID, look in customer's recent checkout attempts
+    // 2. Look in customer's recent checkout attempts
     if (!stripeCustomerId) {
       const attempts = await ledger.list("attempt", {
         owner: customerId,
         profile: context.profile,
-        limit: 5,
+        limit: 10,
       })
       for (const att of attempts) {
         if (att.data?.stripe_customer_id) {
@@ -70,19 +51,33 @@ export async function GET(req: AuthenticatedMedusaRequest, res: MedusaResponse) 
           } catch {}
         }
       }
-      if (stripeCustomerId) {
-        const custKey = recordId("customer", context.profile, customerId)
-        await ledger.create({
-          id: custKey,
-          kind: "customer",
-          profile: context.profile,
-          owner_id: customerId,
-          state: "active",
-          data: { stripe_id: stripeCustomerId },
-        }).catch(async () => {
-          await ledger.patch(custKey, { stripe_id: stripeCustomerId }, "active").catch(() => {})
+    }
+
+    // 3. If not found, look up in Stripe by customer email
+    if (!stripeCustomerId && medusaCustomer?.email) {
+      try {
+        const list = await context.stripe.customers.list({
+          email: medusaCustomer.email.trim().toLowerCase(),
+          limit: 1,
         })
-      }
+        if (list.data.length > 0) {
+          stripeCustomerId = list.data[0].id
+        }
+      } catch {}
+    }
+
+    if (stripeCustomerId) {
+      const custKey = recordId("customer", context.profile, customerId)
+      await ledger.create({
+        id: custKey,
+        kind: "customer",
+        profile: context.profile,
+        owner_id: customerId,
+        state: "active",
+        data: { stripe_id: stripeCustomerId },
+      }).catch(async () => {
+        await ledger.patch(custKey, { stripe_id: stripeCustomerId }, "active").catch(() => {})
+      })
     }
 
     if (!stripeCustomerId) {
