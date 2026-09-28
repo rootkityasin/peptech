@@ -34,6 +34,21 @@ export async function reconcileSession(scope:any,ledger:CommerceService,sessionI
   // Recover a session created before a process crash interrupted saving its ID.
   if(attempt.data.quote.tax_policy==="stripe_default"&&session.status!=="expired"&&session.automatic_tax.status!=="requires_location_inputs")attempt.data.quote=await checkoutTaxQuote(context.stripe,session,attempt.data.quote)
   attempt.data.session_id=session.id;attempt.data.stripe_customer_id=objectId(session.customer);await ledger.patch(attempt.id,{session_id:session.id,stripe_customer_id:attempt.data.stripe_customer_id,quote:attempt.data.quote})
+  if(attempt.owner_id && attempt.data.stripe_customer_id){
+    try{
+      const custKey = recordId("customer", context.profile, attempt.owner_id)
+      await ledger.create({
+        id: custKey,
+        kind: "customer",
+        profile: context.profile,
+        owner_id: attempt.owner_id,
+        state: "active",
+        data: { stripe_id: attempt.data.stripe_customer_id }
+      }).catch(async () => {
+        await ledger.patch(custKey, { stripe_id: attempt.data.stripe_customer_id }, "active").catch(() => {})
+      })
+    }catch{}
+  }
   if(session.status==="expired") {
     if(!["confirmed","held"].includes(attempt.state)) {attempt.state="expired";await ledger.save(attempt);await releaseQuote(scope,attempt.id)}
     return
@@ -46,6 +61,17 @@ export async function reconcileSession(scope:any,ledger:CommerceService,sessionI
   if(session.payment_status!=="paid") return
   const pi=await context.stripe.paymentIntents.retrieve(objectId(session.payment_intent)!, { expand: ["latest_charge"] })
   if(pi.status!=="succeeded" || pi.metadata.peptech_attempt!==attempt.id) fail("Payment ownership mismatch",409)
+  if (pi.payment_method && attempt.data.stripe_customer_id) {
+    try {
+      const pmId = objectId(pi.payment_method)
+      if (pmId) {
+        await context.stripe.paymentMethods.update(pmId, { allow_redisplay: "always" }).catch(() => {})
+        await context.stripe.customers.update(attempt.data.stripe_customer_id, {
+          invoice_settings: { default_payment_method: pmId }
+        }).catch(() => {})
+      }
+    } catch {}
+  }
   const chargeReceipt = typeof pi.latest_charge === "object" ? (pi.latest_charge as any)?.receipt_url : null
   const receiptUrl = chargeReceipt || null
   await settleReceipt(scope,ledger,attempt,{reference:session.id,session_id:session.id,amount:pi.amount_received,

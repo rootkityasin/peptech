@@ -6,7 +6,7 @@ import { useCart } from "@/components/cart/CartContext"
 import { checkoutStatus, completeStripeCheckout, type CheckoutSession } from "@/lib/stripe-checkout"
 
 export default function CheckoutSuccessPage() {
-  const { customer, token, isLoading } = useCustomer()
+  const { customer, token, isLoading, refreshCustomer } = useCustomer()
   const { clearCartIfUnchanged } = useCart()
   const [result, setResult] = useState<CheckoutSession | null>(null)
   const [message, setMessage] = useState("Confirming your order…")
@@ -44,6 +44,7 @@ export default function CheckoutSuccessPage() {
           const snapshot = sessionStorage.getItem(`peptech_checkout_cart:${id}`)
           if (snapshot) clearCartIfUnchanged(snapshot)
           sessionStorage.removeItem(`peptech_checkout_cart:${id}`)
+          void refreshCustomer()
           return
         }
         if (["expired", "failed"].includes(data.state)) {

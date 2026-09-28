@@ -27,8 +27,10 @@ export type CheckoutSession = {
 }
 
 export type CheckoutAddress = {
-  first_name: string
-  last_name: string
+  id?: string
+  first_name?: string
+  last_name?: string
+  company?: string
   address_1: string
   address_2?: string
   city: string
@@ -95,10 +97,28 @@ export async function prepareStripeCheckout(input: {
     })
   )
 
+  const cleanedAddress = input.address && input.address.address_1?.trim()
+    ? {
+        id: input.address.id || undefined,
+        first_name: input.address.first_name?.trim() || "",
+        last_name: input.address.last_name?.trim() || "",
+        company: input.address.company?.trim() || undefined,
+        address_1: input.address.address_1.trim(),
+        address_2: input.address.address_2?.trim() || undefined,
+        city: input.address.city?.trim() || "",
+        postal_code: input.address.postal_code?.trim() || "",
+        country_code: (input.address.country_code || input.countryCode || "gb").trim().toLowerCase(),
+        province: input.address.province?.trim() || undefined,
+        phone: input.address.phone?.trim() || undefined,
+      }
+    : undefined
+
+  const resolvedCountry = (input.countryCode || cleanedAddress?.country_code || "gb").trim().toLowerCase()
+
   const body = {
     items,
-    ...(input.address ? { address: input.address } : {}),
-    country_code: input.countryCode || input.address?.country_code || "gb",
+    ...(cleanedAddress ? { address: cleanedAddress } : {}),
+    country_code: resolvedCountry,
     ruo_accepted: input.ruoAccepted,
     recurring_accepted: input.recurringAccepted === true,
     payment_method: input.paymentMethod || "stripe",

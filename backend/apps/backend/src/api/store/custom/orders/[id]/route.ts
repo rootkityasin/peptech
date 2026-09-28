@@ -57,7 +57,7 @@ export async function GET(req: AuthenticatedMedusaRequest, res: MedusaResponse) 
         const { data: [byDisplayId] = [] } = await orderQuery.graph({
           entity: "order",
           fields: orderFields,
-          filters: { display_id: Number(rawId) },
+          filters: { display_id: Number(rawId) as any },
         })
         order = byDisplayId
       }

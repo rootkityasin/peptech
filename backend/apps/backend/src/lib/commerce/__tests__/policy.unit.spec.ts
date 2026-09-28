@@ -30,4 +30,37 @@ describe("authoritative commerce boundary", () => {
     expect(() => assertProduct(approval,"gb",false)).not.toThrow()
     expect(() => assertProduct(null,"gb",false)).toThrow()
   })
+  it("accepts item metadata, company in address, and normalizes uppercase country codes", () => {
+    const request = {
+      revision: "f243ef68-7314-48f7-a5b7-58bcc57703f3",
+      address: {
+        id: "addr_123",
+        first_name: "John",
+        last_name: "Doe",
+        company: "Biotech Labs Ltd",
+        address_1: "123 Science Park",
+        address_2: null,
+        city: "Cambridge",
+        postal_code: "CB1 2AB",
+        country_code: "GB",
+        province: null,
+        phone: "+441234567890",
+      },
+      country_code: "GB",
+      items: [
+        {
+          variant_id: "variant_a",
+          quantity: 2,
+          recurring: false,
+          metadata: { title: "BPC-157", format: "pen", cartridge_name: "Standard" },
+        },
+      ],
+      ruo_accepted: true,
+      recurring_accepted: false,
+    }
+    const parsed = checkoutSchema.parse(request)
+    expect(parsed.country_code).toBe("gb")
+    expect(parsed.address?.country_code).toBe("gb")
+    expect(parsed.items[0].metadata?.title).toBe("BPC-157")
+  })
 })

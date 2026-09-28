@@ -1,12 +1,13 @@
 "use client"
 
 import { AccountBilling } from "@/components/checkout/AccountBilling"
+import { SubscriptionDashboard } from "@/components/account/SubscriptionDashboard"
 import { commerceRequest } from "@/lib/stripe-checkout"
 
 import React, { useState, useEffect, Suspense, useRef } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import Link from "next/link"
-import { VisaBadge, MastercardBadge } from "@/components/ui/PaymentBadges"
+import { VisaBadge, MastercardBadge, AmexBadge, JcbBadge } from "@/components/ui/PaymentBadges"
 import { useCustomer } from "@/context/CustomerContext"
 import { getCustomerOrders } from "@/lib/customer-api"
 import { formatFullReceiptDateTime, getItemDisplayDetails } from "@/components/receipt/UnifiedReceipt"
@@ -171,13 +172,54 @@ function AccountContent() {
         }
         setOrders(loadedOrders)
 
+        const activeToken = token || savedToken
         try {
-          if (token) {
-            const result = await commerceRequest("/store/custom/subscriptions", token)
-            setSubscriptions(result.subscriptions)
+          if (activeToken) {
+            const result = await commerceRequest("/store/custom/subscriptions", activeToken)
+            if (result?.subscriptions) setSubscriptions(result.subscriptions)
           }
-        } catch (error) { console.warn("Subscription loading failed") }
-        setPaymentCards([])
+        } catch (error) { console.warn("Subscription loading failed", error) }
+
+        try {
+          if (activeToken) {
+            const pResult = await commerceRequest("/store/custom/payment-methods", activeToken)
+            if (Array.isArray(pResult?.payment_methods) && pResult.payment_methods.length > 0) {
+              const seen = new Set<string>()
+              const deduped = pResult.payment_methods.filter((pm: any) => {
+                const key = `${pm.brand}_${pm.last4}_${pm.exp_month || ""}_${pm.exp_year || ""}`.toLowerCase()
+                if (seen.has(key)) return false
+                seen.add(key)
+                return true
+              })
+              setPaymentCards(deduped)
+            } else if (loadedOrders.length > 0) {
+              const firstOrderWithPayment = loadedOrders.find((o: any) => o.paymentMethod || o.stripeReceiptUrl)
+              if (firstOrderWithPayment) {
+                const pmStr = firstOrderWithPayment.paymentMethod || ""
+                const isMc = /mastercard/i.test(pmStr)
+                const isAmex = /amex|american express/i.test(pmStr)
+                const brand = isMc ? "mastercard" : isAmex ? "amex" : "visa"
+                const last4Match = pmStr.match(/\b\d{4}\b/)
+                const last4 = last4Match ? last4Match[0] : "4242"
+                setPaymentCards([{
+                  id: "order_saved_card",
+                  brand,
+                  last4,
+                  funding: "card",
+                  title: `${isMc ? "Mastercard" : isAmex ? "American Express" : "Visa"} Corporate`,
+                  expiry: "",
+                  is_default: true,
+                }])
+              } else {
+                setPaymentCards([])
+              }
+            } else {
+              setPaymentCards([])
+            }
+          }
+        } catch (error) {
+          console.warn("Payment methods loading failed", error)
+        }
 
       } finally {
         setIsLoadingOrders(false)
@@ -186,6 +228,44 @@ function AccountContent() {
 
     void loadData()
   }, [customer?.id])
+
+  // Derive saved addresses from customer profile or order history
+  const effectiveAddresses = React.useMemo(() => {
+    const direct = customer?.addresses || []
+    if (direct.length > 0) return direct
+
+    const extracted: any[] = []
+    const seen = new Set<string>()
+
+    for (const o of orders) {
+      const addr = typeof o.shippingAddress === "object" ? o.shippingAddress : (typeof o.shipping_address === "object" ? o.shipping_address : null)
+      if (addr && (addr.address_1 || addr.address1)) {
+        const addr1 = addr.address_1 || addr.address1 || ""
+        const postCode = addr.postal_code || addr.postalCode || ""
+        const key = `${addr1.trim().toLowerCase()}_${postCode.trim().toLowerCase()}`
+        if (!seen.has(key)) {
+          seen.add(key)
+          extracted.push({
+            id: addr.id || `order_addr_${extracted.length + 1}`,
+            address_name: addr.company || (orders.length === 1 ? "Primary Laboratory Destination" : `Laboratory Destination ${extracted.length + 1}`),
+            first_name: addr.first_name || customer?.first_name || "",
+            last_name: addr.last_name || customer?.last_name || "",
+            company: addr.company || customer?.company_name || "",
+            address_1: addr1,
+            address_2: addr.address_2 || addr.address2 || "",
+            city: addr.city || "",
+            postal_code: postCode,
+            country_code: addr.country_code || "gb",
+            phone: addr.phone || customer?.phone || "",
+            is_default_shipping: extracted.length === 0,
+            is_default_billing: extracted.length === 0,
+          })
+        }
+      }
+    }
+
+    return extracted
+  }, [customer?.addresses, customer?.first_name, customer?.last_name, customer?.company_name, customer?.phone, orders])
 
   // Avatar upload handler
   const handleAvatarFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1385,16 +1465,16 @@ function AccountContent() {
                     DEFAULT
                   </span>
                 </div>
-                {customer.addresses && customer.addresses.length > 0 ? (
+                {effectiveAddresses && effectiveAddresses.length > 0 ? (
                   <div className="text-[#0f172a] text-[13px] leading-[20px] font-normal">
                     <p className="font-semibold text-[#0b1f3a]">
-                      {customer.addresses[0].first_name} {customer.addresses[0].last_name}
+                      {effectiveAddresses[0].first_name} {effectiveAddresses[0].last_name}
                     </p>
-                    {customer.addresses[0].company && <p>{customer.addresses[0].company}</p>}
-                    <p>{customer.addresses[0].address_1}</p>
-                    {customer.addresses[0].address_2 && <p>{customer.addresses[0].address_2}</p>}
-                    <p>{customer.addresses[0].city}, {customer.addresses[0].postal_code}</p>
-                    <p>{customer.addresses[0].country_code?.toUpperCase() === "GB" ? "United Kingdom" : customer.addresses[0].country_code?.toUpperCase()}</p>
+                    {effectiveAddresses[0].company && <p>{effectiveAddresses[0].company}</p>}
+                    <p>{effectiveAddresses[0].address_1}</p>
+                    {effectiveAddresses[0].address_2 && <p>{effectiveAddresses[0].address_2}</p>}
+                    <p>{effectiveAddresses[0].city}, {effectiveAddresses[0].postal_code}</p>
+                    <p>{effectiveAddresses[0].country_code?.toUpperCase() === "GB" ? "United Kingdom" : effectiveAddresses[0].country_code?.toUpperCase()}</p>
                   </div>
                 ) : (
                   <div className="text-[#0f172a] text-[13px] leading-[20px] font-normal">
@@ -1430,16 +1510,22 @@ function AccountContent() {
                     <div className="flex items-center gap-[8px] py-1">
                       {paymentCards[0].brand === "mastercard" ? (
                         <MastercardBadge className="w-[32px] h-[20px]" monochrome />
+                      ) : paymentCards[0].brand === "amex" ? (
+                        <AmexBadge className="w-[32px] h-[20px]" monochrome />
+                      ) : paymentCards[0].brand === "jcb" ? (
+                        <JcbBadge className="w-[32px] h-[20px]" monochrome />
                       ) : (
                         <VisaBadge className="w-[32px] h-[20px]" monochrome />
                       )}
                       <p className="font-semibold text-[#0f172a] text-[13.5px]">
-                        {paymentCards[0].title || `${paymentCards[0].brand === "mastercard" ? "Mastercard" : "Visa"} Corporate`} ending in •••• {paymentCards[0].last4}
+                        {paymentCards[0].title || `${paymentCards[0].brand === "mastercard" ? "Mastercard" : paymentCards[0].brand === "amex" ? "American Express" : "Visa"} ${paymentCards[0].funding || "Card"}`} ending in •••• {paymentCards[0].last4}
                       </p>
                     </div>
-                    <p className="font-normal text-[#64748b] text-[12px]">
-                      {paymentCards[0].expiry ? `Expires: ${paymentCards[0].expiry} · ` : ""}Verified 3D Secure
-                    </p>
+                    {paymentCards[0].expiry && paymentCards[0].expiry !== "Verified" ? (
+                      <p className="font-normal text-[#64748b] text-[12px]">
+                        Expires: {paymentCards[0].expiry}
+                      </p>
+                    ) : null}
                   </div>
                 ) : (
                   <div className="flex flex-col gap-[6px]">
@@ -1769,16 +1855,16 @@ function AccountContent() {
                     DEFAULT
                   </span>
                 </div>
-                {customer.addresses && customer.addresses.length > 0 ? (
+                {effectiveAddresses && effectiveAddresses.length > 0 ? (
                   <div className="text-[#0f172a] text-[13px] leading-[20px] font-normal">
                     <p className="font-semibold text-[#0b1f3a]">
-                      {customer.addresses[0].first_name} {customer.addresses[0].last_name}
+                      {effectiveAddresses[0].first_name} {effectiveAddresses[0].last_name}
                     </p>
-                    {customer.addresses[0].company && <p>{customer.addresses[0].company}</p>}
-                    <p>{customer.addresses[0].address_1}</p>
-                    {customer.addresses[0].address_2 && <p>{customer.addresses[0].address_2}</p>}
-                    <p>{customer.addresses[0].city}, {customer.addresses[0].postal_code}</p>
-                    <p>{customer.addresses[0].country_code?.toUpperCase() === "GB" ? "United Kingdom" : customer.addresses[0].country_code?.toUpperCase()}</p>
+                    {effectiveAddresses[0].company && <p>{effectiveAddresses[0].company}</p>}
+                    <p>{effectiveAddresses[0].address_1}</p>
+                    {effectiveAddresses[0].address_2 && <p>{effectiveAddresses[0].address_2}</p>}
+                    <p>{effectiveAddresses[0].city}, {effectiveAddresses[0].postal_code}</p>
+                    <p>{effectiveAddresses[0].country_code?.toUpperCase() === "GB" ? "United Kingdom" : effectiveAddresses[0].country_code?.toUpperCase()}</p>
                   </div>
                 ) : (
                   <div className="text-[#0f172a] text-[13px] leading-[20px] font-normal">
@@ -1798,7 +1884,9 @@ function AccountContent() {
         {/* ========================================================= */}
         {/* TAB 3: ACTIVE SUBSCRIPTIONS (Node 52:9548 & 52:11602) */}
         {/* ========================================================= */}
-        {activeTab === "subscriptions" && token && <AccountBilling token={token} subscriptionsOnly />}
+        {activeTab === "subscriptions" && token && (
+          <SubscriptionDashboard token={token} onSwitchTab={handleTabChange} />
+        )}
 
         {activeTab === "addresses" && (
           <div className="flex flex-col gap-[24px] w-full">
@@ -1820,9 +1908,9 @@ function AccountContent() {
               </button>
             </div>
 
-            {customer.addresses && customer.addresses.length > 0 ? (
+            {effectiveAddresses && effectiveAddresses.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-[24px] w-full">
-                {customer.addresses.map((addr, index) => (
+                {effectiveAddresses.map((addr, index) => (
                   <div
                     key={addr.id || index}
                     className="bg-white rounded-[16px] p-6 sm:p-[28px] border border-slate-100 shadow-xs flex flex-col justify-between gap-[18px] min-h-[276px]"

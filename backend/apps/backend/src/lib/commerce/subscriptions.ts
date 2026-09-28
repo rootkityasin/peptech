@@ -34,58 +34,191 @@ async function syncLockedSubscription(ledger:CommerceService,stripeId:string) {
   })
   return ledger.save(record)
 }
-export const commandSchema=z.object({subscription_id:z.string().min(1),operation_id:z.string().uuid(),
-  action:z.enum(["pause","resume","skip","cancel","change_date"]),date:z.string().datetime().optional()}).strict()
-export async function subscriptionCommand(ledger:CommerceService,customer:string,body:unknown) {
-  const input=commandSchema.parse(body);const context=stripeContext()
-  return ledger.locked(input.subscription_id,async()=>{
-    const record=owned(await ledger.get(input.subscription_id),customer,context.profile)
-    if(record.kind!=="subscription") fail("Subscription not found",404)
-    const key=recordId("operation",record.id,input.operation_id)
-    let operation=await ledger.get(key)
-    if(operation && !isDeepStrictEqual(operation.data.input,input)) fail("Operation ID reused for a different command",409)
-    if(operation?.state==="done") return presentSubscription(record)
-    const current=await context.stripe.subscriptions.retrieve(record.data.stripe_id)
-    if(["canceled","incomplete_expired"].includes(current.status)) fail("Subscription has ended",409)
-    if(current.cancel_at_period_end&&input.action!=="cancel")fail("This subscription is ending. Start a new subscription to purchase future deliveries.",409)
-    const open=await context.stripe.invoices.list({subscription:current.id,status:"open",limit:1})
-    if(open.data.length && input.action!=="cancel") fail("An invoice is already in progress. Resolve it before changing the next cycle.",409)
-    const next=periodEnd(current)
-    if(!operation) operation=await ledger.create({id:key,kind:"operation",profile:context.profile,owner_id:customer,state:"pending",data:{input}})
-    if(Date.now()-new Date(operation.created_at).getTime()>23*3600000) fail("Command needs reconciliation before retry",409)
-    let params:any
-    if(input.action==="pause") params={pause_collection:{behavior:"void"}}
-    if(input.action==="resume") params={pause_collection:{behavior:"keep_as_draft"}}
-    if(input.action==="cancel") params={cancel_at_period_end:true,pause_collection:{behavior:"void"}}
-    if(input.action==="skip") {
-      if(record.data.control==="paused") fail("Resume the subscription before skipping a cycle",409)
-      operation.data.skip_until=operation.data.skip_until || next+1
-      params={pause_collection:{behavior:"keep_as_draft"}}
+export const commandSchema = z.object({
+  subscription_id: z.string().min(1),
+  operation_id: z.string().uuid(),
+  action: z.enum(["pause", "resume", "skip", "cancel", "change_date", "change_cadence", "update_dosage", "update_address"]),
+  date: z.string().datetime().optional(),
+  pause_duration_months: z.number().int().min(1).max(12).optional(),
+  cadence_days: z.number().int().min(7).max(90).optional(),
+  variant_id: z.string().optional(),
+  strength: z.string().optional(),
+  address: z.record(z.string(), z.any()).optional(),
+}).strict()
+
+export async function subscriptionCommand(ledger: CommerceService, customer: string, body: unknown) {
+  const input = commandSchema.parse(body)
+  const context = stripeContext()
+  return ledger.locked(input.subscription_id, async () => {
+    const record = owned(await ledger.get(input.subscription_id), customer, context.profile)
+    if (record.kind !== "subscription") fail("Subscription not found", 404)
+    const key = recordId("operation", record.id, input.operation_id)
+    let operation = await ledger.get(key)
+    if (operation && !isDeepStrictEqual(operation.data.input, input)) fail("Operation ID reused for a different command", 409)
+    if (operation?.state === "done") return presentSubscription(record)
+    const current = await context.stripe.subscriptions.retrieve(record.data.stripe_id)
+    if (["canceled", "incomplete_expired"].includes(current.status)) fail("Subscription has ended", 409)
+    if (current.cancel_at_period_end && input.action !== "cancel") fail("This subscription is ending. Start a new subscription to purchase future deliveries.", 409)
+    const open = await context.stripe.invoices.list({ subscription: current.id, status: "open", limit: 1 })
+    if (open.data.length && input.action !== "cancel") fail("An invoice is already in progress. Resolve it before changing the next cycle.", 409)
+    const next = periodEnd(current)
+    if (!operation) operation = await ledger.create({ id: key, kind: "operation", profile: context.profile, owner_id: customer, state: "pending", data: { input } })
+    if (Date.now() - new Date(operation.created_at).getTime() > 23 * 3600000) fail("Command needs reconciliation before retry", 409)
+
+    let params: any
+    if (input.action === "pause") {
+      params = { pause_collection: { behavior: "void" } }
+      if (input.pause_duration_months) {
+        const resumeSecs = next + input.pause_duration_months * 30 * 86400
+        record.data.pause_until = resumeSecs
+      } else if (input.date) {
+        record.data.pause_until = Math.floor(Date.parse(input.date) / 1000)
+      }
     }
-    if(input.action==="change_date") {
-      const target=Math.floor(Date.parse(input.date||"")/1000)
-      if(!Number.isFinite(target)||target<Math.floor(Date.now()/1000)+86400||target>Math.floor(Date.now()/1000)+90*86400) fail("Choose a renewal date between tomorrow and 90 days from now")
-      params={trial_end:target,proration_behavior:"none",pause_collection:{behavior:"keep_as_draft"}}
+    if (input.action === "resume") {
+      params = { pause_collection: { behavior: "keep_as_draft" } }
+      record.data.pause_until = null
     }
+    if (input.action === "cancel") {
+      params = { cancel_at_period_end: true, pause_collection: { behavior: "void" } }
+    }
+    if (input.action === "skip") {
+      if (record.data.control === "paused") fail("Resume the subscription before skipping a cycle", 409)
+      const cadence = record.data.cadence_days || 28
+      operation.data.skip_until = operation.data.skip_until || next + cadence * 86400
+      params = { pause_collection: { behavior: "keep_as_draft" } }
+    }
+    if (input.action === "change_date") {
+      const target = Math.floor(Date.parse(input.date || "") / 1000)
+      if (!Number.isFinite(target) || target < Math.floor(Date.now() / 1000) + 86400 || target > Math.floor(Date.now() / 1000) + 90 * 86400) {
+        fail("Choose a renewal date between tomorrow and 90 days from now")
+      }
+      params = { trial_end: target, proration_behavior: "none", pause_collection: { behavior: "keep_as_draft" } }
+    }
+    if (input.action === "change_cadence") {
+      record.data.cadence_days = input.cadence_days || 28
+      params = { pause_collection: { behavior: "keep_as_draft" } }
+    }
+    if (input.action === "update_address" && input.address) {
+      record.data.quote.address = { ...record.data.quote.address, ...input.address }
+      params = { pause_collection: { behavior: "keep_as_draft" } }
+    }
+    if (input.action === "update_dosage" && (input.variant_id || input.strength)) {
+      if (record.data.quote?.lines?.[0]) {
+        if (input.variant_id) record.data.quote.lines[0].variant_id = input.variant_id
+        if (input.strength) {
+          record.data.quote.lines[0].metadata = {
+            ...(record.data.quote.lines[0].metadata || {}),
+            strength: input.strength,
+          }
+        }
+      }
+      params = { pause_collection: { behavior: "keep_as_draft" } }
+    }
+
     await ledger.save(operation)
-    await context.stripe.subscriptions.update(current.id,params,{idempotencyKey:key})
-    if(input.action==="skip") record.data.skip_until=operation.data.skip_until
-    else record.data.control=input.action==="pause"?"paused":input.action==="cancel"?"canceling":"active"
-    if(input.action==="change_date") record.data.next_billing_at=Math.floor(Date.parse(input.date!)/1000)
+    if (params) {
+      await context.stripe.subscriptions.update(current.id, params, { idempotencyKey: key })
+    }
+    if (input.action === "skip") record.data.skip_until = operation.data.skip_until
+    else if (input.action === "pause") record.data.control = "paused"
+    else if (input.action === "cancel") record.data.control = "canceling"
+    else if (input.action === "resume") record.data.control = "active"
+
+    if (input.action === "change_date") record.data.next_billing_at = Math.floor(Date.parse(input.date!) / 1000)
     await ledger.save(record)
-    await ledger.audit(record.id,customer,input.action,{operation_id:key,date:input.date||null})
-    operation.state="done";await ledger.save(operation)
-    const synced=await syncSubscription(ledger,current.id)
+    await ledger.audit(record.id, customer, input.action, { operation_id: key, input })
+    operation.state = "done"
+    await ledger.save(operation)
+    const synced = await syncSubscription(ledger, current.id)
     return presentSubscription(synced || record)
   })
 }
-export function presentSubscription(record:LedgerRecord) {
-  const q=record.data.quote;const recurring=q.lines.filter((l:any)=>l.recurring)
-  const next=record.data.skip_until && record.data.next_billing_at<record.data.skip_until ? record.data.next_billing_at+28*86400:record.data.next_billing_at
-  return {id:record.id,status:["canceled","incomplete_expired"].includes(record.state)?record.state:record.data.control==="paused"?"Paused":record.data.control==="canceling"?"Canceling":record.state,
-    title:recurring.map((l:any)=>l.name).join(", "),price:q.renewal_minor/100,currency:q.currency,
-    quantity:recurring.reduce((s:number,l:any)=>s+l.quantity,0),frequency:"Every 28 days",
-    nextBillingDate:next?new Date(next*1000).toLocaleDateString("en-GB"):null,next_billing_at:next,
-    cancel_at_period_end:record.data.cancel_at_period_end,control:record.data.control,
-    items:recurring.map((l:any)=>({title:l.name,quantity:l.quantity,unit_price:l.unit_minor/100})),shipping_amount:q.shipping_minor/100}
+
+export function presentSubscription(record: LedgerRecord) {
+  const q = record.data.quote || { lines: [], address: {} }
+  const recurring = q.lines ? q.lines.filter((l: any) => l.recurring) : []
+  const cadenceDays = record.data.cadence_days || 28
+  const nextBilling = record.data.skip_until && record.data.next_billing_at < record.data.skip_until
+    ? record.data.next_billing_at + cadenceDays * 86400
+    : record.data.next_billing_at
+
+  const firstItem = recurring[0] || {}
+  const rawId = record.data.stripe_id || record.id
+  const shortId = `SUB-${rawId.slice(-4).toUpperCase()}`
+
+  // Format clean next billing and dispatch dates
+  const billingDateObj = nextBilling ? new Date(nextBilling * 1000) : null
+  const nextBillingDate = billingDateObj ? billingDateObj.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : null
+  const autoBillDate = billingDateObj ? billingDateObj.toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : null
+
+  // Dispatch is normally next day after successful billing
+  let dispatchDateObj: Date | null = null
+  let nextDispatchDate: string | null = null
+  if (billingDateObj) {
+    dispatchDateObj = new Date(billingDateObj)
+    dispatchDateObj.setDate(dispatchDateObj.getDate() + 1)
+    nextDispatchDate = dispatchDateObj.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
+  }
+
+  // Estimated delivery is 1-2 business days after dispatch
+  let estimatedDeliveryDate: string | null = null
+  if (dispatchDateObj) {
+    const deliveryDateObj = new Date(dispatchDateObj)
+    deliveryDateObj.setDate(deliveryDateObj.getDate() + 1)
+    estimatedDeliveryDate = deliveryDateObj.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+  }
+
+  const cadenceLabel = cadenceDays === 14
+    ? "Accelerated Protocol"
+    : cadenceDays === 56
+    ? "8-Week Maintenance"
+    : "Standard Cycle"
+
+  const frequency = `Every ${cadenceDays} Days (${cadenceLabel})`
+
+  return {
+    id: record.id,
+    stripe_id: record.data.stripe_id,
+    sub_display_id: shortId,
+    status: ["canceled", "incomplete_expired"].includes(record.state)
+      ? record.state
+      : record.data.control === "paused"
+      ? "Paused"
+      : record.data.control === "canceling"
+      ? "Canceling"
+      : "Active Subscription",
+    title: recurring.map((l: any) => l.name).join(", ") || firstItem.name || "Research Peptide Refill",
+    product_name: firstItem.name || "Research Refill Cartridge",
+    format: firstItem.metadata?.format || "cartridge",
+    strength: firstItem.metadata?.strength || "5mg",
+    protocol_info: firstItem.metadata?.options?.find((o: any) => o.label?.toLowerCase().includes("cartridge") || o.label?.toLowerCase().includes("protocol"))?.value
+      || `Weekly ${firstItem.metadata?.strength || "0.25mg"} Escalation Protocol · 4 Doses / Refill`,
+    price: (q.renewal_minor || 0) / 100,
+    currency: q.currency || "gbp",
+    quantity: recurring.reduce((s: number, l: any) => s + l.quantity, 0) || 1,
+    cadence_days: cadenceDays,
+    cadence_label: cadenceLabel,
+    frequency,
+    nextBillingDate,
+    next_billing_at: nextBilling,
+    autoBillDate,
+    nextDispatchDate,
+    estimatedDeliveryDate,
+    receiving_window: "Tuesday – Thursday · 08:00 – 14:00 GMT (Lab Reception Handover)",
+    cancel_at_period_end: record.data.cancel_at_period_end,
+    control: record.data.control || "active",
+    pause_until: record.data.pause_until,
+    shipping_address: q.address || {},
+    recipient_name: `${q.address?.first_name || ""} ${q.address?.last_name || ""}`.trim() || "Research Investigator",
+    recipient_facility: q.address?.company || "Cambridge Science Park Lab",
+    items: recurring.map((l: any) => ({
+      title: l.name,
+      quantity: l.quantity,
+      unit_price: (l.unit_minor || 0) / 100,
+      metadata: l.metadata || {},
+    })),
+    shipping_amount: (q.shipping_minor || 495) / 100,
+    locked_discount_pct: 10,
+  }
 }

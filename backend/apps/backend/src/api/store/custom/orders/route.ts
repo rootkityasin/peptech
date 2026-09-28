@@ -31,7 +31,7 @@ export async function GET(req: AuthenticatedMedusaRequest, res: MedusaResponse) 
         filters: { customer_id: customerId },
         pagination: { order: { created_at: "DESC" }, take: 50 },
       })
-      return { orders, count: metadata?.count ?? orders.length }
+      return { orders, count: (metadata as any)?.count ?? orders.length }
     } catch {
       const [orders, count] = await req.scope.resolve(Modules.ORDER).listAndCountOrders(
         { customer_id: customerId },

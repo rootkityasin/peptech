@@ -40,13 +40,42 @@ export class StripeGatewayAdapter implements PaymentGatewayAdapter {
     let stripeCustomerId: string
     const existingCustomerList = await context.stripe.customers.list({
       email: quote.email,
-      limit: 1,
+      limit: 10,
     })
 
     if (existingCustomerList.data.length > 0) {
-      const existing = existingCustomerList.data[0]
-      stripeCustomerId = existing.id
-      await context.stripe.customers.update(existing.id, {
+      // Pick the customer that has attached payment methods, or the first
+      let chosen = existingCustomerList.data[0]
+      for (const c of existingCustomerList.data) {
+        const pms = await context.stripe.paymentMethods.list({ customer: c.id, type: "card", limit: 1 })
+        if (pms.data.length > 0) {
+          chosen = c
+          break
+        }
+      }
+      stripeCustomerId = chosen.id
+
+      let defaultPm = chosen.invoice_settings?.default_payment_method
+      try {
+        const pms = await context.stripe.paymentMethods.list({ customer: chosen.id, type: "card", limit: 10 })
+        if (!defaultPm && pms.data.length > 0) {
+          defaultPm = pms.data[0].id
+        }
+        for (const pm of pms.data) {
+          if (pm.allow_redisplay !== "always") {
+            await context.stripe.paymentMethods.update(pm.id, {
+              allow_redisplay: "always",
+              billing_details: {
+                email: quote.email,
+                name: customerName || undefined,
+                address: quote.address.address_1 ? address : undefined,
+              },
+            }).catch(() => {})
+          }
+        }
+      } catch {}
+
+      await context.stripe.customers.update(chosen.id, {
         name: customerName || undefined,
         phone: customerPhone,
         address: quote.address.address_1 ? address : undefined,
@@ -54,6 +83,7 @@ export class StripeGatewayAdapter implements PaymentGatewayAdapter {
           ? { name: customerName || "Research Laboratory", address, phone: customerPhone }
           : undefined,
         metadata: { peptech_customer_id: customer.id, peptech_profile: context.profile },
+        ...(defaultPm ? { invoice_settings: { default_payment_method: String(defaultPm) } } : {}),
       })
     } else {
       const newStripeCustomer = await context.stripe.customers.create(
@@ -151,13 +181,17 @@ export class StripeGatewayAdapter implements PaymentGatewayAdapter {
       customer_update: { address: "auto", name: "auto" },
       mode: recurring ? "subscription" : "payment",
       customer: stripeCustomerId,
+      saved_payment_method_options: {
+        payment_method_save: "enabled",
+        allow_redisplay_filters: ["always", "limited", "unspecified"],
+      },
       line_items: lineItems,
       automatic_tax: { enabled: quote.stripe_tax_enabled === true },
       client_reference_id: attemptId,
       metadata: { peptech_attempt: attemptId, peptech_profile: context.profile },
       ...(recurring
         ? { subscription_data: { metadata: { peptech_attempt: attemptId, peptech_profile: context.profile } } }
-        : { payment_intent_data: { metadata: { peptech_attempt: attemptId, peptech_profile: context.profile } } }),
+        : { payment_intent_data: { setup_future_usage: "off_session", metadata: { peptech_attempt: attemptId, peptech_profile: context.profile } } }),
       expires_at: Math.floor(Date.now() / 1000) + 3600,
     }
 

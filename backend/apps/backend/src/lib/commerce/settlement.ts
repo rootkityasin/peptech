@@ -42,6 +42,58 @@ export async function settleReceipt(scope:any,ledger:CommerceService,attempt:Led
           unit_price:l.unit_minor/100,is_tax_inclusive:q.tax_inclusive||false,tax_lines:l.tax_lines||(q.vat_registered?[{rate:q.tax_rate,code:"VAT",description:"VAT"}]:[]),requires_shipping:true,metadata:{catalog_version:l.catalog_version,recurring:l.recurring,...(l.metadata||{})}})),
         shipping_methods:[{name:"Royal Mail Tracked",amount:q.shipping_minor/100,shipping_option_id:q.shipping_option_id,is_tax_inclusive:q.tax_inclusive||false,tax_lines:q.shipping_tax_lines||(q.vat_registered?[{rate:q.tax_rate,code:"VAT",description:"VAT"}]:[])}]}
       await importCommerceOrder(scope).run({input,context:{transactionId:recordId("workflow",id)}})
+      if(q.customer_id&&q.address&&q.address.address_1){
+        try{
+          const customerModule=scope.resolve(Modules.CUSTOMER)
+          const existingAddrs=await customerModule.listCustomerAddresses({customer_id:q.customer_id})
+          const norm=(s?:string)=>(s||"").trim().toLowerCase()
+          const exists=existingAddrs.some((a:any)=>norm(a.address_1)===norm(q.address.address_1)&&norm(a.postal_code)===norm(q.address.postal_code))
+          if(!exists){
+            await customerModule.createCustomerAddresses({
+              customer_id:q.customer_id,
+              first_name:q.address.first_name||"",
+              last_name:q.address.last_name||"",
+              company:q.address.company||"",
+              address_1:q.address.address_1,
+              address_2:q.address.address_2||"",
+              city:q.address.city||"",
+              postal_code:q.address.postal_code||"",
+              province:q.address.province||"",
+              country_code:(q.address.country_code||"gb").toLowerCase(),
+              phone:q.address.phone||"",
+              is_default_shipping:existingAddrs.length===0,
+              is_default_billing:existingAddrs.length===0,
+            })
+          }
+        }catch{}
+      }
+      if(q.customer_id && attempt.data?.stripe_customer_id){
+        try{
+          const custKey = recordId("customer", context.profile, q.customer_id)
+          await ledger.create({
+            id: custKey,
+            kind: "customer",
+            profile: context.profile,
+            owner_id: q.customer_id,
+            state: "active",
+            data: { stripe_id: attempt.data.stripe_customer_id }
+          }).catch(async () => {
+            await ledger.patch(custKey, { stripe_id: attempt.data.stripe_customer_id }, "active").catch(() => {})
+          })
+          if (evidence?.payment_intent_id) {
+            const pi = await context.stripe.paymentIntents.retrieve(evidence.payment_intent_id).catch(() => null)
+            if (pi?.payment_method) {
+              const pmId = objectId(pi.payment_method)
+              if (pmId) {
+                await context.stripe.paymentMethods.update(pmId, { allow_redisplay: "always" }).catch(() => {})
+                await context.stripe.customers.update(attempt.data.stripe_customer_id, {
+                  invoice_settings: { default_payment_method: pmId }
+                }).catch(() => {})
+              }
+            }
+          }
+        }catch{}
+      }
     }
     // Renewal reservations and initial reservations use the same deterministic line IDs.
     try { await reserveQuote(scope,q,renewal?id:attempt.id) }

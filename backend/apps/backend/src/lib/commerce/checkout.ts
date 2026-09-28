@@ -125,6 +125,20 @@ export async function prepareCheckout(scope: any, ledger: CommerceService, custo
         attempt.data.publishable_key = result.publishableKey
         attempt.state = result.state
 
+        if (customerId && result.stripeCustomerId) {
+          const custKey = recordId("customer", context.profile, customerId)
+          await ledger.create({
+            id: custKey,
+            kind: "customer",
+            profile: context.profile,
+            owner_id: customerId,
+            state: "active",
+            data: { stripe_id: result.stripeCustomerId },
+          }).catch(async () => {
+            await ledger.patch(custKey, { stripe_id: result.stripeCustomerId }, "active").catch(() => {})
+          })
+        }
+
         session = await context.stripe.checkout.sessions.retrieve(result.sessionId)
       } catch (error: any) {
         if (error.type === "StripeInvalidRequestError") {

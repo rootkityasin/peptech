@@ -7,6 +7,7 @@ import { useCustomer } from "@/context/CustomerContext"
 import { prepareStripeCheckout, type CheckoutSession } from "@/lib/stripe-checkout"
 import { COUNTRIES, getCountryByName } from "@/lib/countries"
 import { EmbeddedStripeCheckout } from "@/components/checkout/EmbeddedStripeCheckout"
+import { getCustomerOrders, getCustomerAddresses } from "@/lib/customer-api"
 
 export default function CheckoutPage() {
   const { items, subtotal, shippingCost, country, setCountry, removeItem } = useCart()
@@ -52,6 +53,8 @@ export default function CheckoutPage() {
 
   // Selected Address State (Auto-filled from customer)
   const [selectedAddressIndex, setSelectedAddressIndex] = useState(0)
+  const [remoteOrders, setRemoteOrders] = useState<any[]>([])
+  const [remoteAddresses, setRemoteAddresses] = useState<any[]>([])
   const [customAddress, setCustomAddress] = useState({
     first_name: "",
     last_name: "",
@@ -64,11 +67,105 @@ export default function CheckoutPage() {
   })
   const [useCustomAddress, setUseCustomAddress] = useState(false)
 
-  // Auto-fill address from customer profile when customer loads
+  // Fetch remote orders and addresses when customer or token is active
+  useEffect(() => {
+    if (!customer?.id) return
+    const activeToken = token || (typeof window !== "undefined" ? localStorage.getItem("peptech_customer_token") : null)
+
+    // Load customer order history to extract delivery destinations
+    getCustomerOrders(activeToken || undefined, customer.id, customer.email)
+      .then((orders) => {
+        if (Array.isArray(orders) && orders.length > 0) {
+          setRemoteOrders(orders)
+        }
+      })
+      .catch(() => {})
+
+    // Load registered customer addresses
+    if (activeToken) {
+      getCustomerAddresses(activeToken)
+        .then((addrs) => {
+          if (Array.isArray(addrs) && addrs.length > 0) {
+            setRemoteAddresses(addrs)
+          }
+        })
+        .catch(() => {})
+    }
+  }, [customer?.id, customer?.email, token])
+
+  // Derived available addresses from customer profile, remote addresses, orders, or local fallback
+  const availableAddresses = React.useMemo(() => {
+    const direct = [
+      ...(customer?.addresses || []),
+      ...remoteAddresses,
+    ]
+
+    const allSources: any[] = [...direct]
+
+    // Add addresses extracted from remote orders
+    for (const o of remoteOrders) {
+      const addr = typeof o.shippingAddress === "object" ? o.shippingAddress : (typeof o.shipping_address === "object" ? o.shipping_address : null)
+      if (addr && (addr.address_1 || addr.address1)) {
+        allSources.push(addr)
+      }
+    }
+
+    // Add cached local storage orders
+    if (typeof window !== "undefined" && customer?.id) {
+      try {
+        const stored = JSON.parse(localStorage.getItem(`peptech_customer_orders_${customer.id}`) || "[]")
+        for (const o of stored) {
+          const addr = typeof o.shippingAddress === "object" ? o.shippingAddress : (typeof o.shipping_address === "object" ? o.shipping_address : null)
+          if (addr && (addr.address_1 || addr.address1)) {
+            allSources.push(addr)
+          }
+        }
+      } catch {}
+    }
+
+    // Add last saved delivery address fallback
+    if (typeof window !== "undefined") {
+      try {
+        const last = JSON.parse(localStorage.getItem("peptech_last_delivery_address") || "null")
+        if (last && (last.address_1 || last.address1)) {
+          allSources.push(last)
+        }
+      } catch {}
+    }
+
+    const extracted: any[] = []
+    const seen = new Set<string>()
+    for (const addr of allSources) {
+      const addr1 = addr.address_1 || addr.address1 || ""
+      const postCode = addr.postal_code || addr.postalCode || ""
+      if (!addr1 && !postCode) continue
+      const key = `${addr1.trim().toLowerCase()}_${postCode.trim().toLowerCase()}`
+      if (!seen.has(key)) {
+        seen.add(key)
+        extracted.push({
+          id: addr.id || `addr_${extracted.length + 1}`,
+          first_name: addr.first_name || customer?.first_name || "",
+          last_name: addr.last_name || customer?.last_name || "",
+          company: addr.company || customer?.company_name || "",
+          address_1: addr1,
+          address_2: addr.address_2 || addr.address2 || "",
+          city: addr.city || "",
+          postal_code: postCode,
+          province: addr.province || "",
+          country_code: addr.country_code || "gb",
+          phone: addr.phone || customer?.phone || "",
+        })
+      }
+    }
+
+    return extracted
+  }, [customer?.addresses, remoteAddresses, remoteOrders, customer?.id, customer?.first_name, customer?.last_name, customer?.company_name, customer?.phone])
+
+  // Auto-fill address from customer profile when customer or availableAddresses load
   useEffect(() => {
     if (customer) {
-      if (customer.addresses && customer.addresses.length > 0) {
-        const defaultAddr = customer.addresses[0]
+      if (availableAddresses.length > 0) {
+        const defaultAddr = availableAddresses[selectedAddressIndex] || availableAddresses[0]
         setCustomAddress({
           first_name: defaultAddr.first_name || customer.first_name || "",
           last_name: defaultAddr.last_name || customer.last_name || "",
@@ -79,20 +176,20 @@ export default function CheckoutPage() {
           province: defaultAddr.province || "",
           phone: defaultAddr.phone || customer.phone || "",
         })
+        if (defaultAddr.country_code) {
+          const matched = COUNTRIES.find((c) => c.code.toLowerCase() === defaultAddr.country_code.toLowerCase())
+          if (matched) setCountry(matched.name)
+        }
       } else {
-        setCustomAddress({
-          first_name: customer.first_name || "",
-          last_name: customer.last_name || "",
-          address_1: "",
-          address_2: "",
-          city: "",
-          postal_code: "",
-          province: "",
-          phone: customer.phone || "",
-        })
+        setCustomAddress((prev) => ({
+          ...prev,
+          first_name: prev.first_name || customer.first_name || "",
+          last_name: prev.last_name || customer.last_name || "",
+          phone: prev.phone || customer.phone || "",
+        }))
       }
     }
-  }, [customer])
+  }, [customer, availableAddresses, selectedAddressIndex, setCountry])
 
   // Rate Limiting Security Cooldown
   useEffect(() => {
@@ -205,23 +302,30 @@ export default function CheckoutPage() {
     setError("")
 
     try {
-      const countryCode = getCountryByName(country).code.toLowerCase()
+      const currentCountryCode = getCountryByName(country).code.toLowerCase()
+      const selectedAddr = availableAddresses[selectedAddressIndex]
+      const addrCountryCode = (selectedAddr?.country_code || currentCountryCode).toLowerCase()
+      const countryCode = availableAddresses.length > 0 && !useCustomAddress ? addrCountryCode : currentCountryCode
+
       const resolvedAddress =
-        customer.addresses && customer.addresses.length > 0 && !useCustomAddress
+        availableAddresses.length > 0 && !useCustomAddress
           ? {
-              first_name: customer.addresses[selectedAddressIndex]?.first_name || customer.first_name || "",
-              last_name: customer.addresses[selectedAddressIndex]?.last_name || customer.last_name || "",
-              address_1: customer.addresses[selectedAddressIndex]?.address_1 || "",
-              address_2: customer.addresses[selectedAddressIndex]?.address_2 || undefined,
-              city: customer.addresses[selectedAddressIndex]?.city || "",
-              postal_code: customer.addresses[selectedAddressIndex]?.postal_code || "",
-              country_code: customer.addresses[selectedAddressIndex]?.country_code || countryCode,
-              province: customer.addresses[selectedAddressIndex]?.province || undefined,
-              phone: customer.addresses[selectedAddressIndex]?.phone || customer.phone || undefined,
+              id: selectedAddr?.id,
+              first_name: selectedAddr?.first_name || customer.first_name || "",
+              last_name: selectedAddr?.last_name || customer.last_name || "",
+              company: selectedAddr?.company || customer.company_name || undefined,
+              address_1: selectedAddr?.address_1 || "",
+              address_2: selectedAddr?.address_2 || undefined,
+              city: selectedAddr?.city || "",
+              postal_code: selectedAddr?.postal_code || "",
+              country_code: countryCode,
+              province: selectedAddr?.province || undefined,
+              phone: selectedAddr?.phone || customer.phone || undefined,
             }
           : {
               first_name: customAddress.first_name || customer.first_name || "",
               last_name: customAddress.last_name || customer.last_name || "",
+              company: customer.company_name || undefined,
               address_1: customAddress.address_1,
               address_2: customAddress.address_2 || undefined,
               city: customAddress.city,
@@ -706,47 +810,98 @@ export default function CheckoutPage() {
               <div className="rounded-xl border border-slate-200 p-4 space-y-3 bg-white">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-[#0B1F3A]">Laboratory Delivery Address</span>
-                  <span className="text-[11px] text-[#00C5A0] font-semibold">● Auto-filled from Profile</span>
+                  {availableAddresses.length > 0 && !useCustomAddress ? (
+                    <span className="text-[11px] text-[#00C5A0] font-semibold">● Auto-filled from Profile</span>
+                  ) : customAddress.address_1 ? (
+                    <span className="text-[11px] text-[#00C5A0] font-semibold">● Saved Details Loaded</span>
+                  ) : (
+                    <span className="text-[11px] text-slate-400 font-medium">● Enter Laboratory Destination</span>
+                  )}
                 </div>
 
-                {customer.addresses && customer.addresses.length > 0 && !useCustomAddress ? (
-                  <div className="text-xs text-slate-700 space-y-1">
-                    <p className="font-semibold text-[#0B1F3A]">
-                      {customer.addresses[selectedAddressIndex]?.first_name}{" "}
-                      {customer.addresses[selectedAddressIndex]?.last_name}
-                    </p>
-                    <p>{customer.addresses[selectedAddressIndex]?.address_1}</p>
-                    {customer.addresses[selectedAddressIndex]?.address_2 && (
-                      <p>{customer.addresses[selectedAddressIndex]?.address_2}</p>
+                {availableAddresses.length > 1 && !useCustomAddress && (
+                  <div className="flex gap-2 items-center overflow-x-auto pb-1">
+                    <span className="text-[11px] text-slate-500 shrink-0 font-medium">Saved Addresses:</span>
+                    {availableAddresses.map((addr, idx) => (
+                      <button
+                        key={addr.id || idx}
+                        type="button"
+                        onClick={() => {
+                          setSelectedAddressIndex(idx)
+                          if (addr.country_code) {
+                            const matched = COUNTRIES.find((c) => c.code.toLowerCase() === addr.country_code.toLowerCase())
+                            if (matched) setCountry(matched.name)
+                          }
+                        }}
+                        className={`text-xs px-2.5 py-1 rounded-md transition-colors cursor-pointer shrink-0 border ${
+                          selectedAddressIndex === idx
+                            ? "bg-[#0B1F3A] text-white border-[#0B1F3A] font-semibold"
+                            : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                        }`}
+                      >
+                        {addr.address_1?.slice(0, 18) || `Address #${idx + 1}`} ({addr.city || addr.postal_code})
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {availableAddresses.length > 0 && !useCustomAddress ? (
+                  <div className="text-xs text-slate-700 space-y-1.5 bg-slate-50/80 p-3.5 rounded-lg border border-slate-100">
+                    <div className="flex items-center justify-between">
+                      <p className="font-semibold text-[#0B1F3A]">
+                        {availableAddresses[selectedAddressIndex]?.first_name}{" "}
+                        {availableAddresses[selectedAddressIndex]?.last_name}
+                      </p>
+                      <span className="bg-[#e6fffa] border border-[#16a6a3]/40 text-[#0b1f3a] text-[10px] font-bold px-1.5 py-0.5 rounded">
+                        DEFAULT DESTINATION
+                      </span>
+                    </div>
+                    <p className="font-medium text-[#0f172a]">{availableAddresses[selectedAddressIndex]?.address_1}</p>
+                    {availableAddresses[selectedAddressIndex]?.address_2 && (
+                      <p className="text-slate-600">{availableAddresses[selectedAddressIndex]?.address_2}</p>
                     )}
-                    <p>
-                      {customer.addresses[selectedAddressIndex]?.city},{" "}
-                      {customer.addresses[selectedAddressIndex]?.postal_code}
+                    <p className="text-slate-600">
+                      {availableAddresses[selectedAddressIndex]?.city}{availableAddresses[selectedAddressIndex]?.city ? ", " : ""}
+                      {availableAddresses[selectedAddressIndex]?.postal_code}
                     </p>
-                    <button
-                      type="button"
-                      onClick={() => setUseCustomAddress(true)}
-                      className="text-xs text-[#16A6A3] underline pt-1 cursor-pointer"
-                    >
-                      Use different address for this order
-                    </button>
+                    <div className="pt-1.5 border-t border-slate-200/60 flex items-center justify-between">
+                      <button
+                        type="button"
+                        onClick={() => setUseCustomAddress(true)}
+                        className="text-xs text-[#16A6A3] hover:text-[#138d8a] font-semibold underline cursor-pointer"
+                      >
+                        Edit or Enter Different Address →
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <div className="space-y-2.5 pt-1">
+                    {availableAddresses.length > 0 && (
+                      <div className="flex items-center justify-between pb-1">
+                        <span className="text-[11.5px] text-slate-500 font-medium">Custom Destination</span>
+                        <button
+                          type="button"
+                          onClick={() => setUseCustomAddress(false)}
+                          className="text-xs text-[#16A6A3] hover:underline font-semibold cursor-pointer"
+                        >
+                          ← Use Saved Profile Address
+                        </button>
+                      </div>
+                    )}
                     <input
                       type="text"
                       placeholder="Street Address (Line 1)"
                       value={customAddress.address_1}
                       onChange={(e) => setCustomAddress({ ...customAddress, address_1: e.target.value })}
                       required
-                      className="w-full border border-slate-300 rounded-lg p-2.5 text-xs text-[#0B1F3A] outline-none"
+                      className="w-full border border-slate-300 rounded-lg p-2.5 text-xs text-[#0B1F3A] outline-none focus:border-[#16A6A3]"
                     />
                     <input
                       type="text"
                       placeholder="Suite / Lab Wing (Line 2)"
                       value={customAddress.address_2}
                       onChange={(e) => setCustomAddress({ ...customAddress, address_2: e.target.value })}
-                      className="w-full border border-slate-300 rounded-lg p-2.5 text-xs text-[#0B1F3A] outline-none"
+                      className="w-full border border-slate-300 rounded-lg p-2.5 text-xs text-[#0B1F3A] outline-none focus:border-[#16A6A3]"
                     />
                     <div className="grid grid-cols-2 gap-2">
                       <input
@@ -755,7 +910,7 @@ export default function CheckoutPage() {
                         value={customAddress.city}
                         onChange={(e) => setCustomAddress({ ...customAddress, city: e.target.value })}
                         required
-                        className="border border-slate-300 rounded-lg p-2.5 text-xs text-[#0B1F3A] outline-none"
+                        className="border border-slate-300 rounded-lg p-2.5 text-xs text-[#0B1F3A] outline-none focus:border-[#16A6A3]"
                       />
                       <input
                         type="text"
@@ -763,7 +918,7 @@ export default function CheckoutPage() {
                         value={customAddress.postal_code}
                         onChange={(e) => setCustomAddress({ ...customAddress, postal_code: e.target.value })}
                         required
-                        className="border border-slate-300 rounded-lg p-2.5 text-xs text-[#0B1F3A] outline-none"
+                        className="border border-slate-300 rounded-lg p-2.5 text-xs text-[#0B1F3A] outline-none focus:border-[#16A6A3]"
                       />
                     </div>
                   </div>
