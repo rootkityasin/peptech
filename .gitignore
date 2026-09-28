@@ -17,6 +17,7 @@ backend/.medusa/
 # Production
 build/
 dist/
+app/
 
 # Environment Variables
 .env

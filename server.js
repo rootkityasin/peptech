@@ -1,5 +1,5 @@
 // Fix: Allow SSL connections to Supabase/cloud database poolers without rejecting intermediate certificates
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+
 
 // Sanitize DATABASE_URL if present in environment to prevent pg-connection-string sslmode=require override
 if (process.env.DATABASE_URL) {

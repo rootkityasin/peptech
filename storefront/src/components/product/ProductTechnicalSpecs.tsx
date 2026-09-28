@@ -90,7 +90,7 @@ export function ProductTechnicalSpecs({ product }: ProductTechnicalSpecsProps) {
                   </div>
                   <div className="flex items-center justify-between py-1 text-[12px]">
                     <span className="text-[#64748b]">Batch Code</span>
-                    <span className="font-mono font-bold text-[#0b1f3a]">CRT-2026-08B</span>
+                    <span className="font-bold text-[#0b1f3a]">CRT-2026-08B</span>
                   </div>
                 </div>
               </div>
@@ -228,7 +228,7 @@ export function ProductTechnicalSpecs({ product }: ProductTechnicalSpecsProps) {
                   </div>
                   <div className="flex items-center justify-between py-1 text-[12px]">
                     <span className="text-[#64748b]">Batch Code</span>
-                    <span className="font-mono font-bold text-[#0b1f3a]">VIAL-2026-04A</span>
+                    <span className="font-bold text-[#0b1f3a]">VIAL-2026-04A</span>
                   </div>
                 </div>
               </div>

@@ -6,6 +6,7 @@ import Image from "next/image"
 import { useSearchParams } from "next/navigation"
 import { useCart } from "@/components/cart/CartContext"
 import { CATALOG_PRODUCTS, CatalogProduct } from "@/data/catalog"
+import { useLiveProducts } from "@/lib/medusa"
 
 interface ShopCatalogProps {
   initialCategory?: "all" | "pen-sets" | "refills" | "vials"
@@ -66,20 +67,23 @@ export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [selectedPurchaseType, setSelectedPurchaseType] = useState<"all" | "sub" | "one-time">("all")
 
+  // Live products from Medusa API with instant static fallback
+  const { products: allProducts } = useLiveProducts()
+
   // Counts
-  const penSetsCount = CATALOG_PRODUCTS.filter((p) => p.format === "complete-pen-set").length
-  const refillsCount = CATALOG_PRODUCTS.filter((p) => p.format === "refill-cartridge").length
-  const vialsCount = CATALOG_PRODUCTS.filter((p) => p.format === "freeze-dried-vial").length
-  const metabolicCount = CATALOG_PRODUCTS.filter((p) => p.category === "metabolic").length
-  const tissueCount = CATALOG_PRODUCTS.filter((p) => p.category === "tissue").length
-  const cellularCount = CATALOG_PRODUCTS.filter((p) => p.category === "cellular").length
-  const neuroCount = CATALOG_PRODUCTS.filter((p) => p.category === "neuro").length
-  const subCount = CATALOG_PRODUCTS.filter((p) => p.isSubscriptionEligible).length
-  const totalCount = CATALOG_PRODUCTS.length
+  const penSetsCount = allProducts.filter((p) => p.format === "complete-pen-set").length
+  const refillsCount = allProducts.filter((p) => p.format === "refill-cartridge").length
+  const vialsCount = allProducts.filter((p) => p.format === "freeze-dried-vial").length
+  const metabolicCount = allProducts.filter((p) => p.category === "metabolic").length
+  const tissueCount = allProducts.filter((p) => p.category === "tissue").length
+  const cellularCount = allProducts.filter((p) => p.category === "cellular").length
+  const neuroCount = allProducts.filter((p) => p.category === "neuro").length
+  const subCount = allProducts.filter((p) => p.isSubscriptionEligible).length
+  const totalCount = allProducts.length
 
   // Filter logic
   const filteredProducts = useMemo(() => {
-    return CATALOG_PRODUCTS.filter((product) => {
+    return allProducts.filter((product) => {
       // Tab filter
       if (activeTab === "pen-sets" && product.format !== "complete-pen-set") return false
       if (activeTab === "refills" && product.format !== "refill-cartridge") return false
@@ -113,7 +117,7 @@ export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
       if (selectedSort === "name") return a.name.localeCompare(b.name)
       return 0 // popular / default
     })
-  }, [activeTab, searchQuery, availability, selectedFormats, selectedCategories, selectedPurchaseType, selectedSort])
+  }, [allProducts, activeTab, searchQuery, availability, selectedFormats, selectedCategories, selectedPurchaseType, selectedSort])
 
   // Active filters list for chips
   const activeFilterChips = useMemo(() => {
@@ -149,7 +153,7 @@ export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
   const shopSearchSuggestions = useMemo(() => {
     const q = searchQuery.trim().toLowerCase()
     if (!q) return []
-    return CATALOG_PRODUCTS.filter((product) => {
+    return allProducts.filter((product) => {
       return (
         product.name.toLowerCase().includes(q) ||
         product.description.toLowerCase().includes(q) ||
@@ -157,7 +161,7 @@ export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
         product.formatLabel.toLowerCase().includes(q)
       )
     }).slice(0, 5)
-  }, [searchQuery])
+  }, [allProducts, searchQuery])
 
   const resetAllFilters = () => {
     setActiveTab("all")
@@ -169,17 +173,20 @@ export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
   }
 
   const handleAddToCart = (product: CatalogProduct) => {
+    if(!product.variantId || !product.inStock) return
     addItem({
       id: product.id,
+      variantId: product.variantId,
+      productHandle: product.handle,
       title: product.name,
       format: product.format === "complete-pen-set" ? "pen-set" : product.format === "refill-cartridge" ? "refill" : "vial",
       strength: product.categoryLabel,
-      price: product.subscribePrice && product.isSubscriptionEligible ? product.subscribePrice : product.price,
+      price: product.price,
       isSubscription: product.isSubscriptionEligible,
       subscriptionIntervalDays: product.isSubscriptionEligible ? 28 : undefined,
       discountPercent: product.isSubscriptionEligible ? 10 : undefined,
-      sku: `PEP-${product.id.toUpperCase()}`,
-      batch: "LAB-2026-B1",
+      sku: product.sku || "",
+
     })
     setIsDrawerOpen(true)
   }
@@ -206,8 +213,11 @@ export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
             </>
           )}
         </div>
-        <div>
-          <h1 className="text-[24px] sm:text-[28px] font-bold text-[#0b1f3a] tracking-tight">
+        <div className="mt-1">
+          <span className="inline-block text-[12px] font-bold text-[#16A6A3] tracking-[1.2px] uppercase mb-1">
+            LABORATORY REAGENTS &amp; SYSTEMS
+          </span>
+          <h1 className="text-2xl sm:text-[32px] font-extrabold text-[#0b1f3a] tracking-tight uppercase">
             {activeTab === "all"
               ? "PEPTECH® Master Catalog"
               : activeTab === "pen-sets"
@@ -216,7 +226,7 @@ export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
               ? "Compatible Refill Cartridges"
               : "Lyophilised Research Vials"}
           </h1>
-          <p className="text-[13px] text-[#64748b] mt-1">
+          <p className="text-xs sm:text-[14px] text-[#64748b] leading-[22px] mt-1">
             Precision-engineered laboratory research systems, cartridges, and pure lyophilised peptides.
           </p>
         </div>
@@ -898,12 +908,13 @@ export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
                     className="flex flex-col items-center flex-1 w-full text-center"
                   >
                     {/* Image Box */}
-                    <div className="bg-[#f8fafc] rounded-[8px] h-[145px] w-full flex items-center justify-center relative overflow-hidden mb-2 group-hover:bg-[#f1f5f9] transition-colors">
-                      <div className="h-[130px] w-[180px] relative">
+                    <div className="bg-[#f8fafc] rounded-[8px] h-[145px] min-h-[145px] w-full flex items-center justify-center relative overflow-hidden mb-2 group-hover:bg-[#f1f5f9] transition-colors">
+                      <div className="relative w-full h-[130px] min-h-[130px] flex items-center justify-center">
                         <Image
                           src={product.image}
                           alt={product.name}
                           fill
+                          sizes="180px"
                           className="object-contain p-2 group-hover:scale-105 transition-transform"
                         />
                       </div>
@@ -968,6 +979,7 @@ export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
                       }}
                       title="Quick Add to Cart"
                       aria-label={`Add ${product.name} to Cart`}
+                      disabled={!product.variantId || !product.inStock}
                       className="group size-[36px] rounded-xl border border-[#cbd5e1] hover:border-[#0b1f3a] hover:bg-slate-50 flex items-center justify-center shrink-0 transition-colors cursor-pointer text-[#0b1f3a]"
                     >
                       <svg
@@ -1013,8 +1025,8 @@ export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
                   className="bg-white border border-[#e2e8f0] rounded-[8px] p-4 flex flex-col sm:flex-row items-center justify-between gap-4 hover:shadow-md transition-shadow group"
                 >
                   <Link href={`/products/${product.handle}`} className="flex items-center gap-4 flex-1">
-                    <div className="bg-[#f8fafc] rounded-[6px] size-[80px] relative shrink-0 p-1 group-hover:bg-slate-100 transition-colors">
-                      <Image src={product.image} alt={product.name} fill className="object-contain" />
+                    <div className="bg-[#f8fafc] rounded-[6px] size-[80px] min-h-[80px] min-w-[80px] relative shrink-0 p-1 group-hover:bg-slate-100 transition-colors">
+                      <Image src={product.image} alt={product.name} fill sizes="80px" className="object-contain" />
                     </div>
                     <div className="text-left">
                       <span className="text-[10px] font-semibold text-[#64748b] tracking-wide uppercase">
@@ -1053,6 +1065,7 @@ export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
                         className="group size-[38px] rounded-xl border border-[#cbd5e1] hover:border-[#0b1f3a] hover:bg-slate-50 flex items-center justify-center transition-colors cursor-pointer text-[#0b1f3a]"
                         title="Add to Cart"
                         aria-label={`Add ${product.name} to Cart`}
+                      disabled={!product.variantId || !product.inStock}
                       >
                         <svg
                           className="size-[15px] text-[#0b1f3a] group-hover:text-[#16a6a3] group-hover:scale-110 transition-all"

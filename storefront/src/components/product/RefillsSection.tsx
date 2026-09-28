@@ -3,7 +3,7 @@
 import React from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { useCart } from "@/components/cart/CartContext"
+import { useRouter } from "next/navigation"
 
 const FIGMA_REFILLS = [
   {
@@ -45,24 +45,8 @@ const FIGMA_REFILLS = [
 ]
 
 export function RefillsSection() {
-  const { addItem, setIsDrawerOpen } = useCart()
-
-  const handleAddCartridge = (item: typeof FIGMA_REFILLS[0]) => {
-    addItem({
-      id: item.id,
-      title: `${item.name} Refill Cartridge`,
-      format: "refill",
-      strength: item.type,
-      price: item.subPrice,
-      isSubscription: true,
-      subscriptionIntervalDays: 28,
-      discountPercent: 10,
-      sku: `PEP-CRT-${item.id.replace("cartridge-", "").toUpperCase()}`,
-      batch: "CRT-2026-B1",
-      image: item.image,
-    })
-    setIsDrawerOpen(true)
-  }
+  const router=useRouter()
+  const handleAddCartridge = (_item?: unknown) => router.push("/refills")
 
   return (
     <section className="bg-white py-[20px] pb-[60px] flex items-center justify-center border-t border-[#e2e8f0]">
@@ -93,11 +77,12 @@ export function RefillsSection() {
           {/* Left Feature Box (lg:col-span-3) - Figma Node 8:41444 */}
           <div className="lg:col-span-3 bg-[#f0f6fa] rounded-[12px] p-[20px] sm:p-[24px] flex flex-col justify-between h-[380px] shadow-xs">
             <div className="flex items-start gap-4 h-full">
-              <div className="w-[88px] h-full relative shrink-0">
+              <div className="w-[88px] h-[300px] min-h-[300px] relative shrink-0">
                 <Image
                   src="/images/figma/0e71e8560b9bae80ee21a3d08905300075c266b7.png"
                   alt="PEPTECH Refill Cartridge"
                   fill
+                  sizes="88px"
                   className="object-contain"
                 />
               </div>
@@ -146,11 +131,12 @@ export function RefillsSection() {
               >
                 <Link href={`/products/${item.handle}`} className="block flex-1">
                   {/* Cartridge Photo */}
-                  <div className="h-[170px] w-full relative mb-3 bg-[#f8fafc] rounded-lg group-hover:bg-slate-100 transition-colors">
+                  <div className="h-[170px] min-h-[170px] w-full relative mb-3 bg-[#f8fafc] rounded-lg group-hover:bg-slate-100 transition-colors">
                     <Image
                       src={item.image}
                       alt={item.name}
                       fill
+                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 200px"
                       className="object-contain p-2 group-hover:scale-105 transition-transform"
                     />
                   </div>

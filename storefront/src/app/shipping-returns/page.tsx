@@ -16,7 +16,7 @@ function LegalSidebar() {
   return (
     <aside className="space-y-6">
       <div className="bg-white rounded-3xl border border-[#e2e8f0] p-6 shadow-xs space-y-4">
-        <h4 className="text-xs font-bold text-[#0b1f3a] uppercase tracking-wider font-mono">
+        <h4 className="text-xs font-bold text-[#0b1f3a] uppercase tracking-wider">
           LEGAL &amp; COMPLIANCE DIRECTORY
         </h4>
         <nav className="space-y-1.5">
@@ -33,7 +33,7 @@ function LegalSidebar() {
                 }`}
               >
                 <span>{link.label}</span>
-                <span className={`text-[10px] font-mono px-2 py-0.5 rounded-md ${
+                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-md ${
                   active ? "bg-white/20 text-white" : "bg-[#f1f5f9] text-[#64748b]"
                 }`}>
                   {link.badge}
@@ -46,7 +46,7 @@ function LegalSidebar() {
 
       {/* Logistics Dispatch Card */}
       <div className="bg-[#f8fafc] rounded-3xl border border-[#e2e8f0] p-6 shadow-xs space-y-3 text-xs">
-        <span className="text-[10px] font-bold text-[#16a6a3] font-mono uppercase tracking-wider">
+        <span className="text-[10px] font-bold text-[#16a6a3] uppercase tracking-wider">
           COLD-CHAIN DISPATCH HUB
         </span>
         <h5 className="font-bold text-[#0b1f3a]">PEPTECH Fulfillment Center</h5>
@@ -56,7 +56,7 @@ function LegalSidebar() {
         </p>
         <div className="pt-2 border-t border-[#e2e8f0] flex justify-between items-center text-[11px]">
           <span className="text-[#64748b]">Same-day cutoff:</span>
-          <span className="font-mono font-bold text-[#0b1f3a]">14:00 GMT</span>
+          <span className="font-bold text-[#0b1f3a]">14:00 GMT</span>
         </div>
       </div>
     </aside>
@@ -80,13 +80,13 @@ export default function ShippingReturnsPage() {
       {/* 02 Header Hero */}
       <section className="bg-white border-b border-[#e2e8f0] py-12 sm:py-16">
         <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
-
-
-          <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-[#0b1f3a]">
+          <span className="inline-block text-[12px] font-bold text-[#16A6A3] tracking-[1.2px] uppercase">
+            LOGISTICS &amp; FULFILLMENT
+          </span>
+          <h1 className="text-3xl sm:text-4xl lg:text-[44px] font-extrabold text-[#0B1F3A] leading-[1.15] tracking-tight uppercase">
             Shipping, Cold-Chain &amp; Returns
           </h1>
-
-          <p className="text-sm sm:text-base text-[#475569] max-w-3xl leading-relaxed">
+          <p className="text-xs sm:text-[14px] text-[#64748B] leading-[22px] max-w-3xl">
             Every shipment dispatched by PEPTECH is engineered with discreet external packaging, validated thermal insulation, and full Royal Mail tracking milestones to safeguard laboratory confidentiality and compound stability.
           </p>
         </div>
@@ -109,20 +109,20 @@ export default function ShippingReturnsPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="p-6 rounded-2xl border border-[#e2e8f0] bg-[#f8fafc] space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-[#16a6a3] uppercase font-mono">DOMESTIC UK</span>
+                    <span className="text-xs font-bold text-[#16a6a3] uppercase">DOMESTIC UK</span>
                     <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[10px] font-bold">Priority</span>
                   </div>
-                  <div className="font-mono text-2xl sm:text-3xl font-black text-[#0b1f3a]">£4.95 GBP</div>
+                  <div className="text-2xl sm:text-3xl font-extrabold text-[#0b1f3a]">£4.95 GBP</div>
                   <div className="font-semibold text-xs text-[#0b1f3a]">Royal Mail Tracked 24</div>
                   <p className="text-xs text-[#64748b]">Free on orders over £100. Delivery typically within 24 hours of dispatch with SMS milestone notifications.</p>
                 </div>
 
                 <div className="p-6 rounded-2xl border border-[#e2e8f0] bg-[#f8fafc] space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-[#16a6a3] uppercase font-mono">WORLDWIDE &amp; USA</span>
+                    <span className="text-xs font-bold text-[#16a6a3] uppercase">WORLDWIDE &amp; USA</span>
                     <span className="px-2 py-0.5 rounded-md bg-blue-100 text-blue-800 text-[10px] font-bold">Airmail</span>
                   </div>
-                  <div className="font-mono text-2xl sm:text-3xl font-black text-[#0b1f3a]">£15.00 GBP</div>
+                  <div className="text-2xl sm:text-3xl font-extrabold text-[#0b1f3a]">£15.00 GBP</div>
                   <div className="font-semibold text-xs text-[#0b1f3a]">Royal Mail International Tracked</div>
                   <p className="text-xs text-[#64748b]">Door-to-door tracking. Delivered to North America and Europe typically within 3–7 business days.</p>
                 </div>
@@ -131,7 +131,7 @@ export default function ShippingReturnsPage() {
               {/* Section 1 */}
               <section className="space-y-3 border-b border-[#f1f5f9] pb-6">
                 <h3 className="text-lg font-bold text-[#0b1f3a] flex items-center gap-2">
-                  <span className="text-xs font-mono font-bold text-[#16a6a3] bg-[#16a6a3]/10 px-2 py-0.5 rounded-md">01</span>
+                  <span className="text-xs font-bold text-[#16a6a3] bg-[#16a6a3]/10 px-2 py-0.5 rounded-md">01</span>
                   Discreet Outer Packaging Standard
                 </h3>
                 <div className="p-4 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] space-y-2">
@@ -150,7 +150,7 @@ export default function ShippingReturnsPage() {
               {/* Section 2 */}
               <section className="space-y-3 border-b border-[#f1f5f9] pb-6">
                 <h3 className="text-lg font-bold text-[#0b1f3a] flex items-center gap-2">
-                  <span className="text-xs font-mono font-bold text-[#16a6a3] bg-[#16a6a3]/10 px-2 py-0.5 rounded-md">02</span>
+                  <span className="text-xs font-bold text-[#16a6a3] bg-[#16a6a3]/10 px-2 py-0.5 rounded-md">02</span>
                   Cold-Chain Transit &amp; Thermal Protection
                 </h3>
                 <p>
@@ -166,7 +166,7 @@ export default function ShippingReturnsPage() {
               {/* Section 3 */}
               <section className="space-y-3 border-b border-[#f1f5f9] pb-6">
                 <h3 className="text-lg font-bold text-[#0b1f3a] flex items-center gap-2">
-                  <span className="text-xs font-mono font-bold text-[#16a6a3] bg-[#16a6a3]/10 px-2 py-0.5 rounded-md">03</span>
+                  <span className="text-xs font-bold text-[#16a6a3] bg-[#16a6a3]/10 px-2 py-0.5 rounded-md">03</span>
                   Fulfillment &amp; Dispatch Cutoff Times
                 </h3>
                 <p>
@@ -177,7 +177,7 @@ export default function ShippingReturnsPage() {
               {/* Section 4 */}
               <section className="space-y-3 border-b border-[#f1f5f9] pb-6">
                 <h3 className="text-lg font-bold text-[#0b1f3a] flex items-center gap-2">
-                  <span className="text-xs font-mono font-bold text-[#16a6a3] bg-[#16a6a3]/10 px-2 py-0.5 rounded-md">04</span>
+                  <span className="text-xs font-bold text-[#16a6a3] bg-[#16a6a3]/10 px-2 py-0.5 rounded-md">04</span>
                   Returns &amp; Replacement Criteria
                 </h3>
                 <p>
@@ -210,7 +210,7 @@ export default function ShippingReturnsPage() {
               {/* Section 5 */}
               <section className="space-y-3">
                 <h3 className="text-lg font-bold text-[#0b1f3a] flex items-center gap-2">
-                  <span className="text-xs font-mono font-bold text-[#16a6a3] bg-[#16a6a3]/10 px-2 py-0.5 rounded-md">05</span>
+                  <span className="text-xs font-bold text-[#16a6a3] bg-[#16a6a3]/10 px-2 py-0.5 rounded-md">05</span>
                   International Customs &amp; Regulatory Duties
                 </h3>
                 <p>

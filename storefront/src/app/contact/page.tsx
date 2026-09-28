@@ -42,13 +42,15 @@ export default function ContactPage() {
       {/* 02 Header Section */}
       <section className="bg-gradient-to-b from-[#f8fafc] to-white border-b border-[#e2e8f0] py-12 sm:py-16">
         <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
+          <span className="inline-block text-[12px] font-bold text-[#16A6A3] tracking-[1.2px] uppercase">
+            LABORATORY SUPPORT
+          </span>
 
-
-          <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-[#0b1f3a]">
+          <h1 className="text-3xl sm:text-4xl lg:text-[44px] font-extrabold text-[#0B1F3A] leading-[1.15] tracking-tight uppercase">
             Contact Cambridge Research Hub
           </h1>
 
-          <p className="text-sm sm:text-base text-[#475569] max-w-2xl leading-relaxed">
+          <p className="text-xs sm:text-[14px] text-[#64748B] leading-[22px] max-w-2xl">
             Have questions regarding batch lots, cold-chain logistics, institutional Net-30 purchase orders, or hardware compatibility? Our laboratory support team is on hand.
           </p>
         </div>
@@ -67,16 +69,16 @@ export default function ContactPage() {
                     ✓
                   </div>
                   <div className="space-y-2">
-                    <span className="text-xs font-bold font-mono text-emerald-700 uppercase tracking-widest">
+                    <span className="text-[11px] font-bold text-emerald-700 uppercase tracking-widest">
                       INQUIRY LOGGED &amp; DISPATCHED
                     </span>
-                    <h3 className="text-2xl font-black text-[#0b1f3a]">Thank You, {formData.name}</h3>
+                    <h3 className="text-2xl font-extrabold text-[#0b1f3a]">Thank You, {formData.name}</h3>
                     <p className="text-xs sm:text-sm text-[#475569] max-w-md mx-auto leading-relaxed">
-                      Your inquiry has been assigned ticket reference <strong className="font-mono text-[#0b1f3a]">{ticketRef}</strong>. A scientific support coordinator will review your request and reply to <span className="font-semibold text-[#0b1f3a]">{formData.email}</span> within 2 hours.
+                      Your inquiry has been assigned ticket reference <strong className="text-[#0b1f3a]">{ticketRef}</strong>. A scientific support coordinator will review your request and reply to <span className="font-semibold text-[#0b1f3a]">{formData.email}</span> within 2 hours.
                     </p>
                   </div>
 
-                  <div className="p-4 rounded-xl bg-white border border-[#bbf7d0] text-xs text-[#64748b] text-left max-w-md mx-auto space-y-1 font-mono">
+                  <div className="p-4 rounded-xl bg-white border border-[#bbf7d0] text-xs text-[#64748b] text-left max-w-md mx-auto space-y-1">
                     <div className="flex justify-between"><span>Reference:</span> <span className="font-bold text-[#0b1f3a]">{ticketRef}</span></div>
                     <div className="flex justify-between"><span>Category:</span> <span className="capitalize">{formData.inquiryType.replace("_", " ")}</span></div>
                     <div className="flex justify-between"><span>Status:</span> <span className="text-emerald-600 font-bold">In Laboratory Queue</span></div>
@@ -179,7 +181,7 @@ export default function ContactPage() {
                       placeholder="e.g. #PEP-89241 or RT-2609A"
                       value={formData.referenceId}
                       onChange={(e) => setFormData({ ...formData, referenceId: e.target.value })}
-                      className="w-full px-4 py-2.5 rounded-xl border border-[#e2e8f0] text-xs font-mono focus:outline-hidden focus:border-[#16a6a3] focus:ring-1 focus:ring-[#16a6a3]"
+                      className="w-full px-4 py-2.5 rounded-xl border border-[#e2e8f0] text-xs focus:outline-hidden focus:border-[#16a6a3] focus:ring-1 focus:ring-[#16a6a3]"
                     />
                   </div>
 
@@ -230,7 +232,7 @@ export default function ContactPage() {
               <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-3xl p-6 sm:p-8 space-y-6">
                 {/* Structured Header */}
                 <div className="border-b border-[#e2e8f0] pb-5 space-y-1">
-                  <span className="text-[11px] font-bold font-mono tracking-widest text-black uppercase block">
+                  <span className="text-[11px] font-bold tracking-widest text-black uppercase block">
                     DIRECT CONTACT
                   </span>
                   <h4 className="text-xl font-bold text-black tracking-tight">
@@ -252,7 +254,7 @@ export default function ContactPage() {
                     </div>
                     <div>
                       <strong className="block text-black font-semibold">Direct Email</strong>
-                      <a href="mailto:info@peptech.bio" className="text-black font-medium hover:underline font-mono text-xs mt-0.5 block">
+                      <a href="mailto:info@peptech.bio" className="text-black font-medium hover:underline text-xs mt-0.5 block">
                         info@peptech.bio
                       </a>
                     </div>

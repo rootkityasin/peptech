@@ -16,7 +16,7 @@ function LegalSidebar() {
   return (
     <aside className="space-y-6">
       <div className="bg-white rounded-3xl border border-[#e2e8f0] p-6 shadow-xs space-y-4">
-        <h4 className="text-xs font-bold text-[#0b1f3a] uppercase tracking-wider font-mono">
+        <h4 className="text-xs font-bold text-[#0b1f3a] uppercase tracking-wider">
           LEGAL &amp; COMPLIANCE DIRECTORY
         </h4>
         <nav className="space-y-1.5">
@@ -33,7 +33,7 @@ function LegalSidebar() {
                 }`}
               >
                 <span>{link.label}</span>
-                <span className={`text-[10px] font-mono px-2 py-0.5 rounded-md ${
+                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-md ${
                   active ? "bg-white/20 text-white" : "bg-[#f1f5f9] text-[#64748b]"
                 }`}>
                   {link.badge}
@@ -46,7 +46,7 @@ function LegalSidebar() {
 
       {/* DPO Card */}
       <div className="bg-[#f8fafc] rounded-3xl border border-[#e2e8f0] p-6 shadow-xs space-y-3 text-xs">
-        <span className="text-[10px] font-bold text-[#16a6a3] font-mono uppercase tracking-wider">
+        <span className="text-[10px] font-bold text-[#16a6a3] uppercase tracking-wider">
           DATA PROTECTION OFFICER (DPO)
         </span>
         <h5 className="font-bold text-[#0b1f3a]">PEPTECH BioSciences Ltd</h5>
@@ -58,7 +58,7 @@ function LegalSidebar() {
         <div className="pt-2 border-t border-[#e2e8f0]">
           <a
             href="mailto:info@peptech.bio"
-            className="font-mono text-[#16a6a3] hover:underline font-semibold"
+            className="text-[#16a6a3] hover:underline font-semibold"
           >
             info@peptech.bio
           </a>
@@ -85,13 +85,13 @@ export default function PrivacyPolicyPage() {
       {/* 02 Header Hero */}
       <section className="bg-white border-b border-[#e2e8f0] py-12 sm:py-16">
         <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
-
-
-          <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-[#0b1f3a]">
+          <span className="inline-block text-[12px] font-bold text-[#16A6A3] tracking-[1.2px] uppercase">
+            LEGAL &amp; DATA PRIVACY
+          </span>
+          <h1 className="text-3xl sm:text-4xl lg:text-[44px] font-extrabold text-[#0B1F3A] leading-[1.15] tracking-tight uppercase">
             Privacy &amp; Cookie Policy
           </h1>
-
-          <p className="text-sm sm:text-base text-[#475569] max-w-3xl leading-relaxed">
+          <p className="text-xs sm:text-[14px] text-[#64748B] leading-[22px] max-w-3xl">
             PEPTECH BioSciences Ltd is committed to protecting your privacy and upholding the highest standards of data security in accordance with the UK General Data Protection Regulation (UK GDPR) and Data Protection Act 2018.
           </p>
         </div>
@@ -112,7 +112,7 @@ export default function PrivacyPolicyPage() {
               
               {/* Data Controller Notice */}
               <div className="p-5 rounded-2xl bg-[#f8fafc] border border-[#e2e8f0] space-y-1 text-xs">
-                <span className="font-mono text-[10px] text-[#16a6a3] font-bold uppercase tracking-wider block">
+                <span className="text-[10px] text-[#16a6a3] font-bold uppercase tracking-wider block">
                   STATUTORY DATA CONTROLLER IDENTIFICATION
                 </span>
                 <p className="text-[#0b1f3a] font-semibold">
@@ -123,7 +123,7 @@ export default function PrivacyPolicyPage() {
               {/* Section 1 */}
               <section className="space-y-3 border-b border-[#f1f5f9] pb-6">
                 <h3 className="text-lg font-bold text-[#0b1f3a] flex items-center gap-2">
-                  <span className="text-xs font-mono font-bold text-[#16a6a3] bg-[#16a6a3]/10 px-2 py-0.5 rounded-md">01</span>
+                  <span className="text-xs font-bold text-[#16a6a3] bg-[#16a6a3]/10 px-2 py-0.5 rounded-md">01</span>
                   Information We Collect &amp; Process
                 </h3>
                 <p>
@@ -140,7 +140,7 @@ export default function PrivacyPolicyPage() {
               {/* Section 2 */}
               <section className="space-y-3 border-b border-[#f1f5f9] pb-6">
                 <h3 className="text-lg font-bold text-[#0b1f3a] flex items-center gap-2">
-                  <span className="text-xs font-mono font-bold text-[#16a6a3] bg-[#16a6a3]/10 px-2 py-0.5 rounded-md">02</span>
+                  <span className="text-xs font-bold text-[#16a6a3] bg-[#16a6a3]/10 px-2 py-0.5 rounded-md">02</span>
                   Zero Raw Card Data Retention Policy
                 </h3>
                 <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 space-y-2 text-xs text-emerald-950">
@@ -157,7 +157,7 @@ export default function PrivacyPolicyPage() {
               {/* Section 3 */}
               <section className="space-y-3 border-b border-[#f1f5f9] pb-6">
                 <h3 className="text-lg font-bold text-[#0b1f3a] flex items-center gap-2">
-                  <span className="text-xs font-mono font-bold text-[#16a6a3] bg-[#16a6a3]/10 px-2 py-0.5 rounded-md">03</span>
+                  <span className="text-xs font-bold text-[#16a6a3] bg-[#16a6a3]/10 px-2 py-0.5 rounded-md">03</span>
                   Cookies &amp; Local Storage Usage
                 </h3>
                 <p>
@@ -173,7 +173,7 @@ export default function PrivacyPolicyPage() {
               {/* Section 4 */}
               <section className="space-y-3 border-b border-[#f1f5f9] pb-6">
                 <h3 className="text-lg font-bold text-[#0b1f3a] flex items-center gap-2">
-                  <span className="text-xs font-mono font-bold text-[#16a6a3] bg-[#16a6a3]/10 px-2 py-0.5 rounded-md">04</span>
+                  <span className="text-xs font-bold text-[#16a6a3] bg-[#16a6a3]/10 px-2 py-0.5 rounded-md">04</span>
                   Third-Party Data Disclosures
                 </h3>
                 <p>
@@ -189,7 +189,7 @@ export default function PrivacyPolicyPage() {
               {/* Section 5 */}
               <section className="space-y-3 border-b border-[#f1f5f9] pb-6">
                 <h3 className="text-lg font-bold text-[#0b1f3a] flex items-center gap-2">
-                  <span className="text-xs font-mono font-bold text-[#16a6a3] bg-[#16a6a3]/10 px-2 py-0.5 rounded-md">05</span>
+                  <span className="text-xs font-bold text-[#16a6a3] bg-[#16a6a3]/10 px-2 py-0.5 rounded-md">05</span>
                   Your Rights Under UK GDPR
                 </h3>
                 <p>
@@ -218,7 +218,7 @@ export default function PrivacyPolicyPage() {
               {/* Section 6 */}
               <section className="space-y-3">
                 <h3 className="text-lg font-bold text-[#0b1f3a] flex items-center gap-2">
-                  <span className="text-xs font-mono font-bold text-[#16a6a3] bg-[#16a6a3]/10 px-2 py-0.5 rounded-md">06</span>
+                  <span className="text-xs font-bold text-[#16a6a3] bg-[#16a6a3]/10 px-2 py-0.5 rounded-md">06</span>
                   Exercising Your Rights &amp; ICO Complaints
                 </h3>
                 <p>

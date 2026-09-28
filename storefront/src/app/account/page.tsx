@@ -1,5 +1,8 @@
 "use client"
 
+import { AccountBilling } from "@/components/checkout/AccountBilling"
+import { commerceRequest } from "@/lib/stripe-checkout"
+
 import React, { useState, useEffect, Suspense, useRef } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import Link from "next/link"
@@ -17,6 +20,7 @@ function AccountContent() {
 
   const {
     customer,
+    token,
     isAuthenticated,
     isLoading,
     login,
@@ -36,12 +40,6 @@ function AccountContent() {
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
 
   // Payment Modal States
-  const [isAddCardOpen, setIsAddCardOpen] = useState(false)
-  const [cardholderName, setCardholderName] = useState("")
-  const [cardNumber, setCardNumber] = useState("")
-  const [cardExpiry, setCardExpiry] = useState("")
-  const [cardCvc, setCardCvc] = useState("")
-  const [cardBillingAddress, setCardBillingAddress] = useState("")
 
   // Auth Portal States
   const [authMode, setAuthMode] = useState<"signin" | "register">("signin")
@@ -147,29 +145,14 @@ function AccountContent() {
         }
         setOrders(loadedOrders)
 
-        // 1. Dynamic Subscriptions: remote customer metadata in PostgreSQL prioritized over local storage
-        let dynamicSubs: any[] = []
-        if (Array.isArray(customer.metadata?.subscriptions) && customer.metadata.subscriptions.length > 0) {
-          dynamicSubs = customer.metadata.subscriptions
-        } else {
-          try {
-            const rawSubs = localStorage.getItem(`peptech_customer_subscriptions_${customer.id}`)
-            if (rawSubs) dynamicSubs = JSON.parse(rawSubs)
-          } catch {}
-        }
-        setSubscriptions(dynamicSubs)
+        try {
+          if (token) {
+            const result = await commerceRequest("/store/custom/subscriptions", token)
+            setSubscriptions(result.subscriptions)
+          }
+        } catch (error) { console.warn("Subscription loading failed") }
+        setPaymentCards([])
 
-        // 2. Dynamic Payment Cards: remote customer metadata in PostgreSQL prioritized over local storage
-        let dynamicCards: any[] = []
-        if (Array.isArray(customer.metadata?.payment_cards) && customer.metadata.payment_cards.length > 0) {
-          dynamicCards = customer.metadata.payment_cards
-        } else {
-          try {
-            const rawCards = localStorage.getItem(`peptech_customer_cards_${customer.id}`)
-            if (rawCards) dynamicCards = JSON.parse(rawCards)
-          } catch {}
-        }
-        setPaymentCards(dynamicCards)
       } finally {
         setIsLoadingOrders(false)
       }
@@ -259,110 +242,12 @@ function AccountContent() {
   }
 
   // Payment Cards management
-  const handleAddPaymentCard = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!cardNumber || !cardExpiry || !cardholderName) {
-      alert("Please fill in Cardholder Name, Card Number, and Expiry.")
-      return
-    }
-    const cleanNum = cardNumber.replace(/\s+/g, "")
-    const last4 = cleanNum.slice(-4) || "4242"
-    const isMastercard = cleanNum.startsWith("5")
-    const newCard = {
-      id: `card_${Date.now()}`,
-      brand: isMastercard ? "mastercard" : "visa",
-      title: isMastercard ? "Mastercard Corporate" : "Visa Corporate",
-      last4,
-      expiry: cardExpiry,
-      cardholder: cardholderName,
-      billingAddress: cardBillingAddress || (customer?.addresses?.[0]?.address_1 ? `${customer.addresses[0].address_1}, ${customer.addresses[0].city}` : "Laboratory Facility Address"),
-      isDefault: paymentCards.length === 0,
-    }
-    const updated = [...paymentCards, newCard]
-    setPaymentCards(updated)
-    if (customer?.id) {
-      localStorage.setItem(`peptech_customer_cards_${customer.id}`, JSON.stringify(updated))
-      void updateProfile({ metadata: { ...(customer.metadata || {}), payment_cards: updated } })
-    }
-    setIsAddCardOpen(false)
-    setCardNumber("")
-    setCardExpiry("")
-    setCardCvc("")
-    setCardholderName("")
-    setCardBillingAddress("")
-  }
-
-  const handleDeleteCard = (cardId: string) => {
-    const updated = paymentCards.filter(c => c.id !== cardId)
-    setPaymentCards(updated)
-    if (customer?.id) {
-      localStorage.setItem(`peptech_customer_cards_${customer.id}`, JSON.stringify(updated))
-      void updateProfile({ metadata: { ...(customer.metadata || {}), payment_cards: updated } })
-    }
-  }
-
-  const handleSetDefaultCard = (cardId: string) => {
-    const updated = paymentCards.map(c => ({
-      ...c,
-      isDefault: c.id === cardId,
-    }))
-    setPaymentCards(updated)
-    if (customer?.id) {
-      localStorage.setItem(`peptech_customer_cards_${customer.id}`, JSON.stringify(updated))
-      void updateProfile({ metadata: { ...(customer.metadata || {}), payment_cards: updated } })
-    }
-  }
-
-  // Dynamic Subscription Management Handlers
-  const handlePauseSubscription = async (subId: string) => {
-    const updated = subscriptions.map((s) => {
-      if (s.id === subId) {
-        const nextStatus = s.status === "Paused" ? "Active" : "Paused"
-        return { ...s, status: nextStatus }
-      }
-      return s
-    })
-    setSubscriptions(updated)
-    if (customer?.id) {
-      try {
-        localStorage.setItem(`peptech_customer_subscriptions_${customer.id}`, JSON.stringify(updated))
-        await updateProfile({ metadata: { ...(customer.metadata || {}), subscriptions: updated } })
-      } catch {}
-    }
-  }
-
-  const handleSkipSubscription = async (subId: string) => {
-    const updated = subscriptions.map((s) => {
-      if (s.id === subId) {
-        const nextDate = new Date()
-        nextDate.setDate(nextDate.getDate() + 28)
-        return {
-          ...s,
-          nextBillingDate: nextDate.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }),
-          nextDispatchDate: nextDate.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }),
-        }
-      }
-      return s
-    })
-    setSubscriptions(updated)
-    if (customer?.id) {
-      try {
-        localStorage.setItem(`peptech_customer_subscriptions_${customer.id}`, JSON.stringify(updated))
-        await updateProfile({ metadata: { ...(customer.metadata || {}), subscriptions: updated } })
-      } catch {}
-    }
-  }
-
-  const handleCancelSubscription = async (subId: string) => {
-    if (!confirm("Are you sure you want to cancel this automated 28-day refill protocol?")) return
-    const updated = subscriptions.filter((s) => s.id !== subId)
-    setSubscriptions(updated)
-    if (customer?.id) {
-      try {
-        localStorage.setItem(`peptech_customer_subscriptions_${customer.id}`, JSON.stringify(updated))
-        await updateProfile({ metadata: { ...(customer.metadata || {}), subscriptions: updated } })
-      } catch {}
-    }
+  const handleSkipSubscription = async (id: string) => {
+    if (!token) return
+    try {
+      const result = await commerceRequest("/store/custom/subscriptions", token, {subscription_id:id,action:"skip",operation_id:crypto.randomUUID()}, "PUT")
+      setSubscriptions(old => old.map(s => s.id === id ? result.subscription : s))
+    } catch (error) { alert(error instanceof Error ? error.message : "Subscription could not be updated") }
   }
 
   // Profile Edit Modal States
@@ -584,10 +469,11 @@ function AccountContent() {
         phone: regPhone.trim() || undefined,
         metadata: {
           title: regTitle,
-          role: "Verified Clinical Researcher",
+          role: "Research account",
+          compliance_ack: regAgreeCompliance,
         },
       })
-      setAuthSuccessMessage("Facility verified! Loading research dashboard...")
+      setAuthSuccessMessage("Account created! Loading research dashboard...")
     } catch (err: any) {
       setAuthSuccessMessage(null)
       setAuthError(err.message || "Failed to create account.")
@@ -615,7 +501,7 @@ function AccountContent() {
         <div className="max-w-[480px] w-full bg-white rounded-[20px] p-6 sm:p-9 border border-[#e2e8f0] shadow-sm flex flex-col gap-6">
           {/* Top Header */}
           <div className="text-center">
-            <h1 className="text-[24px] font-bold text-[#0b1f3a] tracking-tight">
+            <h1 className="text-2xl sm:text-[28px] font-extrabold text-[#0b1f3a] tracking-tight uppercase">
               Login
             </h1>
           </div>
@@ -1018,7 +904,7 @@ function AccountContent() {
               </div>
               <div className="flex flex-col gap-[4px] items-start">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h1 className="font-bold text-[#0b1f3a] text-[20px] sm:text-[22px] tracking-tight">
+                  <h1 className="font-extrabold text-[#0b1f3a] text-[20px] sm:text-[24px] tracking-tight">
                     {customer.metadata?.title ? `${customer.metadata.title} ` : ""}
                     {customer.first_name} {customer.last_name}
                   </h1>
@@ -1852,355 +1738,8 @@ function AccountContent() {
         {/* ========================================================= */}
         {/* TAB 3: ACTIVE SUBSCRIPTIONS (Node 52:9548 & 52:11602) */}
         {/* ========================================================= */}
-        {activeTab === "subscriptions" && (
-          <div className="flex flex-col lg:flex-row gap-[32px] items-start w-full">
-            {/* Left Main Column */}
-            <div className="flex flex-col gap-[24px] w-full lg:flex-1">
-              {/* Filter Pills & Add CTA */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full">
-                <div className="flex gap-[8px] items-center overflow-x-auto no-scrollbar w-full sm:w-auto pb-1 sm:pb-0">
-                  <button
-                    type="button"
-                    onClick={() => setSubFilter("active")}
-                    className={`px-[14px] py-[7px] rounded-full text-[12.5px] font-semibold transition-all cursor-pointer shrink-0 whitespace-nowrap ${
-                      subFilter === "active"
-                        ? "bg-[#0b1f3a] text-white shadow-2xs"
-                        : "bg-white border border-[#e2e8f0] text-[#0f172a] hover:border-slate-300 font-medium"
-                    }`}
-                  >
-                    Active Protocols ({subscriptions.length})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSubFilter("paused")}
-                    className={`px-[14px] py-[7px] rounded-full text-[12.5px] transition-all cursor-pointer shrink-0 whitespace-nowrap ${
-                      subFilter === "paused"
-                        ? "bg-[#0b1f3a] text-white shadow-2xs font-semibold"
-                        : "bg-white border border-[#e2e8f0] text-[#0f172a] hover:border-slate-300 font-medium"
-                    }`}
-                  >
-                    Paused (0)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSubFilter("ended")}
-                    className={`px-[14px] py-[7px] rounded-full text-[12.5px] transition-all cursor-pointer shrink-0 whitespace-nowrap ${
-                      subFilter === "ended"
-                        ? "bg-[#0b1f3a] text-white shadow-2xs font-semibold"
-                        : "bg-white border border-[#e2e8f0] text-[#0f172a] hover:border-slate-300 font-medium"
-                    }`}
-                  >
-                    Past / Ended (0)
-                  </button>
-                </div>
-                <Link
-                  href="/refills"
-                  className="bg-[#0b1f3a] hover:bg-[#162a45] text-white text-[12.5px] font-semibold px-[14px] py-[8px] rounded-[6px] transition-colors shrink-0 text-center sm:text-left self-start sm:self-auto"
-                >
-                  + Add Cartridge Refill
-                </Link>
-              </div>
+        {activeTab === "subscriptions" && token && <AccountBilling token={token} subscriptionsOnly />}
 
-              {/* Dynamic Subscription List or Empty State */}
-              {subscriptions.length === 0 ? (
-                <div className="bg-white rounded-[16px] p-8 sm:p-12 text-center border border-slate-100 flex flex-col items-center justify-center gap-4">
-                  <div className="w-16 h-16 rounded-full bg-[#f1f5f9] flex items-center justify-center text-[#64748b]">
-                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                  </div>
-                  <div className="max-w-md">
-                    <h3 className="text-[17px] font-bold text-[#0b1f3a]">No Active Refill Protocols</h3>
-                    <p className="text-[13px] text-[#64748b] mt-1 leading-relaxed">
-                      You do not currently have any active automated 28-day cartridge refill protocols. Refill subscriptions unlock guaranteed batch allocation, 10% locked pricing, and free tracked cold-chain dispatch.
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap gap-3 mt-2">
-                    <Link
-                      href="/refills"
-                      className="bg-[#0b1f3a] hover:bg-[#162a45] text-white text-[13px] font-semibold px-5 py-2.5 rounded-[8px] transition-colors"
-                    >
-                      Browse Refill Cartridges
-                    </Link>
-                    <Link
-                      href="/vials"
-                      className="bg-[#f8fafc] border border-slate-200 hover:bg-slate-100 text-[#0b1f3a] text-[13px] font-semibold px-5 py-2.5 rounded-[8px] transition-colors"
-                    >
-                      Explore Lyophilised Vials
-                    </Link>
-                  </div>
-                </div>
-              ) : (
-                subscriptions.map((sub: any) => (
-                  <div key={sub.id} className="bg-white rounded-[16px] px-6 sm:px-[28px] py-[26px] shadow-xs border border-slate-100 flex flex-col gap-[20px]">
-                    <div className="flex items-center justify-between">
-                      <div className="flex flex-col gap-[3px]">
-                        <p className="font-bold text-[#0b1f3a] text-[17px]">
-                          {sub.title}
-                        </p>
-                        <p className="font-normal text-[#64748b] text-[12.5px]">
-                          28-Day Automated Cycle · Subscription ID #{sub.id}
-                        </p>
-                      </div>
-                      <div className="bg-[#e6fffa] px-[12px] py-[6px] rounded-[20px]">
-                        <p className="font-semibold text-[#16a6a3] text-[12px] whitespace-nowrap">
-                          {sub.status || "Active Subscription"}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-[16px] px-4 sm:px-[28px] py-[22px] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                      <div className="flex gap-[16px] items-center">
-                        <div className="w-[54px] h-[54px] rounded-[8px] bg-white border border-slate-200 overflow-hidden flex items-center justify-center p-1 shrink-0">
-                          <img
-                            alt=""
-                            className="w-[46px] h-[46px] object-contain"
-                            src={sub.image || "/images/figma/0e71e8560b9bae80ee21a3d08905300075c266b7.png"}
-                          />
-                        </div>
-                        <div className="flex flex-col gap-[4px]">
-                          <p className="font-bold text-[#0b1f3a] text-[14px]">
-                            {sub.title}
-                          </p>
-                          <p className="font-normal text-[#64748b] text-[12.5px]">
-                            Automated 28-Day Cadence · {sub.quantity || 1} Unit(s) / Cycle
-                          </p>
-                          <p className="font-normal text-[#94a3b8] text-[12px]">
-                            Ships to: {sub.shipsTo || "Verified Laboratory Facility"}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold text-[#0b1f3a] text-[17px]">£{(sub.price || 0).toFixed(2)}</p>
-                        <p className="font-medium text-[#16a6a3] text-[11.5px]">per 28-day cycle (-10%)</p>
-                      </div>
-                    </div>
-
-                    <div className="bg-[#e6fffa] px-[16px] py-[12px] rounded-[8px] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                      <p className="font-semibold text-[#0b1f3a] text-[12.5px]">
-                        Next Cold-Chain Dispatch: {sub.nextBillingDate || "Scheduled within 28 days"}
-                      </p>
-                      <p className="font-normal text-[#64748b] text-[12px]">
-                        Auto-billed to {sub.cardEnding ? `Card ending in ...${sub.cardEnding}` : "Authorized Billing Method"}
-                      </p>
-                    </div>
-
-                    {/* Sub Actions Row */}
-                    <div className="flex flex-wrap gap-[10px] items-center">
-                      <button
-                        type="button"
-                        onClick={() => setScheduleExpanded(!scheduleExpanded)}
-                        className="bg-[#0b1f3a] hover:bg-[#162a45] text-white text-[12.5px] font-semibold px-[14px] py-[8px] rounded-[6px] transition-colors cursor-pointer"
-                      >
-                        {scheduleExpanded ? "Hide Refill Schedule ▲" : "Manage Refill Schedule ▼"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handlePauseSubscription(sub.id)}
-                        className="bg-[#f1f5f9] hover:bg-slate-200 text-[#0b1f3a] text-[12.5px] font-semibold px-[14px] py-[8px] rounded-[6px] transition-colors cursor-pointer"
-                      >
-                        {sub.status === "Paused" ? "Resume Protocol" : "Pause Protocol"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleSkipSubscription(sub.id)}
-                        className="bg-[#f1f5f9] hover:bg-slate-200 text-[#0b1f3a] text-[12.5px] font-semibold px-[14px] py-[8px] rounded-[6px] transition-colors cursor-pointer"
-                      >
-                        Skip Next Cycle
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleCancelSubscription(sub.id)}
-                        className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-rose-200 text-[12px] font-semibold px-[12px] py-[8px] rounded-[6px] transition-colors cursor-pointer sm:ml-auto"
-                      >
-                        Cancel Protocol
-                      </button>
-                    </div>
-
-                    {/* Expanded Refill Schedule Panel */}
-                    {scheduleExpanded && (
-                      <div className="border-t border-[#f1f5f9] pt-[18px] flex flex-col gap-[16px] animate-in fade-in slide-in-from-top-2 duration-200">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-bold text-[#0b1f3a] text-[15px]">
-                              Refill Schedule Configuration
-                            </p>
-                            <p className="font-normal text-[#64748b] text-[12px] mt-0.5">
-                              Adjust automated cadence, upcoming dispatch dates, and facility receiving hours.
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => setScheduleExpanded(false)}
-                            className="text-[#64748b] hover:text-[#0b1f3a] text-[12.5px] font-semibold cursor-pointer"
-                          >
-                            ✕ Close Schedule
-                          </button>
-                        </div>
-
-                        <div className="flex flex-col gap-[8px]">
-                          <p className="font-semibold text-[#0b1f3a] text-[13px]">
-                            Automated Refill Frequency
-                          </p>
-                          <div
-                            onClick={() => setSelectedCadence("28")}
-                            className={`rounded-[8px] px-[14px] py-[10px] flex items-center justify-between cursor-pointer border transition-all ${
-                              selectedCadence === "28"
-                                ? "bg-[#e6fffa] border-[#16a6a3]"
-                                : "bg-[#f8fafc] border-transparent hover:border-slate-300"
-                            }`}
-                          >
-                            <div className="flex gap-[10px] items-center">
-                              <div
-                                className={`w-[14px] h-[14px] rounded-full border-2 flex items-center justify-center ${
-                                  selectedCadence === "28" ? "border-[#16a6a3]" : "border-slate-400"
-                                }`}
-                              >
-                                {selectedCadence === "28" && (
-                                  <div className="w-[6px] h-[6px] rounded-full bg-[#16a6a3]" />
-                                )}
-                              </div>
-                              <div>
-                                <p className="font-semibold text-[#0b1f3a] text-[13px]">
-                                  Every 28 Days (Standard Cycle)
-                                </p>
-                                <p className="font-normal text-[#64748b] text-[11.5px]">
-                                  Laboratory standard replenishment cadence
-                                </p>
-                              </div>
-                            </div>
-                            <span className="bg-white text-[#16a6a3] font-bold text-[10px] px-[8px] py-[3px] rounded-[10px] shadow-2xs">
-                              ACTIVE CADENCE
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))
-              )}
-
-              {/* Subscriber Perks Card */}
-              <div className="bg-white rounded-[16px] px-6 sm:px-[28px] py-[26px] shadow-xs border border-slate-100 flex flex-col gap-[14px]">
-                <p className="font-bold text-[#0b1f3a] text-[15px]">
-                  Active Subscriber Protection &amp; Benefits
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-[16px]">
-                  <div className="bg-[#f8fafc] p-[14px] rounded-[10px]">
-                    <p className="font-bold text-[#0b1f3a] text-[12.5px]">
-                      ✓ Guaranteed Cold Stock
-                    </p>
-                    <p className="font-normal text-[#64748b] text-[11.5px] mt-1 leading-relaxed">
-                      Reserved batch vials prioritized before public catalog availability.
-                    </p>
-                  </div>
-                  <div className="bg-[#f8fafc] p-[14px] rounded-[10px]">
-                    <p className="font-bold text-[#0b1f3a] text-[12.5px]">
-                      ✓ Free Tracked 24 Cold-Chain
-                    </p>
-                    <p className="font-normal text-[#64748b] text-[11.5px] mt-1 leading-relaxed">
-                      Refrigerated thermal shipper included free on every 28-day cycle.
-                    </p>
-                  </div>
-                  <div className="bg-[#f8fafc] p-[14px] rounded-[10px]">
-                    <p className="font-bold text-[#0b1f3a] text-[12.5px]">
-                      ✓ -10% Locked Pricing
-                    </p>
-                    <p className="font-normal text-[#64748b] text-[11.5px] mt-1 leading-relaxed">
-                      Discounted subscription rate locked for the lifetime of the active protocol.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Sidebar Column */}
-            <div className="flex flex-col gap-[24px] w-full lg:w-[420px] shrink-0">
-              {/* Subscription Summary */}
-              <div className="bg-white rounded-[16px] px-6 sm:px-[28px] py-[26px] shadow-xs border border-slate-100 flex flex-col gap-[16px]">
-                <div className="flex items-center justify-between">
-                  <p className="font-bold text-[#0b1f3a] text-[15px]">
-                    Refill Subscription Overview
-                  </p>
-                  <span className={`text-[11px] font-bold px-[8px] py-[3px] rounded-[12px] ${
-                    subscriptions.length > 0 ? "bg-[#e6fffa] text-[#16a6a3]" : "bg-slate-100 text-slate-500"
-                  }`}>
-                    {subscriptions.length > 0 ? `${subscriptions.length} ACTIVE` : "0 ACTIVE"}
-                  </span>
-                </div>
-
-                <div className="flex flex-col gap-[10px] text-[12.5px]">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[#64748b]">Active Cycles</span>
-                    <span className="font-semibold text-[#0b1f3a]">
-                      {subscriptions.length} Protocol{subscriptions.length === 1 ? "" : "s"}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[#64748b]">Replenishment Cycle</span>
-                    <span className="font-semibold text-[#0b1f3a]">
-                      {subscriptions.length > 0 ? `Every ${selectedCadence} Days` : "None"}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[#64748b]">Next Billing Date</span>
-                    <span className="font-semibold text-[#0b1f3a]">
-                      {subscriptions[0]?.nextBillingDate || "No scheduled billing"}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[#64748b]">Estimated Delivery</span>
-                    <span className="font-semibold text-[#0b1f3a]">
-                      {subscriptions.length > 0 ? "Tracked 24 Cold-Chain" : "No pending shipments"}
-                    </span>
-                  </div>
-                  <div className="h-px bg-slate-100 my-1" />
-                  <div className="flex items-center justify-between">
-                    <span className="text-[#64748b]">Recurring Total</span>
-                    <span className="font-bold text-[#0b1f3a] text-[14px]">
-                      £{subscriptions.reduce((sum: number, s: any) => sum + (s.price || 0), 0).toFixed(2)} / cycle
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Delivery Address Card */}
-              <div className="bg-white rounded-[16px] px-6 sm:px-[28px] py-[26px] shadow-xs border border-slate-100 flex flex-col gap-[14px]">
-                <div className="flex items-center justify-between">
-                  <p className="font-bold text-[#0b1f3a] text-[15px]">Delivery Address</p>
-                  <span className="bg-[#f8fafc] border border-slate-200 text-[#64748b] text-[10.5px] font-medium px-[6px] py-[2px] rounded-[4px]">
-                    DEFAULT
-                  </span>
-                </div>
-                {customer.addresses && customer.addresses.length > 0 ? (
-                  <div className="text-[#0f172a] text-[13px] leading-[20px] font-normal">
-                    <p className="font-semibold text-[#0b1f3a]">
-                      {customer.addresses[0].first_name} {customer.addresses[0].last_name}
-                    </p>
-                    {customer.addresses[0].company && <p>{customer.addresses[0].company}</p>}
-                    <p>{customer.addresses[0].address_1}</p>
-                    {customer.addresses[0].address_2 && <p>{customer.addresses[0].address_2}</p>}
-                    <p>{customer.addresses[0].city}, {customer.addresses[0].postal_code}</p>
-                    <p>{customer.addresses[0].country_code?.toUpperCase() === "GB" ? "United Kingdom" : customer.addresses[0].country_code?.toUpperCase()}</p>
-                  </div>
-                ) : (
-                  <div className="text-[#0f172a] text-[13px] leading-[20px] font-normal">
-                    <p className="font-semibold text-[#0b1f3a]">
-                      {customer.metadata?.title ? `${customer.metadata.title} ` : ""}
-                      {customer.first_name} {customer.last_name}
-                    </p>
-                    {customer.company_name && <p>{customer.company_name}</p>}
-                    <p className="text-[#64748b] italic">No delivery address saved yet.</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ========================================================= */}
-        {/* TAB 4: SAVED ADDRESSES (Node 52:9816) */}
-        {/* ========================================================= */}
         {activeTab === "addresses" && (
           <div className="flex flex-col gap-[24px] w-full">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -2299,107 +1838,7 @@ function AccountContent() {
         {/* ========================================================= */}
         {/* TAB 5: PAYMENT METHODS (Node 52:10035) */}
         {/* ========================================================= */}
-        {activeTab === "payment" && (
-          <div className="flex flex-col gap-[24px] w-full">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <h2 className="font-bold text-[#0b1f3a] text-[18px]">
-                  Payment Methods &amp; Billing
-                </h2>
-                <p className="font-normal text-[#64748b] text-[13px] mt-0.5">
-                  Manage corporate laboratory cards, automated refill billing sources, and institutional credit.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsAddCardOpen(true)}
-                className="bg-[#0b1f3a] hover:bg-[#162a45] text-white font-semibold text-[13px] px-[16px] py-[10px] rounded-[6px] transition-colors cursor-pointer shrink-0"
-              >
-                + Add Payment Method
-              </button>
-            </div>
-
-            {paymentCards.length === 0 ? (
-              <div className="bg-white rounded-[16px] p-8 sm:p-12 text-center border border-slate-100 flex flex-col items-center justify-center gap-4 w-full">
-                <div className="w-16 h-16 rounded-full bg-[#f1f5f9] flex items-center justify-center text-[#64748b]">
-                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                  </svg>
-                </div>
-                <div className="max-w-md">
-                  <h3 className="text-[17px] font-bold text-[#0b1f3a]">No Saved Payment Methods</h3>
-                  <p className="text-[13px] text-[#64748b] mt-1 leading-relaxed">
-                    You haven't saved any payment methods yet. Save an authorized corporate laboratory card or research grant payment method for rapid checkout and automated refill billing.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsAddCardOpen(true)}
-                  className="bg-[#0b1f3a] hover:bg-[#162a45] text-white text-[13px] font-semibold px-5 py-2.5 rounded-[8px] transition-colors cursor-pointer mt-2"
-                >
-                  + Add Payment Method
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-[24px] w-full">
-                {paymentCards.map((card: any) => (
-                  <div key={card.id} className="bg-white border border-[#e2e8f0] rounded-[12px] p-[22px] shadow-xs flex flex-col justify-between gap-[16px]">
-                    <div className="flex items-start justify-between">
-                      <div className="flex gap-[10px] items-center">
-                        <div className="w-[42px] h-[26px] relative shrink-0 flex items-center">
-                          {card.brand === "mastercard" ? (
-                            <MastercardBadge className="w-full h-full" monochrome />
-                          ) : (
-                            <VisaBadge className="w-full h-full" monochrome />
-                          )}
-                        </div>
-                        <div className="flex flex-col gap-[2px]">
-                          <p className="font-bold text-[#0b1f3a] text-[14px]">
-                            {card.title || (card.brand === "mastercard" ? "Mastercard Corporate" : "Visa Corporate")}
-                          </p>
-                          <p className="font-normal text-[#64748b] text-[12px]">
-                            Ending in •••• {card.last4} · Exp: {card.expiry}
-                          </p>
-                        </div>
-                      </div>
-                      {card.isDefault && (
-                        <span className="bg-[#ecfdf5] border border-[#a7f4d0] text-[#059669] font-bold text-[10px] px-[8px] py-[4px] rounded-[4px] whitespace-nowrap">
-                          DEFAULT BILLING
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="bg-[#f8fafc] px-[14px] py-[12px] rounded-[8px] flex flex-col gap-[4px] text-[11px] text-[#64748b]">
-                      <p className="font-semibold text-[#0b1f3a] text-[12px]">
-                        Cardholder: {card.cardholder}
-                      </p>
-                      {card.billingAddress && <p>Billing Address: {card.billingAddress}</p>}
-                    </div>
-
-                    <div className="flex gap-[16px] items-center text-[12px] pt-1 border-t border-slate-100">
-                      {!card.isDefault && (
-                        <button
-                          type="button"
-                          onClick={() => handleSetDefaultCard(card.id)}
-                          className="font-medium text-[#0d9488] hover:underline cursor-pointer"
-                        >
-                          Set as Default
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteCard(card.id)}
-                        className="text-[#94a3b8] hover:text-rose-600 cursor-pointer"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+        {activeTab === "payment" && token && <AccountBilling token={token} />}
       </main>
 
       {/* ========================================================= */}
@@ -2732,110 +2171,7 @@ function AccountContent() {
       {/* ========================================================= */}
       {/* ADD PAYMENT CARD MODAL */}
       {/* ========================================================= */}
-      {isAddCardOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
-          <div className="bg-white rounded-[20px] max-w-[500px] w-full p-6 sm:p-8 border border-[#e2e8f0] shadow-xl flex flex-col gap-5 animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div>
-                <h3 className="text-[17px] font-bold text-[#0b1f3a]">
-                  Add Payment Method
-                </h3>
-                <p className="text-[12px] text-[#64748b] mt-0.5">
-                  Save an authorized corporate or laboratory card for rapid order settlement.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsAddCardOpen(false)}
-                className="text-slate-400 hover:text-slate-600 text-lg cursor-pointer"
-              >
-                ✕
-              </button>
-            </div>
 
-            <form onSubmit={handleAddPaymentCard} className="flex flex-col gap-4">
-              <div className="flex flex-col gap-1">
-                <label className="text-[12px] font-semibold text-[#0b1f3a]">Cardholder Name *</label>
-                <input
-                  type="text"
-                  required
-                  value={cardholderName}
-                  onChange={(e) => setCardholderName(e.target.value)}
-                  placeholder={`${customer?.first_name || ""} ${customer?.last_name || ""}`.trim() || "Full Name"}
-                  className="border border-[#cbd5e1] rounded-[8px] px-3 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden"
-                />
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <label className="text-[12px] font-semibold text-[#0b1f3a]">Card Number *</label>
-                <input
-                  type="text"
-                  required
-                  maxLength={19}
-                  value={cardNumber}
-                  onChange={(e) => setCardNumber(e.target.value)}
-                  placeholder="4242 •••• •••• ••••"
-                  className="border border-[#cbd5e1] rounded-[8px] px-3 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden tracking-wider"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1">
-                  <label className="text-[12px] font-semibold text-[#0b1f3a]">Expiry Date *</label>
-                  <input
-                    type="text"
-                    required
-                    maxLength={7}
-                    value={cardExpiry}
-                    onChange={(e) => setCardExpiry(e.target.value)}
-                    placeholder="MM/YY"
-                    className="border border-[#cbd5e1] rounded-[8px] px-3 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden text-center"
-                  />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-[12px] font-semibold text-[#0b1f3a]">CVC Security Code *</label>
-                  <input
-                    type="text"
-                    required
-                    maxLength={4}
-                    value={cardCvc}
-                    onChange={(e) => setCardCvc(e.target.value)}
-                    placeholder="123"
-                    className="border border-[#cbd5e1] rounded-[8px] px-3 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden text-center"
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <label className="text-[12px] font-semibold text-[#0b1f3a]">Billing Address (Optional)</label>
-                <input
-                  type="text"
-                  value={cardBillingAddress}
-                  onChange={(e) => setCardBillingAddress(e.target.value)}
-                  placeholder="e.g. 10 Innovation Way, Cambridge, CB4 0GF"
-                  className="border border-[#cbd5e1] rounded-[8px] px-3 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden"
-                />
-              </div>
-
-              <div className="flex justify-end gap-2.5 pt-2 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setIsAddCardOpen(false)}
-                  className="px-4 py-2 rounded-[8px] border border-slate-200 text-[#64748b] hover:text-[#0b1f3a] text-xs font-semibold cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="btn-press px-5 py-2 rounded-[8px] bg-[#0b1f3a] hover:bg-[#162a45] text-white text-xs font-semibold transition-colors cursor-pointer shadow-2xs"
-                >
-                  Save Card
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

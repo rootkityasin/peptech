@@ -210,7 +210,7 @@ export function PeptechJourney() {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#16a6a3] opacity-75" />
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-[#16a6a3]" />
                 </span>
-                <span className="font-mono font-bold text-[10px] uppercase tracking-wider text-[#0b1f3a]">
+                <span className="font-bold text-[10px] uppercase tracking-wider text-[#0b1f3a]">
                   3-Step Protocol
                 </span>
               </div>
@@ -226,7 +226,7 @@ export function PeptechJourney() {
             {/* Interactive Stage Indicator (Numbers slide/go up as user scrolls or taps) */}
             <div className="flex items-center gap-3 bg-white border border-[#e2e8f0] px-3.5 py-2 rounded-[12px] shadow-xs shrink-0 self-start sm:self-auto">
               <div className="flex flex-col items-start">
-                <span className="text-[9.5px] font-mono uppercase tracking-wider text-[#64748b]">
+                <span className="text-[9.5px] font-semibold uppercase tracking-wider text-[#64748b]">
                   Current Step
                 </span>
                 
@@ -235,7 +235,7 @@ export function PeptechJourney() {
                   <div className="relative h-[20px] overflow-hidden inline-flex items-center">
                     <span
                       key={activeStep}
-                      className="inline-block font-mono font-bold text-[15px] text-[#16a6a3]"
+                      className="inline-block font-bold text-[15px] text-[#16a6a3]"
                       style={{
                         animation: "numberSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards",
                       }}
@@ -394,7 +394,7 @@ export function PeptechJourney() {
                               <span className="text-[12px]">→</span>
                             </Link>
                           ) : (
-                            <span className="text-[10px] font-mono font-bold text-[#0b1f3a] bg-slate-100 px-1.5 py-0.5 rounded shrink-0">
+                            <span className="text-[10px] font-bold text-[#0b1f3a] bg-slate-100 px-1.5 py-0.5 rounded shrink-0">
                               LIFETIME
                             </span>
                           )}

@@ -3,7 +3,7 @@
 import React from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { useCart } from "@/components/cart/CartContext"
+import { useRouter } from "next/navigation"
 
 const CORE_FEATURES = [
   {
@@ -39,21 +39,8 @@ const CORE_FEATURES = [
 ]
 
 export function CompleteSetsSection() {
-  const { addItem, setIsDrawerOpen } = useCart()
-
-  const handleAddSet = () => {
-    addItem({
-      id: "complete-pen-set",
-      title: "PEPTECH® Complete Pen Set",
-      format: "pen-set",
-      strength: "PEN SYSTEM",
-      price: 249.00,
-      isSubscription: false,
-      sku: "PPS-1000",
-      batch: "PT-PS-001",
-    })
-    setIsDrawerOpen(true)
-  }
+  const router=useRouter()
+  const handleAddSet = (_item?: unknown) => router.push("/pen-sets")
 
   return (
     <section className="bg-white py-[20px] pb-[60px] flex items-center justify-center border-t border-[#e2e8f0]">
@@ -86,11 +73,12 @@ export function CompleteSetsSection() {
             
             {/* Top Box Image & Badge */}
             <div>
-              <div className="bg-[#f8fafc] h-[200px] rounded-[8px] relative overflow-hidden flex items-center justify-center mb-3">
+              <div className="bg-[#f8fafc] h-[200px] min-h-[200px] rounded-[8px] relative overflow-hidden flex items-center justify-center mb-3">
                 <Image
                   src="/images/figma/2fc8ae919de84fe5269092b52f019438e68ce3c8.png"
                   alt="PEPTECH Complete Pen Set"
                   fill
+                  sizes="(max-width: 1024px) 100vw, 360px"
                   className="object-contain p-2"
                 />
                 <div className="absolute top-[12px] right-[12px] bg-[#16a6a3] px-[10px] py-[4px] rounded-[4px]">
@@ -196,11 +184,12 @@ export function CompleteSetsSection() {
           </div>
 
           {/* Right: One Pen Showcase Card (lg:col-span-3) - Figma Node 8:41429 */}
-          <div className="lg:col-span-3 h-[420px] sm:h-[470px] rounded-[12px] overflow-hidden relative flex flex-col justify-end p-[24px] pb-[32px] text-center shadow-xs">
+          <div className="lg:col-span-3 h-[420px] sm:h-[470px] min-h-[420px] rounded-[12px] overflow-hidden relative flex flex-col justify-end p-[24px] pb-[32px] text-center shadow-xs">
             <Image
               src="/images/figma/a899cee28c9a7dbe981b12963dd7556e80bb5a76.png"
               alt="One Pen Multiple Possibilities"
               fill
+              sizes="(max-width: 1024px) 100vw, 300px"
               className="object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-white/90 via-white/40 to-transparent" />

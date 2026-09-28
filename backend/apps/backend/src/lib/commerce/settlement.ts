@@ -1,0 +1,90 @@
+import { Modules } from "@medusajs/framework/utils"
+import { createOrderPaymentCollectionWorkflow, capturePaymentWorkflow, markPaymentCollectionAsPaid } from "@medusajs/medusa/core-flows"
+import { importCommerceOrder } from "../../workflows/import-commerce-order"
+import CommerceService,{recordId,LedgerRecord} from "../../modules/peptech-commerce/service"
+import { signReceipt } from "../../modules/stripe-checkout/service"
+import { stripeContext,objectId } from "./stripe"
+import { fail } from "./policy"
+import { Quote,reserveQuote } from "./quote"
+export async function settleReceipt(scope:any,ledger:CommerceService,attempt:LedgerRecord,evidence:{reference:string;amount:number;currency:string;payment_intent_id:string|null;invoice_id?:string;session_id?:string;source?:"bank_transfer";verified_by?:string},quote?:Quote) {
+  const context=stripeContext();const q=quote || attempt.data.quote as Quote
+  const renewal=!!quote&&quote.lines[0]?.line_id!==attempt.data.quote.lines[0]?.line_id
+  if(attempt.profile!==context.profile || evidence.currency!==q.currency || evidence.amount!==q.total_minor) fail("Payment amount or account requires reconciliation",409)
+  const id=recordId("receipt",context.profile,evidence.reference)
+  return ledger.locked(id,async()=>{
+    if(!renewal)await ledger.locked(attempt.id,async()=>{
+      const latest=await ledger.get(attempt.id)
+      if(latest?.data.initial_receipt_id&&latest.data.initial_receipt_id!==id)fail("This checkout already has a different settlement reference",409)
+      await ledger.patch(attempt.id,{initial_receipt_id:id})
+    })
+    const receipt=await ledger.create({id,kind:"receipt",profile:context.profile,owner_id:attempt.owner_id,state:"paid",data:{...evidence,attempt_id:attempt.id,quote:q}})
+    if(receipt.data.attempt_id!==attempt.id)fail("Payment reference is already allocated to another order",409)
+    if(receipt.state==="confirmed") return receipt
+    const orderId=recordId("order",id)
+    const orderModule=scope.resolve(Modules.ORDER)
+    const existing=await orderModule.listOrders({id:orderId},{relations:["items"]})
+    if(!existing.length) {
+      const input:any={id:orderId,customer_id:q.customer_id,email:q.email,currency_code:q.currency,region_id:q.region_id,
+        sales_channel_id:q.sales_channel_id,status:"pending",shipping_address:q.address,billing_address:q.billing_address||q.address,
+        no_notification:true,metadata:{peptech_receipt_id:id,peptech_attempt:attempt.id,payment_gateway:evidence.source||"stripe",
+          subscription_id:attempt.data.subscription_id||null,fulfillment_hold:true,tax_policy:q.tax_policy},
+        items:q.lines.map(l=>({id:l.line_id,variant_id:l.variant_id,title:l.name,variant_sku:l.sku,quantity:l.quantity,
+          unit_price:l.unit_minor/100,is_tax_inclusive:q.tax_inclusive||false,tax_lines:l.tax_lines||(q.vat_registered?[{rate:q.tax_rate,code:"VAT",description:"VAT"}]:[]),requires_shipping:true,metadata:{catalog_version:l.catalog_version,recurring:l.recurring}})),
+        shipping_methods:[{name:"Royal Mail Tracked",amount:q.shipping_minor/100,shipping_option_id:q.shipping_option_id,is_tax_inclusive:q.tax_inclusive||false,tax_lines:q.shipping_tax_lines||(q.vat_registered?[{rate:q.tax_rate,code:"VAT",description:"VAT"}]:[])}]}
+      await importCommerceOrder(scope).run({input,context:{transactionId:recordId("workflow",id)}})
+    }
+    // Renewal reservations and initial reservations use the same deterministic line IDs.
+    try { await reserveQuote(scope,q,renewal?id:attempt.id) }
+    catch { receipt.state="stock_hold";receipt.data.order_id=orderId;await ledger.save(receipt);throw new Error("Paid order requires inventory review") }
+    let collectionId=receipt.data.collection_id
+    if(!collectionId) {
+      const {data:[order]}=await scope.resolve("query").graph({entity:"order",fields:["id","total","payment_collections.*"],filters:{id:orderId}})
+      if(Math.round(Number(order.total)*100)!==evidence.amount) fail("Medusa order total differs from Stripe",409)
+      const collection=order.payment_collections?.[0] || (await createOrderPaymentCollectionWorkflow(scope).run({input:{order_id:orderId,amount:evidence.amount/100}})).result[0]
+      collectionId=collection.id;receipt.data.collection_id=collectionId;await ledger.save(receipt)
+    }
+    const payment=scope.resolve(Modules.PAYMENT)
+    const collection=await payment.retrievePaymentCollection(collectionId,{relations:["payment_sessions","payments","payments.captures"]})
+    let paymentRecord:any
+    if(evidence.source==="bank_transfer") {
+      if(!evidence.verified_by)fail("Verified bank evidence is required",409)
+      paymentRecord=collection.payments?.[0]
+      if(!paymentRecord?.captured_at) paymentRecord=(await markPaymentCollectionAsPaid(scope).run({input:{order_id:orderId,
+        payment_collection_id:collectionId,captured_by:evidence.verified_by}})).result
+    } else {
+    let session=collection.payment_sessions?.[0]
+    if(!session) {
+      const data:any={profile:context.profile,receipt_id:id,collection_id:collectionId,amount_minor:evidence.amount,currency:q.currency,
+        stripe_session_id:evidence.session_id,invoice_id:evidence.invoice_id,payment_intent_id:evidence.payment_intent_id}
+      data.attestation=signReceipt(data,context.signingSecret)
+      session=await payment.createPaymentSession(collectionId,{provider_id:context.checkoutProviderId,
+        amount:evidence.amount/100,currency_code:q.currency,data})
+    }
+    paymentRecord=collection.payments?.[0] || await payment.authorizePaymentSession(session.id,{})
+    if(!paymentRecord) throw new Error("Payment authorization is pending")
+    // Native capture is idempotent when already captured, and its transaction
+    // step repairs a crash after capture but before the order ledger update.
+    await capturePaymentWorkflow(scope).run({input:{payment_id:paymentRecord.id}})
+    }
+    receipt.state="confirmed";receipt.data.order_id=orderId;receipt.data.payment_id=paymentRecord.id;await ledger.save(receipt)
+    if(!renewal) await ledger.locked(attempt.id,async()=>{
+      const latest=await ledger.get(attempt.id)
+      if(latest){latest.state="confirmed";latest.data.order_id=orderId;await ledger.save(latest)}
+    })
+    await ledger.create({id:recordId("operation",id,"receipt-email"),kind:"operation",profile:context.profile,owner_id:q.customer_id,state:"pending",
+      data:{type:"email",template:"order-confirmed",to:q.email,order_id:orderId,reference:id}})
+    return receipt
+  })
+}
+export async function paymentEvidence(stripe:any,invoice:any) {
+  if(invoice.status!=="paid") return null
+  const payments=await stripe.invoicePayments.list({invoice:invoice.id,limit:100})
+  const succeeded=payments.data.filter((p:any)=>p.status==="paid" && p.payment?.type==="payment_intent")
+  if(succeeded.length!==1) {
+    if(invoice.total===0 && invoice.amount_paid===0) return {payment_intent_id:null,amount:0}
+    fail("Invoice settlement requires manual reconciliation",409)
+  }
+  const pi=await stripe.paymentIntents.retrieve(objectId(succeeded[0].payment.payment_intent))
+  if(pi.status!=="succeeded" || pi.amount_received!==invoice.total) fail("Invoice payment is not settled",409)
+  return {payment_intent_id:pi.id,amount:pi.amount_received}
+}

@@ -5,7 +5,7 @@ import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { COMPLETE_PEN_SET } from "@/data/products"
 import { findCatalogProduct, CatalogProduct, CATALOG_PRODUCTS } from "@/data/catalog"
-import { getProduct, getProductPrice, StoreProduct } from "@/lib/medusa"
+import { getProduct, getCachedProduct, mapMedusaToCatalogProduct } from "@/lib/medusa"
 import { ProductGallery } from "@/components/product/ProductGallery"
 import { ProductBuyBox } from "@/components/product/ProductBuyBox"
 import { RefillBuyBox } from "@/components/product/RefillBuyBox"
@@ -29,96 +29,35 @@ function ProductDetailContent({
   const searchParams = useSearchParams()
   const modelQuery = searchParams.get("model")
 
-  const [medusaProduct, setMedusaProduct] = useState<StoreProduct | null>(null)
-  const [livePrice, setLivePrice] = useState<number | null>(null)
+  // Synchronously initialize from cache or static catalog to prevent loading flash
+  const initialProduct = getCachedProduct(resolvedParams.handle) || (!modelQuery ? findCatalogProduct(resolvedParams.handle) : null)
+  const [catalogProduct, setCatalogProduct] = useState<CatalogProduct | null>(initialProduct)
+  const [loading, setLoading] = useState(!initialProduct)
 
-  // 1. Resolve from central catalog with format-aware fallback
-  const handleLower = (resolvedParams.handle || "").toLowerCase()
-  const isCartridgeQuery = handleLower.includes("cartridge") || handleLower.includes("refill")
-  const isVialQuery = handleLower.includes("vial") || handleLower.includes("lyophilised")
-
-  const defaultFallback: CatalogProduct = isCartridgeQuery
-    ? CATALOG_PRODUCTS.find((p) => p.format === "refill-cartridge") || {
-        id: "cartridge-semaglutide-5mg",
-        name: "Semaglutide 5mg Refill",
-        handle: "semaglutide-5mg-cartridge",
-        format: "refill-cartridge",
-        formatLabel: "REFILL CARTRIDGE • FITS PEPTECH PEN",
-        category: "metabolic",
-        categoryLabel: "Metabolic & Glucose",
-        description: "1.5ml Pre-filled Cartridge • 99.4% HPLC",
-        price: 69.99,
-        subscribePrice: 62.99,
-        inStock: true,
-        isSubscriptionEligible: true,
-        image: "/images/figma/0e71e8560b9bae80ee21a3d08905300075c266b7.png",
-      }
-    : isVialQuery
-    ? CATALOG_PRODUCTS.find((p) => p.format === "freeze-dried-vial") || {
-        id: "vial-semaglutide-10mg",
-        name: "Semaglutide 10mg Lyophilised Vial",
-        handle: "vial-semaglutide-10mg",
-        format: "freeze-dried-vial",
-        formatLabel: "FREEZE-DRIED VIAL • 99.4% PURITY",
-        category: "metabolic",
-        categoryLabel: "Metabolic & Glucose",
-        description: "Pure Lyophilised Research Powder • Sealed Glass Vial",
-        price: 59.99,
-        subscribePrice: 53.99,
-        inStock: true,
-        isSubscriptionEligible: true,
-        image: "/images/figma/2d7803f97be6d80d5630dfb42abba84289ed1bb5.png",
-      }
-    : {
-        id: "complete-pen-set",
-        name: COMPLETE_PEN_SET.name,
-        handle: "complete-pen-set",
-        format: "complete-pen-set",
-        formatLabel: "COMPLETE PEN SET",
-        category: "metabolic",
-        categoryLabel: "Laboratory Research Pen System",
-        description: COMPLETE_PEN_SET.description,
-        price: COMPLETE_PEN_SET.price,
-        subscribePrice: COMPLETE_PEN_SET.subscribePrice,
-        inStock: true,
-        isSubscriptionEligible: false,
-        image: "/images/figma/152e353c4afaa5945905ac686de871b57ec2a770.png",
-      }
-
-  const catalogProduct: CatalogProduct =
-    findCatalogProduct(resolvedParams.handle, modelQuery) || defaultFallback
-
-  // 2. Fetch live Medusa product data if configured
   useEffect(() => {
-    async function loadLiveProduct() {
-      try {
-        const handleToFetch = resolvedParams.handle || catalogProduct.handle
-        const live = await getProduct(handleToFetch)
-        if (live) {
-          setMedusaProduct(live)
-          const variant = live.variants?.[0]
-          const price = getProductPrice(variant, "gbp") || getProductPrice(variant, "usd")
-          if (price > 0) setLivePrice(price)
-        }
-      } catch (err) {
-        console.warn("Using catalog specs for product details", err)
-      }
+    let active = true
+    if (modelQuery) {
+      setLoading(false)
+      return
     }
-    loadLiveProduct()
-  }, [resolvedParams.handle, catalogProduct.handle])
+    getProduct(resolvedParams.handle).then((product) => {
+      if (active) {
+        if (product) {
+          setCatalogProduct(mapMedusaToCatalogProduct(product))
+        }
+        setLoading(false)
+      }
+    })
+    return () => {
+      active = false
+    }
+  }, [resolvedParams.handle, modelQuery])
 
-  const title =
-    catalogProduct.format === "refill-cartridge"
-      ? `${catalogProduct.name.replace(/ Refill$/i, "")}\nRefill Cartridge`
-      : medusaProduct?.title || catalogProduct.name
-  const description =
-    medusaProduct?.description ||
-    (catalogProduct.format === "complete-pen-set" || catalogProduct.format === "refill-cartridge"
-      ? "Get started with the complete PEPTECH® system. Includes reusable pen, a compatible prefilled cartridge, 14 instructions and all accessories you need for accurate, reliable testing."
-      : catalogProduct.description)
-  const activePrice = livePrice || catalogProduct.price
-  const subscribePrice =
-    catalogProduct.subscribePrice || Number((activePrice * 0.9).toFixed(2))
+  if (loading) return <p role="status" className="p-12">Loading product…</p>
+  if(!catalogProduct) return <div className="p-12"><h1 className="text-2xl font-bold">Product unavailable</h1><p className="my-4">This product is not in the current catalogue.</p><Link href="/shop" className="underline">Browse current products</Link></div>
+  const title=catalogProduct.name
+  const activePrice=catalogProduct.price
+  const subscribePrice=catalogProduct.subscribePrice
 
   // Determine gallery images based on product format
   const galleryImages =

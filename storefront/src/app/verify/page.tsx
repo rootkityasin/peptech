@@ -60,8 +60,11 @@ function VerifyContent() {
         }`}
       >
         {/* Section Heading */}
-        <div className="flex flex-col items-center justify-center text-center">
-          <h1 className="font-bold text-[#0b1f3a] text-[30px] sm:text-[36px] tracking-tight">
+        <div className="flex flex-col items-center justify-center text-center space-y-2">
+          <span className="inline-block text-[12px] font-bold text-[#16A6A3] tracking-[1.2px] uppercase">
+            AUTHENTICITY VERIFICATION
+          </span>
+          <h1 className="text-3xl sm:text-4xl lg:text-[44px] font-extrabold text-[#0B1F3A] leading-[1.15] tracking-tight uppercase">
             Verify with your batch id
           </h1>
         </div>
@@ -118,7 +121,7 @@ function VerifyContent() {
                 setBatchInput("RT-2609A")
                 handleVerify("RT-2609A")
               }}
-              className="px-2.5 py-1 bg-white border border-slate-200 hover:border-[#16a6a3] rounded-full text-[#0b1f3a] font-mono text-[11px] font-semibold transition-colors"
+              className="px-3 py-1 bg-white border border-slate-200 hover:border-[#16a6a3] rounded-full text-[#0b1f3a] text-[12px] font-semibold transition-colors"
             >
               RT-2609A
             </button>
@@ -128,7 +131,7 @@ function VerifyContent() {
                 setBatchInput("TRZ-2026-08B")
                 handleVerify("TRZ-2026-08B")
               }}
-              className="px-2.5 py-1 bg-white border border-slate-200 hover:border-[#16a6a3] rounded-full text-[#0b1f3a] font-mono text-[11px] font-semibold transition-colors"
+              className="px-3 py-1 bg-white border border-slate-200 hover:border-[#16a6a3] rounded-full text-[#0b1f3a] text-[12px] font-semibold transition-colors"
             >
               TRZ-2026-08B
             </button>
@@ -138,7 +141,7 @@ function VerifyContent() {
                 setBatchInput("SMG-2026-04A")
                 handleVerify("SMG-2026-04A")
               }}
-              className="px-2.5 py-1 bg-white border border-slate-200 hover:border-[#16a6a3] rounded-full text-[#0b1f3a] font-mono text-[11px] font-semibold transition-colors"
+              className="px-3 py-1 bg-white border border-slate-200 hover:border-[#16a6a3] rounded-full text-[#0b1f3a] text-[12px] font-semibold transition-colors"
             >
               SMG-2026-04A
             </button>
@@ -164,7 +167,7 @@ function VerifyContent() {
                 <p className="font-bold text-[#0b1f3a] text-[20px] sm:text-[22px] tracking-[2px]">
                   AUTHENTIC PRODUCT
                 </p>
-                <p className="font-black text-[#10b981] text-[28px] sm:text-[32px] tracking-[3.5px]">
+                <p className="font-extrabold text-[#10b981] text-[28px] sm:text-[32px] tracking-[3.5px]">
                   VERIFIED
                 </p>
               </div>
@@ -395,7 +398,7 @@ function VerifyContent() {
                       src="/images/figma/834b2162377baacce8132e83a486dffdb830e782.svg"
                     />
                   </div>
-                  <p className="font-black text-[#0b1f3a] text-[8.5px] tracking-[1.2px] whitespace-nowrap">
+                  <p className="font-extrabold text-[#0b1f3a] text-[8.5px] tracking-[1.2px] whitespace-nowrap">
                     SCAN TO VERIFY
                   </p>
                 </div>

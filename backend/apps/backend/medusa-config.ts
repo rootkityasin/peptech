@@ -1,13 +1,17 @@
 import { loadEnv, defineConfig } from '@medusajs/framework/utils'
 
+const { loadStripeEnv, stripeModules, commerceRuntimeModules, commerceEmailModules } = require("./src/lib/stripe-config")
+loadStripeEnv()
+
 loadEnv(process.env.NODE_ENV || 'development', process.cwd())
 
-const defaultDatabaseUrl = 'postgresql://postgres.ubzoovlhbnztjwemvrwo:Peptech2026!@aws-0-eu-west-2.pooler.supabase.com:6543/postgres?sslmode=require'
+const defaultDatabaseUrl = 'postgresql://localhost:5432/peptech'
 const dbUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || defaultDatabaseUrl
 
 module.exports = defineConfig({
   projectConfig: {
     databaseUrl: dbUrl,
+    redisUrl: process.env.REDIS_URL,
     databaseDriverOptions: dbUrl?.includes('localhost') || dbUrl?.includes('127.0.0.1')
       ? { connection: { ssl: false } }
       : { connection: { ssl: { rejectUnauthorized: false } } },
@@ -19,7 +23,7 @@ module.exports = defineConfig({
       cookieSecret: process.env.COOKIE_SECRET || 'supersecret',
     },
     cookieOptions: {
-      secure: false,
+      secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
     }
   },
@@ -35,22 +39,24 @@ module.exports = defineConfig({
         ],
       },
     },
-    ...(process.env.STRIPE_API_KEY ? [
-      {
-        resolve: "@medusajs/medusa/payment",
-        options: {
-          providers: [
-            {
-              resolve: "@medusajs/payment-stripe",
-              id: "stripe",
-              options: {
-                apiKey: process.env.STRIPE_API_KEY,
-                webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
-              },
+    {
+      resolve: "@medusajs/medusa/file",
+      options: {
+        providers: [
+          {
+            resolve: "@medusajs/medusa/file-local",
+            id: "local",
+            options: {
+              upload_dir: "static",
+              backend_url: `${process.env.MEDUSA_BACKEND_URL || "http://localhost:9000"}/static`,
             },
-          ],
-        },
-      }
-    ] : []),
+          },
+        ],
+      },
+    },
+    { resolve: "./src/modules/peptech-commerce", options: { databaseUrl: process.env.STRIPE_COMMERCE_DATABASE_URL || dbUrl } },
+    ...stripeModules(),
+    ...commerceRuntimeModules(),
+    ...commerceEmailModules(),
   ],
 })

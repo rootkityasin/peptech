@@ -22,18 +22,21 @@ export function VialBuyBox({ product }: VialBuyBoxProps) {
   const batchCode = `VIAL-${product.category.toUpperCase().slice(0, 3)}-2026-04A`
 
   const handleAddToCart = () => {
+    if(!product.variantId || !product.inStock) return
     for (let i = 0; i < quantity; i++) {
       addItem({
         id: `${product.id}-${purchaseType}`,
         title: product.name,
+        variantId: product.variantId,
+        productHandle: product.handle,
         format: "vial",
         strength: product.categoryLabel,
-        price: activePrice,
+        price: product.price,
         isSubscription: purchaseType === "subscription",
         subscriptionIntervalDays: purchaseType === "subscription" ? 28 : undefined,
         discountPercent: purchaseType === "subscription" ? 10 : undefined,
-        sku: `PEP-VIAL-${product.id.replace("vial-", "").toUpperCase()}`,
-        batch: batchCode,
+        sku: product.sku||"",
+
         image: product.image,
         options: [
           { label: "Purchase Type", value: purchaseType === "subscription" ? "28-Day Subscription (10% off)" : "One-Time Order" },
@@ -72,7 +75,7 @@ export function VialBuyBox({ product }: VialBuyBoxProps) {
 
       {/* Product Name Header */}
       <div className="flex flex-col gap-[4px] items-start w-full">
-        <h1 className="font-bold text-[#0b1f3a] text-[28px] sm:text-[32px] leading-[34px] sm:leading-[38px] tracking-tight">
+        <h1 className="font-extrabold text-[#0b1f3a] text-[28px] sm:text-[34px] leading-[36px] sm:leading-[40px] tracking-tight">
           {product.name}
         </h1>
         <p className="font-semibold text-[#16a6a3] text-[14px]">
@@ -208,6 +211,7 @@ export function VialBuyBox({ product }: VialBuyBoxProps) {
         <button
           type="button"
           onClick={handleAddToCart}
+          disabled={!product.variantId || !product.inStock}
           className="btn-shimmer btn-press flex-1 bg-[#0b1f3a] hover:bg-[#162e52] cursor-pointer flex gap-[10px] h-[50px] items-center justify-center rounded-xl transition-all text-white font-semibold text-[15px] shadow-md hover:shadow-xl group"
         >
           <img

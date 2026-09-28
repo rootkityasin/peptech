@@ -464,12 +464,13 @@ function StandardOrderDetail({ id }) {
         body: JSON.stringify({
           order_id: order.id,
           amount: calculatedTotalRefund,
-          refund_reason_id: selectedReasonId,
-          reason_label: selectedReasonObj?.label || "Customer Care Adjustment",
-          items: refundItemsList,
+          operation_id: (() => {
+            const key = `peptech_refund:${order.id}:${calculatedTotalRefund}:${refundNote.trim()}`;
+            let id = sessionStorage.getItem(key);
+            if (!id) { id = crypto.randomUUID(); sessionStorage.setItem(key, id); }
+            return id;
+          })(),
           note: refundNote.trim(),
-          restock: restockItems,
-          shipping_refund: Number(shippingRefundAmount || 0),
         }),
       });
 
@@ -478,6 +479,11 @@ function StandardOrderDetail({ id }) {
         throw new Error(data.message || "Failed to process refund");
       }
 
+      if (data.status !== "succeeded") {
+        alert(`Refund is ${data.status || "pending"}. Reconcile this operation before issuing another refund.`);
+        return;
+      }
+      sessionStorage.removeItem(`peptech_refund:${order.id}:${calculatedTotalRefund}:${refundNote.trim()}`);
       setShowRefundModal(false);
       await refetch();
       alert(`Refund of ${formatPrice(calculatedTotalRefund)} was successfully processed!`);
@@ -1928,24 +1934,7 @@ function StandardOrderDetail({ id }) {
                 ],
               }),
 
-              // Restock Checkbox
-              _jsxs("div", {
-                className: "flex items-center gap-2 pt-1",
-                children: [
-                  _jsx("input", {
-                    type: "checkbox",
-                    id: "restock_items_check",
-                    checked: restockItems,
-                    onChange: (e) => setRestockItems(e.target.checked),
-                    className: "rounded border-[#c9cccf] text-[#008060] focus:ring-[#008060]",
-                  }),
-                  _jsx("label", {
-                    htmlFor: "restock_items_check",
-                    className: "text-xs text-[#202223] select-none cursor-pointer",
-                    children: "Restock items back into available inventory",
-                  }),
-                ],
-              }),
+              _jsx("p", { className: "text-xs text-gray-600", children: "Refunds do not restock goods. Use the native return workflow after inspecting returned items." }),
 
               // Note Textarea
               _jsxs("div", {

@@ -171,13 +171,15 @@ export default function LabReportsPage() {
       {/* 02 Header Section */}
       <section className="bg-gradient-to-b from-[#f8fafc] to-white border-b border-[#e2e8f0] py-12 sm:py-16">
         <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
+          <span className="inline-block text-[12px] font-bold text-[#16A6A3] tracking-[1.2px] uppercase">
+            THIRD-PARTY ANALYTICAL VERIFICATION
+          </span>
 
-          
-          <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-[#0b1f3a]">
+          <h1 className="text-3xl sm:text-4xl lg:text-[44px] font-extrabold text-[#0B1F3A] leading-[1.15] tracking-tight uppercase">
             Certificates of Analysis (COA)
           </h1>
 
-          <p className="text-sm sm:text-base text-[#475569] max-w-3xl leading-relaxed">
+          <p className="text-xs sm:text-[14px] text-[#64748B] max-w-3xl leading-[22px]">
             Search our central analytical repository by product name or production lot. Every batch is tested via High-Performance Liquid Chromatography (HPLC) and Mass Spectrometry (MS). Batches currently in analytical processing are transparently designated as <em>"Report Pending"</em>.
           </p>
         </div>
@@ -235,7 +237,7 @@ export default function LabReportsPage() {
         {downloadSuccess && (
           <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 font-semibold flex items-center justify-between animate-in fade-in">
             <span>✓ Official Certified COA PDF for Batch #{downloadSuccess} initiated.</span>
-            <span className="font-mono text-[10px] text-emerald-600">Secure Hash Verified</span>
+            <span className="text-[10px] text-emerald-600 font-semibold">Secure Hash Verified</span>
           </div>
         )}
 
@@ -248,7 +250,7 @@ export default function LabReportsPage() {
             >
               <div className="space-y-4">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-mono font-bold text-[#0b1f3a] px-2.5 py-1 rounded-lg bg-[#f1f5f9]">
+                  <span className="font-bold text-[#0b1f3a] px-2.5 py-1 rounded-lg bg-[#f1f5f9]">
                     Lot #{report.batchNumber}
                   </span>
                   {report.status === "verified" ? (
@@ -268,7 +270,7 @@ export default function LabReportsPage() {
                   <h3 className="font-extrabold text-base sm:text-lg text-[#0b1f3a] group-hover:text-[#16a6a3] transition-colors">
                     {report.productName}
                   </h3>
-                  <p className="text-[11px] text-[#64748b] font-mono mt-0.5">
+                  <p className="text-[11px] text-[#64748b] font-medium mt-0.5">
                     Compound ID: {report.compoundCode} • {report.category.toUpperCase()}
                   </p>
                 </div>
@@ -280,15 +282,15 @@ export default function LabReportsPage() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-[#94a3b8]">Synthesis Date:</span>
-                    <span className="text-[#0b1f3a] font-mono">{report.synthesisDate}</span>
+                    <span className="text-[#0b1f3a] font-medium">{report.synthesisDate}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-[#94a3b8]">Test Date:</span>
-                    <span className="text-[#0b1f3a] font-mono">{report.testDate}</span>
+                    <span className="text-[#0b1f3a] font-medium">{report.testDate}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-[#94a3b8]">Theoretical MW:</span>
-                    <span className="font-mono text-[#0b1f3a]">{report.theoreticalMw} Da</span>
+                    <span className="text-[#0b1f3a] font-semibold">{report.theoreticalMw} Da</span>
                   </div>
                 </div>
               </div>
@@ -348,12 +350,12 @@ export default function LabReportsPage() {
             <div className="flex items-start justify-between border-b border-[#e2e8f0] pb-4">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#16a6a3]/10 text-[#16a6a3] font-mono uppercase">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#16a6a3]/10 text-[#16a6a3] uppercase">
                     CERTIFIED LAB AUDIT
                   </span>
-                  <span className="text-xs text-[#64748b] font-mono">Lot #{inspectingReport.batchNumber}</span>
+                  <span className="text-xs text-[#64748b]">Lot #{inspectingReport.batchNumber}</span>
                 </div>
-                <h3 className="text-xl font-black text-[#0b1f3a] mt-1">{inspectingReport.productName}</h3>
+                <h3 className="text-xl font-bold text-[#0b1f3a] mt-1">{inspectingReport.productName}</h3>
               </div>
               <button
                 onClick={() => setInspectingReport(null)}
@@ -367,19 +369,19 @@ export default function LabReportsPage() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div className="p-3 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] space-y-0.5">
                 <span className="text-[10px] font-semibold text-[#94a3b8] uppercase">Purity (HPLC)</span>
-                <div className="font-mono text-base font-bold text-emerald-600">{inspectingReport.purityPercent}%</div>
+                <div className="text-base font-bold text-emerald-600">{inspectingReport.purityPercent}%</div>
               </div>
               <div className="p-3 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] space-y-0.5">
                 <span className="text-[10px] font-semibold text-[#94a3b8] uppercase">Theoretical MW</span>
-                <div className="font-mono text-base font-bold text-[#0b1f3a]">{inspectingReport.theoreticalMw} Da</div>
+                <div className="text-base font-bold text-[#0b1f3a]">{inspectingReport.theoreticalMw} Da</div>
               </div>
               <div className="p-3 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] space-y-0.5">
                 <span className="text-[10px] font-semibold text-[#94a3b8] uppercase">Observed MW</span>
-                <div className="font-mono text-base font-bold text-[#0b1f3a]">{inspectingReport.observedMw} Da</div>
+                <div className="text-base font-bold text-[#0b1f3a]">{inspectingReport.observedMw} Da</div>
               </div>
               <div className="p-3 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] space-y-0.5">
                 <span className="text-[10px] font-semibold text-[#94a3b8] uppercase">Analysis Date</span>
-                <div className="font-mono text-xs font-bold text-[#0b1f3a] pt-1">{inspectingReport.testDate}</div>
+                <div className="text-xs font-bold text-[#0b1f3a] pt-1">{inspectingReport.testDate}</div>
               </div>
             </div>
 
@@ -387,10 +389,10 @@ export default function LabReportsPage() {
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs">
                 <span className="font-bold text-[#0b1f3a]">HPLC Chromatogram (Reversed-Phase C18)</span>
-                <span className="font-mono text-emerald-600 font-semibold">Single Sharp Peak • No Secondary Contaminants</span>
+                <span className="text-emerald-600 font-semibold">Single Sharp Peak • No Secondary Contaminants</span>
               </div>
               <div className="h-40 rounded-2xl bg-[#0b1f3a] p-4 flex flex-col justify-between relative overflow-hidden">
-                <div className="flex justify-between text-[10px] font-mono text-slate-400">
+                <div className="flex justify-between text-[10px] text-slate-400">
                   <span>mAU (Absorbance @ 214nm)</span>
                   <span>Retention Time: 14.82 min</span>
                 </div>
@@ -407,7 +409,7 @@ export default function LabReportsPage() {
                     fill="rgba(22, 166, 163, 0.15)"
                   />
                 </svg>
-                <div className="flex justify-between text-[10px] font-mono text-slate-400">
+                <div className="flex justify-between text-[10px] text-slate-400">
                   <span>0 min</span>
                   <span>Peak Area: {inspectingReport.purityPercent}%</span>
                   <span>30 min</span>
@@ -421,7 +423,7 @@ export default function LabReportsPage() {
                 <div className="font-bold text-[#0b1f3a]">{inspectingReport.laboratory}</div>
                 <div className="text-[#64748b]">Analytical Testing Department • Certified by Lead Chemist Dr. P. Thorne, CChem MRSC</div>
               </div>
-              <div className="px-3 py-1.5 rounded-xl bg-emerald-100 text-emerald-800 font-bold font-mono text-xs border border-emerald-300 shrink-0">
+              <div className="px-3 py-1.5 rounded-xl bg-emerald-100 text-emerald-800 font-bold text-xs border border-emerald-300 shrink-0">
                 AUDITED &amp; APPROVED ✓
               </div>
             </div>

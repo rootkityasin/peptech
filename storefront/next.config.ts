@@ -12,10 +12,39 @@ const nextConfig: NextConfig = {
     root: path.resolve(__dirname),
   },
   images: {
+    dangerouslyAllowLocalIP: true,
     remotePatterns: [
+      {
+        protocol: "http",
+        hostname: "localhost",
+      },
+      {
+        protocol: "http",
+        hostname: "127.0.0.1",
+      },
+      {
+        protocol: "https",
+        hostname: "localhost",
+      },
+      {
+        protocol: "https",
+        hostname: "admin.peptech.bio",
+      },
+      {
+        protocol: "https",
+        hostname: "peptech.bio",
+      },
+      {
+        protocol: "https",
+        hostname: "*.supabase.co",
+      },
       {
         protocol: "https",
         hostname: "images.unsplash.com",
+      },
+      {
+        protocol: "https",
+        hostname: "*.amazonaws.com",
       },
     ],
   },

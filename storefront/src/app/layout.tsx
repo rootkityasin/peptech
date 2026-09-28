@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { Geist, Geist_Mono } from "next/font/google"
+import { Geist } from "next/font/google"
 import "./globals.css"
 import { CustomerProvider } from "@/context/CustomerContext"
 import { CartProvider } from "@/components/cart/CartContext"
@@ -13,11 +13,6 @@ const geistSans = Geist({
   subsets: ["latin"],
 })
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-})
-
 export const metadata: Metadata = {
   title: "PEPTECH® | Quality. Safety. Precision. | Rapid Testing Systems",
   description: "The Complete PEPTECH® System. Reusable precision pen systems, individual test cartridges, and laboratory reagents.",
@@ -27,11 +22,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} h-full antialiased font-sans`}
       suppressHydrationWarning
     >
       <body
-        className="min-h-full flex flex-col bg-white text-slate-900"
+        className="min-h-full flex flex-col bg-white text-slate-900 font-sans"
         suppressHydrationWarning
       >
         <CustomerProvider>
