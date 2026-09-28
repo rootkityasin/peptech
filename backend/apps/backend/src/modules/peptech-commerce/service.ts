@@ -51,24 +51,39 @@ export default class CommerceService {
     await this.pool.query("INSERT INTO peptech_commerce_audit(record_id,actor_id,action,details) VALUES($1,$2,$3,$4)",
       [id,actor,action,JSON.stringify(details)])
   }
-  // Session advisory locks use a dedicated connection, never a pooled query pair.
-  // Disconnect releases the lock. Durable operations + provider idempotency recover
-  // a process crash; application memory is never the concurrency authority.
+  // Transaction-level advisory locks are bound to the transaction scope and auto-released
+  // on COMMIT/ROLLBACK, preventing advisory lock leaks across PgBouncer pooled connections.
   async locked<T>(key: string, work: () => Promise<T>): Promise<T> {
     const parent = this.lockContext.getStore()
-    const connection = parent || await this.lockPool.connect()
-    let acquired = false
+    if (parent) return work()
+    const connection = await this.lockPool.connect()
+    let inTransaction = false
     try {
-      const result = await connection.query("SELECT pg_try_advisory_lock(hashtextextended($1,0)) AS acquired", [key])
-      acquired = result.rows[0].acquired
-      if (!acquired) { const error: any = new Error("This operation is already processing. Retry the same request."); error.status = 409; throw error }
-      return await this.lockContext.run(connection, work)
-    } finally {
-      if (acquired) {
-        try { await connection.query("SELECT pg_advisory_unlock(hashtextextended($1,0))", [key]) }
-        catch { if(!parent)connection.release(true); throw new Error("Commerce lock connection lost; reconcile operation before retry") }
+      await connection.query("BEGIN")
+      inTransaction = true
+      let acquired = false
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const result = await connection.query("SELECT pg_try_advisory_xact_lock(hashtextextended($1,0)) AS acquired", [key])
+        acquired = result.rows[0]?.acquired === true
+        if (acquired) break
+        await new Promise((resolve) => setTimeout(resolve, 250))
       }
-      if (!parent) connection.release()
+      if (!acquired) {
+        const error: any = new Error("This operation is already processing. Retry the same request.")
+        error.status = 409
+        throw error
+      }
+      const output = await this.lockContext.run(connection, work)
+      await connection.query("COMMIT")
+      inTransaction = false
+      return output
+    } catch (err) {
+      if (inTransaction) {
+        try { await connection.query("ROLLBACK") } catch {}
+      }
+      throw err
+    } finally {
+      connection.release()
     }
   }
 }

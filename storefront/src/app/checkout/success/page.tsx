@@ -27,7 +27,6 @@ export default function CheckoutSuccessPage() {
           sessionStorage.removeItem(`peptech_checkout_cart:${id}`)
           return
         }
-        if(data.state==="awaiting_transfer") {setMessage(`Awaiting bank transfer. Use reference ${data.reference}. Your order will not ship until funds are verified.`);return}
         if(["expired","failed"].includes(data.state)) {setMessage("This checkout has expired or failed. Check your account before placing another order.");return}
         setMessage("Payment confirmation is processing. You can safely leave this page and check your account later.")
         if(++count<30) timer=setTimeout(poll,3000)
@@ -39,13 +38,15 @@ export default function CheckoutSuccessPage() {
   },[token,isLoading,retry])
   return <main className="mx-auto flex min-h-[65vh] max-w-xl flex-col justify-center gap-5 px-6 py-16 text-[#0B1F3A]">
     <h1 className="text-3xl font-bold">{result?.state==="confirmed"?"Order confirmed":"Payment confirmation"}</h1>
-    <p role="status">{message}</p>
-    {result?.bankInstructions&&<dl><dt>Account name</dt><dd>{result.bankInstructions.account_name}</dd><dt>Sort code</dt><dd>{result.bankInstructions.sort_code}</dd><dt>Account number</dt><dd>{result.bankInstructions.account_number}</dd><dt>Reference</dt><dd>{result.reference}</dd></dl>}
-    {result?.orderId && <p className="text-sm">Order: {result.orderId}</p>}
-    {result && <p>{new Intl.NumberFormat("en-GB",{style:"currency",currency:result.currency}).format(result.total)}</p>}
-    {result?.renewalTotal ? <p>Renewal: £{result.renewalTotal.toFixed(2)} every 28 days. View your next billing date in your account.</p>:null}
-    {result?.state!=="confirmed" && token && <button onClick={()=>setRetry(v=>v+1)} className="rounded-xl bg-[#0B1F3A] p-3 text-white">Check confirmation</button>}
-    <Link href="/account?tab=orders" className="underline">View your account</Link>
-    {!token && <Link href="/account" className="underline">Sign in</Link>}
+    <p role="status" className="text-gray-700">{message}</p>
+    {result?.orderId && <p className="text-sm font-semibold text-teal-700">Order Reference: {result.orderId}</p>}
+    {result && <p className="text-xl font-bold">{new Intl.NumberFormat("en-GB",{style:"currency",currency:result.currency}).format(result.total)}</p>}
+    {result?.renewalTotal ? <p className="text-sm text-gray-600">Renewal: £{result.renewalTotal.toFixed(2)} every 28 days. View your next billing date in your account.</p>:null}
+    {result?.state!=="confirmed" && token && <button onClick={()=>setRetry(v=>v+1)} className="rounded-xl bg-[#0B1F3A] p-3 text-white font-medium hover:bg-opacity-95 transition-colors">Check confirmation</button>}
+    <div className="flex gap-4 pt-4 border-t border-gray-200">
+      <Link href="/account?tab=orders" className="text-teal-700 font-medium hover:underline">View your account</Link>
+      <Link href="/" className="text-gray-600 hover:underline">Return to Home</Link>
+    </div>
+    {!token && <Link href="/account" className="underline text-teal-700">Sign in</Link>}
   </main>
 }

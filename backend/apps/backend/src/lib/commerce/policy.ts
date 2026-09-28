@@ -11,7 +11,8 @@ export const checkoutSchema = z.object({
   items: z.array(z.object({ variant_id: z.string().min(1).max(100), quantity: z.number().int().min(1).max(99),
     recurring: z.boolean() }).strict()).min(1).max(30),
   ruo_accepted: z.literal(true), recurring_accepted: z.boolean(),
-  payment_method: z.literal("stripe").default("stripe"),
+  payment_method: z.enum(["stripe"]).default("stripe"),
+  ui_mode: z.enum(["embedded", "embedded_page", "hosted_page"]).default("embedded").optional(),
 }).strict()
 export function fail(message: string, status = 400): never {
   const error: any = new Error(message); error.status = status; throw error
@@ -41,5 +42,6 @@ export function assertProduct(approval: any, country: string, recurring: boolean
 }
 export function publicError(error: any) {
   if (error instanceof z.ZodError) return { status: 400, message: "Invalid request. Check the required fields." }
-  return { status: error.status || 503, message: error.status ? error.message : "This operation could not finish. Retry the same request or contact support." }
+  console.error("[PEPTECH Commerce Error]:", error)
+  return { status: error.status || 503, message: error.message || "This operation could not finish. Retry the same request or contact support." }
 }
