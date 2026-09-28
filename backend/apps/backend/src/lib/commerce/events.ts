@@ -44,10 +44,12 @@ export async function reconcileSession(scope:any,ledger:CommerceService,sessionI
     return
   }
   if(session.payment_status!=="paid") return
-  const pi=await context.stripe.paymentIntents.retrieve(objectId(session.payment_intent)!)
+  const pi=await context.stripe.paymentIntents.retrieve(objectId(session.payment_intent)!, { expand: ["latest_charge"] })
   if(pi.status!=="succeeded" || pi.metadata.peptech_attempt!==attempt.id) fail("Payment ownership mismatch",409)
+  const chargeReceipt = typeof pi.latest_charge === "object" ? (pi.latest_charge as any)?.receipt_url : null
+  const receiptUrl = chargeReceipt || null
   await settleReceipt(scope,ledger,attempt,{reference:session.id,session_id:session.id,amount:pi.amount_received,
-    currency:pi.currency,payment_intent_id:pi.id})
+    currency:pi.currency,payment_intent_id:pi.id,receipt_url:receiptUrl})
 }
 export async function reconcileInvoice(scope:any,ledger:CommerceService,invoiceId:string) {
   const context=stripeContext();const invoice=await context.stripe.invoices.retrieve(invoiceId)
@@ -89,7 +91,7 @@ export async function reconcileInvoice(scope:any,ledger:CommerceService,invoiceI
   }
   if(attempt.data.quote.tax_policy==="stripe_default")quote=await invoiceTaxQuote(context.stripe,invoice,quote||attempt.data.quote)
   await settleReceipt(scope,ledger,attempt,{reference:invoice.id,invoice_id:invoice.id,amount:evidence.amount,
-    currency:invoice.currency,payment_intent_id:evidence.payment_intent_id},quote)
+    currency:invoice.currency,payment_intent_id:evidence.payment_intent_id,receipt_url:evidence.receipt_url||invoice.hosted_invoice_url||null},quote)
 }
 export async function processEvent(scope:any,ledger:CommerceService,eventId:string) {
   return ledger.locked(eventId,async()=>{

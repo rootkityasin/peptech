@@ -477,3 +477,31 @@ export async function createStoreOrder(payload: any, token?: string): Promise<{ 
   return data
 }
 
+/**
+ * Fetch a single order receipt from Medusa 2.0 PostgreSQL database by order ID or display ID
+ */
+export async function getOrderReceipt(orderId: string, token?: string): Promise<any | null> {
+  try {
+    const headers: Record<string, string> = {
+      "x-publishable-api-key": PUBLISHABLE_KEY,
+    }
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`
+    }
+
+    const response = await fetchWithTimeout(`${getBackendUrl()}/store/custom/orders/${encodeURIComponent(orderId)}`, {
+      method: "GET",
+      headers,
+    })
+
+    if (response.ok) {
+      const data = await response.json()
+      return data.order || null
+    }
+    return null
+  } catch (err) {
+    console.warn(`Failed to fetch order ${orderId} receipt:`, err)
+    return null
+  }
+}
+

@@ -263,3 +263,83 @@ body {
   animation: empty-cart-fade-up 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.22s both;
 }
 
+/* =========================================================================
+   Unified Official Invoice & Receipt Print Styles
+   ========================================================================= */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm 15mm;
+  }
+
+  html, body, #__next, main {
+    background: #ffffff !important;
+    color: #0b1f3a !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    box-sizing: border-box !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    font-size: 10pt !important;
+  }
+
+  header, footer, nav, aside, .no-print, [role="dialog"], .print\:hidden {
+    display: none !important;
+  }
+
+  .receipt-print-root,
+  .receipt-print-doc {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+  }
+
+  .receipt-print-doc * {
+    box-sizing: border-box !important;
+  }
+
+  .receipt-header {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: flex-start !important;
+    width: 100% !important;
+  }
+
+  .receipt-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 24px !important;
+    width: 100% !important;
+  }
+
+  table {
+    width: 100% !important;
+    max-width: 100% !important;
+    table-layout: auto !important;
+    page-break-inside: auto;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  tfoot {
+    display: table-footer-group;
+  }
+}
+

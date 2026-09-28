@@ -113,9 +113,12 @@ async function run() {
       format = "refill";
     }
 
+    const isGenericVariant = !v.variant_title || ["Default Variant", "Complete Starter Kit", "Default", "Standard"].includes(v.variant_title) || v.variant_title === v.product_title;
+    const canonicalName = isGenericVariant ? v.product_title : `${v.product_title} - ${v.variant_title}`;
+
     const catalogData = {
       version: "1.0",
-      canonical_name: `${v.product_title} - ${v.variant_title}`,
+      canonical_name: canonicalName,
       canonical_sku: v.sku || `SKU-${v.variant_id.slice(-8)}`,
       format: format,
       evidence_ref: "COA-2026-VERIFIED",

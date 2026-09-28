@@ -9,6 +9,15 @@ import Link from "next/link"
 import { VisaBadge, MastercardBadge } from "@/components/ui/PaymentBadges"
 import { useCustomer } from "@/context/CustomerContext"
 import { getCustomerOrders } from "@/lib/customer-api"
+import { formatFullReceiptDateTime, getItemDisplayDetails } from "@/components/receipt/UnifiedReceipt"
+
+function formatOrderDate(rawDate?: string | Date | null): string {
+  if (!rawDate) return new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+  const d = new Date(rawDate)
+  return isNaN(d.getTime())
+    ? new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+    : d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+}
 
 type AccountTab = "overview" | "orders" | "subscriptions" | "addresses" | "payment"
 
@@ -114,24 +123,41 @@ function AccountContent() {
             const mapped = medusaOrders.map((mo: any) => {
               const rawTotal = typeof mo.summary?.total === "number" ? mo.summary.total : (typeof mo.total === "number" ? mo.total : 0)
               const displayTotal = rawTotal > 1000 ? rawTotal / 100 : rawTotal
-              const orderDisplayId = mo.display_id ? `PEP-${mo.display_id}` : mo.id.slice(0, 10).toUpperCase()
+              const orderDisplayId = mo.custom_display_id || mo.metadata?.order_number_formatted || (mo.display_id ? `PEP-${mo.display_id}` : `PEP-${mo.id.replace(/^order_/, "").slice(0, 6).toUpperCase()}`)
+              const displayDate = formatFullReceiptDateTime(mo.created_at || mo.date)
+              const rawSubtotal = typeof mo.summary?.subtotal === "number" ? mo.summary.subtotal : 0
+              const subtotal = rawSubtotal > 1000 ? rawSubtotal / 100 : (rawSubtotal > 0 ? rawSubtotal : Math.max(0, displayTotal - 4.95))
+              const rawShipping = typeof mo.summary?.shipping_total === "number" ? mo.summary.shipping_total : 4.95
+              const shippingTotal = rawShipping > 1000 ? rawShipping / 100 : rawShipping
+
               return {
                 id: orderDisplayId,
-                date: mo.created_at,
-                displayDate: new Date(mo.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }),
+                internalId: mo.id,
+                displayId: mo.display_id,
+                date: mo.created_at || new Date().toISOString(),
+                displayDate,
                 total: displayTotal,
-                status: mo.fulfillment_status === "delivered" ? "Delivered" : "Cold-Chain Packing",
+                subtotal,
+                shippingTotal,
+                status: mo.fulfillment_status === "delivered" || mo.status === "completed" ? "Delivered" : "Cold-Chain Packing",
                 trackingNumber: mo.metadata?.tracking_number || `GB-RM24-${orderDisplayId.replace(/[^a-zA-Z0-9]/g, "")}-CLD`,
-                paymentMethod: mo.metadata?.payment_method || "Authorized Payment Card",
+                paymentMethod: mo.metadata?.payment_method || "Stripe 256-Bit SSL Encrypted (Card / Link)",
+                stripeReceiptUrl: mo.metadata?.stripe_receipt_url || mo.metadata?.receipt_url || null,
+                customerName: customer ? `${customer.first_name || ""} ${customer.last_name || ""}`.trim() || undefined : undefined,
+                customerEmail: customer?.email || mo.email,
+                shippingAddress: mo.shipping_address,
+                billingAddress: mo.billing_address,
                 items: (mo.items || []).map((it: any) => {
                   const itPrice = typeof it.unit_price === "number" ? it.unit_price : 0
+                  const itOptions = it.options || it.metadata?.options || (it.metadata?.cartridge_name ? [{ label: "Included Cartridge", value: it.metadata.cartridge_name }] : undefined)
                   return {
                     id: it.id,
                     title: it.title,
-                    subtitle: it.variant_title || it.subtitle || "Laboratory RUO Grade",
+                    subtitle: it.variant_title || it.subtitle || it.product_description || "Laboratory RUO Grade",
                     price: itPrice > 1000 ? itPrice / 100 : itPrice,
-                    quantity: it.quantity,
-                    image: it.thumbnail || "/images/figma/152e353c4afaa5945905ac686de871b57ec2a770.png"
+                    quantity: it.quantity || 1,
+                    image: it.thumbnail || "/images/figma/152e353c4afaa5945905ac686de871b57ec2a770.png",
+                    options: itOptions,
                   }
                 })
               }
@@ -1106,30 +1132,43 @@ function AccountContent() {
 
                   {/* Ordered Items List */}
                   <div className="flex flex-col gap-[14px]">
-                    {orders[0].items?.map((item: any, idx: number) => (
-                      <div key={item.id || idx} className="flex items-center justify-between">
-                        <div className="flex gap-[14px] items-center">
-                          <div className="w-[48px] h-[48px] rounded-[8px] bg-slate-50 border border-slate-200 overflow-hidden flex items-center justify-center p-1 shrink-0">
-                            <img
-                              alt=""
-                              className="w-full h-full object-contain"
-                              src={item.image || "/images/figma/152e353c4afaa5945905ac686de871b57ec2a770.png"}
-                            />
+                    {orders[0].items?.map((item: any, idx: number) => {
+                      const { cleanTitle, specification, options } = getItemDisplayDetails(item)
+                      return (
+                        <div key={item.id || idx} className="flex items-start justify-between gap-4">
+                          <div className="flex gap-[14px] items-start">
+                            <div className="w-[48px] h-[48px] rounded-[8px] bg-slate-50 border border-slate-200 overflow-hidden flex items-center justify-center p-1 shrink-0 mt-0.5">
+                              <img
+                                alt=""
+                                className="w-full h-full object-contain"
+                                src={item.image || "/images/figma/152e353c4afaa5945905ac686de871b57ec2a770.png"}
+                              />
+                            </div>
+                            <div className="flex flex-col gap-[2px]">
+                              <p className="font-semibold text-[#0b1f3a] text-[13.5px]">
+                                {cleanTitle}
+                              </p>
+                              <p className="font-normal text-[#64748b] text-[12px]">
+                                {specification}
+                              </p>
+                              {options && options.length > 0 && (
+                                <div className="flex flex-col gap-0.5 mt-0.5 text-[11.5px]">
+                                  {options.map((opt: any, oIdx: number) => (
+                                    <span key={oIdx} className="text-slate-600">
+                                      <span className="text-slate-400 font-medium">{opt.label}: </span>
+                                      <span className="font-semibold text-slate-700">{opt.value}</span>
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
                           </div>
-                          <div className="flex flex-col gap-[3px]">
-                            <p className="font-semibold text-[#0b1f3a] text-[13.5px]">
-                              {item.title}
-                            </p>
-                            <p className="font-normal text-[#64748b] text-[12px]">
-                              {item.subtitle || `${item.quantity || 1}x Units`}
-                            </p>
-                          </div>
+                          <p className="font-bold text-[#0b1f3a] text-[14px] shrink-0 font-mono">
+                            £{((item.price || 0) * (item.quantity || 1)).toFixed(2)}
+                          </p>
                         </div>
-                        <p className="font-bold text-[#0b1f3a] text-[14px]">
-                          £{((item.price || 0) * (item.quantity || 1)).toFixed(2)}
-                        </p>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
 
                   <div className="h-px bg-[#f1f5f9] w-full" />
@@ -1152,10 +1191,14 @@ function AccountContent() {
                         Live Dispatch Tracker →
                       </button>
                       <Link
-                        href="/checkout/success"
-                        className="bg-[#f1f5f9] hover:bg-slate-200 text-[#0b1f3a] text-[12.5px] font-semibold px-[14px] py-[8px] rounded-[6px] transition-colors"
+                        href={`/receipt/${encodeURIComponent(orders[0].id)}`}
+                        target="_blank"
+                        className="bg-[#f1f5f9] hover:bg-slate-200 text-[#0b1f3a] text-[12.5px] font-semibold px-[14px] py-[8px] rounded-[6px] transition-colors inline-flex items-center gap-1.5"
                       >
-                        View Receipt Slip
+                        <svg className="w-3.5 h-3.5 text-[#16a6a3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <span>View &amp; Print Receipt ↗</span>
                       </Link>
                     </div>
                   </div>
@@ -1582,30 +1625,43 @@ function AccountContent() {
 
                       {/* Items */}
                       <div className="flex flex-col gap-[14px]">
-                        {order.items?.map((item: any, idx: number) => (
-                          <div key={item.id || idx} className="flex items-center justify-between">
-                            <div className="flex gap-[14px] items-center">
-                              <div className="w-[48px] h-[48px] rounded-[8px] bg-slate-50 border border-slate-200 overflow-hidden flex items-center justify-center p-1 shrink-0">
-                                <img
-                                  alt=""
-                                  className="w-full h-full object-contain"
-                                  src={item.image || "/images/figma/152e353c4afaa5945905ac686de871b57ec2a770.png"}
-                                />
+                        {order.items?.map((item: any, idx: number) => {
+                          const { cleanTitle, specification, options } = getItemDisplayDetails(item)
+                          return (
+                            <div key={item.id || idx} className="flex items-start justify-between gap-4">
+                              <div className="flex gap-[14px] items-start">
+                                <div className="w-[48px] h-[48px] rounded-[8px] bg-slate-50 border border-slate-200 overflow-hidden flex items-center justify-center p-1 shrink-0 mt-0.5">
+                                  <img
+                                    alt=""
+                                    className="w-full h-full object-contain"
+                                    src={item.image || "/images/figma/152e353c4afaa5945905ac686de871b57ec2a770.png"}
+                                  />
+                                </div>
+                                <div className="flex flex-col gap-[2px]">
+                                  <p className="font-semibold text-[#0b1f3a] text-[13.5px]">
+                                    {cleanTitle}
+                                  </p>
+                                  <p className="font-normal text-[#64748b] text-[12px]">
+                                    {specification}
+                                  </p>
+                                  {options && options.length > 0 && (
+                                    <div className="flex flex-col gap-0.5 mt-0.5 text-[11.5px]">
+                                      {options.map((opt: any, oIdx: number) => (
+                                        <span key={oIdx} className="text-slate-600">
+                                          <span className="text-slate-400 font-medium">{opt.label}: </span>
+                                          <span className="font-semibold text-slate-700">{opt.value}</span>
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
                               </div>
-                              <div className="flex flex-col gap-[3px]">
-                                <p className="font-semibold text-[#0b1f3a] text-[13.5px]">
-                                  {item.title}
-                                </p>
-                                <p className="font-normal text-[#64748b] text-[12px]">
-                                  {item.subtitle || `${item.quantity || 1}x Units`}
-                                </p>
-                              </div>
+                              <p className="font-bold text-[#0b1f3a] text-[14px] shrink-0 font-mono">
+                                £{((item.price || 0) * (item.quantity || 1)).toFixed(2)}
+                              </p>
                             </div>
-                            <p className="font-bold text-[#0b1f3a] text-[14px]">
-                              £{((item.price || 0) * (item.quantity || 1)).toFixed(2)}
-                            </p>
-                          </div>
-                        ))}
+                          )
+                        })}
                       </div>
 
                       <div className="h-px bg-[#f1f5f9] w-full" />
@@ -1623,10 +1679,14 @@ function AccountContent() {
                             Track Live Dispatch →
                           </button>
                           <Link
-                            href="/checkout/success"
-                            className="bg-[#f1f5f9] hover:bg-slate-200 text-[#0b1f3a] text-[12px] font-semibold px-[14px] py-[8px] rounded-[6px] transition-colors"
+                            href={`/receipt/${encodeURIComponent(order.id)}`}
+                            target="_blank"
+                            className="bg-[#f1f5f9] hover:bg-slate-200 text-[#0b1f3a] text-[12px] font-semibold px-[14px] py-[8px] rounded-[6px] transition-colors inline-flex items-center gap-1.5 cursor-pointer"
                           >
-                            View Receipt Slip
+                            <svg className="w-3.5 h-3.5 text-[#16a6a3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <span>View &amp; Print Receipt ↗</span>
                           </Link>
                         </div>
                       </div>
@@ -2167,10 +2227,6 @@ function AccountContent() {
           </div>
         </div>
       )}
-
-      {/* ========================================================= */}
-      {/* ADD PAYMENT CARD MODAL */}
-      {/* ========================================================= */}
 
     </div>
   )

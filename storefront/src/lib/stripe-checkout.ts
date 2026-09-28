@@ -10,6 +10,8 @@ export type CheckoutSession = {
   publishableKey?: string
   state: string
   orderId?: string
+  orderNumber?: string
+  stripeReceiptUrl?: string | null
   revision: string
   taxStatus?: string
   tax: number
@@ -78,7 +80,18 @@ export async function prepareStripeCheckout(input: {
         }
         variantId = result.products[0].variants[0].id
       }
-      return { variant_id: variantId, quantity: item.quantity, recurring: item.isSubscription }
+      return {
+        variant_id: variantId,
+        quantity: item.quantity,
+        recurring: item.isSubscription,
+        metadata: {
+          title: item.title,
+          format: item.format,
+          strength: item.strength,
+          options: item.options,
+          cartridge_name: item.options?.find((o) => o.label?.toLowerCase().includes("cartridge"))?.value,
+        },
+      }
     })
   )
 

@@ -163,6 +163,8 @@ export function publicAttempt(attempt: LedgerRecord) {
     attemptId: attempt.id,
     state: attempt.state,
     orderId: attempt.data.order_id || null,
+    orderNumber: attempt.data.order_number || attempt.data.display_id || null,
+    stripeReceiptUrl: attempt.data.stripe_receipt_url || null,
     revision: attempt.data.revision,
     taxStatus: q.stripe_tax_status,
     total: q.total_minor / 100,

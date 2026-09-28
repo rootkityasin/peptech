@@ -121,10 +121,12 @@ export function Header() {
     }
   }
 
+  if (pathname?.startsWith("/receipt")) return null
+
   return (
     <>
       {/* 01 Top Announcement Bar - Figma Node 2:29210 */}
-      <div className="w-full bg-[#0e2a47] text-white text-[12px] h-[38px] flex items-center px-4 sm:px-8 border-b border-white/10 z-50 relative">
+      <div className="w-full bg-[#0e2a47] text-white text-[12px] h-[38px] flex items-center px-4 sm:px-8 border-b border-white/10 z-50 relative print:hidden">
         <div className="max-w-[1240px] w-full mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="font-normal text-[#e2e8f0]">Precision Today. Better Tomorrow.</span>
@@ -155,7 +157,7 @@ export function Header() {
       {/* 02 Header Navigation - Figma Node 2:29228 */}
       <header
         style={{ backgroundColor: "#ffffff" }}
-        className={`w-full bg-white sticky top-0 z-50 shadow-xs h-[80px] relative transition-colors ${
+        className={`w-full bg-white sticky top-0 z-50 shadow-xs h-[80px] relative transition-colors print:hidden ${
           searchOpen ? "border-b-0" : "border-b border-[#E2E8F0]"
         }`}
       >
