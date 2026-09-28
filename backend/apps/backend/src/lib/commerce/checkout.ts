@@ -78,7 +78,7 @@ export async function prepareCheckout(scope:any,ledger:CommerceService,customer:
       const origin=process.env.STRIPE_STOREFRONT_URL || "http://localhost:3000"
       if(!origin || (context.mode==="live"&&!origin.startsWith("https://"))) fail("Storefront return URL needs configuration",503)
       try {
-      session=await context.stripe.checkout.sessions.create({ui_mode:"hosted_page",
+      session=await context.stripe.checkout.sessions.create({ui_mode:"hosted" as any,
         billing_address_collection:"required",phone_number_collection:{enabled:true},
         shipping_address_collection:{allowed_countries:[quote.address.country_code.toUpperCase()]},
         customer_update:{address:"auto",shipping:"auto",name:"auto"},mode:recurring?"subscription":"payment",

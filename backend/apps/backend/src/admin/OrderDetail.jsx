@@ -199,12 +199,20 @@ function StandardOrderDetail({ id }) {
   const [newTagInput, setNewTagInput] = useState("");
   const [isSavingTag, setIsSavingTag] = useState(false);
 
-  // Modals for fulfillment
+  // Modals for Royal Mail Click & Drop fulfillment
   const [showFulfillModal, setShowFulfillModal] = useState(false);
+  const [fulfillServiceCode, setFulfillServiceCode] = useState("TPN");
+  const [fulfillWeight, setFulfillWeight] = useState(240);
+  const [fulfillPackageFormat, setFulfillPackageFormat] = useState("smallParcel");
+  const [fulfillDimHeight, setFulfillDimHeight] = useState(80);
+  const [fulfillDimWidth, setFulfillDimWidth] = useState(160);
+  const [fulfillDimDepth, setFulfillDimDepth] = useState(220);
+  const [fulfillIncludeLabel, setFulfillIncludeLabel] = useState(true);
+  const [isFulfilling, setIsFulfilling] = useState(false);
+  const [fulfillError, setFulfillError] = useState(null);
   const [showShipmentModal, setShowShipmentModal] = useState(false);
   const [fulfillCarrier, setFulfillCarrier] = useState("Royal Mail Tracked");
   const [fulfillTracking, setFulfillTracking] = useState("");
-  const [isFulfilling, setIsFulfilling] = useState(false);
   const [activeFulfillmentId, setActiveFulfillmentId] = useState(null);
 
   // Contact / Address edit modal state
@@ -343,38 +351,107 @@ function StandardOrderDetail({ id }) {
     }
   };
 
-  // Fulfillment Logic
-  const handleCreateFulfillment = async () => {
-    setIsFulfilling(true);
+  const countryCode = (shipping.country_code || meta.shipping_country_code || "GB").toUpperCase();
+  const isUk = countryCode === "GB";
+
+  const openFulfillModal = () => {
+    setFulfillServiceCode("AUTO");
+    setFulfillWeight(240);
+    setFulfillPackageFormat("smallParcel");
+    setFulfillDimHeight(80);
+    setFulfillDimWidth(160);
+    setFulfillDimDepth(220);
+    setFulfillIncludeLabel(true);
+    setFulfillError(null);
+    setShowFulfillModal(true);
+  };
+
+  const openPdfPreview = (base64Data) => {
+    const raw = base64Data || meta.shipping_label_pdf;
+    if (!raw) {
+      alert("Shipping label PDF is not available yet for this fulfillment.");
+      return;
+    }
     try {
-      const newFulfillmentId = `${order.display_id || "1018"}-F${fulfillments.length + 1}`;
-      const trackingUrl = fulfillCarrier.toLowerCase().includes("royal")
-        ? `https://www.royalmail.com/track-your-item#/tracking-results/${fulfillTracking || "RM123456789GB"}`
-        : fulfillCarrier.toLowerCase().includes("fedex")
-        ? `https://www.fedex.com/fedextrack/?trknbr=${fulfillTracking || "0987654321"}`
-        : `#`;
+      const cleanBase64 = String(raw).replace(/^data:application\/pdf;base64,/, "").trim();
+      const byteCharacters = atob(cleanBase64);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const blob = new Blob([new Uint8Array(byteNumbers)], { type: "application/pdf" });
+      const blobUrl = URL.createObjectURL(blob);
+      window.open(blobUrl, "_blank");
+    } catch (e) {
+      alert("Failed to render PDF preview: " + e.message);
+    }
+  };
 
-      const newFulfillmentObj = {
-        id: newFulfillmentId,
-        carrier: fulfillCarrier,
-        tracking_number: fulfillTracking || (fulfillCarrier.includes("FedEx") ? "0987654321" : "RM987654321GB"),
-        tracking_url: trackingUrl,
-        status: "fulfilled",
-        shipped_at: new Date().toISOString(),
-      };
+  const downloadPdf = (base64Data, filename) => {
+    const raw = base64Data || meta.shipping_label_pdf;
+    if (!raw) {
+      alert("Shipping label PDF is not available yet for this fulfillment.");
+      return;
+    }
+    try {
+      const cleanBase64 = String(raw).replace(/^data:application\/pdf;base64,/, "").trim();
+      const byteCharacters = atob(cleanBase64);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const blob = new Blob([new Uint8Array(byteNumbers)], { type: "application/pdf" });
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = filename || `Royal-Mail-Label-${order.display_id || order.id}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
+    } catch (e) {
+      alert("Failed to download label PDF: " + e.message);
+    }
+  };
 
-      await updateOrder({
-        metadata: {
-          ...meta,
-          fulfillment_status: "fulfilled",
-          fulfillments: [...fulfillments, newFulfillmentObj],
-        },
+  // Fulfillment Logic - Royal Mail Click & Drop API
+  const handleCreateFulfillment = async () => {
+    if (!isPaid) {
+      alert("Order must be paid before creating a Royal Mail shipping fulfillment.");
+      return;
+    }
+    setIsFulfilling(true);
+    setFulfillError(null);
+    try {
+      const res = await fetch("/admin/custom/fulfillment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          orderId: order.id,
+          serviceCode: fulfillServiceCode || (isUk ? "TPN" : "OTA"),
+          weightInGrams: fulfillWeight || 240,
+          packageFormatIdentifier: fulfillPackageFormat || "smallParcel",
+          dimensions: {
+            heightInMms: fulfillDimHeight || 80,
+            widthInMms: fulfillDimWidth || 160,
+            depthInMms: fulfillDimDepth || 220,
+          },
+          includeLabelInResponse: fulfillIncludeLabel,
+        }),
       });
 
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || "Failed to create Royal Mail fulfillment");
+      }
+
       setShowFulfillModal(false);
-      refetch();
+      await refetch();
     } catch (e) {
       console.error("Fulfillment error:", e);
+      setFulfillError(e.message || "Failed to generate Royal Mail label");
+      alert("Fulfillment Error: " + (e.message || "Failed to generate Royal Mail label"));
     } finally {
       setIsFulfilling(false);
     }
@@ -1149,8 +1226,8 @@ function StandardOrderDetail({ id }) {
                         children: "Fulfillments",
                       }),
                       _jsx("button", {
-                        onClick: () => setShowFulfillModal(true),
-                        className: "text-xs font-semibold text-[#2c6ecb] hover:underline",
+                        onClick: openFulfillModal,
+                        className: "text-xs font-semibold text-[#2c6ecb] hover:underline cursor-pointer",
                         children: "+ Add fulfillment",
                       }),
                     ],
@@ -1164,9 +1241,9 @@ function StandardOrderDetail({ id }) {
                           _jsx("div", {
                             className: "mt-2",
                             children: _jsx("button", {
-                              onClick: () => setShowFulfillModal(true),
-                              className: "px-3 py-1 text-xs font-medium text-white bg-[#008060] rounded shadow-sm hover:bg-[#006e52]",
-                              children: "Fulfill Items Now",
+                              onClick: openFulfillModal,
+                              className: "px-3 py-1 text-xs font-medium text-white bg-[#008060] rounded shadow-sm hover:bg-[#006e52] cursor-pointer",
+                              children: "Fulfill Items with Royal Mail",
                             }),
                           }),
                         ],
@@ -1178,7 +1255,7 @@ function StandardOrderDetail({ id }) {
                             key: ful.id,
                             className: "p-4 divide-y divide-[#e1e3e5]",
                             children: [
-                              // Fulfillment Header: #1018-F3 [Marked as fulfilled]
+                              // Fulfillment Header: #1018-RM1 [Marked as fulfilled]
                               _jsxs("div", {
                                 className: "flex items-center justify-between pb-3",
                                 children: [
@@ -1190,14 +1267,14 @@ function StandardOrderDetail({ id }) {
                                         children: ["#", ful.id],
                                       }),
                                       _jsx("span", {
-                                        className: "inline-block px-2 py-0.5 text-xs font-medium bg-[#e4e5e7] text-[#202223] rounded-full",
-                                        children: "Marked as fulfilled",
+                                        className: "inline-block px-2 py-0.5 text-xs font-medium bg-[#e3f1df] text-[#008060] rounded-full",
+                                        children: "Label Generated",
                                       }),
                                     ],
                                   }),
                                   _jsx("button", {
                                     onClick: () => handleCancelFulfillment(ful.id),
-                                    className: "text-xs text-[#d82c0d] hover:underline",
+                                    className: "text-xs text-[#d82c0d] hover:underline cursor-pointer",
                                     children: "Cancel",
                                   }),
                                 ],
@@ -1209,21 +1286,53 @@ function StandardOrderDetail({ id }) {
                                 children: [
                                   _jsxs("div", {
                                     children: [
-                                      _jsx("div", { className: "text-[#5c5f62] mb-0.5", children: "Carrier" }),
-                                      _jsx("div", { className: "font-semibold text-[#202223]", children: ful.carrier || "FedEx" }),
+                                      _jsx("div", { className: "text-[#5c5f62] mb-0.5", children: "Carrier & Service" }),
+                                      _jsx("div", { className: "font-semibold text-[#202223]", children: ful.carrier || (isUk ? "Royal Mail Tracked 24" : "Royal Mail International Tracked") }),
+                                      ful.package_format && _jsxs("div", { className: "text-[11px] text-[#5c5f62] mt-0.5", children: ["Format: ", ful.package_format, ful.weight_in_grams ? ` (${ful.weight_in_grams}g)` : ""] }),
                                     ],
                                   }),
                                   _jsxs("div", {
                                     children: [
                                       _jsx("div", { className: "text-[#5c5f62] mb-0.5", children: "Tracking number" }),
                                       _jsx("a", {
-                                        href: ful.tracking_url || "#",
+                                        href: ful.tracking_url || `https://www.royalmail.com/track-your-item#/tracking-results/${ful.tracking_number || "RM123456789GB"}`,
                                         target: "_blank",
                                         rel: "noreferrer",
-                                        className: "font-semibold text-[#2c6ecb] hover:underline",
-                                        children: ful.tracking_number || "0987654321",
+                                        className: "font-semibold text-[#2c6ecb] hover:underline flex items-center gap-1",
+                                        children: [ful.tracking_number || "RM123456789GB", " ↗"],
                                       }),
                                     ],
+                                  }),
+                                ],
+                              }),
+
+                              // Dedicated Print & Download Label Actions (No unsolicited popup)
+                              _jsxs("div", {
+                                className: "pt-3 mt-3 flex items-center justify-between border-t border-[#e1e3e5] text-xs",
+                                children: [
+                                  _jsxs("div", {
+                                    className: "flex items-center gap-2",
+                                    children: [
+                                      _jsxs("button", {
+                                        type: "button",
+                                        onClick: () => openPdfPreview(ful.shipping_label_pdf || meta.shipping_label_pdf),
+                                        className: "px-3 py-1.5 font-semibold text-[#0b1f3a] bg-white border border-[#c9cccf] rounded hover:bg-[#f6f6f7] shadow-xs cursor-pointer flex items-center gap-1.5",
+                                        children: [_jsx("span", { children: "🖨️" }), _jsx("span", { children: "Print 6x4 Label" })],
+                                      }),
+                                      _jsxs("button", {
+                                        type: "button",
+                                        onClick: () => downloadPdf(ful.shipping_label_pdf || meta.shipping_label_pdf, `Royal-Mail-Label-${order.display_id || order.id}.pdf`),
+                                        className: "px-3 py-1.5 font-medium text-[#5c5f62] bg-white border border-[#c9cccf] rounded hover:bg-[#f6f6f7] shadow-xs cursor-pointer flex items-center gap-1.5",
+                                        children: [_jsx("span", { children: "⬇️" }), _jsx("span", { children: "Download PDF" })],
+                                      }),
+                                    ],
+                                  }),
+                                  _jsx("a", {
+                                    href: ful.tracking_url || `https://www.royalmail.com/track-your-item#/tracking-results/${ful.tracking_number || "RM123456789GB"}`,
+                                    target: "_blank",
+                                    rel: "noreferrer",
+                                    className: "text-[#16a6a3] hover:underline font-medium text-xs",
+                                    children: "Track on Royal Mail ↗",
                                   }),
                                 ],
                               }),
@@ -1687,7 +1796,7 @@ function StandardOrderDetail({ id }) {
         ],
       }),
 
-      // ==================== FULFILLMENT MODAL ====================
+      // ==================== ROYAL MAIL CLICK & DROP FULFILLMENT MODAL ====================
       showFulfillModal &&
         _jsx("div", {
           className: "fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4",
@@ -1697,90 +1806,239 @@ function StandardOrderDetail({ id }) {
               _jsxs("div", {
                 className: "flex items-center justify-between border-b pb-3",
                 children: [
-                  _jsx("h3", { className: "text-lg font-bold text-[#202223]", children: "Fulfill Items" }),
+                  _jsxs("div", {
+                    children: [
+                      _jsx("h3", { className: "text-lg font-bold text-[#202223]", children: "Royal Mail Click & Drop Fulfillment" }),
+                      _jsx("p", { className: "text-xs text-[#5c5f62]", children: "Generate 6x4 shipping label and assign official tracking number." }),
+                    ],
+                  }),
                   _jsx("button", {
                     onClick: () => setShowFulfillModal(false),
-                    className: "text-[#8c9196] hover:text-[#202223] text-lg font-bold",
+                    className: "text-[#8c9196] hover:text-[#202223] text-lg font-bold cursor-pointer",
                     children: "✕",
                   }),
                 ],
               }),
 
-              _jsxs("div", {
-                className: "space-y-3",
-                children: [
-                  _jsx("div", {
-                    className: "font-semibold text-xs uppercase text-[#5c5f62]",
-                    children: "Items to fulfill:",
-                  }),
-                  _jsx("div", {
-                    className: "divide-y divide-[#e1e3e5] border border-[#e1e3e5] rounded p-2 bg-[#fafbfb] max-h-48 overflow-y-auto",
-                    children: items.map((it) => (
+              !isPaid
+                ? _jsxs("div", {
+                    className: "p-4 bg-amber-50 border border-amber-200 rounded-lg text-amber-900 text-xs space-y-2",
+                    children: [
                       _jsxs("div", {
-                        key: it.id,
-                        className: "py-2 flex items-center justify-between text-xs",
+                        className: "flex items-center gap-2 font-bold",
+                        children: [
+                          _jsx("span", { children: "⚠️" }),
+                          _jsx("span", { children: "Payment Required Before Fulfillment" }),
+                        ],
+                      }),
+                      _jsxs("p", {
+                        children: [
+                          "Current order payment status is ",
+                          _jsx("strong", { className: "capitalize", children: paymentStatus }),
+                          ". Orders must be settled and marked as 'Paid' before generating postage labels.",
+                        ],
+                      }),
+                    ],
+                  })
+                : _jsxs("div", {
+                    className: "space-y-3",
+                    children: [
+                      // Destination & Country Banner
+                      _jsxs("div", {
+                        className: "p-3 bg-[#f8fafc] border border-slate-200 rounded-lg flex items-center justify-between",
                         children: [
                           _jsxs("div", {
                             children: [
-                              _jsx("div", { className: "font-medium text-[#202223]", children: it.title }),
-                              _jsxs("div", { className: "text-[#5c5f62]", children: ["SKU: ", it.variant_sku || "test2"] }),
+                              _jsx("span", { className: "text-[10px] font-bold text-slate-500 uppercase tracking-wider block", children: "Destination Country" }),
+                              _jsxs("span", { className: "text-xs font-bold text-[#0b1f3a]", children: [countryCode, " — ", meta.shipping_country || "United Kingdom"] }),
+                            ],
+                          }),
+                          _jsx("span", {
+                            className: "text-[11px] font-semibold bg-[#e6fffa] text-[#16a6a3] px-2 py-0.5 rounded border border-[#16a6a3]/20",
+                            children: isUk ? "Domestic UK" : "International Export",
+                          }),
+                        ],
+                      }),
+
+                      // Items to fulfill list
+                      _jsx("div", {
+                        className: "divide-y divide-[#e1e3e5] border border-[#e1e3e5] rounded p-2 bg-[#fafbfb] max-h-32 overflow-y-auto",
+                        children: items.map((it) => (
+                          _jsxs("div", {
+                            key: it.id,
+                            className: "py-1.5 flex items-center justify-between text-xs",
+                            children: [
+                              _jsxs("div", {
+                                children: [
+                                  _jsx("div", { className: "font-medium text-[#202223] truncate max-w-[260px]", children: it.title }),
+                                  _jsxs("div", { className: "text-[11px] text-[#5c5f62]", children: ["SKU: ", it.variant_sku || it.metadata?.sku || "PEP-LAB-01"] }),
+                                ],
+                              }),
+                              _jsxs("div", {
+                                className: "font-semibold text-[#008060]",
+                                children: ["Qty: ", it.quantity],
+                              }),
+                            ],
+                          }, it.id)
+                        )),
+                      }),
+
+                      // Royal Mail Service Code Dropdown
+                      _jsxs("div", {
+                        children: [
+                          _jsx("label", { className: "block text-xs font-semibold text-[#202223] mb-1", children: "Royal Mail Service Code" }),
+                          _jsxs("select", {
+                            value: fulfillServiceCode,
+                            onChange: (e) => setFulfillServiceCode(e.target.value),
+                            className: "w-full border border-[#c9cccf] rounded p-2 text-xs bg-white font-medium text-[#202223]",
+                            children: [
+                              _jsx("option", { value: "AUTO", children: "AUTO — Default Account Rules (Recommended)" }, "AUTO"),
+                              _jsx("option", { value: "OLP1", children: "OLP1 — Royal Mail 24 (Online Postage)" }, "OLP1"),
+                              _jsx("option", { value: "OLP2", children: "OLP2 — Royal Mail 48 (Online Postage)" }, "OLP2"),
+                              _jsx("option", { value: "TPN", children: "TPN — Royal Mail Tracked 24 (OBA Contract)" }, "TPN"),
+                              _jsx("option", { value: "TPS", children: "TPS — Royal Mail Tracked 48 (OBA Contract)" }, "TPS"),
+                              _jsx("option", { value: "TRM", children: "TRM — Royal Mail Tracked 24 with Signature (OBA)" }, "TRM"),
+                              _jsx("option", { value: "SD1", children: "SD1 — Special Delivery Guaranteed by 1pm" }, "SD1"),
+                              _jsx("option", { value: "OTA", children: "OTA — Royal Mail International Tracked (OBA)" }, "OTA"),
+                              _jsx("option", { value: "OTC", children: "OTC — Royal Mail International Tracked & Signed (OBA)" }, "OTC"),
+                              _jsx("option", { value: "OLS", children: "OLS — Royal Mail International Signed (OBA)" }, "OLS"),
+                            ],
+                          }),
+                        ],
+                      }),
+
+                      // Package Format & Weight in Grams
+                      _jsxs("div", {
+                        className: "grid grid-cols-2 gap-3",
+                        children: [
+                          _jsxs("div", {
+                            children: [
+                              _jsx("label", { className: "block text-xs font-semibold text-[#202223] mb-1", children: "Gross Weight (g)" }),
+                              _jsx("input", {
+                                type: "number",
+                                value: fulfillWeight,
+                                onChange: (e) => setFulfillWeight(Math.max(1, parseInt(e.target.value, 10) || 1)),
+                                className: "w-full border border-[#c9cccf] rounded p-2 text-xs",
+                                placeholder: "240",
+                              }),
                             ],
                           }),
                           _jsxs("div", {
-                            className: "font-semibold text-[#008060]",
-                            children: ["Qty: ", it.quantity],
+                            children: [
+                              _jsx("label", { className: "block text-xs font-semibold text-[#202223] mb-1", children: "Package Format" }),
+                              _jsxs("select", {
+                                value: fulfillPackageFormat,
+                                onChange: (e) => setFulfillPackageFormat(e.target.value),
+                                className: "w-full border border-[#c9cccf] rounded p-2 text-xs bg-white",
+                                children: [
+                                  _jsx("option", { value: "smallParcel", children: "Small Parcel (Cold-Chain Box)" }, "smallParcel"),
+                                  _jsx("option", { value: "mediumParcel", children: "Medium Parcel" }, "mediumParcel"),
+                                  _jsx("option", { value: "largeLetter", children: "Large Letter (Vial Box)" }, "largeLetter"),
+                                  _jsx("option", { value: "parcel", children: "Parcel" }, "parcel"),
+                                  _jsx("option", { value: "largeParcel", children: "Large Parcel" }, "largeParcel"),
+                                ],
+                              }),
+                            ],
                           }),
                         ],
-                      }, it.id)
-                    )),
-                  }),
+                      }),
 
-                  _jsxs("div", {
-                    children: [
-                      _jsx("label", { className: "block text-xs font-semibold text-[#202223] mb-1", children: "Carrier" }),
-                      _jsxs("select", {
-                        value: fulfillCarrier,
-                        onChange: (e) => setFulfillCarrier(e.target.value),
-                        className: "w-full border border-[#c9cccf] rounded p-2 text-xs bg-white",
+                      // Dimensions (H x W x D in mm)
+                      _jsxs("div", {
                         children: [
-                          _jsx("option", { value: "Royal Mail Tracked 24 / 48", children: "Royal Mail Tracked 24 / 48 (Domestic UK - £4.95)" }),
-                          _jsx("option", { value: "Royal Mail International Tracked", children: "Royal Mail International Tracked (Worldwide - £15.00)" }),
-                          _jsx("option", { value: "FedEx International Priority", children: "FedEx International Priority" }),
-                          _jsx("option", { value: "DHL Express Worldwide", children: "DHL Express Worldwide" }),
-                          _jsx("option", { value: "UPS Worldwide Saver", children: "UPS Worldwide Saver" }),
+                          _jsx("label", { className: "block text-xs font-semibold text-[#202223] mb-1", children: "Outer Dimensions (mm)" }),
+                          _jsxs("div", {
+                            className: "grid grid-cols-3 gap-2",
+                            children: [
+                              _jsxs("div", {
+                                children: [
+                                  _jsx("span", { className: "text-[10px] text-[#5c5f62] block", children: "Height (H)" }),
+                                  _jsx("input", {
+                                    type: "number",
+                                    value: fulfillDimHeight,
+                                    onChange: (e) => setFulfillDimHeight(Math.max(1, parseInt(e.target.value, 10) || 1)),
+                                    className: "w-full border border-[#c9cccf] rounded p-1.5 text-xs",
+                                    placeholder: "80",
+                                  }),
+                                ],
+                              }),
+                              _jsxs("div", {
+                                children: [
+                                  _jsx("span", { className: "text-[10px] text-[#5c5f62] block", children: "Width (W)" }),
+                                  _jsx("input", {
+                                    type: "number",
+                                    value: fulfillDimWidth,
+                                    onChange: (e) => setFulfillDimWidth(Math.max(1, parseInt(e.target.value, 10) || 1)),
+                                    className: "w-full border border-[#c9cccf] rounded p-1.5 text-xs",
+                                    placeholder: "160",
+                                  }),
+                                ],
+                              }),
+                              _jsxs("div", {
+                                children: [
+                                  _jsx("span", { className: "text-[10px] text-[#5c5f62] block", children: "Depth (D)" }),
+                                  _jsx("input", {
+                                    type: "number",
+                                    value: fulfillDimDepth,
+                                    onChange: (e) => setFulfillDimDepth(Math.max(1, parseInt(e.target.value, 10) || 1)),
+                                    className: "w-full border border-[#c9cccf] rounded p-1.5 text-xs",
+                                    placeholder: "220",
+                                  }),
+                                ],
+                              }),
+                            ],
+                          }),
                         ],
                       }),
-                    ],
-                  }),
 
-                  _jsxs("div", {
-                    children: [
-                      _jsx("label", { className: "block text-xs font-semibold text-[#202223] mb-1", children: "Tracking Number" }),
-                      _jsx("input", {
-                        type: "text",
-                        value: fulfillTracking,
-                        onChange: (e) => setFulfillTracking(e.target.value),
-                        placeholder: fulfillCarrier.includes("FedEx") ? "0987654321" : "RM987654321GB",
-                        className: "w-full border border-[#c9cccf] rounded p-2 text-xs",
+                      // Include Label Option
+                      _jsxs("label", {
+                        className: "flex items-center gap-2 text-xs text-[#202223] cursor-pointer pt-1",
+                        children: [
+                          _jsx("input", {
+                            type: "checkbox",
+                            checked: fulfillIncludeLabel,
+                            onChange: (e) => setFulfillIncludeLabel(e.target.checked),
+                            className: "rounded text-[#008060]",
+                          }),
+                          _jsx("span", { children: "Generate 6x4 thermal PDF label in API response" }),
+                        ],
                       }),
+
+                      fulfillError &&
+                        _jsxs("div", {
+                          className: "p-2.5 bg-red-50 border border-red-200 rounded text-red-700 text-xs",
+                          children: [
+                            _jsx("strong", { children: "Error: " }),
+                            fulfillError,
+                          ],
+                        }),
                     ],
                   }),
-                ],
-              }),
 
               _jsxs("div", {
                 className: "flex justify-end gap-2 pt-3 border-t",
                 children: [
                   _jsx("button", {
                     onClick: () => setShowFulfillModal(false),
-                    className: "px-4 py-2 text-xs font-medium text-[#202223] bg-white border border-[#c9cccf] rounded hover:bg-[#f6f6f7]",
+                    className: "px-4 py-2 text-xs font-medium text-[#202223] bg-white border border-[#c9cccf] rounded hover:bg-[#f6f6f7] cursor-pointer",
                     children: "Cancel",
                   }),
                   _jsx("button", {
                     onClick: handleCreateFulfillment,
-                    disabled: isFulfilling,
-                    className: "px-4 py-2 text-xs font-semibold text-white bg-[#008060] hover:bg-[#006e52] rounded shadow-sm",
-                    children: isFulfilling ? "Fulfilling..." : "Confirm & Fulfill",
+                    disabled: isFulfilling || !isPaid,
+                    className: `px-4 py-2 text-xs font-semibold text-white rounded shadow-sm transition-colors ${
+                      !isPaid || isFulfilling
+                        ? "bg-slate-300 cursor-not-allowed text-slate-500"
+                        : "bg-[#008060] hover:bg-[#006e52] cursor-pointer"
+                    }`,
+                    children: isFulfilling
+                      ? fulfillIncludeLabel
+                        ? "Generating Label in Click & Drop..."
+                        : "Creating Shipment in Click & Drop..."
+                      : fulfillIncludeLabel
+                        ? "Confirm & Generate Label"
+                        : "Confirm",
                   }),
                 ],
               }),

@@ -1,5 +1,27 @@
-// Fix: Allow SSL connections to Supabase/cloud database poolers without rejecting intermediate certificates
+const http = require('http');
+const path = require('path');
+const fs = require('fs');
 
+// Auto-load root .env into process.env before initialization
+const rootEnvPath = path.resolve(__dirname, '.env');
+if (fs.existsSync(rootEnvPath)) {
+  const envContent = fs.readFileSync(rootEnvPath, 'utf8');
+  for (const line of envContent.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const idx = trimmed.indexOf('=');
+    if (idx !== -1) {
+      const key = trimmed.slice(0, idx).trim();
+      let val = trimmed.slice(idx + 1).trim();
+      if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+        val = val.slice(1, -1);
+      }
+      if (process.env[key] === undefined || process.env[key] === '') {
+        process.env[key] = val;
+      }
+    }
+  }
+}
 
 // Sanitize DATABASE_URL if present in environment to prevent pg-connection-string sslmode=require override
 if (process.env.DATABASE_URL) {
@@ -10,10 +32,6 @@ if (process.env.DATABASE_URL) {
     return '';
   });
 }
-
-const http = require('http');
-const path = require('path');
-const fs = require('fs');
 
 const PORT = parseInt(process.env.PORT || '9000', 10);
 

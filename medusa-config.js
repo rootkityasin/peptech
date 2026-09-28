@@ -1,7 +1,37 @@
-// Fix: Allow SSL connections to Supabase/cloud database poolers without rejecting intermediate certificates
-
-
+const fs = require('fs');
+const path = require('path');
 const { loadEnv, defineConfig } = require('@medusajs/framework/utils');
+
+// Auto-load root .env if present
+function loadRootEnv(startDir = __dirname) {
+  let dir = startDir;
+  while (true) {
+    const envFile = path.join(dir, '.env');
+    if (fs.existsSync(envFile)) {
+      const content = fs.readFileSync(envFile, 'utf8');
+      for (const line of content.split('\n')) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('#')) continue;
+        const idx = trimmed.indexOf('=');
+        if (idx !== -1) {
+          const key = trimmed.slice(0, idx).trim();
+          let val = trimmed.slice(idx + 1).trim();
+          if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+            val = val.slice(1, -1);
+          }
+          if (process.env[key] === undefined || process.env[key] === '') {
+            process.env[key] = val;
+          }
+        }
+      }
+      return;
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+}
+loadRootEnv();
 
 const { loadStripeEnv, stripeModules, commerceRuntimeModules, commerceEmailModules } = require("./backend/apps/backend/src/lib/stripe-config")
 loadStripeEnv()
@@ -41,9 +71,13 @@ module.exports = defineConfig({
       cookieSecret: process.env.COOKIE_SECRET || 'supersecret',
     },
     cookieOptions: {
-      secure: process.env.NODE_ENV === 'production',
+      secure: false,
       sameSite: 'lax',
     }
+  },
+  admin: {
+    disable: false,
+    backendUrl: process.env.MEDUSA_BACKEND_URL || 'http://localhost:9000',
   },
   modules: [
     {

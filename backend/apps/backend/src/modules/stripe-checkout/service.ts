@@ -1,6 +1,6 @@
 import { AbstractPaymentProvider, PaymentSessionStatus } from "@medusajs/framework/utils"
 import { createHmac,timingSafeEqual } from "node:crypto"
-import Stripe from "stripe-checkout-sdk"
+import Stripe from "stripe"
 export function signReceipt(data:Record<string,any>,secret:string) {
   return createHmac("sha256",secret).update(JSON.stringify([data.profile,data.receipt_id,data.collection_id,
     data.amount_minor,data.currency,data.stripe_session_id||null,data.invoice_id||null,data.payment_intent_id||null])).digest("hex")
@@ -13,7 +13,7 @@ export default class StripeCheckoutProvider extends AbstractPaymentProvider {
   constructor(container:any,options:any) {
     super(container,options)
     this.secret=options.signingSecret||options.apiKey;this.profile=options.profile
-    this.stripe=new Stripe(options.apiKey,{apiVersion:"2026-08-26.dahlia",maxNetworkRetries:2,timeout:15000})
+    this.stripe=new Stripe(options.apiKey,{apiVersion:"2025-09-30.clover" as any,maxNetworkRetries:2,timeout:15000})
   }
   private validate(data:any) {
     if(!data || data.profile!==this.profile || !data.collection_id || !data.receipt_id) throw new Error("Invalid receipt owner")
