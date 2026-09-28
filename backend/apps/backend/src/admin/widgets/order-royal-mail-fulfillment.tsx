@@ -1,10 +1,63 @@
 import { defineWidgetConfig } from "@medusajs/admin-sdk";
 import { Container, Heading, Text, Button, Badge, Input, Label, toast, Toaster } from "@medusajs/ui";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 
 interface OrderWidgetProps {
   data: any;
 }
+
+export interface PackagingProfile {
+  id: string;
+  name: string;
+  packageFormatIdentifier: string;
+  packageFormatLabel?: string;
+  weightInGrams: number;
+  dimensions: {
+    heightInMms: number;
+    widthInMms: number;
+    depthInMms: number;
+  };
+  isSystem?: boolean;
+}
+
+const DEFAULT_PACKAGING_PROFILES: PackagingProfile[] = [
+  {
+    id: "pen-set",
+    name: "Complete Pen Set Box",
+    packageFormatIdentifier: "smallParcel",
+    packageFormatLabel: "Small Parcel",
+    weightInGrams: 240,
+    dimensions: { heightInMms: 80, widthInMms: 160, depthInMms: 220 },
+    isSystem: true,
+  },
+  {
+    id: "vials-letter",
+    name: "Freeze-Dried Vials Box",
+    packageFormatIdentifier: "largeLetter",
+    packageFormatLabel: "Large Letter",
+    weightInGrams: 95,
+    dimensions: { heightInMms: 24, widthInMms: 125, depthInMms: 185 },
+    isSystem: true,
+  },
+  {
+    id: "refill-letter",
+    name: "Refill Cartridge Box",
+    packageFormatIdentifier: "largeLetter",
+    packageFormatLabel: "Large Letter",
+    weightInGrams: 110,
+    dimensions: { heightInMms: 25, widthInMms: 120, depthInMms: 160 },
+    isSystem: true,
+  },
+  {
+    id: "multi-parcel",
+    name: "Multi-Item / Cold-Chain Kit",
+    packageFormatIdentifier: "mediumParcel",
+    packageFormatLabel: "Medium Parcel",
+    weightInGrams: 520,
+    dimensions: { heightInMms: 140, widthInMms: 220, depthInMms: 300 },
+    isSystem: true,
+  },
+];
 
 /**
  * Downloads base64 string as a PDF file in the browser
@@ -84,7 +137,15 @@ export default function OrderRoyalMailFulfillmentWidget({ data: order }: OrderWi
   const countryCode = (shipping.country_code || order?.metadata?.shipping_country_code || "GB").toUpperCase();
   const isUk = countryCode === "GB";
 
-  // Form State
+  // Packaging Profiles State
+  const [profiles, setProfiles] = useState<PackagingProfile[]>(DEFAULT_PACKAGING_PROFILES);
+  const [selectedProfileId, setSelectedProfileId] = useState<string>("");
+  const [showProfileManager, setShowProfileManager] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [profileManagerMsg, setProfileManagerMsg] = useState("");
+  const [editingProfileId, setEditingProfileId] = useState<string | null>(null);
+
+  // Form State (Default to pen set specifications, but unselected profile)
   const [serviceCode, setServiceCode] = useState("AUTO");
   const [weightInGrams, setWeightInGrams] = useState(240);
   const [packageFormat, setPackageFormat] = useState("smallParcel");
@@ -92,6 +153,183 @@ export default function OrderRoyalMailFulfillmentWidget({ data: order }: OrderWi
   const [dimWidth, setDimWidth] = useState(160);
   const [dimDepth, setDimDepth] = useState(220);
   const [includeLabel, setIncludeLabel] = useState(true);
+
+  // Profile Form State
+  const [newProfileName, setNewProfileName] = useState("");
+  const [newProfileFormat, setNewProfileFormat] = useState("smallParcel");
+  const [newProfileWeight, setNewProfileWeight] = useState(240);
+  const [newProfileH, setNewProfileH] = useState(80);
+  const [newProfileW, setNewProfileW] = useState(160);
+  const [newProfileD, setNewProfileD] = useState(220);
+
+  // Fetch packaging profiles from backend API with localStorage fallback
+  const fetchProfiles = async () => {
+    try {
+      const res = await fetch("/admin/custom/packaging-profiles", { credentials: "include" });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.profiles) && data.profiles.length > 0) {
+          setProfiles(data.profiles);
+          try {
+            localStorage.setItem("peptech_packaging_profiles", JSON.stringify(data.profiles));
+          } catch {}
+          return;
+        }
+      }
+    } catch {}
+    try {
+      const local = localStorage.getItem("peptech_packaging_profiles");
+      if (local) {
+        const parsed = JSON.parse(local);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setProfiles(parsed);
+        }
+      }
+    } catch {}
+  };
+
+  useEffect(() => {
+    fetchProfiles();
+  }, []);
+
+  // When user selects a profile from the dropdown
+  const handleProfileChange = (profileId: string) => {
+    setSelectedProfileId(profileId);
+    if (!profileId || profileId === "custom") return;
+
+    const target = profiles.find((p) => p.id === profileId);
+    if (target) {
+      setWeightInGrams(target.weightInGrams);
+      setPackageFormat(target.packageFormatIdentifier);
+      setDimHeight(target.dimensions.heightInMms);
+      setDimWidth(target.dimensions.widthInMms);
+      setDimDepth(target.dimensions.depthInMms);
+    }
+  };
+
+  // Pre-fill "Create New Profile" with current values in form
+  const copyCurrentFormValues = () => {
+    setNewProfileFormat(packageFormat);
+    setNewProfileWeight(weightInGrams);
+    setNewProfileH(dimHeight);
+    setNewProfileW(dimWidth);
+    setNewProfileD(dimDepth);
+    setProfileManagerMsg("Copied current weight and dimensions.");
+    setTimeout(() => setProfileManagerMsg(""), 3000);
+  };
+
+  // Start editing an existing profile in the manager
+  const startEditProfile = (p: PackagingProfile) => {
+    setEditingProfileId(p.id);
+    setNewProfileName(p.name);
+    setNewProfileFormat(p.packageFormatIdentifier);
+    setNewProfileWeight(p.weightInGrams);
+    setNewProfileH(p.dimensions.heightInMms);
+    setNewProfileW(p.dimensions.widthInMms);
+    setNewProfileD(p.dimensions.depthInMms);
+    setProfileManagerMsg(`Editing "${p.name}". Make adjustments and click "Update Profile".`);
+  };
+
+  const cancelEditProfile = () => {
+    setEditingProfileId(null);
+    setNewProfileName("");
+    setProfileManagerMsg("");
+  };
+
+  // Save or update packaging profile
+  const handleSaveProfile = async () => {
+    if (!newProfileName.trim()) {
+      setProfileManagerMsg("Please provide a name for this packaging profile.");
+      return;
+    }
+    setIsSavingProfile(true);
+    setProfileManagerMsg("");
+
+    try {
+      const payload: any = {
+        name: newProfileName.trim(),
+        packageFormatIdentifier: newProfileFormat,
+        weightInGrams: Number(newProfileWeight) || 240,
+        dimensions: {
+          heightInMms: Number(newProfileH) || 80,
+          widthInMms: Number(newProfileW) || 160,
+          depthInMms: Number(newProfileD) || 220,
+        },
+      };
+
+      if (editingProfileId) {
+        payload.id = editingProfileId;
+      }
+
+      const res = await fetch("/admin/custom/packaging-profiles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload),
+      });
+
+      const resData = await res.json();
+      if (!res.ok) {
+        throw new Error(resData.message || "Failed to save profile");
+      }
+
+      if (Array.isArray(resData.profiles)) {
+        setProfiles(resData.profiles);
+        try {
+          localStorage.setItem("peptech_packaging_profiles", JSON.stringify(resData.profiles));
+        } catch {}
+      }
+
+      const targetId = editingProfileId || resData.profile?.id;
+      if (targetId) {
+        setSelectedProfileId(targetId);
+        setWeightInGrams(payload.weightInGrams);
+        setPackageFormat(payload.packageFormatIdentifier);
+        setDimHeight(payload.dimensions.heightInMms);
+        setDimWidth(payload.dimensions.widthInMms);
+        setDimDepth(payload.dimensions.depthInMms);
+      }
+
+      setEditingProfileId(null);
+      setNewProfileName("");
+      setShowProfileManager(false);
+      if (toast) {
+        toast.success(editingProfileId ? "Profile Updated" : "Packaging Profile Saved", {
+          description: `Saved "${payload.name}" profile.`,
+        });
+      }
+    } catch (err: any) {
+      setProfileManagerMsg(err.message || "Could not save profile.");
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
+
+  // Delete profile
+  const handleDeleteProfile = async (id: string, name: string) => {
+    if (!confirm(`Delete packaging profile "${name}"?`)) return;
+    try {
+      const res = await fetch(`/admin/custom/packaging-profiles?id=${encodeURIComponent(id)}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (res.ok && Array.isArray(data.profiles)) {
+        setProfiles(data.profiles);
+        try {
+          localStorage.setItem("peptech_packaging_profiles", JSON.stringify(data.profiles));
+        } catch {}
+        if (selectedProfileId === id) {
+          setSelectedProfileId("");
+        }
+        if (editingProfileId === id) {
+          cancelEditProfile();
+        }
+      }
+    } catch (err: any) {
+      alert("Error deleting profile: " + err.message);
+    }
+  };
 
   // Local state for instant UI update after label creation
   const [localFulfillments, setLocalFulfillments] = useState<any[]>([]);
@@ -398,6 +636,199 @@ export default function OrderRoyalMailFulfillmentWidget({ data: order }: OrderWi
                 </select>
               </div>
 
+              {/* Packaging Profile Dropdown & Manager (Black Theme) */}
+              <div className="bg-black text-white p-3.5 rounded-lg border border-neutral-800 space-y-2.5 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-semibold text-white tracking-wide">
+                    Packaging Profile
+                  </Label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const nextState = !showProfileManager;
+                      setShowProfileManager(nextState);
+                      setProfileManagerMsg("");
+                      if (nextState) {
+                        copyCurrentFormValues();
+                      }
+                    }}
+                    className="text-xs text-[#00C5A0] hover:text-[#16A6A3] font-medium hover:underline inline-flex items-center gap-1 cursor-pointer transition-colors"
+                  >
+                    {showProfileManager ? "✕ Close Profile Manager" : "+ Create / Manage Profiles"}
+                  </button>
+                </div>
+
+                <select
+                  value={selectedProfileId}
+                  onChange={(e) => handleProfileChange(e.target.value)}
+                  className="w-full border border-neutral-700 rounded-md p-2 text-xs bg-[#18181b] text-white font-medium focus:outline-none focus:border-[#00C5A0]"
+                >
+                  <option value="" className="bg-[#18181b] text-neutral-300">-- Choose a Packaging Profile (Optional) --</option>
+                  {profiles.map((p) => (
+                    <option key={p.id} value={p.id} className="bg-[#18181b] text-white">
+                      {p.name} ({p.weightInGrams}g • {p.packageFormatLabel || p.packageFormatIdentifier} • {p.dimensions.heightInMms}×{p.dimensions.widthInMms}×{p.dimensions.depthInMms}mm)
+                    </option>
+                  ))}
+                  <option value="custom" className="bg-[#18181b] text-neutral-300">Custom (Manual Entry)</option>
+                </select>
+
+                {/* Inline Profile Creator / Manager (Dark Theme) */}
+                {showProfileManager && (
+                  <div className="pt-3 border-t border-neutral-800 mt-2 space-y-3 bg-[#111113] p-3 rounded-md border border-neutral-800 text-white">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-white">
+                        {editingProfileId ? "✏️ Edit Packaging Profile" : "Create New Packaging Profile"}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        {editingProfileId && (
+                          <button
+                            type="button"
+                            onClick={cancelEditProfile}
+                            className="text-[11px] text-neutral-400 hover:text-white cursor-pointer"
+                          >
+                            ✕ Cancel
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={copyCurrentFormValues}
+                          className="text-[11px] text-[#00C5A0] hover:underline cursor-pointer"
+                        >
+                          📋 Copy values from form
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 text-xs">
+                      <div>
+                        <Label className="text-[11px] font-medium text-neutral-300 mb-0.5 block">Profile Name</Label>
+                        <Input
+                          value={newProfileName}
+                          onChange={(e) => setNewProfileName(e.target.value)}
+                          placeholder="e.g. 5x Vial Cold Pack Mailer"
+                          className="bg-[#18181b] border-neutral-700 text-white placeholder-neutral-500"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label className="text-[11px] font-medium text-neutral-300 mb-0.5 block">Package Format</Label>
+                          <select
+                            value={newProfileFormat}
+                            onChange={(e) => setNewProfileFormat(e.target.value)}
+                            className="w-full border border-neutral-700 rounded-md p-1.5 text-xs bg-[#18181b] text-white"
+                          >
+                            <option value="smallParcel">Small Parcel</option>
+                            <option value="largeLetter">Large Letter</option>
+                            <option value="mediumParcel">Medium Parcel</option>
+                            <option value="parcel">Parcel</option>
+                            <option value="largeParcel">Large Parcel</option>
+                          </select>
+                        </div>
+                        <div>
+                          <Label className="text-[11px] font-medium text-neutral-300 mb-0.5 block">Gross Weight (g)</Label>
+                          <Input
+                            type="number"
+                            value={newProfileWeight}
+                            onChange={(e) => setNewProfileWeight(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                            className="bg-[#18181b] border-neutral-700 text-white"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-[11px] font-medium text-neutral-300 mb-0.5 block">Outer Dimensions (H × W × D mm)</Label>
+                        <div className="grid grid-cols-3 gap-1.5">
+                          <Input
+                            type="number"
+                            value={newProfileH}
+                            onChange={(e) => setNewProfileH(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                            placeholder="H"
+                            className="bg-[#18181b] border-neutral-700 text-white"
+                          />
+                          <Input
+                            type="number"
+                            value={newProfileW}
+                            onChange={(e) => setNewProfileW(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                            placeholder="W"
+                            className="bg-[#18181b] border-neutral-700 text-white"
+                          />
+                          <Input
+                            type="number"
+                            value={newProfileD}
+                            onChange={(e) => setNewProfileD(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                            placeholder="D"
+                            className="bg-[#18181b] border-neutral-700 text-white"
+                          />
+                        </div>
+                      </div>
+
+                      {profileManagerMsg && (
+                        <div className="text-[11px] text-[#00C5A0] font-medium">
+                          {profileManagerMsg}
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-end gap-2 pt-1">
+                        <Button
+                          size="small"
+                          variant="secondary"
+                          onClick={() => {
+                            cancelEditProfile();
+                            setShowProfileManager(false);
+                          }}
+                          className="border-neutral-700 text-neutral-300 hover:bg-neutral-800"
+                        >
+                          Close
+                        </Button>
+                        <Button
+                          size="small"
+                          variant="primary"
+                          disabled={isSavingProfile || !newProfileName.trim()}
+                          onClick={handleSaveProfile}
+                          className="bg-[#16A6A3] hover:bg-[#00C5A0] text-white"
+                        >
+                          {isSavingProfile ? "Saving..." : editingProfileId ? "Update Profile" : "Save Profile"}
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* List of Profiles with Edit & Delete */}
+                    <div className="pt-2 border-t border-neutral-800 text-xs space-y-1.5">
+                      <span className="text-[11px] font-semibold text-neutral-400 block">Existing Profiles:</span>
+                      {profiles.map((p) => (
+                        <div key={p.id} className="flex items-center justify-between p-1.5 bg-[#18181b] rounded border border-neutral-800 text-[11px]">
+                          <div>
+                            <span className="font-semibold text-white">{p.name}</span>
+                            <span className="text-neutral-400 ml-1.5">
+                              ({p.weightInGrams}g, {p.packageFormatLabel || p.packageFormatIdentifier}, {p.dimensions.heightInMms}×{p.dimensions.widthInMms}×{p.dimensions.depthInMms}mm)
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0 ml-2">
+                            <button
+                              type="button"
+                              onClick={() => startEditProfile(p)}
+                              className="text-[#00C5A0] hover:underline px-1 cursor-pointer font-medium"
+                              title="Edit profile"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteProfile(p.id, p.name)}
+                              className="text-red-400 hover:text-red-300 font-bold px-1 cursor-pointer"
+                              title="Delete profile"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Weight & Format */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -405,7 +836,10 @@ export default function OrderRoyalMailFulfillmentWidget({ data: order }: OrderWi
                   <Input
                     type="number"
                     value={weightInGrams}
-                    onChange={(e) => setWeightInGrams(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                    onChange={(e) => {
+                      setWeightInGrams(Math.max(1, parseInt(e.target.value, 10) || 1));
+                      setSelectedProfileId("custom");
+                    }}
                     placeholder="240"
                   />
                 </div>
@@ -413,7 +847,10 @@ export default function OrderRoyalMailFulfillmentWidget({ data: order }: OrderWi
                   <Label className="text-xs font-medium text-ui-fg-base mb-1 block">Package Format</Label>
                   <select
                     value={packageFormat}
-                    onChange={(e) => setPackageFormat(e.target.value)}
+                    onChange={(e) => {
+                      setPackageFormat(e.target.value);
+                      setSelectedProfileId("custom");
+                    }}
                     className="w-full border rounded-md p-2 text-xs bg-ui-bg-base text-ui-fg-base"
                   >
                     <option value="smallParcel">Small Parcel (Cold-Chain Box)</option>
@@ -434,7 +871,10 @@ export default function OrderRoyalMailFulfillmentWidget({ data: order }: OrderWi
                     <Input
                       type="number"
                       value={dimHeight}
-                      onChange={(e) => setDimHeight(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                      onChange={(e) => {
+                        setDimHeight(Math.max(1, parseInt(e.target.value, 10) || 1));
+                        setSelectedProfileId("custom");
+                      }}
                       placeholder="80"
                     />
                   </div>
@@ -443,7 +883,10 @@ export default function OrderRoyalMailFulfillmentWidget({ data: order }: OrderWi
                     <Input
                       type="number"
                       value={dimWidth}
-                      onChange={(e) => setDimWidth(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                      onChange={(e) => {
+                        setDimWidth(Math.max(1, parseInt(e.target.value, 10) || 1));
+                        setSelectedProfileId("custom");
+                      }}
                       placeholder="160"
                     />
                   </div>
@@ -452,7 +895,10 @@ export default function OrderRoyalMailFulfillmentWidget({ data: order }: OrderWi
                     <Input
                       type="number"
                       value={dimDepth}
-                      onChange={(e) => setDimDepth(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                      onChange={(e) => {
+                        setDimDepth(Math.max(1, parseInt(e.target.value, 10) || 1));
+                        setSelectedProfileId("custom");
+                      }}
                       placeholder="220"
                     />
                   </div>

@@ -215,6 +215,160 @@ function StandardOrderDetail({ id }) {
   const [fulfillTracking, setFulfillTracking] = useState("");
   const [activeFulfillmentId, setActiveFulfillmentId] = useState(null);
 
+  // Packaging Profiles State for Royal Mail Click & Drop
+  const DEFAULT_PACKAGING_PROFILES = [
+    { id: "pen-set", name: "Complete Pen Set Box", format: "smallParcel", formatLabel: "Small Parcel", weight: 240, h: 80, w: 160, d: 220 },
+    { id: "vials-letter", name: "Freeze-Dried Vials Box", format: "largeLetter", formatLabel: "Large Letter", weight: 95, h: 24, w: 125, d: 185 },
+    { id: "refill-letter", name: "Refill Cartridge Box", format: "largeLetter", formatLabel: "Large Letter", weight: 110, h: 25, w: 120, d: 160 },
+    { id: "multi-parcel", name: "Multi-Item / Cold-Chain Kit", format: "mediumParcel", formatLabel: "Medium Parcel", weight: 520, h: 140, w: 220, d: 300 }
+  ];
+  const [packagingProfiles, setPackagingProfiles] = useState(DEFAULT_PACKAGING_PROFILES);
+  const [selectedPackagingProfileId, setSelectedPackagingProfileId] = useState("");
+  const [showPackagingProfileManager, setShowPackagingProfileManager] = useState(false);
+  const [editingProfileId, setEditingProfileId] = useState(null);
+  const [managerProfileName, setManagerProfileName] = useState("");
+  const [managerProfileMsg, setManagerProfileMsg] = useState("");
+  const [isSavingPackagingProfile, setIsSavingPackagingProfile] = useState(false);
+
+  useEffect(() => {
+    fetch("/admin/custom/packaging-profiles", { credentials: "include" })
+      .then(r => r.json())
+      .then(d => {
+        if (Array.isArray(d.profiles) && d.profiles.length > 0) {
+          const mapped = d.profiles.map(p => ({
+            id: p.id,
+            name: p.name,
+            format: p.packageFormatIdentifier,
+            formatLabel: p.packageFormatLabel || p.packageFormatIdentifier,
+            weight: p.weightInGrams,
+            h: p.dimensions?.heightInMms || 80,
+            w: p.dimensions?.widthInMms || 160,
+            d: p.dimensions?.depthInMms || 220,
+            isSystem: p.isSystem
+          }));
+          setPackagingProfiles(mapped);
+          try { localStorage.setItem("peptech_packaging_profiles", JSON.stringify(d.profiles)); } catch {}
+        }
+      })
+      .catch(() => {
+        try {
+          const cached = localStorage.getItem("peptech_packaging_profiles");
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setPackagingProfiles(parsed.map(p => ({
+                id: p.id,
+                name: p.name,
+                format: p.packageFormatIdentifier,
+                formatLabel: p.packageFormatLabel || p.packageFormatIdentifier,
+                weight: p.weightInGrams,
+                h: p.dimensions?.heightInMms || 80,
+                w: p.dimensions?.widthInMms || 160,
+                d: p.dimensions?.depthInMms || 220,
+                isSystem: p.isSystem
+              })));
+            }
+          }
+        } catch {}
+      });
+  }, []);
+
+  const handlePackagingProfileSelect = (pid) => {
+    setSelectedPackagingProfileId(pid);
+    if (!pid || pid === "custom") return;
+    const target = packagingProfiles.find(p => p.id === pid);
+    if (target) {
+      setFulfillWeight(target.weight);
+      setFulfillPackageFormat(target.format);
+      setFulfillDimHeight(target.h);
+      setFulfillDimWidth(target.w);
+      setFulfillDimDepth(target.d);
+    }
+  };
+
+  const handleSavePackagingProfile = async () => {
+    if (!managerProfileName.trim()) {
+      setManagerProfileMsg("Please enter a profile name.");
+      return;
+    }
+    setIsSavingPackagingProfile(true);
+    setManagerProfileMsg("");
+    try {
+      const payload = {
+        name: managerProfileName.trim(),
+        packageFormatIdentifier: fulfillPackageFormat,
+        weightInGrams: Number(fulfillWeight) || 240,
+        dimensions: {
+          heightInMms: Number(fulfillDimHeight) || 80,
+          widthInMms: Number(fulfillDimWidth) || 160,
+          depthInMms: Number(fulfillDimDepth) || 220
+        }
+      };
+      if (editingProfileId) {
+        payload.id = editingProfileId;
+      }
+      const res = await fetch("/admin/custom/packaging-profiles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to save profile");
+      if (Array.isArray(data.profiles)) {
+        setPackagingProfiles(data.profiles.map(p => ({
+          id: p.id,
+          name: p.name,
+          format: p.packageFormatIdentifier,
+          formatLabel: p.packageFormatLabel || p.packageFormatIdentifier,
+          weight: p.weightInGrams,
+          h: p.dimensions?.heightInMms || 80,
+          w: p.dimensions?.widthInMms || 160,
+          d: p.dimensions?.depthInMms || 220,
+          isSystem: p.isSystem
+        })));
+        try { localStorage.setItem("peptech_packaging_profiles", JSON.stringify(data.profiles)); } catch {}
+      }
+      const targetId = editingProfileId || data.profile?.id;
+      if (targetId) setSelectedPackagingProfileId(targetId);
+      setEditingProfileId(null);
+      setManagerProfileName("");
+      setShowPackagingProfileManager(false);
+    } catch (e) {
+      setManagerProfileMsg(e.message || "Error saving profile");
+    } finally {
+      setIsSavingPackagingProfile(false);
+    }
+  };
+
+  const handleDeletePackagingProfile = async (id, name) => {
+    if (!confirm(`Delete profile "${name}"?`)) return;
+    try {
+      const res = await fetch(`/admin/custom/packaging-profiles?id=${encodeURIComponent(id)}`, {
+        method: "DELETE",
+        credentials: "include"
+      });
+      const data = await res.json();
+      if (res.ok && Array.isArray(data.profiles)) {
+        setPackagingProfiles(data.profiles.map(p => ({
+          id: p.id,
+          name: p.name,
+          format: p.packageFormatIdentifier,
+          formatLabel: p.packageFormatLabel || p.packageFormatIdentifier,
+          weight: p.weightInGrams,
+          h: p.dimensions?.heightInMms || 80,
+          w: p.dimensions?.widthInMms || 160,
+          d: p.dimensions?.depthInMms || 220,
+          isSystem: p.isSystem
+        })));
+        try { localStorage.setItem("peptech_packaging_profiles", JSON.stringify(data.profiles)); } catch {}
+        if (selectedPackagingProfileId === id) setSelectedPackagingProfileId("");
+      }
+    } catch (e) {
+      alert("Failed to delete profile: " + e.message);
+    }
+  };
+
   // Contact / Address edit modal state
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [editAddress, setEditAddress] = useState({});
@@ -1907,6 +2061,147 @@ function StandardOrderDetail({ id }) {
                         ],
                       }),
 
+                      // Packaging Profile Dropdown & Inline Manager (Black Theme)
+                      _jsxs("div", {
+                        className: "bg-black text-white p-3.5 rounded-lg border border-neutral-800 space-y-2.5 shadow-sm",
+                        children: [
+                          _jsxs("div", {
+                            className: "flex items-center justify-between",
+                            children: [
+                              _jsx("label", { className: "block text-xs font-semibold text-white tracking-wide", children: "Packaging Profile" }),
+                              _jsx("button", {
+                                type: "button",
+                                onClick: () => {
+                                  setShowPackagingProfileManager(!showPackagingProfileManager);
+                                  setManagerProfileMsg("");
+                                },
+                                className: "text-xs text-[#00C5A0] hover:text-[#16A6A3] hover:underline cursor-pointer font-medium transition-colors",
+                                children: showPackagingProfileManager ? "✕ Close Profile Manager" : "+ Create / Manage Profiles"
+                              })
+                            ]
+                          }),
+                          _jsxs("select", {
+                            value: selectedPackagingProfileId,
+                            onChange: (e) => handlePackagingProfileSelect(e.target.value),
+                            className: "w-full border border-neutral-700 rounded p-2 text-xs bg-[#18181b] text-white font-medium focus:outline-none focus:border-[#00C5A0]",
+                            children: [
+                              _jsx("option", { value: "", className: "bg-[#18181b] text-neutral-300", children: "-- Choose a Packaging Profile (Optional) --" }, "default-opt"),
+                              packagingProfiles.map((p) =>
+                                _jsx("option", {
+                                  value: p.id,
+                                  className: "bg-[#18181b] text-white",
+                                  children: `${p.name} (${p.weight}g • ${p.formatLabel || p.format} • ${p.h}×${p.w}×${p.d}mm)`
+                                }, p.id)
+                              ),
+                              _jsx("option", { value: "custom", className: "bg-[#18181b] text-neutral-300", children: "Custom (Manual Entry)" }, "custom-opt")
+                            ]
+                          }),
+                          showPackagingProfileManager &&
+                            _jsxs("div", {
+                              className: "pt-3 border-t border-neutral-800 mt-2 space-y-3 bg-[#111113] p-3 rounded border border-neutral-800 text-xs",
+                              children: [
+                                _jsxs("div", {
+                                  className: "flex items-center justify-between",
+                                  children: [
+                                    _jsx("span", { className: "font-bold text-white", children: editingProfileId ? "✏️ Edit Packaging Profile" : "➕ Create Packaging Profile" }),
+                                    editingProfileId &&
+                                      _jsx("button", {
+                                        type: "button",
+                                        onClick: () => { setEditingProfileId(null); setManagerProfileName(""); },
+                                        className: "text-[11px] text-neutral-400 hover:text-white cursor-pointer",
+                                        children: "✕ Cancel"
+                                      })
+                                  ]
+                                }),
+                                _jsxs("div", {
+                                  className: "space-y-2",
+                                  children: [
+                                    _jsxs("div", {
+                                      children: [
+                                        _jsx("span", { className: "text-[11px] font-medium text-neutral-300 block mb-0.5", children: "Profile Name" }),
+                                        _jsx("input", {
+                                          value: managerProfileName,
+                                          onChange: (e) => setManagerProfileName(e.target.value),
+                                          placeholder: "e.g. 5x Vial Cold Pack Mailer",
+                                          className: "w-full border border-neutral-700 bg-[#18181b] text-white placeholder-neutral-500 rounded p-1.5 text-xs focus:outline-none focus:border-[#00C5A0]"
+                                        })
+                                      ]
+                                    }),
+                                    _jsx("div", {
+                                      className: "text-[11px] text-neutral-400",
+                                      children: "Uses the Format, Weight, and Dimensions currently selected in the form below."
+                                    }),
+                                    managerProfileMsg &&
+                                      _jsx("div", { className: "text-[11px] text-[#00C5A0] font-medium", children: managerProfileMsg }),
+                                    _jsxs("div", {
+                                      className: "flex justify-end gap-2 pt-1",
+                                      children: [
+                                        _jsx("button", {
+                                          type: "button",
+                                          onClick: () => setShowPackagingProfileManager(false),
+                                          className: "px-2.5 py-1 border border-neutral-700 rounded text-xs text-neutral-300 hover:bg-neutral-800 cursor-pointer",
+                                          children: "Close"
+                                        }),
+                                        _jsx("button", {
+                                          type: "button",
+                                          disabled: isSavingPackagingProfile || !managerProfileName.trim(),
+                                          onClick: handleSavePackagingProfile,
+                                          className: "px-3 py-1 bg-[#16A6A3] hover:bg-[#00C5A0] text-white rounded text-xs font-medium cursor-pointer disabled:opacity-50 transition-colors",
+                                          children: isSavingPackagingProfile ? "Saving..." : editingProfileId ? "Update Profile" : "Save Profile"
+                                        })
+                                      ]
+                                    })
+                                  ]
+                                }),
+                                _jsxs("div", {
+                                  className: "pt-2 border-t border-neutral-800 text-xs space-y-1.5",
+                                  children: [
+                                    _jsx("span", { className: "text-[11px] font-semibold text-neutral-400 block", children: "Existing Profiles:" }),
+                                    packagingProfiles.map((p) =>
+                                      _jsxs("div", {
+                                        className: "flex items-center justify-between p-1.5 bg-[#18181b] rounded border border-neutral-800 text-[11px]",
+                                        children: [
+                                          _jsxs("div", {
+                                            children: [
+                                              _jsx("span", { className: "font-semibold text-white", children: p.name }),
+                                              _jsxs("span", { className: "text-neutral-400 ml-1.5", children: ["(", p.weight, "g, ", p.formatLabel || p.format, ", ", p.h, "×", p.w, "×", p.d, "mm)"] })
+                                            ]
+                                          }),
+                                          _jsxs("div", {
+                                            className: "flex items-center gap-1 shrink-0 ml-2",
+                                            children: [
+                                              _jsx("button", {
+                                                type: "button",
+                                                onClick: () => {
+                                                  setEditingProfileId(p.id);
+                                                  setManagerProfileName(p.name);
+                                                  setFulfillWeight(p.weight);
+                                                  setFulfillPackageFormat(p.format);
+                                                  setFulfillDimHeight(p.h);
+                                                  setFulfillDimWidth(p.w);
+                                                  setFulfillDimDepth(p.d);
+                                                },
+                                                className: "text-[#00C5A0] hover:underline px-1 cursor-pointer font-medium",
+                                                children: "Edit"
+                                              }),
+                                              _jsx("button", {
+                                                type: "button",
+                                                onClick: () => handleDeletePackagingProfile(p.id, p.name),
+                                                className: "text-red-400 hover:text-red-300 font-bold px-1 cursor-pointer",
+                                                children: "✕"
+                                              })
+                                            ]
+                                          })
+                                        ]
+                                      }, p.id)
+                                    )
+                                  ]
+                                })
+                              ]
+                            })
+                        ]
+                      }),
+
                       // Package Format & Weight in Grams
                       _jsxs("div", {
                         className: "grid grid-cols-2 gap-3",
@@ -1917,7 +2212,10 @@ function StandardOrderDetail({ id }) {
                               _jsx("input", {
                                 type: "number",
                                 value: fulfillWeight,
-                                onChange: (e) => setFulfillWeight(Math.max(1, parseInt(e.target.value, 10) || 1)),
+                                onChange: (e) => {
+                                  setFulfillWeight(Math.max(1, parseInt(e.target.value, 10) || 1));
+                                  setSelectedPackagingProfileId("custom");
+                                },
                                 className: "w-full border border-[#c9cccf] rounded p-2 text-xs",
                                 placeholder: "240",
                               }),
@@ -1928,7 +2226,10 @@ function StandardOrderDetail({ id }) {
                               _jsx("label", { className: "block text-xs font-semibold text-[#202223] mb-1", children: "Package Format" }),
                               _jsxs("select", {
                                 value: fulfillPackageFormat,
-                                onChange: (e) => setFulfillPackageFormat(e.target.value),
+                                onChange: (e) => {
+                                  setFulfillPackageFormat(e.target.value);
+                                  setSelectedPackagingProfileId("custom");
+                                },
                                 className: "w-full border border-[#c9cccf] rounded p-2 text-xs bg-white",
                                 children: [
                                   _jsx("option", { value: "smallParcel", children: "Small Parcel (Cold-Chain Box)" }, "smallParcel"),
@@ -1956,7 +2257,10 @@ function StandardOrderDetail({ id }) {
                                   _jsx("input", {
                                     type: "number",
                                     value: fulfillDimHeight,
-                                    onChange: (e) => setFulfillDimHeight(Math.max(1, parseInt(e.target.value, 10) || 1)),
+                                    onChange: (e) => {
+                                      setFulfillDimHeight(Math.max(1, parseInt(e.target.value, 10) || 1));
+                                      setSelectedPackagingProfileId("custom");
+                                    },
                                     className: "w-full border border-[#c9cccf] rounded p-1.5 text-xs",
                                     placeholder: "80",
                                   }),
@@ -1968,7 +2272,10 @@ function StandardOrderDetail({ id }) {
                                   _jsx("input", {
                                     type: "number",
                                     value: fulfillDimWidth,
-                                    onChange: (e) => setFulfillDimWidth(Math.max(1, parseInt(e.target.value, 10) || 1)),
+                                    onChange: (e) => {
+                                      setFulfillDimWidth(Math.max(1, parseInt(e.target.value, 10) || 1));
+                                      setSelectedPackagingProfileId("custom");
+                                    },
                                     className: "w-full border border-[#c9cccf] rounded p-1.5 text-xs",
                                     placeholder: "160",
                                   }),
@@ -1980,7 +2287,10 @@ function StandardOrderDetail({ id }) {
                                   _jsx("input", {
                                     type: "number",
                                     value: fulfillDimDepth,
-                                    onChange: (e) => setFulfillDimDepth(Math.max(1, parseInt(e.target.value, 10) || 1)),
+                                    onChange: (e) => {
+                                      setFulfillDimDepth(Math.max(1, parseInt(e.target.value, 10) || 1));
+                                      setSelectedPackagingProfileId("custom");
+                                    },
                                     className: "w-full border border-[#c9cccf] rounded p-1.5 text-xs",
                                     placeholder: "220",
                                   }),

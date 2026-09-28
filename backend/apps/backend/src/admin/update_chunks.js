@@ -468,14 +468,14 @@ export {
     const royalMailModalJs = `import { RouteFocusModal, useRouteModal } from "./chunk-GXJ5J364.mjs";
 import { useOrder } from "./chunk-CHQR6GOM.mjs";
 import { useParams, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button, Input, Heading, Text, Badge, toast } from "@medusajs/ui";
 import { jsx as jsx2, jsxs as jsxs2 } from "react/jsx-runtime";
 
 function downloadPdf(base64Data, filename) {
   if (!base64Data) return;
   try {
-    const cleanBase64 = base64Data.replace(/^data:application\\/pdf;base64,/, "").trim();
+    const cleanBase64 = String(base64Data || "").replace("data:application/pdf;base64,", "").trim();
     const byteCharacters = atob(cleanBase64);
     const byteNumbers = new Array(byteCharacters.length);
     for (let i = 0; i < byteCharacters.length; i++) {
@@ -499,7 +499,7 @@ function downloadPdf(base64Data, filename) {
 function openPdfPrint(base64Data) {
   if (!base64Data) return;
   try {
-    const cleanBase64 = base64Data.replace(/^data:application\\/pdf;base64,/, "").trim();
+    const cleanBase64 = String(base64Data || "").replace("data:application/pdf;base64,", "").trim();
     const byteCharacters = atob(cleanBase64);
     const byteNumbers = new Array(byteCharacters.length);
     for (let i = 0; i < byteCharacters.length; i++) {
@@ -524,12 +524,54 @@ function OrderCreateFulfillment() {
   });
 
   const [serviceCode, setServiceCode] = useState("AUTO");
+  const [selectedProfileId, setSelectedProfileId] = useState("");
+  const [profiles, setProfiles] = useState([
+    { id: "pen-set", name: "Complete Pen Set Box", format: "smallParcel", formatLabel: "Small Parcel", weight: 240, h: 80, w: 160, d: 220 },
+    { id: "vials-letter", name: "Freeze-Dried Vials Box", format: "largeLetter", formatLabel: "Large Letter", weight: 95, h: 24, w: 125, d: 185 },
+    { id: "refill-letter", name: "Refill Cartridge Box", format: "largeLetter", formatLabel: "Large Letter", weight: 110, h: 25, w: 120, d: 160 },
+    { id: "multi-parcel", name: "Multi-Item / Cold-Chain Kit", format: "mediumParcel", formatLabel: "Medium Parcel", weight: 520, h: 140, w: 220, d: 300 }
+  ]);
   const [weightInGrams, setWeightInGrams] = useState(240);
   const [packageFormat, setPackageFormat] = useState("smallParcel");
   const [dimHeight, setDimHeight] = useState(80);
   const [dimWidth, setDimWidth] = useState(160);
   const [dimDepth, setDimDepth] = useState(220);
   const [includeLabel, setIncludeLabel] = useState(true);
+
+  useEffect(() => {
+    fetch("/admin/custom/packaging-profiles", { credentials: "include" })
+      .then((r) => r.json())
+      .then((d) => {
+        if (Array.isArray(d.profiles) && d.profiles.length > 0) {
+          setProfiles(
+            d.profiles.map((p) => ({
+              id: p.id,
+              name: p.name,
+              format: p.packageFormatIdentifier,
+              formatLabel: p.packageFormatLabel || p.packageFormatIdentifier,
+              weight: p.weightInGrams,
+              h: p.dimensions?.heightInMms || 80,
+              w: p.dimensions?.widthInMms || 160,
+              d: p.dimensions?.depthInMms || 220,
+            }))
+          );
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleProfileChange = (pid) => {
+    setSelectedProfileId(pid);
+    if (!pid || pid === "custom") return;
+    const target = profiles.find((p) => p.id === pid);
+    if (target) {
+      setWeightInGrams(target.weight);
+      setPackageFormat(target.format);
+      setDimHeight(target.h);
+      setDimWidth(target.w);
+      setDimDepth(target.d);
+    }
+  };
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -752,6 +794,30 @@ function OrderCreateFulfillment() {
                 ],
               }),
 
+              // Packaging Profile Preset (Black Theme)
+              jsxs2("div", {
+                className: "bg-black text-white p-3.5 rounded-lg border border-neutral-800 space-y-2 shadow-sm",
+                children: [
+                  jsx2("label", { className: "block text-xs font-semibold text-white mb-1", children: "Packaging Profile" }),
+                  jsxs2("select", {
+                    value: selectedProfileId,
+                    onChange: (e) => handleProfileChange(e.target.value),
+                    className: "w-full border border-neutral-700 rounded-md p-2 text-xs bg-[#18181b] text-white font-medium focus:outline-none focus:border-[#00C5A0]",
+                    children: [
+                      jsx2("option", { value: "", className: "bg-[#18181b] text-neutral-300", children: "-- Choose a Packaging Profile (Optional) --" }),
+                      profiles.map((p) =>
+                        jsx2("option", {
+                          value: p.id,
+                          className: "bg-[#18181b] text-white",
+                          children: \`\${p.name} (\${p.weight}g • \${p.formatLabel || p.format} • \${p.h}×\${p.w}×\${p.d}mm)\`
+                        }, p.id)
+                      ),
+                      jsx2("option", { value: "custom", className: "bg-[#18181b] text-neutral-300", children: "Custom (Manual Entry)" })
+                    ]
+                  })
+                ]
+              }),
+
               // Weight & Format
               jsxs2("div", {
                 className: "grid grid-cols-2 gap-3",
@@ -762,7 +828,10 @@ function OrderCreateFulfillment() {
                       jsx2(Input, {
                         type: "number",
                         value: weightInGrams,
-                        onChange: (e) => setWeightInGrams(Math.max(1, parseInt(e.target.value, 10) || 1)),
+                        onChange: (e) => {
+                          setWeightInGrams(Math.max(1, parseInt(e.target.value, 10) || 1));
+                          setSelectedProfileId("custom");
+                        },
                         placeholder: "240",
                       }),
                     ],
@@ -772,7 +841,10 @@ function OrderCreateFulfillment() {
                       jsx2("label", { className: "block text-xs font-semibold text-[#202223] mb-1", children: "Package Format" }),
                       jsxs2("select", {
                         value: packageFormat,
-                        onChange: (e) => setPackageFormat(e.target.value),
+                        onChange: (e) => {
+                          setPackageFormat(e.target.value);
+                          setSelectedProfileId("custom");
+                        },
                         className: "w-full border border-[#c9cccf] rounded-md p-2 text-xs bg-white text-[#202223]",
                         children: [
                           jsx2("option", { value: "smallParcel", children: "Small Parcel (Cold-Chain Box)" }),
@@ -800,7 +872,10 @@ function OrderCreateFulfillment() {
                           jsx2(Input, {
                             type: "number",
                             value: dimHeight,
-                            onChange: (e) => setDimHeight(Math.max(1, parseInt(e.target.value, 10) || 1)),
+                            onChange: (e) => {
+                              setDimHeight(Math.max(1, parseInt(e.target.value, 10) || 1));
+                              setSelectedProfileId("custom");
+                            },
                             placeholder: "80",
                           }),
                         ],
@@ -811,7 +886,10 @@ function OrderCreateFulfillment() {
                           jsx2(Input, {
                             type: "number",
                             value: dimWidth,
-                            onChange: (e) => setDimWidth(Math.max(1, parseInt(e.target.value, 10) || 1)),
+                            onChange: (e) => {
+                              setDimWidth(Math.max(1, parseInt(e.target.value, 10) || 1));
+                              setSelectedProfileId("custom");
+                            },
                             placeholder: "160",
                           }),
                         ],
@@ -822,7 +900,10 @@ function OrderCreateFulfillment() {
                           jsx2(Input, {
                             type: "number",
                             value: dimDepth,
-                            onChange: (e) => setDimDepth(Math.max(1, parseInt(e.target.value, 10) || 1)),
+                            onChange: (e) => {
+                              setDimDepth(Math.max(1, parseInt(e.target.value, 10) || 1));
+                              setSelectedProfileId("custom");
+                            },
                             placeholder: "220",
                           }),
                         ],
@@ -892,4 +973,518 @@ export { OrderCreateFulfillment as Component };
     fs.writeFileSync(fulfillmentChunkFile, royalMailModalJs, 'utf8');
     console.log('[PEPTECH] Successfully updated order-create-fulfillment-IF6OCW3B.mjs with Royal Mail Click & Drop modal');
   }
+
+  // 4. Create Settings Packaging Profiles List Chunk
+  const packagingProfilesChunkFile = path.resolve(distDir, 'packaging-profiles-list-PEPTECH.mjs');
+  const packagingProfilesJs = `import { Container, Heading, Text, Button, Input, Label, Badge, Table } from "@medusajs/ui";
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
+
+const DEFAULT_PACKAGING_PROFILES = [
+  { id: "pen-set", name: "Complete Pen Set Box", packageFormatIdentifier: "smallParcel", packageFormatLabel: "Small Parcel", weightInGrams: 240, dimensions: { heightInMms: 80, widthInMms: 160, depthInMms: 220 }, isSystem: true },
+  { id: "vials-letter", name: "Freeze-Dried Vials Box", packageFormatIdentifier: "largeLetter", packageFormatLabel: "Large Letter", weightInGrams: 95, dimensions: { heightInMms: 24, widthInMms: 125, depthInMms: 185 }, isSystem: true },
+  { id: "refill-letter", name: "Refill Cartridge Box", packageFormatIdentifier: "largeLetter", packageFormatLabel: "Large Letter", weightInGrams: 110, dimensions: { heightInMms: 25, widthInMms: 120, depthInMms: 160 }, isSystem: true },
+  { id: "multi-parcel", name: "Multi-Item / Cold-Chain Kit", packageFormatIdentifier: "mediumParcel", packageFormatLabel: "Medium Parcel", weightInGrams: 520, dimensions: { heightInMms: 140, widthInMms: 220, depthInMms: 300 }, isSystem: true }
+];
+
+function PackagingProfilesPage() {
+  const [profiles, setProfiles] = useState(DEFAULT_PACKAGING_PROFILES);
+  const [isLoading, setIsLoading] = useState(false);
+  const [message, setMessage] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
+  const [editingId, setEditingId] = useState(null);
+
+  const [name, setName] = useState("");
+  const [packageFormat, setPackageFormat] = useState("smallParcel");
+  const [weight, setWeight] = useState(240);
+  const [h, setH] = useState(80);
+  const [w, setW] = useState(160);
+  const [d, setD] = useState(220);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const loadProfiles = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch("/admin/custom/packaging-profiles", { credentials: "include" });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.profiles) && data.profiles.length > 0) {
+          setProfiles(data.profiles);
+          try { localStorage.setItem("peptech_packaging_profiles", JSON.stringify(data.profiles)); } catch {}
+          return;
+        }
+      }
+    } catch {}
+    try {
+      const local = localStorage.getItem("peptech_packaging_profiles");
+      if (local) {
+        const parsed = JSON.parse(local);
+        if (Array.isArray(parsed) && parsed.length > 0) setProfiles(parsed);
+      }
+    } catch {}
+    setIsLoading(false);
+  };
+
+  useEffect(() => {
+    loadProfiles();
+  }, []);
+
+  const startEdit = (p) => {
+    setEditingId(p.id);
+    setName(p.name);
+    setPackageFormat(p.packageFormatIdentifier);
+    setWeight(p.weightInGrams);
+    setH(p.dimensions?.heightInMms || 80);
+    setW(p.dimensions?.widthInMms || 160);
+    setD(p.dimensions?.depthInMms || 220);
+    setMessage(\`Editing "\${p.name}". Update the fields below and click "Update Packaging Profile".\`);
+    setErrorMsg("");
+    window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setName("");
+    setPackageFormat("smallParcel");
+    setWeight(240);
+    setH(80);
+    setW(160);
+    setD(220);
+    setMessage("");
+    setErrorMsg("");
+  };
+
+  const handleSaveProfile = async (e) => {
+    e.preventDefault();
+    if (!name.trim()) {
+      setErrorMsg("Please enter a profile name.");
+      return;
+    }
+    setIsSaving(true);
+    setErrorMsg("");
+    setMessage("");
+
+    try {
+      const payload = {
+        name: name.trim(),
+        packageFormatIdentifier: packageFormat,
+        weightInGrams: Number(weight) || 240,
+        dimensions: {
+          heightInMms: Number(h) || 80,
+          widthInMms: Number(w) || 160,
+          depthInMms: Number(d) || 220,
+        },
+      };
+
+      if (editingId) {
+        payload.id = editingId;
+      }
+
+      const res = await fetch("/admin/custom/packaging-profiles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to save packaging profile.");
+      }
+
+      if (Array.isArray(data.profiles)) {
+        setProfiles(data.profiles);
+        try { localStorage.setItem("peptech_packaging_profiles", JSON.stringify(data.profiles)); } catch {}
+      }
+
+      setMessage(editingId ? \`Successfully updated "\${name.trim()}".\` : \`Successfully created "\${name.trim()}".\`);
+      cancelEdit();
+    } catch (err) {
+      setErrorMsg(err.message || "An unexpected error occurred.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteProfile = async (id, profileName) => {
+    if (!confirm(\`Are you sure you want to delete the packaging profile "\${profileName}"?\`)) {
+      return;
+    }
+
+    try {
+      const res = await fetch(\`/admin/custom/packaging-profiles?id=\${encodeURIComponent(id)}\`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to delete packaging profile.");
+      }
+
+      if (Array.isArray(data.profiles)) {
+        setProfiles(data.profiles);
+        try { localStorage.setItem("peptech_packaging_profiles", JSON.stringify(data.profiles)); } catch {}
+      }
+      if (editingId === id) {
+        cancelEdit();
+      }
+      setMessage(\`Deleted "\${profileName}".\`);
+    } catch (err) {
+      setErrorMsg(err.message || "Could not delete profile.");
+    }
+  };
+
+  const handleResetDefaults = async () => {
+    if (!confirm("Reset packaging profiles back to PEPTECH standard factory defaults?")) return;
+    setIsLoading(true);
+    try {
+      const res = await fetch(\`/admin/custom/packaging-profiles?action=reset\`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (res.ok && Array.isArray(data.profiles)) {
+        setProfiles(data.profiles);
+        try { localStorage.setItem("peptech_packaging_profiles", JSON.stringify(data.profiles)); } catch {}
+        cancelEdit();
+        setMessage("Packaging profiles reset to standard defaults.");
+      }
+    } catch (err) {
+      setErrorMsg(err.message || "Failed to reset profiles.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return _jsxs("div", {
+    className: "space-y-4 max-w-5xl mx-auto p-4",
+    children: [
+      _jsxs("div", {
+        className: "flex items-center justify-between",
+        children: [
+          _jsxs("div", {
+            className: "text-xs text-[#5c5f62] flex items-center gap-1.5",
+            children: [
+              _jsx(Link, { to: "/settings", className: "hover:underline text-[#5c5f62]", children: "Settings" }),
+              _jsx("span", { children: "/" }),
+              _jsx(Link, { to: "/settings/locations", className: "hover:underline text-[#5c5f62]", children: "Locations & Shipping" }),
+              _jsx("span", { children: "/" }),
+              _jsx("span", { className: "text-[#202223] font-semibold", children: "Packaging Profiles" })
+            ]
+          }),
+          _jsx(Link, {
+            to: "/settings/locations",
+            className: "text-xs text-[#16a6a3] hover:underline inline-flex items-center gap-1 font-medium",
+            children: "← Back to Locations & Shipping"
+          })
+        ]
+      }),
+
+      _jsxs(Container, {
+        className: "divide-y p-0",
+        children: [
+          _jsxs("div", {
+            className: "flex flex-col gap-2 p-6",
+            children: [
+              _jsxs("div", {
+                className: "flex items-center justify-between",
+                children: [
+                  _jsxs("div", {
+                    children: [
+                      _jsxs("div", {
+                        className: "flex items-center gap-2",
+                        children: [
+                          _jsx("span", { className: "text-2xl", children: "📦" }),
+                          _jsx(Heading, { level: "h1", className: "text-xl font-bold text-[#202223]", children: "Packaging Profiles" })
+                        ]
+                      }),
+                      _jsx(Text, {
+                        className: "text-[#5c5f62] text-sm mt-1",
+                        children: "Configure reusable box dimensions, gross weight presets, and Royal Mail formats under Locations & Shipping."
+                      })
+                    ]
+                  }),
+                  _jsxs("div", {
+                    className: "flex items-center gap-2",
+                    children: [
+                      _jsx(Button, {
+                        size: "small",
+                        variant: "secondary",
+                        onClick: handleResetDefaults,
+                        disabled: isLoading,
+                        children: "↺ Reset to Defaults"
+                      }),
+                      _jsx(Button, {
+                        size: "small",
+                        variant: "secondary",
+                        onClick: loadProfiles,
+                        disabled: isLoading,
+                        children: "↻ Refresh"
+                      })
+                    ]
+                  })
+                ]
+              }),
+              message && _jsx("div", { className: "p-3 bg-green-50 border border-green-200 text-green-800 text-xs rounded-md", children: message }),
+              errorMsg && _jsx("div", { className: "p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-md", children: errorMsg })
+            ]
+          }),
+
+          _jsxs("div", {
+            className: "p-6 space-y-4",
+            children: [
+              _jsxs("div", {
+                className: "flex items-center justify-between",
+                children: [
+                  _jsxs(Heading, { level: "h2", className: "text-base font-semibold text-[#202223]", children: ["Active Packaging Profiles (", profiles.length, ")"] }),
+                  _jsx("span", { className: "text-xs text-[#8c9196]", children: "Auto-fills fulfillment weight and box dimensions on order dispatch." })
+                ]
+              }),
+
+              _jsx("div", {
+                className: "border rounded-lg overflow-hidden",
+                children: _jsxs(Table, {
+                  children: [
+                    _jsx(Table.Header, {
+                      children: _jsxs(Table.Row, {
+                        children: [
+                          _jsx(Table.HeaderCell, { children: "Profile Name" }),
+                          _jsx(Table.HeaderCell, { children: "Package Format" }),
+                          _jsx(Table.HeaderCell, { children: "Gross Weight (g)" }),
+                          _jsx(Table.HeaderCell, { children: "Outer Dimensions (mm)" }),
+                          _jsx(Table.HeaderCell, { children: "Type" }),
+                          _jsx(Table.HeaderCell, { className: "text-right", children: "Actions" })
+                        ]
+                      })
+                    }),
+                    _jsx(Table.Body, {
+                      children: profiles.map((p) =>
+                        _jsxs(Table.Row, {
+                          children: [
+                            _jsx(Table.Cell, { className: "font-semibold text-[#202223]", children: p.name }),
+                            _jsx(Table.Cell, {
+                              children: _jsx(Badge, { color: "blue", size: "small", children: p.packageFormatLabel || p.packageFormatIdentifier })
+                            }),
+                            _jsxs(Table.Cell, { className: "font-mono text-xs", children: [p.weightInGrams, " g"] }),
+                            _jsxs(Table.Cell, {
+                              className: "font-mono text-xs text-[#5c5f62]",
+                              children: [p.dimensions?.heightInMms || 80, " × ", p.dimensions?.widthInMms || 160, " × ", p.dimensions?.depthInMms || 220, " mm"]
+                            }),
+                            _jsx(Table.Cell, {
+                              children: p.isSystem
+                                ? _jsx(Badge, { color: "grey", size: "small", children: "Default Preset" })
+                                : _jsx(Badge, { color: "green", size: "small", children: "Custom" })
+                            }),
+                            _jsx(Table.Cell, {
+                              className: "text-right",
+                              children: _jsxs("div", {
+                                className: "flex items-center justify-end gap-2",
+                                children: [
+                                  _jsx(Button, { size: "small", variant: "secondary", onClick: () => startEdit(p), children: "Edit" }),
+                                  _jsx(Button, { size: "small", variant: "danger", onClick: () => handleDeleteProfile(p.id, p.name), children: "Delete" })
+                                ]
+                              })
+                            })
+                          ]
+                        }, p.id)
+                      )
+                    })
+                  ]
+                })
+              })
+            ]
+          }),
+
+          _jsxs("form", {
+            onSubmit: handleSaveProfile,
+            className: "p-6 bg-[#fafbfb] space-y-4",
+            children: [
+              _jsxs("div", {
+                className: "flex items-center justify-between",
+                children: [
+                  _jsxs("div", {
+                    children: [
+                      _jsx(Heading, { level: "h2", className: "text-base font-semibold text-[#202223]", children: editingId ? "✏️ Edit Packaging Profile" : "➕ Create Packaging Profile" }),
+                      _jsx(Text, { className: "text-[#5c5f62] text-xs mt-0.5", children: editingId ? "Update existing preset values." : "Add a custom packaging specification." })
+                    ]
+                  }),
+                  editingId && _jsx(Button, { size: "small", variant: "secondary", onClick: cancelEdit, children: "✕ Cancel Edit" })
+                ]
+              }),
+
+              _jsxs("div", {
+                className: "grid grid-cols-1 md:grid-cols-2 gap-4",
+                children: [
+                  _jsxs("div", {
+                    children: [
+                      _jsx(Label, { className: "text-xs font-medium text-[#202223] mb-1 block", children: "Profile Name" }),
+                      _jsx(Input, {
+                        value: name,
+                        onChange: (e) => setName(e.target.value),
+                        placeholder: "e.g. 5x Vial Cold Pack Mailer",
+                        required: true
+                      })
+                    ]
+                  }),
+                  _jsxs("div", {
+                    children: [
+                      _jsx(Label, { className: "text-xs font-medium text-[#202223] mb-1 block", children: "Royal Mail Package Format" }),
+                      _jsxs("select", {
+                        value: packageFormat,
+                        onChange: (e) => setPackageFormat(e.target.value),
+                        className: "w-full border border-[#c9cccf] rounded-md p-2 text-xs bg-white text-[#202223]",
+                        children: [
+                          _jsx("option", { value: "smallParcel", children: "Small Parcel (Cold-Chain Box)" }),
+                          _jsx("option", { value: "largeLetter", children: "Large Letter (Vial Box)" }),
+                          _jsx("option", { value: "mediumParcel", children: "Medium Parcel" }),
+                          _jsx("option", { value: "parcel", children: "Parcel" }),
+                          _jsx("option", { value: "largeParcel", children: "Large Parcel" })
+                        ]
+                      })
+                    ]
+                  }),
+                  _jsxs("div", {
+                    children: [
+                      _jsx(Label, { className: "text-xs font-medium text-[#202223] mb-1 block", children: "Gross Weight (grams)" }),
+                      _jsx(Input, {
+                        type: "number",
+                        value: weight,
+                        onChange: (e) => setWeight(Math.max(1, parseInt(e.target.value, 10) || 1)),
+                        placeholder: "240",
+                        required: true
+                      })
+                    ]
+                  }),
+                  _jsxs("div", {
+                    children: [
+                      _jsx(Label, { className: "text-xs font-medium text-[#202223] mb-1 block", children: "Outer Dimensions (H × W × D mm)" }),
+                      _jsxs("div", {
+                        className: "grid grid-cols-3 gap-2",
+                        children: [
+                          _jsxs("div", {
+                            children: [
+                              _jsx("span", { className: "text-[10px] text-[#5c5f62] block", children: "Height (H)" }),
+                              _jsx(Input, {
+                                type: "number",
+                                value: h,
+                                onChange: (e) => setH(Math.max(1, parseInt(e.target.value, 10) || 1)),
+                                placeholder: "80",
+                                required: true
+                              })
+                            ]
+                          }),
+                          _jsxs("div", {
+                            children: [
+                              _jsx("span", { className: "text-[10px] text-[#5c5f62] block", children: "Width (W)" }),
+                              _jsx(Input, {
+                                type: "number",
+                                value: w,
+                                onChange: (e) => setW(Math.max(1, parseInt(e.target.value, 10) || 1)),
+                                placeholder: "160",
+                                required: true
+                              })
+                            ]
+                          }),
+                          _jsxs("div", {
+                            children: [
+                              _jsx("span", { className: "text-[10px] text-[#5c5f62] block", children: "Depth (D)" }),
+                              _jsx(Input, {
+                                type: "number",
+                                value: d,
+                                onChange: (e) => setD(Math.max(1, parseInt(e.target.value, 10) || 1)),
+                                placeholder: "220",
+                                required: true
+                              })
+                            ]
+                          })
+                        ]
+                      })
+                    ]
+                  })
+                ]
+              }),
+
+              _jsxs("div", {
+                className: "flex items-center gap-2 pt-2",
+                children: [
+                  _jsx(Button, {
+                    size: "small",
+                    variant: "primary",
+                    type: "submit",
+                    disabled: isSaving || !name.trim(),
+                    children: isSaving ? "Saving..." : editingId ? "Update Packaging Profile" : "Save Packaging Profile"
+                  }),
+                  editingId && _jsx(Button, { size: "small", variant: "secondary", onClick: cancelEdit, children: "Cancel" })
+                ]
+              })
+            ]
+          })
+        ]
+      })
+    ]
+  });
 }
+
+const packagingBreadcrumb = () => "Packaging Profiles";
+const packagingLoader = async () => null;
+const packagingSeo = () => ({ title: "Packaging Profiles - PEPTECH" });
+
+export {
+  PackagingProfilesPage as Component,
+  packagingBreadcrumb as Breadcrumb,
+  packagingLoader as loader,
+  packagingSeo as seo
+};
+`;
+  fs.writeFileSync(packagingProfilesChunkFile, packagingProfilesJs, 'utf8');
+  console.log('[PEPTECH] Successfully created packaging-profiles-list-PEPTECH.mjs');
+
+  // 5. Update Locations & Shipping LinksSection with Packaging Profiles link
+  const locationListFile = path.resolve(distDir, 'location-list-WQ7ZAUO7.mjs');
+  if (fs.existsSync(locationListFile)) {
+    let locJs = fs.readFileSync(locationListFile, 'utf8');
+    if (!locJs.includes('/settings/locations/packaging-profiles')) {
+      const targetPattern = 'to: "/settings/locations/shipping-option-types",';
+      const replacementPattern = `to: "/settings/locations/packaging-profiles",
+        labelKey: "Packaging Profiles",
+        descriptionKey: "Box dimensions, gross weight presets, and packaging formats for Royal Mail dispatch.",
+        icon: /* @__PURE__ */ jsx7(ShoppingBag, {})
+      }
+    ),
+    /* @__PURE__ */ jsx7(
+      SidebarLink,
+      {
+        to: "/settings/locations/shipping-option-types",`;
+      if (locJs.includes(targetPattern)) {
+        locJs = locJs.replace(targetPattern, replacementPattern);
+        fs.writeFileSync(locationListFile, locJs, 'utf8');
+        console.log('[PEPTECH] Successfully added Packaging Profiles link to location-list-WQ7ZAUO7.mjs');
+      }
+    }
+  }
+
+  // 6. Register packaging-profiles route under locations in chunk-ZT6PMEES.mjs
+  const ztChunkFile = path.resolve(distDir, 'chunk-ZT6PMEES.mjs');
+  if (fs.existsSync(ztChunkFile)) {
+    let ztJs = fs.readFileSync(ztChunkFile, 'utf8');
+    if (!ztJs.includes('path: "packaging-profiles"')) {
+      const ztTarget = 'path: "shipping-option-types",';
+      const ztReplacement = `path: "packaging-profiles",
+                  lazy: () => import("./packaging-profiles-list-PEPTECH.mjs"),
+                  handle: {
+                    breadcrumb: () => "Packaging Profiles"
+                  }
+                },
+                {
+                  path: "shipping-option-types",`;
+      if (ztJs.includes(ztTarget)) {
+        ztJs = ztJs.replace(ztTarget, ztReplacement);
+        fs.writeFileSync(ztChunkFile, ztJs, 'utf8');
+        console.log('[PEPTECH] Successfully registered packaging-profiles route in chunk-ZT6PMEES.mjs');
+      }
+    }
+  }
+}
+

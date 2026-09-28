@@ -1,0 +1,54 @@
+[
+  {
+    "id": "pen-set",
+    "name": "Complete Pen Set Box",
+    "packageFormatIdentifier": "smallParcel",
+    "packageFormatLabel": "Small Parcel (Cold-Chain Box)",
+    "weightInGrams": 360,
+    "dimensions": {
+      "heightInMms": 80,
+      "widthInMms": 160,
+      "depthInMms": 220
+    },
+    "isSystem": true
+  },
+  {
+    "id": "vials-letter",
+    "name": "Freeze-Dried Vials Box",
+    "packageFormatIdentifier": "largeLetter",
+    "packageFormatLabel": "Large Letter (Vial Box)",
+    "weightInGrams": 95,
+    "dimensions": {
+      "heightInMms": 24,
+      "widthInMms": 125,
+      "depthInMms": 185
+    },
+    "isSystem": true
+  },
+  {
+    "id": "refill-letter",
+    "name": "Refill Cartridge Box",
+    "packageFormatIdentifier": "largeLetter",
+    "packageFormatLabel": "Large Letter (Refill Box)",
+    "weightInGrams": 110,
+    "dimensions": {
+      "heightInMms": 25,
+      "widthInMms": 120,
+      "depthInMms": 160
+    },
+    "isSystem": true
+  },
+  {
+    "id": "multi-parcel",
+    "name": "Multi-Item / Cold-Chain Kit",
+    "packageFormatIdentifier": "mediumParcel",
+    "packageFormatLabel": "Medium Parcel",
+    "weightInGrams": 520,
+    "dimensions": {
+      "heightInMms": 140,
+      "widthInMms": 220,
+      "depthInMms": 300
+    },
+    "isSystem": true
+  }
+]
