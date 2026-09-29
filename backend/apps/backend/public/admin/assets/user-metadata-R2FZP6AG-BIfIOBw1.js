@@ -1,1 +1,0 @@
-import{M as m}from"./chunk-NANNVVYP-DW-Og0q0.js";import{as as d,e8 as u,fl as p,j as s,am as c}from"./index-C5l1syT9.js";var j=()=>{const{id:a}=d(),{user:r,isPending:t,isError:e,error:o}=u(a),{mutateAsync:n,isPending:i}=p(a);if(e)throw o;return s.jsx(c,{children:s.jsx(m,{isPending:t,isMutating:i,hook:n,metadata:r?.metadata})})};export{j as Component};
