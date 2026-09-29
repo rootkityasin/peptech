@@ -34,8 +34,25 @@ export async function settleReceipt(scope:any,ledger:CommerceService,attempt:Led
     const orderModule=scope.resolve(Modules.ORDER)
     const existing=await orderModule.listOrders({id:orderId},{relations:["items"]})
     if(!existing.length) {
+      const cleanAddress = (addr: any) => {
+        if (!addr) return undefined
+        const { id, created_at, updated_at, deleted_at, customer_id, ...rest } = addr
+        return {
+          first_name: rest.first_name || "",
+          last_name: rest.last_name || "",
+          company: rest.company || "",
+          address_1: rest.address_1 || "",
+          address_2: rest.address_2 || "",
+          city: rest.city || "",
+          postal_code: rest.postal_code || "",
+          province: rest.province || "",
+          country_code: (rest.country_code || "gb").toLowerCase(),
+          phone: rest.phone || "",
+          metadata: rest.metadata || {},
+        }
+      }
       const input:any={id:orderId,custom_display_id:orderNumber,customer_id:q.customer_id,email:q.email,currency_code:q.currency,region_id:q.region_id,
-        sales_channel_id:q.sales_channel_id,status:"pending",shipping_address:q.address,billing_address:q.billing_address||q.address,
+        sales_channel_id:q.sales_channel_id,status:"pending",shipping_address:cleanAddress(q.address),billing_address:cleanAddress(q.billing_address||q.address),
         no_notification:true,metadata:{peptech_receipt_id:id,peptech_attempt:attempt.id,payment_gateway:evidence.source||"stripe",
           subscription_id:attempt.data.subscription_id||null,fulfillment_hold:true,tax_policy:q.tax_policy,order_number_formatted:orderNumber,stripe_receipt_url:stripeReceiptUrl},
         items:q.lines.map(l=>({id:l.line_id,variant_id:l.variant_id,title:l.name,variant_sku:l.sku,quantity:l.quantity,

@@ -27,7 +27,7 @@ export interface GatewayCheckoutInput {
   quote: Quote
   revision: string
   origin: string
-  uiMode?: "embedded" | "embedded_page" | "hosted_page"
+  uiMode?: "embedded" | "hosted" | "embedded_page" | "hosted_page"
 }
 
 export interface GatewayCheckoutResult {

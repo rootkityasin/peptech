@@ -176,7 +176,7 @@ export class StripeGatewayAdapter implements PaymentGatewayAdapter {
     const returnUrl = `${origin.replace(/\/$/, "")}/checkout/success?attempt_id=${attemptId}&session_id={CHECKOUT_SESSION_ID}`
 
     const sessionParams: any = {
-      ui_mode: isEmbedded ? "embedded_page" : "hosted_page",
+      ui_mode: isEmbedded ? "embedded" : "hosted",
       billing_address_collection: "auto",
       customer_update: { address: "auto", name: "auto" },
       mode: recurring ? "subscription" : "payment",
