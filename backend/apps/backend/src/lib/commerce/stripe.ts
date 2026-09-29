@@ -4,8 +4,13 @@ import { getStripeConfig } from "../stripe-config"
 import { fail } from "./policy"
 let cached: { key:string; client:Stripe } | undefined
 export function stripeContext() {
-  const config=getStripeConfig()
-  if (!config) fail("Stripe is not configured",503)
+  let config
+  try {
+    config = getStripeConfig()
+  } catch (err: any) {
+    fail(`Stripe is misconfigured: ${err.message}`, 503)
+  }
+  if (!config) fail("Stripe is not configured", 503)
   if (!cached || cached.key!==config.apiKey) cached={key:config.apiKey,client:new Stripe(config.apiKey,{
     apiVersion:"2025-09-30.clover" as any,maxNetworkRetries:2,timeout:15000,
     appInfo:{name:"PEPTECH Checkout",version:"1.0.0"},

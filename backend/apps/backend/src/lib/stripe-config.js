@@ -13,9 +13,20 @@ function loadStripeEnv(start = __dirname, env = process.env) {
           const file = path.join(dir, ".env");
           if (fs.existsSync(file)) {
             const values = require("dotenv").parse(fs.readFileSync(file));
+            const hostKey = (env.STRIPE_API_KEY || "").trim();
+            const hostMode = hostKey ? (/^(?:sk|rk)_(test|live)_/.exec(hostKey)?.[1]) : null;
+            const fileKey = (values.STRIPE_API_KEY || "").trim();
+            const fileMode = fileKey ? (/^(?:sk|rk)_(test|live)_/.exec(fileKey)?.[1]) : null;
+
             for (const [key, value] of Object.entries(values)) {
-              if (key.startsWith("STRIPE_") && (env[key] === undefined || env[key] === "")) {
-                env[key] = String(value);
+              if (key.startsWith("STRIPE_") || key.startsWith("NEXT_PUBLIC_STRIPE_")) {
+                if (env[key] === undefined || env[key] === "") {
+                  // Do not mix test and live credentials from disk with host environment
+                  if (hostMode && fileMode && hostMode !== fileMode) {
+                    continue;
+                  }
+                  env[key] = String(value);
+                }
               }
             }
           }
@@ -35,9 +46,9 @@ function getStripeConfig(env = process.env) {
   const match = /^(?:sk|rk)_(test|live)_[A-Za-z0-9]+$/.exec(apiKey);
   if (!match) throw new Error("STRIPE_API_KEY must be a Stripe test/live restricted or secret key");
   const mode = match[1];
-  const publishableKey = (env.STRIPE_PUBLISHABLE_KEY || "").trim();
+  const publishableKey = (env.STRIPE_PUBLISHABLE_KEY || env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "").trim();
   if (!new RegExp(`^pk_${mode}_[A-Za-z0-9]+$`).test(publishableKey)) {
-    throw new Error("STRIPE_PUBLISHABLE_KEY must match the API key's test/live mode");
+    throw new Error(`STRIPE_PUBLISHABLE_KEY must match the API key's test/live mode (expected pk_${mode}_...)`);
   }
   const accountId = (env.STRIPE_ACCOUNT_ID || "").trim();
   if (!/^acct_[A-Za-z0-9]+$/.test(accountId)) {
@@ -64,83 +75,98 @@ function getStripeConfig(env = process.env) {
 }
 
 function stripeModules(env = process.env) {
-  const config = getStripeConfig(env);
-  if (!config) return [];
-  return [
-    {
-      resolve: "@medusajs/medusa/payment",
-      options: {
-        providers: [
-          {
-            resolve: "@medusajs/payment-stripe",
-            id: config.id,
-            options: {
-              apiKey: config.apiKey,
-              webhookSecret: config.webhookSecret,
-              capture: true,
-              automaticPaymentMethods: true,
+  try {
+    const config = getStripeConfig(env);
+    if (!config) return [];
+    return [
+      {
+        resolve: "@medusajs/medusa/payment",
+        options: {
+          providers: [
+            {
+              resolve: "@medusajs/payment-stripe",
+              id: config.id,
+              options: {
+                apiKey: config.apiKey,
+                webhookSecret: config.webhookSecret,
+                capture: true,
+                automaticPaymentMethods: true,
+              },
             },
-          },
-          {
-            resolve: path.resolve(__dirname, "../modules/stripe-checkout"),
-            id: config.id,
-            options: {
-              apiKey: config.apiKey,
-              signingSecret: env.STRIPE_COMMERCE_SIGNING_SECRET || config.apiKey,
-              profile: `${config.accountId}:${config.mode}:v1`,
+            {
+              resolve: path.resolve(__dirname, "../modules/stripe-checkout"),
+              id: config.id,
+              options: {
+                apiKey: config.apiKey,
+                signingSecret: env.STRIPE_COMMERCE_SIGNING_SECRET || config.apiKey,
+                profile: `${config.accountId}:${config.mode}:v1`,
+              },
             },
-          },
-        ],
+          ],
+        },
       },
-    },
-  ];
+    ];
+  } catch (err) {
+    console.warn(`[PEPTECH WARN] Stripe module disabled: ${err.message}`);
+    return [];
+  }
 }
 
 function commerceRuntimeModules(env = process.env) {
-  if (!env.REDIS_URL) return [];
-  return [
-    { resolve: "@medusajs/medusa/event-bus-redis", options: { redisUrl: env.REDIS_URL } },
-    { resolve: "@medusajs/medusa/workflow-engine-redis", options: { redis: { url: env.REDIS_URL } } },
-    {
-      resolve: "@medusajs/medusa/locking",
-      options: {
-        providers: [
-          {
-            resolve: "@medusajs/medusa/locking-redis",
-            id: "locking-redis",
-            is_default: true,
-            options: { redisUrl: env.REDIS_URL },
-          },
-        ],
+  try {
+    if (!env.REDIS_URL) return [];
+    return [
+      { resolve: "@medusajs/medusa/event-bus-redis", options: { redisUrl: env.REDIS_URL } },
+      { resolve: "@medusajs/medusa/workflow-engine-redis", options: { redis: { url: env.REDIS_URL } } },
+      {
+        resolve: "@medusajs/medusa/locking",
+        options: {
+          providers: [
+            {
+              resolve: "@medusajs/medusa/locking-redis",
+              id: "locking-redis",
+              is_default: true,
+              options: { redisUrl: env.REDIS_URL },
+            },
+          ],
+        },
       },
-    },
-  ];
+    ];
+  } catch (err) {
+    console.warn(`[PEPTECH WARN] Commerce runtime modules disabled: ${err.message}`);
+    return [];
+  }
 }
 
 function commerceEmailModules(env = process.env) {
-  if (!env.STRIPE_EMAIL_HOST) return [];
-  return [
-    {
-      resolve: "@medusajs/medusa/notification",
-      options: {
-        providers: [
-          {
-            resolve: path.resolve(__dirname, "../modules/commerce-email"),
-            id: "peptech-email",
-            options: {
-              channels: ["email"],
-              host: env.STRIPE_EMAIL_HOST,
-              port: Number(env.STRIPE_EMAIL_PORT || 465),
-              user: env.STRIPE_EMAIL_USER,
-              password: env.STRIPE_EMAIL_PASSWORD,
-              from: env.STRIPE_EMAIL_FROM,
-              origin: env.STRIPE_STOREFRONT_URL,
+  try {
+    if (!env.STRIPE_EMAIL_HOST) return [];
+    return [
+      {
+        resolve: "@medusajs/medusa/notification",
+        options: {
+          providers: [
+            {
+              resolve: path.resolve(__dirname, "../modules/commerce-email"),
+              id: "peptech-email",
+              options: {
+                channels: ["email"],
+                host: env.STRIPE_EMAIL_HOST,
+                port: Number(env.STRIPE_EMAIL_PORT || 465),
+                user: env.STRIPE_EMAIL_USER,
+                password: env.STRIPE_EMAIL_PASSWORD,
+                from: env.STRIPE_EMAIL_FROM,
+                origin: env.STRIPE_STOREFRONT_URL,
+              },
             },
-          },
-        ],
+          ],
+        },
       },
-    },
-  ];
+    ];
+  } catch (err) {
+    console.warn(`[PEPTECH WARN] Commerce email module disabled: ${err.message}`);
+    return [];
+  }
 }
 
 module.exports = {

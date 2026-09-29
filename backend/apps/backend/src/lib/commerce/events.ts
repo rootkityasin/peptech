@@ -142,7 +142,7 @@ export async function processEvent(scope:any,ledger:CommerceService,eventId:stri
       if(event.type==="checkout.session.async_payment_failed"){
         const session=await context.stripe.checkout.sessions.retrieve(event.object_id)
         const attempt=await ledger.get(session.metadata?.peptech_attempt||"")
-        if(attempt?.profile===context.profile&&attempt.data.session_id===session.id&&session.payment_status==="unpaid"&&session.payment_intent){
+        if(attempt && attempt.profile===context.profile&&attempt.data?.session_id===session.id&&session.payment_status==="unpaid"&&session.payment_intent){
           const pi=await context.stripe.paymentIntents.retrieve(objectId(session.payment_intent)!)
           if(["requires_payment_method","canceled"].includes(pi.status)&&attempt.state!=="confirmed"){
             await ledger.patch(attempt.id,{},"failed");await releaseQuote(scope,attempt.id)

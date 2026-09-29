@@ -29,6 +29,19 @@ describe("Stripe account configuration", () => {
     expect(() => getStripeConfig(live)).toThrow(/underwriting/)
     expect(getStripeConfig({ ...live, STRIPE_LIVE_APPROVED: "true" })?.mode).toBe("live")
   })
+  it("falls back to NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY when STRIPE_PUBLISHABLE_KEY is not set", () => {
+    const env = {
+      STRIPE_API_KEY: "rk_test_fixture",
+      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: "pk_test_fixture",
+      STRIPE_WEBHOOK_SECRET: "whsec_fixture",
+      STRIPE_ACCOUNT_ID: "acct_fixture",
+    }
+    expect(getStripeConfig(env)?.publishableKey).toBe("pk_test_fixture")
+  })
+  it("safely disables stripeModules without throwing when configuration is invalid", () => {
+    const invalidEnv = { ...testEnv, STRIPE_PUBLISHABLE_KEY: "pk_live_fixture" }
+    expect(stripeModules(invalidEnv)).toEqual([])
+  })
   it("loads only Stripe settings from root and preserves injected environment", () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "peptech-stripe-"))
     try {
@@ -39,6 +52,17 @@ describe("Stripe account configuration", () => {
       expect(env.STRIPE_API_KEY).toBe("rk_test_fixture")
       expect(env.STRIPE_ACCOUNT_ID).toBe("acct_injected")
       expect(env.DATABASE_URL).toBeUndefined()
+    } finally { fs.rmSync(dir, { recursive: true, force: true }) }
+  })
+  it("prevents mixing live host credentials with test file credentials", () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "peptech-stripe-mode-"))
+    try {
+      fs.writeFileSync(path.join(dir, "package.json"), JSON.stringify({ name: "peptech" }))
+      fs.writeFileSync(path.join(dir, ".env"), "STRIPE_API_KEY=rk_test_fixture\nSTRIPE_PUBLISHABLE_KEY=pk_test_fixture\n")
+      const env: NodeJS.ProcessEnv = { STRIPE_API_KEY: "rk_live_fixture" }
+      loadStripeEnv(dir, env)
+      expect(env.STRIPE_API_KEY).toBe("rk_live_fixture")
+      expect(env.STRIPE_PUBLISHABLE_KEY).toBeUndefined()
     } finally { fs.rmSync(dir, { recursive: true, force: true }) }
   })
 })
