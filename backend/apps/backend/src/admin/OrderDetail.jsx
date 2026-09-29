@@ -199,6 +199,7 @@ function StandardOrderDetail({ id }) {
   const [newTagInput, setNewTagInput] = useState("");
   const [isSavingTag, setIsSavingTag] = useState(false);
 
+<<<<<<< Updated upstream
   // Modals for Royal Mail Click & Drop fulfillment
   const [showFulfillModal, setShowFulfillModal] = useState(false);
   const [fulfillServiceCode, setFulfillServiceCode] = useState("TPN");
@@ -369,6 +370,16 @@ function StandardOrderDetail({ id }) {
     }
   };
 
+=======
+  // Modals for fulfillment
+  const [showFulfillModal, setShowFulfillModal] = useState(false);
+  const [showShipmentModal, setShowShipmentModal] = useState(false);
+  const [fulfillCarrier, setFulfillCarrier] = useState("Royal Mail Tracked");
+  const [fulfillTracking, setFulfillTracking] = useState("");
+  const [isFulfilling, setIsFulfilling] = useState(false);
+  const [activeFulfillmentId, setActiveFulfillmentId] = useState(null);
+
+>>>>>>> Stashed changes
   // Contact / Address edit modal state
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [editAddress, setEditAddress] = useState({});
@@ -419,6 +430,7 @@ function StandardOrderDetail({ id }) {
   const tags = Array.isArray(meta.tags) ? meta.tags : [];
   const notes = meta.notes || `Order# ${order.display_id || order.id.slice(-6)}\nShipping: Royal Mail Tracked UK / Worldwide`;
   const fulfillments = meta.fulfillments || (order.fulfillments && order.fulfillments.length > 0 ? order.fulfillments : []);
+<<<<<<< Updated upstream
   const rawPayment = String(order.payment_status || meta.payment_status || (order.status === "completed" ? "paid" : "pending")).toLowerCase();
   const isPaid = ["paid", "captured", "authorized", "partially_captured", "settled", "succeeded", "completed"].includes(rawPayment) ||
     meta.settled === true || meta.is_paid === true ||
@@ -426,6 +438,13 @@ function StandardOrderDetail({ id }) {
   const paymentStatus = isPaid ? "paid" : (rawPayment === "refunded" ? "refunded" : rawPayment === "partially_refunded" ? "partially_refunded" : rawPayment);
   const isRefunded = paymentStatus === "refunded";
   const isPartiallyRefunded = paymentStatus === "partially_refunded";
+=======
+  const isFulfilled = (meta.fulfillment_status || (fulfillments.length > 0 ? "fulfilled" : "unfulfilled")) === "fulfilled";
+  const paymentStatus = (meta.payment_status || (order.status === "completed" ? "paid" : "pending")).toLowerCase();
+  const isRefunded = paymentStatus === "refunded";
+  const isPartiallyRefunded = paymentStatus === "partially_refunded";
+  const isPaid = paymentStatus === "paid";
+>>>>>>> Stashed changes
   const refunds = Array.isArray(meta.refunds) ? meta.refunds : [];
   const refundedTotal = Number(meta.refunded_total || 0);
   const returns = Array.isArray(meta.returns) ? meta.returns : [];
@@ -507,6 +526,7 @@ function StandardOrderDetail({ id }) {
     }
   };
 
+<<<<<<< Updated upstream
   const countryCode = (shipping.country_code || meta.shipping_country_code || "GB").toUpperCase();
   const isUk = countryCode === "GB";
 
@@ -608,6 +628,40 @@ function StandardOrderDetail({ id }) {
       console.error("Fulfillment error:", e);
       setFulfillError(e.message || "Failed to generate Royal Mail label");
       alert("Fulfillment Error: " + (e.message || "Failed to generate Royal Mail label"));
+=======
+  // Fulfillment Logic
+  const handleCreateFulfillment = async () => {
+    setIsFulfilling(true);
+    try {
+      const newFulfillmentId = `${order.display_id || "1018"}-F${fulfillments.length + 1}`;
+      const trackingUrl = fulfillCarrier.toLowerCase().includes("royal")
+        ? `https://www.royalmail.com/track-your-item#/tracking-results/${fulfillTracking || "RM123456789GB"}`
+        : fulfillCarrier.toLowerCase().includes("fedex")
+        ? `https://www.fedex.com/fedextrack/?trknbr=${fulfillTracking || "0987654321"}`
+        : `#`;
+
+      const newFulfillmentObj = {
+        id: newFulfillmentId,
+        carrier: fulfillCarrier,
+        tracking_number: fulfillTracking || (fulfillCarrier.includes("FedEx") ? "0987654321" : "RM987654321GB"),
+        tracking_url: trackingUrl,
+        status: "fulfilled",
+        shipped_at: new Date().toISOString(),
+      };
+
+      await updateOrder({
+        metadata: {
+          ...meta,
+          fulfillment_status: "fulfilled",
+          fulfillments: [...fulfillments, newFulfillmentObj],
+        },
+      });
+
+      setShowFulfillModal(false);
+      refetch();
+    } catch (e) {
+      console.error("Fulfillment error:", e);
+>>>>>>> Stashed changes
     } finally {
       setIsFulfilling(false);
     }
@@ -1382,8 +1436,13 @@ function StandardOrderDetail({ id }) {
                         children: "Fulfillments",
                       }),
                       _jsx("button", {
+<<<<<<< Updated upstream
                         onClick: openFulfillModal,
                         className: "text-xs font-semibold text-[#2c6ecb] hover:underline cursor-pointer",
+=======
+                        onClick: () => setShowFulfillModal(true),
+                        className: "text-xs font-semibold text-[#2c6ecb] hover:underline",
+>>>>>>> Stashed changes
                         children: "+ Add fulfillment",
                       }),
                     ],
@@ -1397,9 +1456,15 @@ function StandardOrderDetail({ id }) {
                           _jsx("div", {
                             className: "mt-2",
                             children: _jsx("button", {
+<<<<<<< Updated upstream
                               onClick: openFulfillModal,
                               className: "px-3 py-1 text-xs font-medium text-white bg-[#008060] rounded shadow-sm hover:bg-[#006e52] cursor-pointer",
                               children: "Fulfill Items with Royal Mail",
+=======
+                              onClick: () => setShowFulfillModal(true),
+                              className: "px-3 py-1 text-xs font-medium text-white bg-[#008060] rounded shadow-sm hover:bg-[#006e52]",
+                              children: "Fulfill Items Now",
+>>>>>>> Stashed changes
                             }),
                           }),
                         ],
@@ -1411,7 +1476,11 @@ function StandardOrderDetail({ id }) {
                             key: ful.id,
                             className: "p-4 divide-y divide-[#e1e3e5]",
                             children: [
+<<<<<<< Updated upstream
                               // Fulfillment Header: #1018-RM1 [Marked as fulfilled]
+=======
+                              // Fulfillment Header: #1018-F3 [Marked as fulfilled]
+>>>>>>> Stashed changes
                               _jsxs("div", {
                                 className: "flex items-center justify-between pb-3",
                                 children: [
@@ -1423,14 +1492,23 @@ function StandardOrderDetail({ id }) {
                                         children: ["#", ful.id],
                                       }),
                                       _jsx("span", {
+<<<<<<< Updated upstream
                                         className: "inline-block px-2 py-0.5 text-xs font-medium bg-[#e3f1df] text-[#008060] rounded-full",
                                         children: "Label Generated",
+=======
+                                        className: "inline-block px-2 py-0.5 text-xs font-medium bg-[#e4e5e7] text-[#202223] rounded-full",
+                                        children: "Marked as fulfilled",
+>>>>>>> Stashed changes
                                       }),
                                     ],
                                   }),
                                   _jsx("button", {
                                     onClick: () => handleCancelFulfillment(ful.id),
+<<<<<<< Updated upstream
                                     className: "text-xs text-[#d82c0d] hover:underline cursor-pointer",
+=======
+                                    className: "text-xs text-[#d82c0d] hover:underline",
+>>>>>>> Stashed changes
                                     children: "Cancel",
                                   }),
                                 ],
@@ -1442,25 +1520,39 @@ function StandardOrderDetail({ id }) {
                                 children: [
                                   _jsxs("div", {
                                     children: [
+<<<<<<< Updated upstream
                                       _jsx("div", { className: "text-[#5c5f62] mb-0.5", children: "Carrier & Service" }),
                                       _jsx("div", { className: "font-semibold text-[#202223]", children: ful.carrier || (isUk ? "Royal Mail Tracked 24" : "Royal Mail International Tracked") }),
                                       ful.package_format && _jsxs("div", { className: "text-[11px] text-[#5c5f62] mt-0.5", children: ["Format: ", ful.package_format, ful.weight_in_grams ? ` (${ful.weight_in_grams}g)` : ""] }),
+=======
+                                      _jsx("div", { className: "text-[#5c5f62] mb-0.5", children: "Carrier" }),
+                                      _jsx("div", { className: "font-semibold text-[#202223]", children: ful.carrier || "FedEx" }),
+>>>>>>> Stashed changes
                                     ],
                                   }),
                                   _jsxs("div", {
                                     children: [
                                       _jsx("div", { className: "text-[#5c5f62] mb-0.5", children: "Tracking number" }),
                                       _jsx("a", {
+<<<<<<< Updated upstream
                                         href: ful.tracking_url || `https://www.royalmail.com/track-your-item#/tracking-results/${ful.tracking_number || "RM123456789GB"}`,
                                         target: "_blank",
                                         rel: "noreferrer",
                                         className: "font-semibold text-[#2c6ecb] hover:underline flex items-center gap-1",
                                         children: [ful.tracking_number || "RM123456789GB", " ↗"],
+=======
+                                        href: ful.tracking_url || "#",
+                                        target: "_blank",
+                                        rel: "noreferrer",
+                                        className: "font-semibold text-[#2c6ecb] hover:underline",
+                                        children: ful.tracking_number || "0987654321",
+>>>>>>> Stashed changes
                                       }),
                                     ],
                                   }),
                                 ],
                               }),
+<<<<<<< Updated upstream
 
                               // Dedicated Print & Download Label Actions (No unsolicited popup)
                               _jsxs("div", {
@@ -1492,6 +1584,8 @@ function StandardOrderDetail({ id }) {
                                   }),
                                 ],
                               }),
+=======
+>>>>>>> Stashed changes
                             ],
                           },
                           ful.id
@@ -1952,7 +2046,11 @@ function StandardOrderDetail({ id }) {
         ],
       }),
 
+<<<<<<< Updated upstream
       // ==================== ROYAL MAIL CLICK & DROP FULFILLMENT MODAL ====================
+=======
+      // ==================== FULFILLMENT MODAL ====================
+>>>>>>> Stashed changes
       showFulfillModal &&
         _jsx("div", {
           className: "fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4",
@@ -1962,6 +2060,7 @@ function StandardOrderDetail({ id }) {
               _jsxs("div", {
                 className: "flex items-center justify-between border-b pb-3",
                 children: [
+<<<<<<< Updated upstream
                   _jsxs("div", {
                     children: [
                       _jsx("h3", { className: "text-lg font-bold text-[#202223]", children: "Royal Mail Click & Drop Fulfillment" }),
@@ -1971,11 +2070,18 @@ function StandardOrderDetail({ id }) {
                   _jsx("button", {
                     onClick: () => setShowFulfillModal(false),
                     className: "text-[#8c9196] hover:text-[#202223] text-lg font-bold cursor-pointer",
+=======
+                  _jsx("h3", { className: "text-lg font-bold text-[#202223]", children: "Fulfill Items" }),
+                  _jsx("button", {
+                    onClick: () => setShowFulfillModal(false),
+                    className: "text-[#8c9196] hover:text-[#202223] text-lg font-bold",
+>>>>>>> Stashed changes
                     children: "✕",
                   }),
                 ],
               }),
 
+<<<<<<< Updated upstream
               !isPaid
                 ? _jsxs("div", {
                     className: "p-4 bg-amber-50 border border-amber-200 rounded-lg text-amber-900 text-xs space-y-2",
@@ -2328,16 +2434,85 @@ function StandardOrderDetail({ id }) {
                     ],
                   }),
 
+=======
+              _jsxs("div", {
+                className: "space-y-3",
+                children: [
+                  _jsx("div", {
+                    className: "font-semibold text-xs uppercase text-[#5c5f62]",
+                    children: "Items to fulfill:",
+                  }),
+                  _jsx("div", {
+                    className: "divide-y divide-[#e1e3e5] border border-[#e1e3e5] rounded p-2 bg-[#fafbfb] max-h-48 overflow-y-auto",
+                    children: items.map((it) => (
+                      _jsxs("div", {
+                        key: it.id,
+                        className: "py-2 flex items-center justify-between text-xs",
+                        children: [
+                          _jsxs("div", {
+                            children: [
+                              _jsx("div", { className: "font-medium text-[#202223]", children: it.title }),
+                              _jsxs("div", { className: "text-[#5c5f62]", children: ["SKU: ", it.variant_sku || "test2"] }),
+                            ],
+                          }),
+                          _jsxs("div", {
+                            className: "font-semibold text-[#008060]",
+                            children: ["Qty: ", it.quantity],
+                          }),
+                        ],
+                      }, it.id)
+                    )),
+                  }),
+
+                  _jsxs("div", {
+                    children: [
+                      _jsx("label", { className: "block text-xs font-semibold text-[#202223] mb-1", children: "Carrier" }),
+                      _jsxs("select", {
+                        value: fulfillCarrier,
+                        onChange: (e) => setFulfillCarrier(e.target.value),
+                        className: "w-full border border-[#c9cccf] rounded p-2 text-xs bg-white",
+                        children: [
+                          _jsx("option", { value: "Royal Mail Tracked 24 / 48", children: "Royal Mail Tracked 24 / 48 (Domestic UK - £4.95)" }),
+                          _jsx("option", { value: "Royal Mail International Tracked", children: "Royal Mail International Tracked (Worldwide - £15.00)" }),
+                          _jsx("option", { value: "FedEx International Priority", children: "FedEx International Priority" }),
+                          _jsx("option", { value: "DHL Express Worldwide", children: "DHL Express Worldwide" }),
+                          _jsx("option", { value: "UPS Worldwide Saver", children: "UPS Worldwide Saver" }),
+                        ],
+                      }),
+                    ],
+                  }),
+
+                  _jsxs("div", {
+                    children: [
+                      _jsx("label", { className: "block text-xs font-semibold text-[#202223] mb-1", children: "Tracking Number" }),
+                      _jsx("input", {
+                        type: "text",
+                        value: fulfillTracking,
+                        onChange: (e) => setFulfillTracking(e.target.value),
+                        placeholder: fulfillCarrier.includes("FedEx") ? "0987654321" : "RM987654321GB",
+                        className: "w-full border border-[#c9cccf] rounded p-2 text-xs",
+                      }),
+                    ],
+                  }),
+                ],
+              }),
+
+>>>>>>> Stashed changes
               _jsxs("div", {
                 className: "flex justify-end gap-2 pt-3 border-t",
                 children: [
                   _jsx("button", {
                     onClick: () => setShowFulfillModal(false),
+<<<<<<< Updated upstream
                     className: "px-4 py-2 text-xs font-medium text-[#202223] bg-white border border-[#c9cccf] rounded hover:bg-[#f6f6f7] cursor-pointer",
+=======
+                    className: "px-4 py-2 text-xs font-medium text-[#202223] bg-white border border-[#c9cccf] rounded hover:bg-[#f6f6f7]",
+>>>>>>> Stashed changes
                     children: "Cancel",
                   }),
                   _jsx("button", {
                     onClick: handleCreateFulfillment,
+<<<<<<< Updated upstream
                     disabled: isFulfilling || !isPaid,
                     className: `px-4 py-2 text-xs font-semibold text-white rounded shadow-sm transition-colors ${
                       !isPaid || isFulfilling
@@ -2351,6 +2526,11 @@ function StandardOrderDetail({ id }) {
                       : fulfillIncludeLabel
                         ? "Confirm & Generate Label"
                         : "Confirm",
+=======
+                    disabled: isFulfilling,
+                    className: "px-4 py-2 text-xs font-semibold text-white bg-[#008060] hover:bg-[#006e52] rounded shadow-sm",
+                    children: isFulfilling ? "Fulfilling..." : "Confirm & Fulfill",
+>>>>>>> Stashed changes
                   }),
                 ],
               }),

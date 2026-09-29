@@ -158,6 +158,7 @@ export default function AvatarBox({ checked }: { checked?: boolean }) {
   });
 
   // 0.7 Purge Vite dev cache in backend to prevent serving old cached chunks
+<<<<<<< Updated upstream
   const possibleViteCacheDirs = [
     path.resolve(__dirname, '../../../../node_modules/.vite'),
     path.resolve(__dirname, '../../../node_modules/.vite'),
@@ -171,6 +172,15 @@ export default function AvatarBox({ checked }: { checked?: boolean }) {
       } catch (e) {
         console.warn('[PEPTECH WARN] Could not clear .vite cache:', e.message);
       }
+=======
+  const viteCacheDir = path.resolve(__dirname, '../../node_modules/.vite');
+  if (fs.existsSync(viteCacheDir)) {
+    try {
+      fs.rmSync(viteCacheDir, { recursive: true, force: true });
+      console.log('[PEPTECH] Successfully cleared stale Vite dependency cache');
+    } catch (e) {
+      console.warn('[PEPTECH WARN] Could not clear .vite cache:', e.message);
+>>>>>>> Stashed changes
     }
   }
 
@@ -399,6 +409,7 @@ export const Thumbnail = ({ src, alt, size = "base" }: ThumbnailProps) => {
     }
   }
 
+<<<<<<< Updated upstream
   // 1. Note on Order Detail & Order List:
   // We strictly preserve native Medusa 2.0 order-detail and order-list chunks so that:
   // - Native <OrderFulfillmentSection /> and actions are preserved.
@@ -1441,3 +1452,74 @@ export {
   }
 }
 
+=======
+  // 1. Update Order Detail
+  const detailPath = path.resolve(__dirname, 'OrderDetail.jsx');
+  const subDetailPath = path.resolve(__dirname, 'SubscriptionDetail.jsx');
+
+  if (fs.existsSync(detailPath)) {
+    const detailSource = fs.readFileSync(detailPath, 'utf8');
+
+    let subDetailSource = '';
+    if (fs.existsSync(subDetailPath)) {
+      subDetailSource = fs.readFileSync(subDetailPath, 'utf8');
+    }
+
+    const importRegex = /^import\s+[^;]+;\s*$/gm;
+
+    // Header imports (all hoisted to the very top)
+    const headerImports = [
+      'import { useState, useEffect, useMemo } from "react";',
+      'import { useParams, Link, useNavigate } from "react-router-dom";',
+      'import { useOrder, useUpdateOrder } from "./chunk-CHQR6GOM.mjs";',
+      'import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";',
+    ].join('\n');
+
+    // Strip imports from both files
+    const cleanSubDetail = subDetailSource
+      .replace(importRegex, '')
+      .replace(/export\s+default\s+[^;]+;\s*/g, '')
+      .replace(/export\s+function\s+SubscriptionDetail/g, 'function SubscriptionDetail')
+      .trim();
+
+    const cleanDetail = detailSource
+      .replace(importRegex, '')
+      .replace(/const DARK_MODE_CSS = `[\s\S]*?`;\r?\n?/, '')
+      .replace('export { OrderDetail as Component };', '')
+      .trim();
+
+    const exportSuffix = `
+const OrderDetailBreadcrumb = () => "Order / Subscription";
+const orderLoader = async () => null;
+const seo = () => ({ title: "Details - PEPTECH" });
+
+export {
+  OrderDetail as Component,
+  OrderDetailBreadcrumb as Breadcrumb,
+  orderLoader as loader,
+  seo
+};
+`;
+
+    const combined = [
+      headerImports,
+      cleanSubDetail,
+      cleanDetail,
+      exportSuffix
+    ].filter(Boolean).join('\n\n');
+
+    const targetDetailFile = path.resolve(distDir, 'order-detail-D5MN4DFC.mjs');
+    fs.writeFileSync(targetDetailFile, combined, 'utf8');
+    console.log('[PEPTECH] Successfully updated order-detail-D5MN4DFC.mjs with Subscription Detail support');
+  }
+
+  // 2. Update Order List
+  const listPath = path.resolve(__dirname, 'OrderList.jsx');
+  if (fs.existsSync(listPath)) {
+    const listSource = fs.readFileSync(listPath, 'utf8');
+    const targetListFile = path.resolve(distDir, 'order-list-XGUCTQTG.mjs');
+    fs.writeFileSync(targetListFile, listSource, 'utf8');
+    console.log('[PEPTECH] Successfully updated order-list-XGUCTQTG.mjs');
+  }
+}
+>>>>>>> Stashed changes
