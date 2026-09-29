@@ -57,22 +57,24 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let isMounted = true
     const savedToken = typeof window !== "undefined" ? localStorage.getItem(TOKEN_KEY) : null
-    if (savedToken) {
-      // Safety timeout: if restoring session takes more than 3.5s, drop spinner and show portal
-      const fallbackTimer = setTimeout(() => {
-        if (isMounted) {
-          setIsLoading(false)
-        }
-      }, 3500)
-
-      fetchCustomer(savedToken).finally(() => {
-        clearTimeout(fallbackTimer)
-      })
-    } else {
+    if (!savedToken) {
       setIsLoading(false)
+      return
     }
+
+    const fallbackTimer = setTimeout(() => {
+      if (isMounted) {
+        setIsLoading(false)
+      }
+    }, 3500)
+
+    fetchCustomer(savedToken).finally(() => {
+      clearTimeout(fallbackTimer)
+    })
+
     return () => {
       isMounted = false
+      clearTimeout(fallbackTimer)
     }
   }, [fetchCustomer])
 

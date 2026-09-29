@@ -91,7 +91,22 @@ module.exports = defineConfig({
         ],
       },
     },
-    { resolve: "./backend/apps/backend/src/modules/peptech-commerce", options: { databaseUrl: process.env.STRIPE_COMMERCE_DATABASE_URL || rawDbUrl } },
+    {
+      resolve: "@medusajs/medusa/file",
+      options: {
+        providers: [
+          {
+            resolve: "@medusajs/medusa/file-local",
+            id: "local",
+            options: {
+              upload_dir: "static",
+              backend_url: `${process.env.MEDUSA_BACKEND_URL || "http://localhost:9000"}/static`,
+            },
+          },
+        ],
+      },
+    },
+    { key: "peptechCommerce", resolve: "./backend/apps/backend/src/modules/peptech-commerce", options: { databaseUrl: process.env.STRIPE_COMMERCE_DATABASE_URL || rawDbUrl } },
     ...stripeModules(),
     ...commerceRuntimeModules(),
     ...commerceEmailModules(),

@@ -98,7 +98,7 @@ module.exports = defineConfig({
         ],
       },
     },
-    { resolve: "./src/modules/peptech-commerce", options: { databaseUrl: process.env.STRIPE_COMMERCE_DATABASE_URL || dbUrl } },
+    { key: "peptechCommerce", resolve: "./src/modules/peptech-commerce", options: { databaseUrl: process.env.STRIPE_COMMERCE_DATABASE_URL || dbUrl } },
     ...stripeModules(),
     ...commerceRuntimeModules(),
     ...commerceEmailModules(),

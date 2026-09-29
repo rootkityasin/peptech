@@ -381,11 +381,15 @@ export function prefetchProducts(): Promise<StoreProduct[]> {
  * Returns synchronous cache immediately on mount if available, avoiding hydration delay and duplicate fetches.
  */
 export function useLiveProducts(initialFallback: CatalogProduct[] = CATALOG_PRODUCTS) {
-  const hasValidCache = cachedCatalogProducts !== null && Date.now() - lastFetchedTimestamp < CACHE_TTL_MS
-  const [products, setProducts] = useState<CatalogProduct[]>(
-    hasValidCache && cachedCatalogProducts ? cachedCatalogProducts : []
-  )
-  const [isLoading, setIsLoading] = useState<boolean>(!hasValidCache)
+  const [products, setProducts] = useState<CatalogProduct[]>(() => {
+    if (cachedCatalogProducts !== null && typeof Date !== "undefined" && Date.now() - lastFetchedTimestamp < CACHE_TTL_MS) {
+      return cachedCatalogProducts
+    }
+    return []
+  })
+  const [isLoading, setIsLoading] = useState<boolean>(() => {
+    return !(cachedCatalogProducts !== null && typeof Date !== "undefined" && Date.now() - lastFetchedTimestamp < CACHE_TTL_MS)
+  })
 
   useEffect(() => {
     let isMounted = true
