@@ -399,1062 +399,13 @@ export const Thumbnail = ({ src, alt, size = "base" }: ThumbnailProps) => {
     }
   }
 
-  // 1. Update Order Detail
-  const detailPath = path.resolve(__dirname, 'OrderDetail.jsx');
-  const subDetailPath = path.resolve(__dirname, 'SubscriptionDetail.jsx');
-
-  if (fs.existsSync(detailPath)) {
-    const detailSource = fs.readFileSync(detailPath, 'utf8');
-
-    let subDetailSource = '';
-    if (fs.existsSync(subDetailPath)) {
-      subDetailSource = fs.readFileSync(subDetailPath, 'utf8');
-    }
-
-    const importRegex = /^import\s+[^;]+;\s*$/gm;
-
-    // Header imports (all hoisted to the very top)
-    const headerImports = [
-      'import { useState, useEffect, useMemo } from "react";',
-      'import { useParams, Link, useNavigate } from "react-router-dom";',
-      'import { useOrder, useUpdateOrder } from "./chunk-CHQR6GOM.mjs";',
-      'import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";',
-    ].join('\n');
-
-    // Strip imports from both files
-    const cleanSubDetail = subDetailSource
-      .replace(importRegex, '')
-      .replace(/export\s+default\s+[^;]+;\s*/g, '')
-      .replace(/export\s+function\s+SubscriptionDetail/g, 'function SubscriptionDetail')
-      .trim();
-
-    const cleanDetail = detailSource
-      .replace(importRegex, '')
-      .replace(/const DARK_MODE_CSS = `[\s\S]*?`;\r?\n?/, '')
-      .replace('export { OrderDetail as Component };', '')
-      .trim();
-
-    const exportSuffix = `
-const OrderDetailBreadcrumb = () => "Order / Subscription";
-const orderLoader = async () => null;
-const seo = () => ({ title: "Details - PEPTECH" });
-
-export {
-  OrderDetail as Component,
-  OrderDetailBreadcrumb as Breadcrumb,
-  orderLoader as loader,
-  seo
-};
-`;
-
-    const combined = [
-      headerImports,
-      cleanSubDetail,
-      cleanDetail,
-      exportSuffix
-    ].filter(Boolean).join('\n\n');
-
-    const targetDetailFile = path.resolve(distDir, 'order-detail-D5MN4DFC.mjs');
-    fs.writeFileSync(targetDetailFile, combined, 'utf8');
-    console.log('[PEPTECH] Successfully updated order-detail-D5MN4DFC.mjs with Subscription Detail support');
-  }
-
-  // 2. Update Order List
-  const listPath = path.resolve(__dirname, 'OrderList.jsx');
-  if (fs.existsSync(listPath)) {
-    const listSource = fs.readFileSync(listPath, 'utf8');
-    const targetListFile = path.resolve(distDir, 'order-list-XGUCTQTG.mjs');
-    fs.writeFileSync(targetListFile, listSource, 'utf8');
-    console.log('[PEPTECH] Successfully updated order-list-XGUCTQTG.mjs');
-  }
-
-  // 3. Update Order Create Fulfillment Focus Modal
-  const fulfillmentChunkFile = path.resolve(distDir, 'order-create-fulfillment-IF6OCW3B.mjs');
-  if (fs.existsSync(fulfillmentChunkFile)) {
-    const royalMailModalJs = `import { RouteFocusModal, useRouteModal } from "./chunk-GXJ5J364.mjs";
-import { useOrder } from "./chunk-CHQR6GOM.mjs";
-import { useParams, useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
-import { Button, Input, Heading, Text, Badge, toast } from "@medusajs/ui";
-import { jsx as jsx2, jsxs as jsxs2 } from "react/jsx-runtime";
-
-function downloadPdf(base64Data, filename) {
-  if (!base64Data) return;
-  try {
-    const cleanBase64 = String(base64Data || "").replace("data:application/pdf;base64,", "").trim();
-    const byteCharacters = atob(cleanBase64);
-    const byteNumbers = new Array(byteCharacters.length);
-    for (let i = 0; i < byteCharacters.length; i++) {
-      byteNumbers[i] = byteCharacters.charCodeAt(i);
-    }
-    const byteArray = new Uint8Array(byteNumbers);
-    const blob = new Blob([byteArray], { type: "application/pdf" });
-    const blobUrl = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = blobUrl;
-    link.download = filename || "Royal-Mail-Label.pdf";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
-  } catch (e) {
-    console.error("PDF Download Error:", e);
-  }
-}
-
-function openPdfPrint(base64Data) {
-  if (!base64Data) return;
-  try {
-    const cleanBase64 = String(base64Data || "").replace("data:application/pdf;base64,", "").trim();
-    const byteCharacters = atob(cleanBase64);
-    const byteNumbers = new Array(byteCharacters.length);
-    for (let i = 0; i < byteCharacters.length; i++) {
-      byteNumbers[i] = byteCharacters.charCodeAt(i);
-    }
-    const byteArray = new Uint8Array(byteNumbers);
-    const blob = new Blob([byteArray], { type: "application/pdf" });
-    const blobUrl = URL.createObjectURL(blob);
-    const win = window.open(blobUrl, "_blank");
-    if (win) win.focus();
-  } catch (e) {
-    console.error("PDF Print Error:", e);
-  }
-}
-
-function OrderCreateFulfillment() {
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const { handleSuccess } = useRouteModal();
-  const { order, isLoading } = useOrder(id, {
-    fields: "*items,*shipping_address,*shipping_methods,metadata,status,payment_status",
-  });
-
-  const [serviceCode, setServiceCode] = useState("AUTO");
-  const [selectedProfileId, setSelectedProfileId] = useState("");
-  const [profiles, setProfiles] = useState([
-    { id: "pen-set", name: "Complete Pen Set Box", format: "smallParcel", formatLabel: "Small Parcel", weight: 240, h: 80, w: 160, d: 220 },
-    { id: "vials-letter", name: "Freeze-Dried Vials Box", format: "largeLetter", formatLabel: "Large Letter", weight: 95, h: 24, w: 125, d: 185 },
-    { id: "refill-letter", name: "Refill Cartridge Box", format: "largeLetter", formatLabel: "Large Letter", weight: 110, h: 25, w: 120, d: 160 },
-    { id: "multi-parcel", name: "Multi-Item / Cold-Chain Kit", format: "mediumParcel", formatLabel: "Medium Parcel", weight: 520, h: 140, w: 220, d: 300 }
-  ]);
-  const [weightInGrams, setWeightInGrams] = useState(240);
-  const [packageFormat, setPackageFormat] = useState("smallParcel");
-  const [dimHeight, setDimHeight] = useState(80);
-  const [dimWidth, setDimWidth] = useState(160);
-  const [dimDepth, setDimDepth] = useState(220);
-  const [includeLabel, setIncludeLabel] = useState(true);
-
-  useEffect(() => {
-    fetch("/admin/custom/packaging-profiles", { credentials: "include" })
-      .then((r) => r.json())
-      .then((d) => {
-        if (Array.isArray(d.profiles) && d.profiles.length > 0) {
-          setProfiles(
-            d.profiles.map((p) => ({
-              id: p.id,
-              name: p.name,
-              format: p.packageFormatIdentifier,
-              formatLabel: p.packageFormatLabel || p.packageFormatIdentifier,
-              weight: p.weightInGrams,
-              h: p.dimensions?.heightInMms || 80,
-              w: p.dimensions?.widthInMms || 160,
-              d: p.dimensions?.depthInMms || 220,
-            }))
-          );
-        }
-      })
-      .catch(() => {});
-  }, []);
-
-  const handleProfileChange = (pid) => {
-    setSelectedProfileId(pid);
-    if (!pid || pid === "custom") return;
-    const target = profiles.find((p) => p.id === pid);
-    if (target) {
-      setWeightInGrams(target.weight);
-      setPackageFormat(target.format);
-      setDimHeight(target.h);
-      setDimWidth(target.w);
-      setDimDepth(target.d);
-    }
-  };
-
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
-  const [successData, setSuccessData] = useState(null);
-
-  if (isLoading || !order) {
-    return jsx2(RouteFocusModal, {
-      children: jsx2("div", {
-        className: "p-8 text-center text-sm text-[#5c5f62]",
-        children: "Loading order details...",
-      }),
-    });
-  }
-
-  const shipping = order.shipping_address || {};
-  const countryCode = String(shipping.country_code || order.metadata?.shipping_country_code || "GB").toUpperCase();
-  const isUk = countryCode === "GB";
-  const paymentStatus = order.metadata?.payment_status || (order.status === "completed" ? "paid" : "unpaid");
-  const isPaid = paymentStatus === "paid" || order.status === "completed";
-
-  const handleCreate = async () => {
-    setIsSubmitting(true);
-    setErrorMsg("");
-
-    try {
-      const response = await fetch("/admin/custom/fulfillment", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          orderId: order.id,
-          serviceCode,
-          weightInGrams: Number(weightInGrams) || 240,
-          packageFormatIdentifier: packageFormat,
-          dimensions: {
-            heightInMms: Number(dimHeight) || 80,
-            widthInMms: Number(dimWidth) || 160,
-            depthInMms: Number(dimDepth) || 220,
-          },
-          includeLabelInResponse: Boolean(includeLabel),
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to create shipment in Royal Mail Click & Drop");
-      }
-
-      setSuccessData(data);
-      if (toast) {
-        toast.success("Shipment Created", {
-          description: \`Royal Mail tracking: \${data.trackingNumber} (C&D #\${data.orderIdentifier})\`,
-        });
-      }
-    } catch (err) {
-      setErrorMsg(err.message || "Fulfillment creation error");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleClose = () => {
-    if (handleSuccess) {
-      handleSuccess();
-    } else {
-      navigate(-1);
-    }
-  };
-
-  return jsxs2(RouteFocusModal, {
-    children: [
-      jsx2(RouteFocusModal.Header, {
-        children: jsxs2("div", {
-          className: "flex items-center justify-between w-full pr-6",
-          children: [
-            jsxs2("div", {
-              className: "flex items-center gap-3",
-              children: [
-                jsx2("div", {
-                  className: "flex items-center justify-center w-8 h-8 rounded-md bg-[#0B1F3A] text-[#00C5A0] font-bold text-xs",
-                  children: "RM",
-                }),
-                jsxs2("div", {
-                  children: [
-                    jsxs2("div", {
-                      className: "flex items-center gap-2",
-                      children: [
-                        jsx2(Heading, {
-                          level: "h2",
-                          className: "text-base font-semibold text-[#202223]",
-                          children: "Royal Mail Click & Drop Fulfillment",
-                        }),
-                        jsx2(Badge, {
-                          color: isPaid ? "green" : "orange",
-                          size: "small",
-                          children: isPaid ? "Paid — Ready to Dispatch" : "Payment Required",
-                        }),
-                      ],
-                    }),
-                    jsxs2(Text, {
-                      size: "small",
-                      className: "text-[#5c5f62]",
-                      children: [
-                        "Order #",
-                        order.display_id || order.id,
-                        " • Destination: ",
-                        shipping.city || "Cambridge",
-                        ", ",
-                        countryCode,
-                        isUk ? " 🇬🇧" : " 🌐",
-                      ],
-                    }),
-                  ],
-                }),
-              ],
-            }),
-          ],
-        }),
-      }),
-
-      jsx2(RouteFocusModal.Body, {
-        className: "p-6 max-w-2xl mx-auto space-y-6 overflow-y-auto",
-        children: successData ? (
-          jsxs2("div", {
-            className: "p-6 bg-[#f0fdf4] border border-[#bbf7d0] rounded-xl space-y-4 text-center",
-            children: [
-              jsx2("div", { className: "text-4xl", children: "📦" }),
-              jsx2(Heading, { level: "h2", className: "text-lg font-bold text-[#15803d]", children: "Royal Mail Shipment Created!" }),
-              jsxs2("div", {
-                className: "p-4 bg-white rounded-lg border border-[#bbf7d0] text-xs space-y-2 text-left",
-                children: [
-                  jsxs2("div", { className: "flex justify-between", children: [jsx2("span", { className: "text-[#5c5f62]", children: "Tracking Number:" }), jsx2("span", { className: "font-mono font-bold text-[#0b1f3a]", children: successData.trackingNumber })] }),
-                  jsxs2("div", { className: "flex justify-between", children: [jsx2("span", { className: "text-[#5c5f62]", children: "Click & Drop Order ID:" }), jsxs2("span", { className: "font-mono font-semibold text-[#16a6a3]", children: ["#", successData.orderIdentifier] })] }),
-                  jsxs2("div", { className: "flex justify-between", children: [jsx2("span", { className: "text-[#5c5f62]", children: "Carrier & Service:" }), jsx2("span", { className: "font-medium text-[#202223]", children: successData.carrier })] }),
-                ],
-              }),
-              jsxs2("div", {
-                className: "flex items-center justify-center gap-3 pt-2",
-                children: [
-                  jsx2(Button, {
-                    size: "small",
-                    variant: "primary",
-                    onClick: () => openPdfPrint(successData.labelBase64),
-                    children: "🖨️ Print 6x4 Label",
-                  }),
-                  jsx2(Button, {
-                    size: "small",
-                    variant: "secondary",
-                    onClick: () => downloadPdf(successData.labelBase64, \`Royal-Mail-Label-\${order.display_id || order.id}.pdf\`),
-                    children: "⬇️ Download PDF",
-                  }),
-                ],
-              }),
-            ],
-          })
-        ) : (
-          jsxs2("div", {
-            className: "space-y-4",
-            children: [
-              !isPaid &&
-                jsx2("div", {
-                  className: "p-4 bg-amber-50 border-l-4 border-amber-500 rounded text-xs text-amber-900",
-                  children: "⚠️ Order payment status is currently unpaid. Mark order as paid before generating postage.",
-                }),
-
-              // Destination summary
-              jsxs2("div", {
-                className: "p-4 bg-[#fafbfb] rounded-lg border border-[#e1e3e5] text-xs space-y-1.5",
-                children: [
-                  jsx2("div", { className: "font-semibold text-[#5c5f62]", children: "Delivery Address" }),
-                  jsxs2("div", { className: "font-bold text-[#202223]", children: [\`\${shipping.first_name || ""} \${shipping.last_name || ""}\`.trim() || "Customer", shipping.company ? \` (\${shipping.company})\` : ""] }),
-                  jsxs2("div", { className: "text-[#5c5f62]", children: [shipping.address_1, shipping.city ? \`, \${shipping.city}\` : "", shipping.postal_code ? \` \${shipping.postal_code}\` : "", \`, \${countryCode}\`] }),
-                ],
-              }),
-
-              // Items to fulfill
-              jsxs2("div", {
-                className: "border border-[#e1e3e5] rounded-lg divide-y divide-[#e1e3e5] overflow-hidden text-xs",
-                children: [
-                  jsx2("div", { className: "p-2.5 bg-[#f6f6f7] font-semibold text-[#5c5f62]", children: "Package Contents (Laboratory Peptides RUO)" }),
-                  (order.items || []).map((it) =>
-                    jsxs2("div", {
-                      className: "p-3 flex items-center justify-between",
-                      children: [
-                        jsxs2("div", {
-                          children: [
-                            jsx2("div", { className: "font-semibold text-[#202223]", children: it.title }),
-                            jsxs2("div", { className: "text-[11px] text-[#8c9196]", children: ["SKU: ", it.variant_sku || it.metadata?.sku || "PEP-LAB-01"] }),
-                          ],
-                        }),
-                        jsxs2("div", { className: "font-bold text-[#008060]", children: ["Qty: ", it.quantity] }),
-                      ],
-                    }, it.id)
-                  ),
-                ],
-              }),
-
-              // Service Code
-              jsxs2("div", {
-                children: [
-                  jsx2("label", { className: "block text-xs font-semibold text-[#202223] mb-1", children: "Royal Mail Service" }),
-                  jsxs2("select", {
-                    value: serviceCode,
-                    onChange: (e) => setServiceCode(e.target.value),
-                    className: "w-full border border-[#c9cccf] rounded-md p-2 text-xs bg-white text-[#202223] font-medium",
-                    children: [
-                      jsx2("option", { value: "AUTO", children: "AUTO — Default Account Rules (Recommended)" }),
-                      jsx2("option", { value: "OLP1", children: "OLP1 — Royal Mail 24 (Online Postage)" }),
-                      jsx2("option", { value: "OLP2", children: "OLP2 — Royal Mail 48 (Online Postage)" }),
-                      jsx2("option", { value: "TPN", children: "TPN — Royal Mail Tracked 24 (OBA Contract)" }),
-                      jsx2("option", { value: "TPS", children: "TPS — Royal Mail Tracked 48 (OBA Contract)" }),
-                      jsx2("option", { value: "TRM", children: "TRM — Royal Mail Tracked 24 with Signature (OBA)" }),
-                      jsx2("option", { value: "SD1", children: "SD1 — Special Delivery Guaranteed by 1pm" }),
-                      jsx2("option", { value: "OTA", children: "OTA — Royal Mail International Tracked (OBA)" }),
-                      jsx2("option", { value: "OTC", children: "OTC — Royal Mail International Tracked & Signed (OBA)" }),
-                      jsx2("option", { value: "OLS", children: "OLS — Royal Mail International Signed (OBA)" }),
-                    ],
-                  }),
-                ],
-              }),
-
-              // Packaging Profile Preset (Black Theme)
-              jsxs2("div", {
-                className: "bg-black text-white p-3.5 rounded-lg border border-neutral-800 space-y-2 shadow-sm",
-                children: [
-                  jsx2("label", { className: "block text-xs font-semibold text-white mb-1", children: "Packaging Profile" }),
-                  jsxs2("select", {
-                    value: selectedProfileId,
-                    onChange: (e) => handleProfileChange(e.target.value),
-                    className: "w-full border border-neutral-700 rounded-md p-2 text-xs bg-[#18181b] text-white font-medium focus:outline-none focus:border-[#00C5A0]",
-                    children: [
-                      jsx2("option", { value: "", className: "bg-[#18181b] text-neutral-300", children: "-- Choose a Packaging Profile (Optional) --" }),
-                      profiles.map((p) =>
-                        jsx2("option", {
-                          value: p.id,
-                          className: "bg-[#18181b] text-white",
-                          children: \`\${p.name} (\${p.weight}g • \${p.formatLabel || p.format} • \${p.h}×\${p.w}×\${p.d}mm)\`
-                        }, p.id)
-                      ),
-                      jsx2("option", { value: "custom", className: "bg-[#18181b] text-neutral-300", children: "Custom (Manual Entry)" })
-                    ]
-                  })
-                ]
-              }),
-
-              // Weight & Format
-              jsxs2("div", {
-                className: "grid grid-cols-2 gap-3",
-                children: [
-                  jsxs2("div", {
-                    children: [
-                      jsx2("label", { className: "block text-xs font-semibold text-[#202223] mb-1", children: "Gross Weight (grams)" }),
-                      jsx2(Input, {
-                        type: "number",
-                        value: weightInGrams,
-                        onChange: (e) => {
-                          setWeightInGrams(Math.max(1, parseInt(e.target.value, 10) || 1));
-                          setSelectedProfileId("custom");
-                        },
-                        placeholder: "240",
-                      }),
-                    ],
-                  }),
-                  jsxs2("div", {
-                    children: [
-                      jsx2("label", { className: "block text-xs font-semibold text-[#202223] mb-1", children: "Package Format" }),
-                      jsxs2("select", {
-                        value: packageFormat,
-                        onChange: (e) => {
-                          setPackageFormat(e.target.value);
-                          setSelectedProfileId("custom");
-                        },
-                        className: "w-full border border-[#c9cccf] rounded-md p-2 text-xs bg-white text-[#202223]",
-                        children: [
-                          jsx2("option", { value: "smallParcel", children: "Small Parcel (Cold-Chain Box)" }),
-                          jsx2("option", { value: "mediumParcel", children: "Medium Parcel" }),
-                          jsx2("option", { value: "largeLetter", children: "Large Letter (Vial Box)" }),
-                          jsx2("option", { value: "parcel", children: "Parcel" }),
-                          jsx2("option", { value: "largeParcel", children: "Large Parcel" }),
-                        ],
-                      }),
-                    ],
-                  }),
-                ],
-              }),
-
-              // Outer Dimensions
-              jsxs2("div", {
-                children: [
-                  jsx2("label", { className: "block text-xs font-semibold text-[#202223] mb-1", children: "Outer Dimensions (mm)" }),
-                  jsxs2("div", {
-                    className: "grid grid-cols-3 gap-2",
-                    children: [
-                      jsxs2("div", {
-                        children: [
-                          jsx2("span", { className: "text-[10px] text-[#5c5f62] block", children: "Height (H)" }),
-                          jsx2(Input, {
-                            type: "number",
-                            value: dimHeight,
-                            onChange: (e) => {
-                              setDimHeight(Math.max(1, parseInt(e.target.value, 10) || 1));
-                              setSelectedProfileId("custom");
-                            },
-                            placeholder: "80",
-                          }),
-                        ],
-                      }),
-                      jsxs2("div", {
-                        children: [
-                          jsx2("span", { className: "text-[10px] text-[#5c5f62] block", children: "Width (W)" }),
-                          jsx2(Input, {
-                            type: "number",
-                            value: dimWidth,
-                            onChange: (e) => {
-                              setDimWidth(Math.max(1, parseInt(e.target.value, 10) || 1));
-                              setSelectedProfileId("custom");
-                            },
-                            placeholder: "160",
-                          }),
-                        ],
-                      }),
-                      jsxs2("div", {
-                        children: [
-                          jsx2("span", { className: "text-[10px] text-[#5c5f62] block", children: "Depth (D)" }),
-                          jsx2(Input, {
-                            type: "number",
-                            value: dimDepth,
-                            onChange: (e) => {
-                              setDimDepth(Math.max(1, parseInt(e.target.value, 10) || 1));
-                              setSelectedProfileId("custom");
-                            },
-                            placeholder: "220",
-                          }),
-                        ],
-                      }),
-                    ],
-                  }),
-                ],
-              }),
-
-              // Include thermal label checkbox
-              jsxs2("label", {
-                className: "flex items-center gap-2 text-xs text-[#202223] cursor-pointer pt-1",
-                children: [
-                  jsx2("input", {
-                    type: "checkbox",
-                    checked: includeLabel,
-                    onChange: (e) => setIncludeLabel(e.target.checked),
-                    className: "rounded text-[#008060]",
-                  }),
-                  jsx2("span", { children: "Generate 6x4 thermal PDF label in API response" }),
-                ],
-              }),
-
-              errorMsg &&
-                jsxs2("div", {
-                  className: "p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-xs",
-                  children: [jsx2("strong", { children: "Error: " }), errorMsg],
-                }),
-            ],
-          })
-        ),
-      }),
-
-      jsx2(RouteFocusModal.Footer, {
-        children: jsxs2("div", {
-          className: "flex items-center justify-end gap-x-2",
-          children: [
-            jsx2(Button, {
-              size: "small",
-              variant: "secondary",
-              onClick: handleClose,
-              children: successData ? "Close" : "Cancel",
-            }),
-            !successData &&
-              jsx2(Button, {
-                size: "small",
-                variant: "primary",
-                disabled: isSubmitting || !isPaid,
-                onClick: handleCreate,
-                children: isSubmitting
-                  ? includeLabel
-                    ? "Generating Label in Click & Drop..."
-                    : "Creating Shipment in Click & Drop..."
-                  : includeLabel
-                    ? "Confirm & Generate Label"
-                    : "Confirm",
-              }),
-          ],
-        }),
-      }),
-    ],
-  });
-}
-
-export { OrderCreateFulfillment as Component };
-`;
-    fs.writeFileSync(fulfillmentChunkFile, royalMailModalJs, 'utf8');
-    console.log('[PEPTECH] Successfully updated order-create-fulfillment-IF6OCW3B.mjs with Royal Mail Click & Drop modal');
-  }
-
-  // 4. Create Settings Packaging Profiles List Chunk
-  const packagingProfilesChunkFile = path.resolve(distDir, 'packaging-profiles-list-PEPTECH.mjs');
-  const packagingProfilesJs = `import { Container, Heading, Text, Button, Input, Label, Badge, Table, Drawer, toast } from "@medusajs/ui";
-import { useState, useEffect } from "react";
-import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
-
-const DEFAULT_PACKAGING_PROFILES = [
-  { id: "pen-set", name: "Complete Pen Set Box", packageFormatIdentifier: "smallParcel", packageFormatLabel: "Small Parcel", weightInGrams: 240, dimensions: { heightInMms: 80, widthInMms: 160, depthInMms: 220 }, isSystem: true },
-  { id: "vials-letter", name: "Freeze-Dried Vials Box", packageFormatIdentifier: "largeLetter", packageFormatLabel: "Large Letter", weightInGrams: 95, dimensions: { heightInMms: 24, widthInMms: 125, depthInMms: 185 }, isSystem: true },
-  { id: "refill-letter", name: "Refill Cartridge Box", packageFormatIdentifier: "largeLetter", packageFormatLabel: "Large Letter", weightInGrams: 110, dimensions: { heightInMms: 25, widthInMms: 120, depthInMms: 160 }, isSystem: true },
-  { id: "multi-parcel", name: "Multi-Item / Cold-Chain Kit", packageFormatIdentifier: "mediumParcel", packageFormatLabel: "Medium Parcel", weightInGrams: 520, dimensions: { heightInMms: 140, widthInMms: 220, depthInMms: 300 }, isSystem: true }
-];
-
-function PackagingProfilesPage() {
-  const [profiles, setProfiles] = useState(DEFAULT_PACKAGING_PROFILES);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [editingId, setEditingId] = useState(null);
-
-  const [name, setName] = useState("");
-  const [packageFormat, setPackageFormat] = useState("smallParcel");
-  const [weight, setWeight] = useState(240);
-  const [h, setH] = useState(80);
-  const [w, setW] = useState(160);
-  const [d, setD] = useState(220);
-  const [isSaving, setIsSaving] = useState(false);
-
-  const loadProfiles = async () => {
-    setIsLoading(true);
-    try {
-      const res = await fetch("/admin/custom/packaging-profiles", { credentials: "include" });
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data.profiles) && data.profiles.length > 0) {
-          setProfiles(data.profiles);
-          try { localStorage.setItem("peptech_packaging_profiles", JSON.stringify(data.profiles)); } catch {}
-          return;
-        }
-      }
-    } catch {}
-    try {
-      const local = localStorage.getItem("peptech_packaging_profiles");
-      if (local) {
-        const parsed = JSON.parse(local);
-        if (Array.isArray(parsed) && parsed.length > 0) setProfiles(parsed);
-      }
-    } catch {}
-    setIsLoading(false);
-  };
-
-  useEffect(() => {
-    loadProfiles();
-  }, []);
-
-  const openCreate = () => {
-    setEditingId(null);
-    setName("");
-    setPackageFormat("smallParcel");
-    setWeight(240);
-    setH(80);
-    setW(160);
-    setD(220);
-    setIsDrawerOpen(true);
-  };
-
-  const startEdit = (p) => {
-    setEditingId(p.id);
-    setName(p.name);
-    setPackageFormat(p.packageFormatIdentifier);
-    setWeight(p.weightInGrams);
-    setH(p.dimensions?.heightInMms || 80);
-    setW(p.dimensions?.widthInMms || 160);
-    setD(p.dimensions?.depthInMms || 220);
-    setIsDrawerOpen(true);
-  };
-
-  const closeDrawer = () => {
-    setIsDrawerOpen(false);
-    setEditingId(null);
-    setName("");
-    setPackageFormat("smallParcel");
-    setWeight(240);
-    setH(80);
-    setW(160);
-    setD(220);
-  };
-
-  const handleSaveProfile = async (e) => {
-    e.preventDefault();
-    if (!name.trim()) {
-      if (toast) toast.error("Validation Error", { description: "Please enter a profile name." });
-      return;
-    }
-    setIsSaving(true);
-
-    try {
-      const payload = {
-        name: name.trim(),
-        packageFormatIdentifier: packageFormat,
-        weightInGrams: Number(weight) || 240,
-        dimensions: {
-          heightInMms: Number(h) || 80,
-          widthInMms: Number(w) || 160,
-          depthInMms: Number(d) || 220,
-        },
-      };
-
-      if (editingId) {
-        payload.id = editingId;
-      }
-
-      const res = await fetch("/admin/custom/packaging-profiles", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(payload),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || "Failed to save packaging profile.");
-      }
-
-      if (Array.isArray(data.profiles)) {
-        setProfiles(data.profiles);
-        try { localStorage.setItem("peptech_packaging_profiles", JSON.stringify(data.profiles)); } catch {}
-      }
-
-      if (toast) {
-        toast.success(editingId ? "Profile Updated" : "Profile Created", {
-          description: \`Successfully saved "\${name.trim()}".\`,
-        });
-      }
-      closeDrawer();
-    } catch (err) {
-      if (toast) {
-        toast.error("Error Saving Profile", {
-          description: err.message || "An unexpected error occurred.",
-        });
-      }
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleDeleteProfile = async (id, profileName) => {
-    if (!confirm(\`Are you sure you want to delete the packaging profile "\${profileName}"?\`)) {
-      return;
-    }
-
-    try {
-      const res = await fetch(\`/admin/custom/packaging-profiles?id=\${encodeURIComponent(id)}\`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || "Failed to delete packaging profile.");
-      }
-
-      if (Array.isArray(data.profiles)) {
-        setProfiles(data.profiles);
-        try { localStorage.setItem("peptech_packaging_profiles", JSON.stringify(data.profiles)); } catch {}
-      }
-      if (editingId === id) {
-        closeDrawer();
-      }
-      if (toast) {
-        toast.success("Profile Deleted", {
-          description: \`Deleted "\${profileName}".\`,
-        });
-      }
-    } catch (err) {
-      if (toast) {
-        toast.error("Error Deleting Profile", {
-          description: err.message || "Could not delete profile.",
-        });
-      }
-    }
-  };
-
-  const handleResetDefaults = async () => {
-    if (!confirm("Reset packaging profiles back to PEPTECH standard factory defaults?")) return;
-    setIsLoading(true);
-    try {
-      const res = await fetch(\`/admin/custom/packaging-profiles?action=reset\`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-      const data = await res.json();
-      if (res.ok && Array.isArray(data.profiles)) {
-        setProfiles(data.profiles);
-        try { localStorage.setItem("peptech_packaging_profiles", JSON.stringify(data.profiles)); } catch {}
-        closeDrawer();
-        if (toast) {
-          toast.success("Profiles Reset", {
-            description: "Packaging profiles reset to standard factory defaults.",
-          });
-        }
-      }
-    } catch (err) {
-      if (toast) {
-        toast.error("Reset Failed", {
-          description: err.message || "Failed to reset profiles.",
-        });
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  return _jsxs("div", {
-    className: "flex flex-col gap-y-3",
-    children: [
-      _jsxs(Container, {
-        className: "divide-y p-0",
-        children: [
-          _jsxs("div", {
-            className: "flex items-center justify-between px-6 py-4",
-            children: [
-              _jsxs("div", {
-                children: [
-                  _jsx(Heading, { children: "Packaging Profiles" }),
-                  _jsx(Text, {
-                    className: "text-ui-fg-subtle",
-                    size: "small",
-                    children: "Configure reusable box dimensions, gross weight presets, and Royal Mail formats"
-                  })
-                ]
-              }),
-              _jsxs("div", {
-                className: "flex items-center gap-x-2",
-                children: [
-                  _jsx(Button, {
-                    size: "small",
-                    variant: "secondary",
-                    onClick: handleResetDefaults,
-                    disabled: isLoading,
-                    children: "Reset to Defaults"
-                  }),
-                  _jsx(Button, {
-                    size: "small",
-                    variant: "secondary",
-                    onClick: loadProfiles,
-                    disabled: isLoading,
-                    children: "Refresh"
-                  }),
-                  _jsx(Button, {
-                    size: "small",
-                    variant: "primary",
-                    onClick: openCreate,
-                    children: "Create"
-                  })
-                ]
-              })
-            ]
-          }),
-
-          _jsxs(Table, {
-            children: [
-              _jsx(Table.Header, {
-                children: _jsxs(Table.Row, {
-                  children: [
-                    _jsx(Table.HeaderCell, { children: "Name" }),
-                    _jsx(Table.HeaderCell, { children: "Package Format" }),
-                    _jsx(Table.HeaderCell, { children: "Gross Weight" }),
-                    _jsx(Table.HeaderCell, { children: "Dimensions (H × W × D)" }),
-                    _jsx(Table.HeaderCell, { children: "Type" }),
-                    _jsx(Table.HeaderCell, { className: "text-right", children: "Actions" })
-                  ]
-                })
-              }),
-              _jsx(Table.Body, {
-                children: profiles.map((p) =>
-                  _jsxs(Table.Row, {
-                    children: [
-                      _jsx(Table.Cell, { className: "font-medium text-ui-fg-base", children: p.name }),
-                      _jsx(Table.Cell, {
-                        children: _jsx(Badge, { color: "blue", size: "2xsmall", children: p.packageFormatLabel || p.packageFormatIdentifier })
-                      }),
-                      _jsxs(Table.Cell, { className: "text-ui-fg-subtle", children: [p.weightInGrams, " g"] }),
-                      _jsxs(Table.Cell, {
-                        className: "text-ui-fg-subtle",
-                        children: [p.dimensions?.heightInMms || 80, " × ", p.dimensions?.widthInMms || 160, " × ", p.dimensions?.depthInMms || 220, " mm"]
-                      }),
-                      _jsx(Table.Cell, {
-                        children: p.isSystem
-                          ? _jsx(Badge, { color: "grey", size: "2xsmall", children: "Default Preset" })
-                          : _jsx(Badge, { color: "green", size: "2xsmall", children: "Custom" })
-                      }),
-                      _jsx(Table.Cell, {
-                        className: "text-right",
-                        children: _jsxs("div", {
-                          className: "flex items-center justify-end gap-x-2",
-                          children: [
-                            _jsx(Button, { size: "small", variant: "secondary", onClick: () => startEdit(p), children: "Edit" }),
-                            _jsx(Button, { size: "small", variant: "secondary", className: "text-ui-fg-error", onClick: () => handleDeleteProfile(p.id, p.name), children: "Delete" })
-                          ]
-                        })
-                      })
-                    ]
-                  }, p.id)
-                )
-              })
-            ]
-          })
-        ]
-      }),
-
-      _jsx(Drawer, {
-        open: isDrawerOpen,
-        onOpenChange: setIsDrawerOpen,
-        children: _jsxs(Drawer.Content, {
-          className: "flex flex-col",
-          children: [
-            _jsxs(Drawer.Header, {
-              children: [
-                _jsx(Drawer.Title, {
-                  asChild: true,
-                  children: _jsx(Heading, { children: editingId ? "Edit Packaging Profile" : "Create Packaging Profile" })
-                }),
-                _jsx(Drawer.Description, {
-                  asChild: true,
-                  children: _jsx(Text, {
-                    className: "text-ui-fg-subtle",
-                    size: "small",
-                    children: editingId ? "Update preset dimensions, packaging format, and gross weight." : "Add a custom packaging specification for Royal Mail fulfillment."
-                  })
-                })
-              ]
-            }),
-
-            _jsxs("form", {
-              onSubmit: handleSaveProfile,
-              className: "flex flex-1 flex-col justify-between overflow-y-auto",
-              children: [
-                _jsxs(Drawer.Body, {
-                  className: "flex flex-1 flex-col gap-y-4 p-6 overflow-y-auto",
-                  children: [
-                    _jsxs("div", {
-                      className: "flex flex-col gap-y-2",
-                      children: [
-                        _jsx(Label, { weight: "plus", size: "small", children: "Profile Name" }),
-                        _jsx(Input, {
-                          value: name,
-                          onChange: (e) => setName(e.target.value),
-                          placeholder: "e.g. 5x Vial Cold Pack Mailer",
-                          required: true,
-                          autoFocus: true
-                        })
-                      ]
-                    }),
-
-                    _jsxs("div", {
-                      className: "flex flex-col gap-y-2",
-                      children: [
-                        _jsx(Label, { weight: "plus", size: "small", children: "Royal Mail Package Format" }),
-                        _jsxs("select", {
-                          value: packageFormat,
-                          onChange: (e) => setPackageFormat(e.target.value),
-                          className: "w-full h-8 px-2 text-xs rounded-md border border-ui-border-base bg-ui-bg-field text-ui-fg-base focus:border-ui-border-interactive focus:outline-none",
-                          children: [
-                            _jsx("option", { value: "smallParcel", children: "Small Parcel (Cold-Chain Box)" }),
-                            _jsx("option", { value: "largeLetter", children: "Large Letter (Vial Box)" }),
-                            _jsx("option", { value: "mediumParcel", children: "Medium Parcel" }),
-                            _jsx("option", { value: "parcel", children: "Parcel" }),
-                            _jsx("option", { value: "largeParcel", children: "Large Parcel" })
-                          ]
-                        })
-                      ]
-                    }),
-
-                    _jsxs("div", {
-                      className: "flex flex-col gap-y-2",
-                      children: [
-                        _jsx(Label, { weight: "plus", size: "small", children: "Gross Weight (grams)" }),
-                        _jsx(Input, {
-                          type: "number",
-                          value: weight,
-                          onChange: (e) => setWeight(Math.max(1, parseInt(e.target.value, 10) || 1)),
-                          placeholder: "240",
-                          required: true
-                        })
-                      ]
-                    }),
-
-                    _jsxs("div", {
-                      className: "flex flex-col gap-y-2",
-                      children: [
-                        _jsx(Label, { weight: "plus", size: "small", children: "Outer Dimensions (H × W × D mm)" }),
-                        _jsxs("div", {
-                          className: "grid grid-cols-3 gap-2",
-                          children: [
-                            _jsxs("div", {
-                              children: [
-                                _jsx("span", { className: "text-[11px] text-ui-fg-muted mb-1 block", children: "Height (H)" }),
-                                _jsx(Input, {
-                                  type: "number",
-                                  value: h,
-                                  onChange: (e) => setH(Math.max(1, parseInt(e.target.value, 10) || 1)),
-                                  placeholder: "80",
-                                  required: true
-                                })
-                              ]
-                            }),
-                            _jsxs("div", {
-                              children: [
-                                _jsx("span", { className: "text-[11px] text-ui-fg-muted mb-1 block", children: "Width (W)" }),
-                                _jsx(Input, {
-                                  type: "number",
-                                  value: w,
-                                  onChange: (e) => setW(Math.max(1, parseInt(e.target.value, 10) || 1)),
-                                  placeholder: "160",
-                                  required: true
-                                })
-                              ]
-                            }),
-                            _jsxs("div", {
-                              children: [
-                                _jsx("span", { className: "text-[11px] text-ui-fg-muted mb-1 block", children: "Depth (D)" }),
-                                _jsx(Input, {
-                                  type: "number",
-                                  value: d,
-                                  onChange: (e) => setD(Math.max(1, parseInt(e.target.value, 10) || 1)),
-                                  placeholder: "220",
-                                  required: true
-                                })
-                              ]
-                            })
-                          ]
-                        })
-                      ]
-                    })
-                  ]
-                }),
-
-                _jsxs(Drawer.Footer, {
-                  children: [
-                    _jsx(Drawer.Close, {
-                      asChild: true,
-                      children: _jsx(Button, {
-                        variant: "secondary",
-                        size: "small",
-                        type: "button",
-                        children: "Cancel"
-                      })
-                    }),
-                    _jsx(Button, {
-                      variant: "primary",
-                      size: "small",
-                      type: "submit",
-                      isLoading: isSaving,
-                      disabled: isSaving || !name.trim(),
-                      children: editingId ? "Save Changes" : "Create Profile"
-                    })
-                  ]
-                })
-              ]
-            })
-          ]
-        })
-      })
-    ]
-  });
-}
-
-export {
-  PackagingProfilesPage as Component
-};
-`;
-  fs.writeFileSync(packagingProfilesChunkFile, packagingProfilesJs, 'utf8');
-  console.log('[PEPTECH] Successfully created packaging-profiles-list-PEPTECH.mjs');
-
-  // 5. Update Locations & Shipping LinksSection with Packaging Profiles link
+  // 1. Note on Order Detail & Order List:
+  // We strictly preserve native Medusa 2.0 order-detail and order-list chunks so that:
+  // - Native <OrderFulfillmentSection /> and actions are preserved.
+  // - Medusa's <LayoutComposer widgetsZonePrefix="order.details"> mounts custom widgets (like order-royal-mail-fulfillment.tsx).
+  console.log('[PEPTECH] Preserving native Medusa 2.0 Order Detail and Order List components.');
+
+  // 2. Update Locations & Shipping LinksSection with Packaging Profiles link
   const locationListFile = path.resolve(distDir, 'location-list-WQ7ZAUO7.mjs');
   if (fs.existsSync(locationListFile)) {
     let locJs = fs.readFileSync(locationListFile, 'utf8');
@@ -1478,40 +429,31 @@ export {
     }
   }
 
-  // 6. Register packaging-profiles route under locations in chunk-ZT6PMEES.mjs
-  const ztChunkFile = path.resolve(distDir, 'chunk-ZT6PMEES.mjs');
-  if (fs.existsSync(ztChunkFile)) {
-    let ztJs = fs.readFileSync(ztChunkFile, 'utf8');
-    const oldPattern = /\{\s*path:\s*"packaging-profiles"[\s\S]*?\},?\s*(?=\{\s*path:\s*"shipping-option-types")/g;
-    const ztReplacement = `{
-                  path: "packaging-profiles",
-                  errorElement: /* @__PURE__ */ jsx21(ErrorBoundary, {}),
-                  element: /* @__PURE__ */ jsx21(Outlet5, {}),
-                  handle: {
-                    breadcrumb: () => "Packaging Profiles"
-                  },
-                  children: [
-                    {
-                      path: "",
-                      lazy: () => import("./packaging-profiles-list-PEPTECH.mjs")
-                    }
-                  ]
-                },
-                `;
-    if (oldPattern.test(ztJs)) {
-      ztJs = ztJs.replace(oldPattern, ztReplacement);
-      fs.writeFileSync(ztChunkFile, ztJs, 'utf8');
-      console.log('[PEPTECH] Successfully updated packaging-profiles route with nested breadcrumb in chunk-ZT6PMEES.mjs');
-    } else if (!ztJs.includes('path: "packaging-profiles"')) {
-      const ztTarget = 'path: "shipping-option-types",';
-      ztJs = ztJs.replace(ztTarget, `${ztReplacement}{
-                  path: "shipping-option-types",`);
-      fs.writeFileSync(ztChunkFile, ztJs, 'utf8');
-      console.log('[PEPTECH] Successfully registered packaging-profiles route in chunk-ZT6PMEES.mjs');
+  // Also update source location-list.tsx
+  const locationListTsx = path.resolve(dashboardRoot, 'src/routes/locations/location-list/location-list.tsx');
+  if (fs.existsSync(locationListTsx)) {
+    let locTsx = fs.readFileSync(locationListTsx, 'utf8');
+    if (!locTsx.includes('/settings/locations/packaging-profiles')) {
+      const tsxTarget = `<SidebarLink
+        to="/settings/locations/shipping-option-types"`;
+      const tsxReplacement = `<SidebarLink
+        to="/settings/locations/packaging-profiles"
+        labelKey="Packaging Profiles"
+        descriptionKey="Box dimensions, gross weight presets, and packaging formats for Royal Mail dispatch."
+        icon={<ShoppingBag />}
+      />
+      <SidebarLink
+        to="/settings/locations/shipping-option-types"`;
+      if (locTsx.includes(tsxTarget)) {
+        locTsx = locTsx.replace(tsxTarget, tsxReplacement);
+        fs.writeFileSync(locationListTsx, locTsx, 'utf8');
+        console.log('[PEPTECH] Successfully added Packaging Profiles link to source location-list.tsx');
+      }
     }
   }
 
-  // 7. Enhance createBranchRoute in chunk-ZT6PMEES.mjs and app.js so intermediate branches (like 'locations') have breadcrumbs
+  // 3. Enhance createBranchRoute in chunk-ZT6PMEES.mjs and app.js so intermediate branches have clean breadcrumbs
+  const ztChunkFile = path.resolve(distDir, 'chunk-ZT6PMEES.mjs');
   if (fs.existsSync(ztChunkFile)) {
     let ztJs = fs.readFileSync(ztChunkFile, 'utf8');
     const oldBranchRoute = `var createBranchRoute = (segment) => ({
@@ -1523,6 +465,7 @@ export {
     locations: "Locations",
     "shipping-profiles": "Shipping Profiles",
     "shipping-option-types": "Shipping Option Types",
+    "packaging-profiles": "Packaging Profiles",
     products: "Products",
     orders: "Orders",
     customers: "Customers",
@@ -1560,6 +503,7 @@ export {
       locations: "Locations",
       "shipping-profiles": "Shipping Profiles",
       "shipping-option-types": "Shipping Option Types",
+      "packaging-profiles": "Packaging Profiles",
       products: "Products",
       orders: "Orders",
       customers: "Customers",
@@ -1573,7 +517,7 @@ export {
       breadcrumb: () => label
     };
   }`;
-    if (ztJs.includes(oldAddRoute)) {
+    if (ztJs.includes(oldAddRoute) && !ztJs.includes('else if (!route.handle)')) {
       ztJs = ztJs.replace(oldAddRoute, newAddRoute);
       fs.writeFileSync(ztChunkFile, ztJs, 'utf8');
       console.log('[PEPTECH] Successfully enhanced addRoute in chunk-ZT6PMEES.mjs');
@@ -1591,6 +535,7 @@ export {
         locations: "Locations",
         "shipping-profiles": "Shipping Profiles",
         "shipping-option-types": "Shipping Option Types",
+        "packaging-profiles": "Packaging Profiles",
         products: "Products",
         orders: "Orders",
         customers: "Customers",
@@ -1632,6 +577,7 @@ export {
     locations: "Locations",
     "shipping-profiles": "Shipping Profiles",
     "shipping-option-types": "Shipping Option Types",
+    "packaging-profiles": "Packaging Profiles",
     products: "Products",
     orders: "Orders",
     customers: "Customers",
@@ -1665,7 +611,7 @@ export {
   } else if (!route.handle) {
     route.handle = createBranchRoute(currentSegment).handle
   }`;
-      if (utilsTs.includes(oldUtilsAdd)) {
+      if (utilsTs.includes(oldUtilsAdd) && !utilsTs.includes('else if (!route.handle)')) {
         utilsTs = utilsTs.replace(oldUtilsAdd, newUtilsAdd);
         fs.writeFileSync(utilsTsFile, utilsTs, 'utf8');
         console.log('[PEPTECH] Successfully enhanced addRoute in utils.ts');
@@ -1673,7 +619,7 @@ export {
     }
   }
 
-  // 8. Deduplicate consecutive duplicate breadcrumbs in Shell Breadcrumbs component
+  // 4. Deduplicate consecutive duplicate breadcrumbs in Shell Breadcrumbs component
   const ztChunkCrumbsOld = `return {
       label,
       path: match.pathname
@@ -1712,6 +658,786 @@ export {
       console.log('[PEPTECH] Successfully added breadcrumb deduplication to app.js');
     }
   }
+
+  // 5. Update OrderCreateFulfillmentForm in chunk (order-create-fulfillment-IF6OCW3B.mjs)
+  const orderCreateFulfillmentMjsFile = path.resolve(distDir, 'order-create-fulfillment-IF6OCW3B.mjs');
+  if (fs.existsSync(orderCreateFulfillmentMjsFile)) {
+    const completeChunkCode = `import {
+  getReservationsLimitCount
+} from "./chunk-4XSXVVYD.mjs";
+import {
+  getFulfillableQuantity
+} from "./chunk-WKOPGFW5.mjs";
+import {
+  divideDecimal
+} from "./chunk-UQQD6PHX.mjs";
+import {
+  Combobox
+} from "./chunk-53MXUSIR.mjs";
+import "./chunk-IUCDCPJU.mjs";
+import {
+  KeyboundForm
+} from "./chunk-6HTZNHPT.mjs";
+import {
+  useComboboxData
+} from "./chunk-5IQBFJVZ.mjs";
+import {
+  Thumbnail
+} from "./chunk-MNXC6Q4F.mjs";
+import "./chunk-M6QL27ZL.mjs";
+import {
+  RouteFocusModal,
+  useRouteModal
+} from "./chunk-GXJ5J364.mjs";
+import {
+  Form
+} from "./chunk-OBQI23QM.mjs";
+import "./chunk-WWCRED3P.mjs";
+import "./chunk-CXRGHH7Y.mjs";
+import "./chunk-HIX2NSSN.mjs";
+import "./chunk-2LVQXUFY.mjs";
+import "./chunk-EYDZJ522.mjs";
+import "./chunk-A4EQBFAR.mjs";
+import "./chunk-QG545K2O.mjs";
+import "./chunk-RW5LLFK2.mjs";
+import "./chunk-ISGDOD5J.mjs";
+import "./chunk-QIUJGXDT.mjs";
+import "./chunk-ZB3WPQQA.mjs";
+import "./chunk-DEOCXBV2.mjs";
+import "./chunk-2V5DOTI3.mjs";
+import "./chunk-PTP3K7TB.mjs";
+import "./chunk-22ELTIVU.mjs";
+import "./chunk-Y2BEKAYF.mjs";
+import "./chunk-2VYWSRWQ.mjs";
+import "./chunk-D3TDNKSZ.mjs";
+import "./chunk-ACQJSQ5A.mjs";
+import "./chunk-SH6DEX5S.mjs";
+import "./chunk-DSBMVN2K.mjs";
+import "./chunk-RIAKFHWQ.mjs";
+import "./chunk-3C2RPYDJ.mjs";
+import {
+  shippingOptionsQueryKeys,
+  useShippingOption
+} from "./chunk-4SIZ37QP.mjs";
+import {
+  useCreateOrderFulfillment,
+  useOrder
+} from "./chunk-CHQR6GOM.mjs";
+import {
+  useReservationItems
+} from "./chunk-HWLVYKUO.mjs";
+import "./chunk-BGQF2VTH.mjs";
+import "./chunk-EMDIIWVL.mjs";
+import "./chunk-YDJ774GR.mjs";
+import "./chunk-SKQPG6BC.mjs";
+import "./chunk-5N2B66CN.mjs";
+import {
+  useProductVariant
+} from "./chunk-2G6AYJ2P.mjs";
+import "./chunk-HGRIOEAR.mjs";
+import "./chunk-SEMVMECK.mjs";
+import {
+  sdk
+} from "./chunk-NFEK63OE.mjs";
+import "./chunk-QZ7TP4HQ.mjs";
+
+import { useParams, useSearchParams } from "react-router-dom";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useEffect, useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
+import { Alert, Button, Switch, toast, clx, Input, Text, Tooltip } from "@medusajs/ui";
+import { InformationCircleSolid } from "@medusajs/icons";
+import { useForm, useWatch } from "react-hook-form";
+import { z } from "zod";
+import { jsx, jsxs } from "react/jsx-runtime";
+
+// Schema
+var CreateFulfillmentSchema = z.object({
+  quantity: z.record(z.string(), z.number()),
+  location_id: z.string(),
+  shipping_option_id: z.string().optional(),
+  send_notification: z.boolean().optional()
+});
+
+// Line Item Component
+function OrderCreateFulfillmentItem({
+  item,
+  form,
+  locationId,
+  reservations,
+  disabled
+}) {
+  const { t } = useTranslation();
+  const { variant } = useProductVariant(
+    item.product_id ?? "",
+    item.variant_id ?? "",
+    {
+      fields: "*inventory,*inventory.location_levels,*inventory_items"
+    },
+    {
+      enabled: !!item.variant
+    }
+  );
+  const { availableQuantity, inStockQuantity } = useMemo(() => {
+    if (!variant?.inventory_items?.length || !variant?.inventory?.length || !locationId) {
+      return {};
+    }
+    const { inventory, inventory_items } = variant;
+    const locationHasEveryInventoryItem = inventory.every(
+      (i) => i.location_levels?.find((inv) => inv.location_id === locationId)
+    );
+    if (!locationHasEveryInventoryItem) {
+      return {};
+    }
+    const inventoryItemRequiredQuantityMap = new Map(
+      inventory_items.map((i) => [i.inventory_item_id, i.required_quantity])
+    );
+    const reservation = reservations?.find((r) => r.line_item_id === item.id);
+    const iitemRequiredQuantity = inventory_items.find(
+      (i) => i.inventory_item_id === reservation?.inventory_item_id
+    )?.required_quantity;
+    const reservedQuantityForItem = !reservation ? 0 : divideDecimal(reservation.quantity, iitemRequiredQuantity ?? 1);
+    const locationInventoryLevels = inventory.map((i) => {
+      const level = i.location_levels?.find(
+        (inv) => inv.location_id === locationId
+      );
+      const requiredQuantity = inventoryItemRequiredQuantityMap.get(i.id);
+      if (!level || !requiredQuantity) {
+        return {
+          availableQuantity: Number.MAX_SAFE_INTEGER,
+          stockedQuantity: Number.MAX_SAFE_INTEGER
+        };
+      }
+      const availableQuantity2 = divideDecimal(
+        level.available_quantity ?? 0,
+        requiredQuantity
+      );
+      const stockedQuantity = divideDecimal(
+        level.stocked_quantity,
+        requiredQuantity
+      );
+      return {
+        availableQuantity: availableQuantity2,
+        stockedQuantity
+      };
+    });
+    const maxAvailableQuantity = Math.min(
+      ...locationInventoryLevels.map((i) => i.availableQuantity)
+    );
+    const maxStockedQuantity = Math.min(
+      ...locationInventoryLevels.map((i) => i.stockedQuantity)
+    );
+    if (maxAvailableQuantity === Number.MAX_SAFE_INTEGER || maxStockedQuantity === Number.MAX_SAFE_INTEGER) {
+      return {};
+    }
+    return {
+      availableQuantity: Math.floor(
+        maxAvailableQuantity + reservedQuantityForItem
+      ),
+      inStockQuantity: Math.floor(maxStockedQuantity)
+    };
+  }, [variant, locationId, reservations]);
+  const minValue = 0;
+  const maxValue = Math.min(
+    getFulfillableQuantity(item),
+    availableQuantity || Number.MAX_SAFE_INTEGER
+  );
+  return /* @__PURE__ */ jsx("div", { className: "bg-ui-bg-subtle shadow-elevation-card-rest my-2 rounded-xl", children: /* @__PURE__ */ jsxs("div", { className: "flex flex-row items-center", children: [
+    disabled && /* @__PURE__ */ jsx("div", { className: "ml-4 inline-flex items-center", children: /* @__PURE__ */ jsx(
+      Tooltip,
+      {
+        content: t("orders.fulfillment.disabledItemTooltip"),
+        side: "top",
+        children: /* @__PURE__ */ jsx(InformationCircleSolid, { className: "text-ui-tag-orange-icon" })
+      }
+    ) }),
+    /* @__PURE__ */ jsxs(
+      "div",
+      {
+        className: clx(
+          "flex flex-1 flex-col gap-x-2 gap-y-2 border-b p-3 text-sm sm:flex-row",
+          disabled && "pointer-events-none opacity-50"
+        ),
+        children: [
+          /* @__PURE__ */ jsxs("div", { className: "flex flex-1 items-center gap-x-3", children: [
+            /* @__PURE__ */ jsx(Thumbnail, { src: item.thumbnail }),
+            /* @__PURE__ */ jsxs("div", { className: "flex flex-col", children: [
+              /* @__PURE__ */ jsxs("div", { children: [
+                /* @__PURE__ */ jsx(Text, { className: "txt-small", as: "span", weight: "plus", children: item.title }),
+                item.variant_sku && /* @__PURE__ */ jsxs("span", { children: [
+                  "(",
+                  item.variant_sku,
+                  ")"
+                ] })
+              ] }),
+              /* @__PURE__ */ jsx(Text, { as: "div", className: "text-ui-fg-subtle txt-small", children: item.variant_title })
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxs("div", { className: "flex flex-1 items-center gap-x-1", children: [
+            /* @__PURE__ */ jsx("div", { className: "mr-2 block h-[16px] w-[2px] bg-gray-200" }),
+            /* @__PURE__ */ jsxs("div", { className: "text-small flex flex-1 flex-col", children: [
+              /* @__PURE__ */ jsx("span", { className: "text-ui-fg-subtle font-medium", children: t("orders.fulfillment.available") }),
+              /* @__PURE__ */ jsx("span", { className: "text-ui-fg-subtle", children: availableQuantity || "N/A" })
+            ] }),
+            /* @__PURE__ */ jsxs("div", { className: "flex flex-1 items-center gap-x-1", children: [
+              /* @__PURE__ */ jsx("div", { className: "mr-2 block h-[16px] w-[2px] bg-gray-200" }),
+              /* @__PURE__ */ jsxs("div", { className: "flex flex-col", children: [
+                /* @__PURE__ */ jsx("span", { className: "text-ui-fg-subtle font-medium", children: t("orders.fulfillment.inStock") }),
+                /* @__PURE__ */ jsxs("span", { className: "text-ui-fg-subtle", children: [
+                  inStockQuantity || "N/A",
+                  " ",
+                  inStockQuantity && /* @__PURE__ */ jsxs("span", { className: "font-medium text-red-500", children: [
+                    "-",
+                    form.getValues(\`quantity.\${item.id}\`)
+                  ] })
+                ] })
+              ] })
+            ] }),
+            /* @__PURE__ */ jsxs("div", { className: "flex flex-1 items-center gap-1", children: [
+              /* @__PURE__ */ jsx(
+                Form.Field,
+                {
+                  control: form.control,
+                  name: \`quantity.\${item.id}\`,
+                  rules: { required: true, min: minValue, max: maxValue },
+                  render: ({ field }) => {
+                    return /* @__PURE__ */ jsxs(Form.Item, { children: [
+                      /* @__PURE__ */ jsx(Form.Control, { children: /* @__PURE__ */ jsx(
+                        Input,
+                        {
+                          className: "bg-ui-bg-base txt-small w-[50px] rounded-lg text-right [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none",
+                          type: "number",
+                          ...field,
+                          onChange: (e) => {
+                            const val = e.target.value === "" ? null : Number(e.target.value);
+                            field.onChange(val);
+                            if (val !== null && !isNaN(val)) {
+                              if (val < minValue || val > maxValue) {
+                                form.setError(\`quantity.\${item.id}\`, {
+                                  type: "manual",
+                                  message: t(
+                                    "orders.fulfillment.error.wrongQuantity",
+                                    {
+                                      count: maxValue,
+                                      number: maxValue
+                                    }
+                                  )
+                                });
+                              } else {
+                                form.clearErrors(\`quantity.\${item.id}\`);
+                              }
+                            }
+                          }
+                        }
+                      ) }),
+                      /* @__PURE__ */ jsx(Form.ErrorMessage, {})
+                    ] });
+                  }
+                }
+              ),
+              /* @__PURE__ */ jsxs("span", { className: "text-ui-fg-subtle", children: [
+                "/ ",
+                item.quantity,
+                " ",
+                t("fields.qty")
+              ] })
+            ] })
+          ] })
+        ]
+      }
+    )
+  ] }) });
 }
 
+// Royal Mail Packaging Presets
+var DEFAULT_PACKAGING_PROFILES = [
+  {
+    id: "pen-set",
+    name: "Complete Pen Set Box",
+    packageFormatIdentifier: "smallParcel",
+    packageFormatLabel: "Small Parcel",
+    weightInGrams: 240,
+    dimensions: { heightInMms: 80, widthInMms: 160, depthInMms: 220 }
+  },
+  {
+    id: "vials-letter",
+    name: "Freeze-Dried Vials Box",
+    packageFormatIdentifier: "largeLetter",
+    packageFormatLabel: "Large Letter",
+    weightInGrams: 95,
+    dimensions: { heightInMms: 24, widthInMms: 125, depthInMms: 185 }
+  },
+  {
+    id: "refill-letter",
+    name: "Refill Cartridge Box",
+    packageFormatIdentifier: "largeLetter",
+    packageFormatLabel: "Large Letter",
+    weightInGrams: 110,
+    dimensions: { heightInMms: 25, widthInMms: 120, depthInMms: 160 }
+  },
+  {
+    id: "multi-parcel",
+    name: "Multi-Item / Cold-Chain Kit",
+    packageFormatIdentifier: "mediumParcel",
+    packageFormatLabel: "Medium Parcel",
+    weightInGrams: 520,
+    dimensions: { heightInMms: 140, widthInMms: 220, depthInMms: 300 }
+  }
+];
+
+function downloadPdf(base64Data, filename) {
+  if (!base64Data) return;
+  try {
+    const cleanBase64 = base64Data.replace(/^data:application\\/pdf;base64,/, "").trim();
+    const byteCharacters = atob(cleanBase64);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: "application/pdf" });
+    const blobUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = blobUrl;
+    link.download = filename || "Royal-Mail-Label.pdf";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
+  } catch (err) {
+    console.error("PDF Download Error:", err);
+  }
+}
+
+// Fulfillment Form Component
+function OrderCreateFulfillmentForm({
+  order,
+  requiresShipping
+}) {
+  const { t } = useTranslation();
+  const { handleSuccess } = useRouteModal();
+  const { isPending: isMutating } = useCreateOrderFulfillment(order.id);
+
+  const countryCode = (order.shipping_address?.country_code || order.metadata?.shipping_country_code || "GB").toUpperCase();
+  const isUk = countryCode === "GB";
+
+  const autoProfile = (() => {
+    const titles = (order.items || []).map((it) => (it.title || "").toLowerCase());
+    if (titles.some((ti) => ti.includes("pen") || ti.includes("set"))) return "pen-set";
+    if (titles.some((ti) => ti.includes("vial") || ti.includes("lyophilised"))) return "vials-letter";
+    if (titles.some((ti) => ti.includes("refill") || ti.includes("cartridge"))) return "refill-letter";
+    return "pen-set";
+  })();
+
+  const [selectedProfileId, setSelectedProfileId] = useState(autoProfile);
+  const [serviceCode, setServiceCode] = useState(isUk ? "AUTO" : "OTA");
+  const [packageFormat, setPackageFormat] = useState(autoProfile === "pen-set" ? "smallParcel" : "largeLetter");
+  const [weightInGrams, setWeightInGrams] = useState(autoProfile === "pen-set" ? 240 : 110);
+  const [dimHeight, setDimHeight] = useState(autoProfile === "pen-set" ? 80 : 25);
+  const [dimWidth, setDimWidth] = useState(autoProfile === "pen-set" ? 160 : 120);
+  const [dimDepth, setDimDepth] = useState(autoProfile === "pen-set" ? 220 : 160);
+  const [includeLabel, setIncludeLabel] = useState(true);
+  const [isSubmittingRM, setIsSubmittingRM] = useState(false);
+
+  const handleProfileChange = (profileId) => {
+    setSelectedProfileId(profileId);
+    const target = DEFAULT_PACKAGING_PROFILES.find((p) => p.id === profileId);
+    if (target) {
+      setWeightInGrams(target.weightInGrams);
+      setPackageFormat(target.packageFormatIdentifier);
+      setDimHeight(target.dimensions.heightInMms);
+      setDimWidth(target.dimensions.widthInMms);
+      setDimDepth(target.dimensions.depthInMms);
+    }
+  };
+
+  const { reservations } = useReservationItems({
+    line_item_id: order.items.map((i) => i.id),
+    limit: getReservationsLimitCount(order)
+  });
+  const [fulfillableItems, setFulfillableItems] = useState(
+    () => (order.items || []).filter(
+      (item) => item.requires_shipping === requiresShipping && getFulfillableQuantity(item) > 0
+    )
+  );
+  const form = useForm({
+    defaultValues: {
+      quantity: fulfillableItems.reduce((acc, item) => {
+        acc[item.id] = getFulfillableQuantity(item);
+        return acc;
+      }, {}),
+      send_notification: !order.no_notification
+    },
+    resolver: zodResolver(CreateFulfillmentSchema)
+  });
+  const selectedLocationId = useWatch({
+    name: "location_id",
+    control: form.control
+  });
+  const stockLocations = useComboboxData({
+    queryFn: (params) => sdk.admin.stockLocation.list(params),
+    queryKey: ["stock_locations"],
+    getOptions: (data) => data.stock_locations.map((location) => ({
+      label: location.name,
+      value: location.id
+    })),
+    selectedValue: selectedLocationId
+  });
+
+  const initialShippingOptionId = order.shipping_methods?.[0]?.shipping_option_id;
+  const { shipping_option: initialShippingOption } = useShippingOption(
+    initialShippingOptionId,
+    { fields: "+service_zone.fulfillment_set.location.id" },
+    { enabled: !!initialShippingOptionId }
+  );
+  const handleSubmit = form.handleSubmit(async (data) => {
+    let items = Object.entries(data.quantity).map(([id, quantity]) => ({
+      id,
+      quantity
+    })).filter(({ quantity }) => !!quantity);
+
+    if (items.length === 0) {
+      toast.error(t("orders.fulfillment.error.noItems"));
+      return;
+    }
+
+    setIsSubmittingRM(true);
+    try {
+      const resolvedLocationId =
+        selectedLocationId ||
+        stockLocations.options[0]?.value ||
+        initialShippingOption?.service_zone?.fulfillment_set?.location?.id ||
+        "sloc_01M2AQBJBGCFENNWHR7VJDHPCZ";
+
+      const resolvedShippingOptionId =
+        initialShippingOptionId ||
+        (isUk ? "so_01M2AQBJF4RGXHZWYACYK0FR42" : "so_01M2AQBJF4P8WHASPP2DZMC0KX");
+
+      const res = await fetch("/admin/custom/fulfillment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          orderId: order.id,
+          location_id: resolvedLocationId,
+          shipping_option_id: resolvedShippingOptionId,
+          serviceCode,
+          weightInGrams: Number(weightInGrams) || 240,
+          packageFormatIdentifier: packageFormat,
+          dimensions: {
+            heightInMms: Number(dimHeight) || 80,
+            widthInMms: Number(dimWidth) || 160,
+            depthInMms: Number(dimDepth) || 220
+          },
+          includeLabelInResponse: Boolean(includeLabel),
+          no_notification: !data.send_notification,
+          items
+        })
+      });
+
+      const resData = await res.json();
+      if (!res.ok) {
+        throw new Error(resData.message || "Failed to create Royal Mail fulfillment");
+      }
+
+      if (resData.labelBase64 && includeLabel) {
+        downloadPdf(
+          resData.labelBase64,
+          \`Royal-Mail-Label-\${order.display_id || order.id}.pdf\`
+        );
+      }
+
+      toast.success(t("orders.fulfillment.toast.created"), {
+        description: resData.trackingNumber
+          ? \`Royal Mail tracking: \${resData.trackingNumber}\`
+          : undefined
+      });
+
+      handleSuccess(\`/orders/\${order.id}\`);
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : t("errorBoundary.defaultTitle")
+      );
+    } finally {
+      setIsSubmittingRM(false);
+    }
+  });
+  useEffect(() => {
+    if (!initialShippingOption) {
+      return;
+    }
+    form.setValue(
+      "location_id",
+      initialShippingOption.service_zone.fulfillment_set.location.id
+    );
+    form.setValue("shipping_option_id", initialShippingOption.id);
+  }, [initialShippingOption]);
+  const fulfilledQuantityArray = (order.items || []).map(
+    (item) => item.requires_shipping === requiresShipping && item.detail?.fulfilled_quantity
+  );
+  useEffect(() => {
+    const itemsToFulfill = order?.items?.filter(
+      (item) => item.requires_shipping === requiresShipping && getFulfillableQuantity(item) > 0
+    ) || [];
+    setFulfillableItems(itemsToFulfill);
+    if (itemsToFulfill.length) {
+      form.clearErrors("root");
+    } else {
+      form.setError("root", {
+        type: "manual",
+        message: t("orders.fulfillment.error.noItems")
+      });
+    }
+    const quantityMap = itemsToFulfill.reduce((acc, item) => {
+      acc[item.id] = getFulfillableQuantity(item);
+      return acc;
+    }, {});
+    form.setValue("quantity", quantityMap);
+  }, [...fulfilledQuantityArray, requiresShipping]);
+  return /* @__PURE__ */ jsx(RouteFocusModal.Form, { form, children: /* @__PURE__ */ jsxs(
+    KeyboundForm,
+    {
+      onSubmit: handleSubmit,
+      className: "flex h-full flex-col overflow-hidden",
+      children: [
+        /* @__PURE__ */ jsx(RouteFocusModal.Header, {}),
+        /* @__PURE__ */ jsx(RouteFocusModal.Body, { className: "flex h-full w-full flex-col items-center divide-y overflow-y-auto", children: /* @__PURE__ */ jsx("div", { className: "flex size-full flex-col items-center overflow-auto p-16", children: /* @__PURE__ */ jsx("div", { className: "flex w-full max-w-[736px] flex-col justify-center px-2 pb-2", children: /* @__PURE__ */ jsxs("div", { className: "flex flex-col divide-y divide-dashed", children: [
+          /* @__PURE__ */ jsx("div", { className: "pb-8", children: /* @__PURE__ */ jsx(
+            Form.Field,
+            {
+              control: form.control,
+              name: "location_id",
+              render: ({ field: { ...field } }) => {
+                return /* @__PURE__ */ jsxs(Form.Item, { children: [
+                  /* @__PURE__ */ jsxs("div", { className: "flex flex-col gap-2 xl:flex-row xl:items-center", children: [
+                    /* @__PURE__ */ jsxs("div", { className: "flex-1", children: [
+                      /* @__PURE__ */ jsx(Form.Label, { children: t("fields.location") }),
+                      /* @__PURE__ */ jsx(Form.Hint, { children: t("orders.fulfillment.locationDescription") })
+                    ] }),
+                    /* @__PURE__ */ jsx("div", { className: "flex-1", children: /* @__PURE__ */ jsx(Form.Control, { children: /* @__PURE__ */ jsx(
+                      Combobox,
+                      {
+                        ...field,
+                        options: stockLocations.options,
+                        searchValue: stockLocations.searchValue,
+                        onSearchValueChange: stockLocations.onSearchValueChange,
+                        disabled: stockLocations.disabled
+                      }
+                    ) }) })
+                  ] }),
+                  /* @__PURE__ */ jsx(Form.ErrorMessage, {})
+                ] });
+              }
+            }
+          ) }),
+          /* @__PURE__ */ jsx("div", { className: "py-8", children: /* @__PURE__ */ jsxs("div", { className: "flex flex-col gap-3", children: [
+            /* @__PURE__ */ jsxs("div", { className: "flex flex-col gap-2 xl:flex-row xl:items-center", children: [
+              /* @__PURE__ */ jsxs("div", { className: "flex-1", children: [
+                /* @__PURE__ */ jsx(Form.Label, { children: t("fields.shippingMethod") }),
+                /* @__PURE__ */ jsx(Form.Hint, { children: "Official carrier integration for domestic & international dispatch" })
+              ] }),
+              /* @__PURE__ */ jsx("div", { className: "flex-1", children: /* @__PURE__ */ jsx("div", { className: "flex items-center justify-between p-3 rounded-lg border border-ui-border-base bg-ui-bg-subtle", children: /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-3", children: [
+                /* @__PURE__ */ jsx("div", { className: "flex items-center justify-center w-8 h-8 rounded-md bg-[#0B1F3A] text-[#00C5A0] font-bold text-xs", children: "RM" }),
+                /* @__PURE__ */ jsxs("div", { children: [
+                  /* @__PURE__ */ jsxs("div", { className: "text-xs font-semibold text-ui-fg-base flex items-center gap-1.5", children: [
+                    "Royal Mail Click & Drop",
+                    /* @__PURE__ */ jsx("span", { className: "inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-[#00C5A0]/10 text-[#00C5A0] border border-[#00C5A0]/20", children: isUk ? "Domestic UK" : "International Tracked" })
+                  ] }),
+                  /* @__PURE__ */ jsx("div", { className: "text-[11px] text-ui-fg-subtle", children: isUk ? "Royal Mail Tracked 24 / 48 (Domestic)" : "Royal Mail International Tracked (Worldwide)" })
+                ] })
+              ] }) }) })
+            ] }),
+            /* @__PURE__ */ jsxs("div", { className: "mt-2 p-4 rounded-lg border border-ui-border-base bg-ui-bg-subtle/50 space-y-4", children: [
+              /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4", children: [
+                /* @__PURE__ */ jsxs("div", { children: [
+                  /* @__PURE__ */ jsx("label", { className: "block text-xs font-medium text-ui-fg-base mb-1", children: "Royal Mail Service Code" }),
+                  /* @__PURE__ */ jsxs("select", {
+                    value: serviceCode,
+                    onChange: (e) => setServiceCode(e.target.value),
+                    className: "w-full text-xs rounded-md border border-ui-border-base bg-ui-bg-base p-2 text-ui-fg-base",
+                    children: [
+                      /* @__PURE__ */ jsx("option", { value: "AUTO", children: "AUTO — Default Account Rules (Recommended)" }),
+                      /* @__PURE__ */ jsx("option", { value: "TPN", children: "TPN — Royal Mail Tracked 24" }),
+                      /* @__PURE__ */ jsx("option", { value: "TPS", children: "TPS — Royal Mail Tracked 48" }),
+                      /* @__PURE__ */ jsx("option", { value: "OLP1", children: "OLP1 — Royal Mail 24 (Online Postage)" }),
+                      /* @__PURE__ */ jsx("option", { value: "OLP2", children: "OLP2 — Royal Mail 48 (Online Postage)" }),
+                      /* @__PURE__ */ jsx("option", { value: "TRM", children: "TRM — Royal Mail Tracked 24 (Signature)" }),
+                      /* @__PURE__ */ jsx("option", { value: "SD1", children: "SD1 — Special Delivery Guaranteed by 1pm" }),
+                      /* @__PURE__ */ jsx("option", { value: "OTA", children: "OTA — Royal Mail International Tracked" }),
+                      /* @__PURE__ */ jsx("option", { value: "OTC", children: "OTC — Royal Mail International Tracked & Signed" }),
+                      /* @__PURE__ */ jsx("option", { value: "OLS", children: "OLS — Royal Mail International Signed" })
+                    ]
+                  })
+                ] }),
+                /* @__PURE__ */ jsxs("div", { children: [
+                  /* @__PURE__ */ jsx("label", { className: "block text-xs font-medium text-ui-fg-base mb-1", children: "Packaging Profile" }),
+                  /* @__PURE__ */ jsxs("select", {
+                    value: selectedProfileId,
+                    onChange: (e) => handleProfileChange(e.target.value),
+                    className: "w-full text-xs rounded-md border border-ui-border-base bg-ui-bg-base p-2 text-ui-fg-base font-medium",
+                    children: [
+                      DEFAULT_PACKAGING_PROFILES.map((p) => /* @__PURE__ */ jsxs("option", { value: p.id, children: [
+                        p.name,
+                        " (",
+                        p.packageFormatLabel,
+                        " · ",
+                        p.weightInGrams,
+                        "g)"
+                      ] }, p.id)),
+                      /* @__PURE__ */ jsx("option", { value: "custom", children: "Custom Dimensions & Weight" })
+                    ]
+                  })
+                ] })
+              ] }),
+              /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1", children: [
+                /* @__PURE__ */ jsxs("div", { children: [
+                  /* @__PURE__ */ jsx("label", { className: "block text-[11px] font-medium text-ui-fg-subtle mb-1", children: "Gross Weight (g)" }),
+                  /* @__PURE__ */ jsx("input", {
+                    type: "number",
+                    value: weightInGrams,
+                    onChange: (e) => setWeightInGrams(Number(e.target.value)),
+                    className: "w-full text-xs rounded-md border border-ui-border-base bg-ui-bg-base p-1.5 text-ui-fg-base"
+                  })
+                ] }),
+                /* @__PURE__ */ jsxs("div", { children: [
+                  /* @__PURE__ */ jsx("label", { className: "block text-[11px] font-medium text-ui-fg-subtle mb-1", children: "Height (mm)" }),
+                  /* @__PURE__ */ jsx("input", {
+                    type: "number",
+                    value: dimHeight,
+                    onChange: (e) => setDimHeight(Number(e.target.value)),
+                    className: "w-full text-xs rounded-md border border-ui-border-base bg-ui-bg-base p-1.5 text-ui-fg-base"
+                  })
+                ] }),
+                /* @__PURE__ */ jsxs("div", { children: [
+                  /* @__PURE__ */ jsx("label", { className: "block text-[11px] font-medium text-ui-fg-subtle mb-1", children: "Width (mm)" }),
+                  /* @__PURE__ */ jsx("input", {
+                    type: "number",
+                    value: dimWidth,
+                    onChange: (e) => setDimWidth(Number(e.target.value)),
+                    className: "w-full text-xs rounded-md border border-ui-border-base bg-ui-bg-base p-1.5 text-ui-fg-base"
+                  })
+                ] }),
+                /* @__PURE__ */ jsxs("div", { children: [
+                  /* @__PURE__ */ jsx("label", { className: "block text-[11px] font-medium text-ui-fg-subtle mb-1", children: "Depth (mm)" }),
+                  /* @__PURE__ */ jsx("input", {
+                    type: "number",
+                    value: dimDepth,
+                    onChange: (e) => setDimDepth(Number(e.target.value)),
+                    className: "w-full text-xs rounded-md border border-ui-border-base bg-ui-bg-base p-1.5 text-ui-fg-base"
+                  })
+                ] })
+              ] }),
+              /* @__PURE__ */ jsxs("label", { className: "flex items-center gap-2 text-xs text-ui-fg-base cursor-pointer pt-1", children: [
+                /* @__PURE__ */ jsx("input", {
+                  type: "checkbox",
+                  checked: includeLabel,
+                  onChange: (e) => setIncludeLabel(e.target.checked),
+                  className: "rounded text-ui-fg-interactive"
+                }),
+                /* @__PURE__ */ jsx("span", { children: "Generate & download 6x4 thermal PDF label immediately upon fulfillment" })
+              ] })
+            ] })
+          ] }) }),
+          /* @__PURE__ */ jsxs("div", { children: [
+            /* @__PURE__ */ jsxs(Form.Item, { className: "mt-8", children: [
+              /* @__PURE__ */ jsx(Form.Label, { children: t("orders.fulfillment.itemsToFulfill") }),
+              /* @__PURE__ */ jsx(Form.Hint, { children: t("orders.fulfillment.itemsToFulfillDesc") }),
+              /* @__PURE__ */ jsx("div", { className: "flex flex-col gap-y-1", children: fulfillableItems.map((item) => {
+                return /* @__PURE__ */ jsx(
+                  OrderCreateFulfillmentItem,
+                  {
+                    form,
+                    item,
+                    locationId: selectedLocationId,
+                    disabled: false,
+                    reservations: reservations ?? [],
+                    currencyCode: order.currency_code
+                  },
+                  item.id
+                );
+              }) })
+            ] }),
+            form.formState.errors.root && /* @__PURE__ */ jsx(
+              Alert,
+              {
+                variant: "error",
+                dismissible: false,
+                className: "flex items-center",
+                children: form.formState.errors.root.message
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsx("div", { className: "mt-8 pt-8 ", children: /* @__PURE__ */ jsx(
+            Form.Field,
+            {
+              control: form.control,
+              name: "send_notification",
+              render: ({ field: { onChange, value, ...field } }) => {
+                return /* @__PURE__ */ jsxs(Form.Item, { children: [
+                  /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between", children: [
+                    /* @__PURE__ */ jsx(Form.Label, { children: t("orders.returns.sendNotification") }),
+                    /* @__PURE__ */ jsx(Form.Control, { children: /* @__PURE__ */ jsx(Form.Control, { children: /* @__PURE__ */ jsx(
+                      Switch,
+                      {
+                        dir: "ltr",
+                        className: "rtl:rotate-180",
+                        checked: !!value,
+                        onCheckedChange: onChange,
+                        ...field
+                      }
+                    ) }) })
+                  ] }),
+                  /* @__PURE__ */ jsx(Form.Hint, { className: "!mt-1", children: t("orders.fulfillment.sendNotificationHint") }),
+                  /* @__PURE__ */ jsx(Form.ErrorMessage, {})
+                ] });
+              }
+            }
+          ) })
+        ] }) }) }) }),
+        /* @__PURE__ */ jsx(RouteFocusModal.Footer, { children: /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-end gap-x-2", children: [
+          /* @__PURE__ */ jsx(RouteFocusModal.Close, { asChild: true, children: /* @__PURE__ */ jsx(Button, { size: "small", variant: "secondary", children: t("actions.cancel") }) }),
+          /* @__PURE__ */ jsx(
+            Button,
+            {
+              size: "small",
+              type: "submit",
+              isLoading: isSubmittingRM || isMutating,
+              children: "Confirm & Fulfill with Royal Mail"
+            }
+          )
+        ] }) })
+      ]
+    }
+  ) });
+}
+
+// Route Component
+function OrderCreateFulfillment() {
+  const { id } = useParams();
+  const [searchParams] = useSearchParams();
+  const requiresShipping = searchParams.get("requires_shipping") === "true";
+  const { order, isLoading, isError, error } = useOrder(id, {
+    fields: "currency_code,*items,*items.variant,+items.variant.product.shipping_profile.id,*shipping_address,+shipping_methods.shipping_option_id,no_notification"
+  });
+  if (isError) {
+    throw error;
+  }
+  const ready = !isLoading && order;
+  return /* @__PURE__ */ jsx(RouteFocusModal, { children: ready && /* @__PURE__ */ jsx(
+    OrderCreateFulfillmentForm,
+    {
+      order,
+      requiresShipping
+    }
+  ) });
+}
+export {
+  OrderCreateFulfillment as Component
+};
+`;
+
+    fs.writeFileSync(orderCreateFulfillmentMjsFile, completeChunkCode, 'utf8');
+    console.log('[PEPTECH] Successfully updated order-create-fulfillment-IF6OCW3B.mjs with complete Royal Mail implementation');
+  }
+}
 

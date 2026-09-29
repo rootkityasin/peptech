@@ -1,5 +1,6 @@
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http";
-import { Modules } from "@medusajs/framework/utils";
+import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils";
+import { createOrderFulfillmentWorkflow, createOrderShipmentWorkflow, cancelOrderFulfillmentWorkflow } from "@medusajs/core-flows";
 
 const CLICK_AND_DROP_BASE_URL = process.env.ROYAL_MAIL_CLICK_AND_DROP_URL || "https://api.parcel.royalmail.com/api/v1";
 const CLICK_AND_DROP_TOKEN =
@@ -25,6 +26,120 @@ const SERVICE_NAMES: Record<string, string> = {
   OLS: "Royal Mail International Signed",
   MP1: "Royal Mail International Standard",
 };
+
+/**
+ * Helper to fetch order with complete cross-module links (payments, collections, captures, summary)
+ */
+async function fetchOrderWithPaymentDetails(scope: any, orderId: string) {
+  try {
+    const query = scope.resolve(ContainerRegistrationKeys.QUERY) || scope.resolve("query");
+    if (query) {
+      const { data } = await query.graph({
+        entity: "order",
+        fields: [
+          "id",
+          "display_id",
+          "status",
+          "payment_status",
+          "fulfillment_status",
+          "total",
+          "subtotal",
+          "currency_code",
+          "metadata",
+          "email",
+          "items.*",
+          "shipping_address.*",
+          "shipping_methods.*",
+          "payment_collections.*",
+          "payment_collections.status",
+          "payment_collections.captured_amount",
+          "payment_collections.authorized_amount",
+          "payment_collections.payments.*",
+          "payment_collections.payments.status",
+          "payment_collections.payments.captured_at",
+          "payment_collections.payments.captures.*",
+          "summary.*",
+        ],
+        filters: { id: orderId },
+      });
+      if (data && data.length > 0) {
+        return data[0];
+      }
+    }
+  } catch (err: any) {
+    console.warn("[FULFILLMENT] query.graph retrieval error, using fallback:", err.message);
+  }
+
+  const orderModule: any = scope.resolve(Modules.ORDER);
+  return await orderModule.retrieveOrder(orderId, {
+    relations: ["items", "shipping_address", "shipping_methods"],
+  }).catch(() => null);
+}
+
+const SUCCESS_PAYMENT_STATUSES = [
+  "paid",
+  "captured",
+  "authorized",
+  "partially_captured",
+  "settled",
+  "succeeded",
+  "completed",
+];
+
+function isOrderPaymentSuccessful(order: any): boolean {
+  if (!order) return false;
+
+  const rawPaymentStatus = String(order.payment_status || "").toLowerCase();
+  const rawOrderStatus = String(order.status || "").toLowerCase();
+  const metaPaymentStatus = String(order.metadata?.payment_status || "").toLowerCase();
+
+  // 1. Direct payment_status field
+  if (SUCCESS_PAYMENT_STATUSES.includes(rawPaymentStatus)) return true;
+
+  // 2. Metadata payment status flags
+  if (SUCCESS_PAYMENT_STATUSES.includes(metaPaymentStatus)) return true;
+  if (order.metadata?.settled === true || order.metadata?.is_paid === true) return true;
+
+  // 3. Completed order workflow status
+  if (rawOrderStatus === "completed") return true;
+
+  // 4. Order Summary paid total
+  const summaryPaid = Number(order.summary?.paid_total ?? order.summary?.raw_paid_total?.value ?? 0);
+  if (summaryPaid > 0) return true;
+
+  // 5. Payment Collections and Payments
+  if (Array.isArray(order.payment_collections) && order.payment_collections.length > 0) {
+    for (const pc of order.payment_collections) {
+      const pcStatus = String(pc?.status || "").toLowerCase();
+      if (SUCCESS_PAYMENT_STATUSES.includes(pcStatus)) return true;
+      if (Number(pc?.captured_amount || 0) > 0 || Number(pc?.authorized_amount || 0) > 0) return true;
+
+      if (Array.isArray(pc.payments)) {
+        for (const p of pc.payments) {
+          const pStatus = String(p?.status || "").toLowerCase();
+          if (SUCCESS_PAYMENT_STATUSES.includes(pStatus)) return true;
+          if (p?.captured_at != null) return true;
+          if (Array.isArray(p.captures) && p.captures.length > 0) return true;
+          if (Number(p?.captured_amount || 0) > 0) return true;
+        }
+      }
+    }
+  }
+
+  return false;
+}
+
+function getOrderPaymentStatusDisplay(order: any): string {
+  if (!order) return "unpaid";
+  if (order.payment_status && order.payment_status !== "not_paid") return order.payment_status;
+  if (order.metadata?.payment_status) return order.metadata.payment_status;
+  if (Array.isArray(order.payment_collections) && order.payment_collections.length > 0) {
+    const pc = order.payment_collections[0];
+    if (pc?.status) return pc.status;
+    if (Array.isArray(pc?.payments) && pc.payments[0]?.status) return pc.payments[0].status;
+  }
+  return order.payment_status || order.status || "unpaid";
+}
 
 /**
  * Generates a valid 6x4 PDF base64 string (4in x 6in / 288pt x 432pt) conforming to PDF-1.4 standard
@@ -90,10 +205,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
     let isUk = true;
 
     if (orderId) {
-      const orderModule: any = req.scope.resolve(Modules.ORDER);
-      const order: any = await orderModule.retrieveOrder(orderId, {
-        relations: ["shipping_address"],
-      }).catch(() => null);
+      const order: any = await fetchOrderWithPaymentDetails(req.scope, orderId);
 
       if (order) {
         labelBase64 = order.metadata?.shipping_label_pdf || "";
@@ -192,19 +304,19 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     }
 
     const orderModule: any = req.scope.resolve(Modules.ORDER);
-    const order: any = await orderModule.retrieveOrder(orderId, {
-      relations: ["items", "shipping_address", "shipping_methods"],
-    });
+    const order: any = await fetchOrderWithPaymentDetails(req.scope, orderId);
 
     if (!order) {
       return res.status(404).json({ message: `Order '${orderId}' not found` });
     }
 
-    // Gate 1: Check Payment Status
-    const paymentStatus = order.metadata?.payment_status || (order.status === "completed" ? "paid" : "unpaid");
-    if (paymentStatus !== "paid" && order.status !== "completed") {
+    // Gate 1: Check Payment Status (supports Medusa 2.0 captured, authorized, completed, summary paid total, collections, and metadata)
+    const isPaid = isOrderPaymentSuccessful(order);
+
+    if (!isPaid) {
+      const currentStatus = getOrderPaymentStatusDisplay(order);
       return res.status(400).json({
-        message: "Order payment status must be 'paid' before generating a shipping fulfillment label.",
+        message: `Order payment status is '${currentStatus}'. Payment must be captured, authorized, or marked as paid before generating a shipping fulfillment label.`,
       });
     }
 
@@ -423,11 +535,120 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
 
     const trackingUrl = `https://www.royalmail.com/track-your-item#/tracking-results/${trackingNumber}`;
 
-    // Update Medusa 2.0 Order Record in PostgreSQL
-    const existingFulfillments = Array.isArray(order.metadata?.fulfillments) ? [...order.metadata.fulfillments] : [];
+    const body = (req.body || {}) as any;
     const isOfficialLabel = officialCarrierLabelReceived;
+
+    // Resolve items to fulfill
+    let itemsToFulfill: Array<{ id: string; quantity: number }> = [];
+    if (Array.isArray(body.items) && body.items.length > 0) {
+      itemsToFulfill = body.items.map((it: any) => ({
+        id: String(it.id),
+        quantity: Math.max(1, Number(it.quantity || 1)),
+      }));
+    } else if (body.quantity && typeof body.quantity === "object") {
+      itemsToFulfill = Object.entries(body.quantity)
+        .map(([id, quantity]) => ({ id, quantity: Number(quantity) }))
+        .filter((it) => it.quantity > 0);
+    } else {
+      itemsToFulfill = (order.items || [])
+        .map((it: any) => {
+          const qty = Number(it.quantity || 1);
+          const fulfilled = Number(it.detail?.fulfilled_quantity || 0);
+          return {
+            id: it.id,
+            quantity: Math.max(0, qty - fulfilled),
+          };
+        })
+        .filter((it: any) => it.quantity > 0);
+    }
+
+    // Resolve Location ID
+    let locationId = body.location_id;
+    if (!locationId) {
+      try {
+        const stockLocationModule: any = req.scope.resolve(Modules.STOCK_LOCATION);
+        const [locations] = await stockLocationModule.listStockLocations({}, { take: 1 });
+        if (locations?.id) {
+          locationId = locations.id;
+        }
+      } catch (e) {
+        locationId = "sloc_01M2AQBJBGCFENNWHR7VJDHPCZ";
+      }
+    }
+    if (!locationId) {
+      locationId = "sloc_01M2AQBJBGCFENNWHR7VJDHPCZ";
+    }
+
+    // Resolve Shipping Option ID
+    let shippingOptionId = body.shipping_option_id || order.shipping_methods?.[0]?.shipping_option_id;
+    if (!shippingOptionId) {
+      shippingOptionId = isUk
+        ? "so_01M2AQBJF4RGXHZWYACYK0FR42"
+        : "so_01M2AQBJF4P8WHASPP2DZMC0KX";
+    }
+
+    // Execute Medusa 2.0 Core Workflows
+    let createdFulfillment: any = null;
+    if (itemsToFulfill.length > 0) {
+      try {
+        const { result: fResult } = await createOrderFulfillmentWorkflow(req.scope).run({
+          input: {
+            order_id: order.id,
+            items: itemsToFulfill,
+            location_id: locationId,
+            shipping_option_id: shippingOptionId,
+            no_notification: body.no_notification === true,
+            metadata: {
+              carrier: carrierName,
+              service_code: rawServiceCode,
+              tracking_number: trackingNumber,
+              tracking_url: trackingUrl,
+              royal_mail_order_identifier: orderIdentifier,
+              shipping_label_pdf: labelBase64,
+              is_official_carrier_label: isOfficialLabel,
+            },
+          },
+        });
+        createdFulfillment = fResult;
+
+        if (createdFulfillment?.id) {
+          try {
+            await createOrderShipmentWorkflow(req.scope).run({
+              input: {
+                order_id: order.id,
+                fulfillment_id: createdFulfillment.id,
+                items: itemsToFulfill,
+                labels: [
+                  {
+                    tracking_number: trackingNumber,
+                    tracking_url: trackingUrl,
+                    label_url: labelBase64
+                      ? `/admin/custom/fulfillment?orderIdentifier=${orderIdentifier}&format=pdf`
+                      : trackingUrl,
+                  },
+                ],
+                no_notification: body.no_notification === true,
+                metadata: {
+                  carrier: carrierName,
+                  service_code: rawServiceCode,
+                  royal_mail_order_identifier: orderIdentifier,
+                  shipping_label_pdf: labelBase64,
+                },
+              },
+            });
+          } catch (shipErr: any) {
+            console.warn("[FULFILLMENT SHIPMENT STEP WARN]:", shipErr.message);
+          }
+        }
+      } catch (flowErr: any) {
+        console.warn("[MEDUSA FULFILLMENT WORKFLOW WARN]:", flowErr.message);
+      }
+    }
+
+    // Update Medusa 2.0 Order Record Metadata for complete compatibility
+    const existingFulfillments = Array.isArray(order.metadata?.fulfillments) ? [...order.metadata.fulfillments] : [];
     const newFulfillmentObj = {
-      id: `${order.display_id || order.id}-RM${existingFulfillments.length + 1}`,
+      id: createdFulfillment?.id || `${order.display_id || order.id}-RM${existingFulfillments.length + 1}`,
       carrier: carrierName,
       service_code: rawServiceCode,
       tracking_number: trackingNumber,
@@ -461,6 +682,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     return res.status(200).json({
       success: true,
       orderId: order.id,
+      fulfillmentId: createdFulfillment?.id,
       orderReference: orderRef,
       carrier: carrierName,
       serviceCode: rawServiceCode,
@@ -478,3 +700,144 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     return res.status(500).json({ message: err.message || "Internal fulfillment error" });
   }
 }
+
+export async function DELETE(req: MedusaRequest, res: MedusaResponse) {
+  try {
+    const { orderId, fulfillmentId, orderIdentifier, orderReference } = {
+      ...(req.query || {}),
+      ...(req.body || {}),
+    } as any;
+
+    if (!orderId) {
+      return res.status(400).json({ message: "orderId is required to delete fulfillment" });
+    }
+
+    const orderModule: any = req.scope.resolve(Modules.ORDER);
+    const order: any = await fetchOrderWithPaymentDetails(req.scope, orderId);
+
+    if (!order) {
+      return res.status(404).json({ message: `Order '${orderId}' not found` });
+    }
+
+    const existingFulfillments = Array.isArray(order.metadata?.fulfillments) ? [...order.metadata.fulfillments] : [];
+    
+    // Find target fulfillment
+    const targetFulfillment = existingFulfillments.find(
+      (f: any) =>
+        (fulfillmentId && (f.id === fulfillmentId || f.tracking_number === fulfillmentId)) ||
+        (orderIdentifier && String(f.order_identifier) === String(orderIdentifier))
+    ) || existingFulfillments[0] || null;
+
+    const resolvedOrderIdentifier =
+      orderIdentifier ||
+      targetFulfillment?.order_identifier ||
+      order.metadata?.royal_mail_order_identifier;
+
+    const resolvedOrderRef =
+      orderReference ||
+      (order.display_id ? `PEP-${order.display_id}` : String(order.id));
+
+    let cndDeletedOrders: any[] = [];
+    let cndErrors: any[] = [];
+    let cndCalled = false;
+
+    // 1. Delete from Royal Mail Click & Drop API if token is configured
+    if (CLICK_AND_DROP_TOKEN && (resolvedOrderIdentifier || resolvedOrderRef)) {
+      try {
+        let identifierPath = "";
+        if (resolvedOrderIdentifier && /^\d+$/.test(String(resolvedOrderIdentifier))) {
+          identifierPath = String(resolvedOrderIdentifier);
+        } else if (resolvedOrderRef) {
+          identifierPath = encodeURIComponent(`"${resolvedOrderRef}"`);
+        } else if (resolvedOrderIdentifier) {
+          identifierPath = encodeURIComponent(`"${resolvedOrderIdentifier}"`);
+        }
+
+        if (identifierPath) {
+          const cndUrl = `${CLICK_AND_DROP_BASE_URL}/orders/${identifierPath}`;
+          const cndRes = await fetch(cndUrl, {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${CLICK_AND_DROP_TOKEN}`,
+              Accept: "application/json",
+            },
+          });
+
+          cndCalled = true;
+          const cndData = await cndRes.json().catch(() => ({}));
+          cndDeletedOrders = cndData.deletedOrders || [];
+          cndErrors = cndData.errors || [];
+
+          if (!cndRes.ok && cndRes.status !== 404) {
+            console.warn("[CLICK & DROP DELETE ERROR]:", cndData);
+          }
+        }
+      } catch (cndErr: any) {
+        console.warn("[CLICK & DROP DELETE API CALL FAILED]:", cndErr.message);
+      }
+    }
+
+    // 2. Cancel / Delete in Medusa 2.0 Workflows
+    const resolvedFulfillmentId = fulfillmentId || targetFulfillment?.id;
+    if (resolvedFulfillmentId && !resolvedFulfillmentId.includes("-RM")) {
+      try {
+        await cancelOrderFulfillmentWorkflow(req.scope).run({
+          input: {
+            order_id: order.id,
+            fulfillment_id: resolvedFulfillmentId,
+          },
+        });
+      } catch (flowErr: any) {
+        console.warn("[MEDUSA CANCEL FULFILLMENT WORKFLOW WARN]:", flowErr.message);
+        try {
+          const fulfillmentModule: any = req.scope.resolve(Modules.FULFILLMENT);
+          if (fulfillmentModule?.cancelFulfillment) {
+            await fulfillmentModule.cancelFulfillment(resolvedFulfillmentId);
+          }
+        } catch (fErr: any) {
+          console.warn("[MEDUSA DIRECT CANCEL WARN]:", fErr.message);
+        }
+      }
+    }
+
+    // 3. Update order metadata
+    const remainingFulfillments = existingFulfillments.filter(
+      (f: any) =>
+        f.id !== resolvedFulfillmentId &&
+        f.order_identifier !== resolvedOrderIdentifier &&
+        (fulfillmentId ? f.id !== fulfillmentId && f.tracking_number !== fulfillmentId : true)
+    );
+
+    const hasRemaining = remainingFulfillments.length > 0;
+    const latestFul = hasRemaining ? remainingFulfillments[remainingFulfillments.length - 1] : null;
+
+    await orderModule.updateOrders(order.id, {
+      metadata: {
+        ...(order.metadata || {}),
+        fulfillments: remainingFulfillments,
+        fulfillment_status: hasRemaining ? "partially_fulfilled" : "not_fulfilled",
+        tracking_number: latestFul ? latestFul.tracking_number : null,
+        tracking_url: latestFul ? latestFul.tracking_url : null,
+        shipping_carrier: latestFul ? latestFul.carrier : null,
+        shipping_service_code: latestFul ? latestFul.service_code : null,
+        shipping_label_pdf: latestFul ? latestFul.shipping_label_pdf : null,
+        royal_mail_order_identifier: latestFul ? latestFul.order_identifier : null,
+        is_official_carrier_label: latestFul ? latestFul.is_official_carrier_label : null,
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Royal Mail Click & Drop fulfillment cancelled and deleted successfully.",
+      orderId: order.id,
+      deletedFulfillmentId: resolvedFulfillmentId,
+      royalMailDeleted: cndCalled,
+      deletedRoyalMailOrders: cndDeletedOrders,
+      cndErrors: cndErrors.length > 0 ? cndErrors : undefined,
+    });
+  } catch (err: any) {
+    console.error("[PEPTECH DELETE FULFILLMENT ERROR]:", err);
+    return res.status(500).json({ message: err.message || "Failed to delete fulfillment" });
+  }
+}
+

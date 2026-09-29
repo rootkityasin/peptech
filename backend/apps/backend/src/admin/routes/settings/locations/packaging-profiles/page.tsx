@@ -1,3 +1,4 @@
+import { defineRouteConfig } from "@medusajs/admin-sdk";
 import { Container, Heading, Text, Button, Input, Label, Badge, Table, Drawer, toast } from "@medusajs/ui";
 import { useState, useEffect } from "react";
 
@@ -479,3 +480,6 @@ export default function PackagingProfilesPage() {
   );
 }
 
+export const config = defineRouteConfig({
+  label: "Packaging Profiles",
+});

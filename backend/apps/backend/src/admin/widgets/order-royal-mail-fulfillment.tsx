@@ -128,6 +128,53 @@ function openPdfPrintWindow(base64Data?: string, orderIdentifier?: string | numb
   alert("No shipping label PDF available to print.");
 }
 
+function isOrderPaymentSuccessful(order: any): boolean {
+  if (!order) return false;
+
+  const rawPaymentStatus = String(order.payment_status || "").toLowerCase();
+  const rawOrderStatus = String(order.status || "").toLowerCase();
+  const metaPaymentStatus = String(order.metadata?.payment_status || "").toLowerCase();
+
+  const successStatuses = [
+    "paid",
+    "captured",
+    "authorized",
+    "partially_captured",
+    "settled",
+    "succeeded",
+    "completed",
+  ];
+
+  if (successStatuses.includes(rawPaymentStatus)) return true;
+  if (successStatuses.includes(metaPaymentStatus)) return true;
+  if (rawOrderStatus === "completed") return true;
+  if (order.metadata?.settled === true || order.metadata?.is_paid === true) return true;
+
+  // Check summary paid totals if available in Medusa 2.0 Order graph
+  const summaryPaid = Number(order.summary?.paid_total ?? order.summary?.raw_paid_total?.value ?? 0);
+  if (summaryPaid > 0) return true;
+
+  if (Array.isArray(order.payment_collections) && order.payment_collections.length > 0) {
+    for (const pc of order.payment_collections) {
+      const pcStatus = String(pc?.status || "").toLowerCase();
+      if (successStatuses.includes(pcStatus)) return true;
+      if (Number(pc?.captured_amount || 0) > 0 || Number(pc?.authorized_amount || 0) > 0) return true;
+
+      if (Array.isArray(pc.payments)) {
+        for (const p of pc.payments) {
+          const pStatus = String(p?.status || "").toLowerCase();
+          if (successStatuses.includes(pStatus)) return true;
+          if (p?.captured_at != null) return true;
+          if (Array.isArray(p.captures) && p.captures.length > 0) return true;
+          if (Number(p?.captured_amount || 0) > 0) return true;
+        }
+      }
+    }
+  }
+
+  return false;
+}
+
 export default function OrderRoyalMailFulfillmentWidget({ data: order }: OrderWidgetProps) {
   const [showModal, setShowModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -136,6 +183,10 @@ export default function OrderRoyalMailFulfillmentWidget({ data: order }: OrderWi
   const shipping = order?.shipping_address || {};
   const countryCode = (shipping.country_code || order?.metadata?.shipping_country_code || "GB").toUpperCase();
   const isUk = countryCode === "GB";
+
+  // Payment Status check
+  const isPaid = isOrderPaymentSuccessful(order);
+  const paymentStatus = order?.payment_status || order?.metadata?.payment_status || (isPaid ? "paid" : (order?.status || "unpaid"));
 
   // Packaging Profiles State
   const [profiles, setProfiles] = useState<PackagingProfile[]>(DEFAULT_PACKAGING_PROFILES);
@@ -333,10 +384,54 @@ export default function OrderRoyalMailFulfillmentWidget({ data: order }: OrderWi
 
   // Local state for instant UI update after label creation
   const [localFulfillments, setLocalFulfillments] = useState<any[]>([]);
+  const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
 
-  // Payment Status check
-  const paymentStatus = order?.metadata?.payment_status || (order?.payment_status === "captured" || order?.status === "completed" ? "paid" : "unpaid");
-  const isPaid = paymentStatus === "paid" || order?.status === "completed";
+  const handleDeleteFulfillment = async (ful: any) => {
+    if (!order?.id) return;
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete Royal Mail shipment #${ful.id || ful.tracking_number}?\n\n` +
+      `This will cancel the order in Royal Mail Click & Drop and Medusa. Any printed postage labels must be destroyed.`
+    );
+    if (!confirmDelete) return;
+
+    const fulKey = ful.id || ful.tracking_number;
+    setIsDeletingId(fulKey);
+
+    try {
+      const res = await fetch("/admin/custom/fulfillment", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          orderId: order.id,
+          fulfillmentId: ful.id,
+          orderIdentifier: ful.order_identifier,
+          orderReference: order.display_id ? `PEP-${order.display_id}` : String(order.id),
+        }),
+      });
+
+      const resData = await res.json();
+      if (!res.ok) {
+        throw new Error(resData.message || "Failed to delete fulfillment");
+      }
+
+      setLocalFulfillments((prev) => prev.filter((f) => f.id !== ful.id && f.tracking_number !== ful.tracking_number));
+
+      if (toast) {
+        toast.success("Shipment Cancelled & Deleted", {
+          description: "Removed from Royal Mail Click & Drop and Medusa.",
+        });
+      }
+
+      setTimeout(() => {
+        window.location.reload();
+      }, 750);
+    } catch (err: any) {
+      alert("Error deleting shipment: " + (err.message || "Unknown error"));
+    } finally {
+      setIsDeletingId(null);
+    }
+  };
 
   // Existing Fulfillments from order metadata or order.fulfillments
   const fulfillments = useMemo(() => {
@@ -402,11 +497,19 @@ export default function OrderRoyalMailFulfillmentWidget({ data: order }: OrderWi
       setLocalFulfillments((prev) => [...prev, newFul]);
       setShowModal(false);
 
+      if (includeLabel && resData.labelBase64) {
+        downloadPdf(resData.labelBase64, `Royal-Mail-Label-${order.display_id || order.id}.pdf`);
+      }
+
       if (toast) {
         toast.success("Shipment Created", {
           description: `Royal Mail tracking: ${resData.trackingNumber}`,
         });
       }
+
+      setTimeout(() => {
+        window.location.reload();
+      }, 750);
     } catch (err: any) {
       setErrorMessage(err.message || "Fulfillment creation error");
     } finally {
@@ -559,6 +662,15 @@ export default function OrderRoyalMailFulfillmentWidget({ data: order }: OrderWi
                       onClick={() => downloadPdf(labelPdf, `Royal-Mail-Label-${order.display_id || order.id}.pdf`)}
                     >
                       ⬇️ Download PDF
+                    </Button>
+                    <Button
+                      size="small"
+                      variant="danger"
+                      disabled={isDeletingId === (ful.id || ful.tracking_number)}
+                      onClick={() => handleDeleteFulfillment(ful)}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50 font-medium"
+                    >
+                      {isDeletingId === (ful.id || ful.tracking_number) ? "Deleting..." : "🗑️ Delete"}
                     </Button>
                   </div>
 

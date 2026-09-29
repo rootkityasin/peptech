@@ -419,11 +419,13 @@ function StandardOrderDetail({ id }) {
   const tags = Array.isArray(meta.tags) ? meta.tags : [];
   const notes = meta.notes || `Order# ${order.display_id || order.id.slice(-6)}\nShipping: Royal Mail Tracked UK / Worldwide`;
   const fulfillments = meta.fulfillments || (order.fulfillments && order.fulfillments.length > 0 ? order.fulfillments : []);
-  const isFulfilled = (meta.fulfillment_status || (fulfillments.length > 0 ? "fulfilled" : "unfulfilled")) === "fulfilled";
-  const paymentStatus = (meta.payment_status || (order.status === "completed" ? "paid" : "pending")).toLowerCase();
+  const rawPayment = String(order.payment_status || meta.payment_status || (order.status === "completed" ? "paid" : "pending")).toLowerCase();
+  const isPaid = ["paid", "captured", "authorized", "partially_captured", "settled", "succeeded", "completed"].includes(rawPayment) ||
+    meta.settled === true || meta.is_paid === true ||
+    (Array.isArray(order.payment_collections) && order.payment_collections.some((pc) => ["captured", "authorized", "completed"].includes(String(pc?.status || "").toLowerCase())));
+  const paymentStatus = isPaid ? "paid" : (rawPayment === "refunded" ? "refunded" : rawPayment === "partially_refunded" ? "partially_refunded" : rawPayment);
   const isRefunded = paymentStatus === "refunded";
   const isPartiallyRefunded = paymentStatus === "partially_refunded";
-  const isPaid = paymentStatus === "paid";
   const refunds = Array.isArray(meta.refunds) ? meta.refunds : [];
   const refundedTotal = Number(meta.refunded_total || 0);
   const returns = Array.isArray(meta.returns) ? meta.returns : [];
