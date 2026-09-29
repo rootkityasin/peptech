@@ -1,4 +1,5 @@
 import React from "react"
+import Image from "next/image"
 
 export const TRUSTED_LOGOS = [
   {
@@ -81,11 +82,24 @@ export function TrustedBySection({
                   key={`logo-a-${index}`}
                   className="h-[52px] w-[130px] sm:w-[145px] flex items-center justify-center shrink-0 grayscale hover:grayscale-0 opacity-85 hover:opacity-100 transition-all duration-300"
                 >
-                  <img
-                    src={logo.src}
-                    alt={logo.name}
-                    className={logo.className}
-                  />
+                  {logo.src.endsWith(".svg") ? (
+                    <img
+                      src={logo.src}
+                      alt={logo.name}
+                      className={logo.className}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  ) : (
+                    <Image
+                      src={logo.src}
+                      alt={logo.name}
+                      width={60}
+                      height={46}
+                      sizes="60px"
+                      className={logo.className}
+                    />
+                  )}
                 </div>
               ))}
             </div>
@@ -97,11 +111,24 @@ export function TrustedBySection({
                   key={`logo-b-${index}`}
                   className="h-[52px] w-[130px] sm:w-[145px] flex items-center justify-center shrink-0 grayscale hover:grayscale-0 opacity-85 hover:opacity-100 transition-all duration-300"
                 >
-                  <img
-                    src={logo.src}
-                    alt={logo.name}
-                    className={logo.className}
-                  />
+                  {logo.src.endsWith(".svg") ? (
+                    <img
+                      src={logo.src}
+                      alt={logo.name}
+                      className={logo.className}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  ) : (
+                    <Image
+                      src={logo.src}
+                      alt={logo.name}
+                      width={60}
+                      height={46}
+                      sizes="60px"
+                      className={logo.className}
+                    />
+                  )}
                 </div>
               ))}
             </div>

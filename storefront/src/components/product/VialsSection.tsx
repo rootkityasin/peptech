@@ -136,7 +136,7 @@ export function VialsSection() {
                       src={item.image}
                       alt={item.name}
                       fill
-                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 200px"
+                      sizes="(max-width: 640px) 45vw, (max-width: 1024px) 25vw, 220px"
                       className="object-contain p-2 group-hover:scale-105 transition-transform"
                     />
                   </div>
