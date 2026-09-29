@@ -26,9 +26,10 @@ async function financialException(scope:any,ledger:CommerceService,event:any) {
 }
 export async function reconcileSession(scope:any,ledger:CommerceService,sessionId:string) {
   const context=stripeContext();const session=await context.stripe.checkout.sessions.retrieve(sessionId)
-  const attempt=await ledger.get(session.metadata?.peptech_attempt||"")
-  if(!attempt || attempt.profile!==context.profile || session.metadata?.peptech_profile!==context.profile ||
-    session.client_reference_id!==attempt.id || session.livemode!==(context.mode==="live")) return
+  const attemptId = session.metadata?.peptech_attempt || session.client_reference_id || ""
+  const attempt=await ledger.get(attemptId)
+  if(!attempt || attempt.profile!==context.profile || (session.metadata?.peptech_profile && session.metadata.peptech_profile!==context.profile) ||
+    session.livemode!==(context.mode==="live")) return
   if(attempt.data.session_id && attempt.data.session_id!==session.id) fail("Checkout session mismatch",409)
   attempt.data.quote=checkoutDelivery(session,attempt.data.quote)
   // Recover a session created before a process crash interrupted saving its ID.
@@ -54,8 +55,10 @@ export async function reconcileSession(scope:any,ledger:CommerceService,sessionI
     return
   }
   if(session.mode==="subscription" && session.subscription) {
-    await syncSubscription(ledger,objectId(session.subscription)!)
-    if(session.invoice) await reconcileInvoice(scope,ledger,objectId(session.invoice)!)
+    const subId = objectId(session.subscription)!
+    const subRecord = await syncSubscription(ledger, subId)
+    const invoiceId = objectId(session.invoice) || (subRecord?.data?.stripe_id ? (await context.stripe.subscriptions.retrieve(subId).then((s: any) => objectId(s.latest_invoice)).catch(() => null)) : null)
+    if(invoiceId) await reconcileInvoice(scope,ledger,invoiceId)
     const latestAttempt = await ledger.get(attempt.id)
     if (latestAttempt && latestAttempt.state === "open" && (session.payment_status === "paid" || session.status === "complete")) {
       latestAttempt.state = "confirmed"
@@ -65,7 +68,7 @@ export async function reconcileSession(scope:any,ledger:CommerceService,sessionI
   }
   if(session.payment_status!=="paid") return
   const pi=await context.stripe.paymentIntents.retrieve(objectId(session.payment_intent)!, { expand: ["latest_charge"] })
-  if(pi.status!=="succeeded" || pi.metadata.peptech_attempt!==attempt.id) fail("Payment ownership mismatch",409)
+  if(pi.status!=="succeeded" || (pi.metadata?.peptech_attempt && pi.metadata.peptech_attempt!==attempt.id)) fail("Payment ownership mismatch",409)
   if (pi.payment_method && attempt.data.stripe_customer_id) {
     try {
       const pmId = objectId(pi.payment_method)
