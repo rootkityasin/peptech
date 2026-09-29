@@ -1,0 +1,1 @@
+import{M as i}from"./chunk-NANNVVYP-CSU0PCFJ.js";import{as as n,fH as m,fI as u,j as c}from"./index-WwyXnsEB.js";var P=()=>{const{id:t}=n(),{product_tag:a,isPending:r,isError:s,error:o}=m(t),{mutateAsync:e,isPending:d}=u(a?.id);if(s)throw o;return c.jsx(i,{metadata:a?.metadata,hook:e,isPending:r,isMutating:d})};export{P as Component};

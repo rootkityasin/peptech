@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useOrder, useUpdateOrder } from "./chunk-CHQR6GOM.mjs";
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
@@ -419,6 +419,7 @@ function StandardOrderDetail({ id }) {
   const tags = Array.isArray(meta.tags) ? meta.tags : [];
   const notes = meta.notes || `Order# ${order.display_id || order.id.slice(-6)}\nShipping: Royal Mail Tracked UK / Worldwide`;
   const fulfillments = meta.fulfillments || (order.fulfillments && order.fulfillments.length > 0 ? order.fulfillments : []);
+  const isFulfilled = (meta.fulfillment_status || (fulfillments && fulfillments.length > 0 ? "fulfilled" : "unfulfilled")) === "fulfilled" || order.fulfillment_status === "fulfilled";
   const rawPayment = String(order.payment_status || meta.payment_status || (order.status === "completed" ? "paid" : "pending")).toLowerCase();
   const isPaid = ["paid", "captured", "authorized", "partially_captured", "settled", "succeeded", "completed"].includes(rawPayment) ||
     meta.settled === true || meta.is_paid === true ||
