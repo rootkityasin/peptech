@@ -26,7 +26,7 @@ async function syncLockedSubscription(ledger:CommerceService,stripeId:string) {
   // This is collection control, not Stripe's distinct paused subscription status.
   if(!["canceled","incomplete_expired"].includes(subscription.status) && !subscription.pause_collection) {
     await context.stripe.subscriptions.update(stripeId,{pause_collection:{behavior:record.data.control==="paused"?"void":"keep_as_draft"}},
-      {idempotencyKey:operationKey("collection-control",id,String(subscription.items.data[0]?.current_period_end))})
+      {idempotencyKey:operationKey("collection-control",id,String((subscription.items.data[0] as any)?.current_period_end || (subscription as any).current_period_end))})
   }
   await ledger.locked(attempt.id,async()=>{
     const latest=await ledger.get(attempt.id)

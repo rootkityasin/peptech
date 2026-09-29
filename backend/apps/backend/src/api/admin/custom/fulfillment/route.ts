@@ -1,5 +1,5 @@
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http";
-import { Modules } from "@medusajs/framework/utils";
+import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils";
 
 const CLICK_AND_DROP_BASE_URL = process.env.ROYAL_MAIL_CLICK_AND_DROP_URL || "https://api.parcel.royalmail.com/api/v1";
 const CLICK_AND_DROP_TOKEN =
@@ -25,6 +25,120 @@ const SERVICE_NAMES: Record<string, string> = {
   OLS: "Royal Mail International Signed",
   MP1: "Royal Mail International Standard",
 };
+
+/**
+ * Helper to fetch order with complete cross-module links (payments, collections, captures, summary)
+ */
+async function fetchOrderWithPaymentDetails(scope: any, orderId: string) {
+  try {
+    const query = scope.resolve(ContainerRegistrationKeys.QUERY) || scope.resolve("query");
+    if (query) {
+      const { data } = await query.graph({
+        entity: "order",
+        fields: [
+          "id",
+          "display_id",
+          "status",
+          "payment_status",
+          "fulfillment_status",
+          "total",
+          "subtotal",
+          "currency_code",
+          "metadata",
+          "email",
+          "items.*",
+          "shipping_address.*",
+          "shipping_methods.*",
+          "payment_collections.*",
+          "payment_collections.status",
+          "payment_collections.captured_amount",
+          "payment_collections.authorized_amount",
+          "payment_collections.payments.*",
+          "payment_collections.payments.status",
+          "payment_collections.payments.captured_at",
+          "payment_collections.payments.captures.*",
+          "summary.*",
+        ],
+        filters: { id: orderId },
+      });
+      if (data && data.length > 0) {
+        return data[0];
+      }
+    }
+  } catch (err: any) {
+    console.warn("[FULFILLMENT] query.graph retrieval error, using fallback:", err.message);
+  }
+
+  const orderModule: any = scope.resolve(Modules.ORDER);
+  return await orderModule.retrieveOrder(orderId, {
+    relations: ["items", "shipping_address", "shipping_methods"],
+  }).catch(() => null);
+}
+
+const SUCCESS_PAYMENT_STATUSES = [
+  "paid",
+  "captured",
+  "authorized",
+  "partially_captured",
+  "settled",
+  "succeeded",
+  "completed",
+];
+
+function isOrderPaymentSuccessful(order: any): boolean {
+  if (!order) return false;
+
+  const rawPaymentStatus = String(order.payment_status || "").toLowerCase();
+  const rawOrderStatus = String(order.status || "").toLowerCase();
+  const metaPaymentStatus = String(order.metadata?.payment_status || "").toLowerCase();
+
+  // 1. Direct payment_status field
+  if (SUCCESS_PAYMENT_STATUSES.includes(rawPaymentStatus)) return true;
+
+  // 2. Metadata payment status flags
+  if (SUCCESS_PAYMENT_STATUSES.includes(metaPaymentStatus)) return true;
+  if (order.metadata?.settled === true || order.metadata?.is_paid === true) return true;
+
+  // 3. Completed order workflow status
+  if (rawOrderStatus === "completed") return true;
+
+  // 4. Order Summary paid total
+  const summaryPaid = Number(order.summary?.paid_total ?? order.summary?.raw_paid_total?.value ?? 0);
+  if (summaryPaid > 0) return true;
+
+  // 5. Payment Collections and Payments
+  if (Array.isArray(order.payment_collections) && order.payment_collections.length > 0) {
+    for (const pc of order.payment_collections) {
+      const pcStatus = String(pc?.status || "").toLowerCase();
+      if (SUCCESS_PAYMENT_STATUSES.includes(pcStatus)) return true;
+      if (Number(pc?.captured_amount || 0) > 0 || Number(pc?.authorized_amount || 0) > 0) return true;
+
+      if (Array.isArray(pc.payments)) {
+        for (const p of pc.payments) {
+          const pStatus = String(p?.status || "").toLowerCase();
+          if (SUCCESS_PAYMENT_STATUSES.includes(pStatus)) return true;
+          if (p?.captured_at != null) return true;
+          if (Array.isArray(p.captures) && p.captures.length > 0) return true;
+          if (Number(p?.captured_amount || 0) > 0) return true;
+        }
+      }
+    }
+  }
+
+  return false;
+}
+
+function getOrderPaymentStatusDisplay(order: any): string {
+  if (!order) return "unpaid";
+  if (order.payment_status && order.payment_status !== "not_paid") return order.payment_status;
+  if (order.metadata?.payment_status) return order.metadata.payment_status;
+  if (Array.isArray(order.payment_collections) && order.payment_collections.length > 0) {
+    const pc = order.payment_collections[0];
+    if (pc?.status) return pc.status;
+    if (Array.isArray(pc?.payments) && pc.payments[0]?.status) return pc.payments[0].status;
+  }
+  return order.payment_status || order.status || "unpaid";
+}
 
 /**
  * Generates a valid 6x4 PDF base64 string (4in x 6in / 288pt x 432pt) conforming to PDF-1.4 standard
@@ -90,10 +204,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
     let isUk = true;
 
     if (orderId) {
-      const orderModule: any = req.scope.resolve(Modules.ORDER);
-      const order: any = await orderModule.retrieveOrder(orderId, {
-        relations: ["shipping_address"],
-      }).catch(() => null);
+      const order: any = await fetchOrderWithPaymentDetails(req.scope, orderId);
 
       if (order) {
         labelBase64 = order.metadata?.shipping_label_pdf || "";
@@ -192,19 +303,19 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     }
 
     const orderModule: any = req.scope.resolve(Modules.ORDER);
-    const order: any = await orderModule.retrieveOrder(orderId, {
-      relations: ["items", "shipping_address", "shipping_methods"],
-    });
+    const order: any = await fetchOrderWithPaymentDetails(req.scope, orderId);
 
     if (!order) {
       return res.status(404).json({ message: `Order '${orderId}' not found` });
     }
 
-    // Gate 1: Check Payment Status
-    const paymentStatus = order.metadata?.payment_status || (order.status === "completed" ? "paid" : "unpaid");
-    if (paymentStatus !== "paid" && order.status !== "completed") {
+    // Gate 1: Check Payment Status (supports Medusa 2.0 captured, authorized, completed, summary paid total, collections, and metadata)
+    const isPaid = isOrderPaymentSuccessful(order);
+
+    if (!isPaid) {
+      const currentStatus = getOrderPaymentStatusDisplay(order);
       return res.status(400).json({
-        message: "Order payment status must be 'paid' before generating a shipping fulfillment label.",
+        message: `Order payment status is '${currentStatus}'. Payment must be captured, authorized, or marked as paid before generating a shipping fulfillment label.`,
       });
     }
 

@@ -241,9 +241,11 @@ export function OrderList() {
   // Filter and sort orders logic (defaults to date descending: latest on top)
   const filteredOrders = useMemo(() => {
     const list = (orders || []).filter((order) => {
-      const meta = order.metadata || {};
-      const tags = Array.isArray(meta.tags) ? meta.tags : [];
-      const paymentStatus = (meta.payment_status || (order.status === "completed" ? "paid" : "pending")).toLowerCase();
+      const rawPayment = String(order.payment_status || meta.payment_status || (order.status === "completed" ? "paid" : "pending")).toLowerCase();
+      const isPaid = ["paid", "captured", "authorized", "partially_captured", "settled", "succeeded", "completed"].includes(rawPayment) ||
+        meta.settled === true || meta.is_paid === true ||
+        (Array.isArray(order.payment_collections) && order.payment_collections.some((pc) => ["captured", "authorized", "completed"].includes(String(pc?.status || "").toLowerCase())));
+      const paymentStatus = isPaid ? "paid" : (rawPayment === "refunded" ? "refunded" : rawPayment === "partially_refunded" ? "partially_refunded" : rawPayment);
       const fulfillmentStatus = (meta.fulfillment_status || (order.fulfillments?.length > 0 ? "fulfilled" : "unfulfilled")).toLowerCase();
       const returns = Array.isArray(meta.returns) ? meta.returns : [];
       const returnStatus = meta.return_status || (returns.some((r) => r.status === "open") ? "return_requested" : returns.some((r) => r.status === "received") ? "returned" : null);
@@ -251,7 +253,7 @@ export function OrderList() {
       // Tab filter
       if (activeTab === "open" && order.status === "completed") return false;
       if (activeTab === "unfulfilled" && fulfillmentStatus === "fulfilled") return false;
-      if (activeTab === "unpaid" && paymentStatus === "paid") return false;
+      if (activeTab === "unpaid" && isPaid) return false;
       if (activeTab === "subscriptions" && !isSubscriptionOrder(order)) return false;
       if (activeTab === "returns" && !returnStatus && returns.length === 0) return false;
 
@@ -340,7 +342,13 @@ export function OrderList() {
     const all = orders.length;
     const open = orders.filter((o) => o.status !== "completed").length;
     const unfulfilled = orders.filter((o) => (o.metadata?.fulfillment_status || (o.fulfillments?.length > 0 ? "fulfilled" : "unfulfilled")) !== "fulfilled").length;
-    const unpaid = orders.filter((o) => (o.metadata?.payment_status || "pending") !== "paid").length;
+    const unpaid = orders.filter((o) => {
+      const raw = String(o.payment_status || o.metadata?.payment_status || (o.status === "completed" ? "paid" : "pending")).toLowerCase();
+      const isPaid = ["paid", "captured", "authorized", "partially_captured", "settled", "succeeded", "completed"].includes(raw) ||
+        o.metadata?.settled === true || o.metadata?.is_paid === true ||
+        (Array.isArray(o.payment_collections) && o.payment_collections.some((pc) => ["captured", "authorized", "completed"].includes(String(pc?.status || "").toLowerCase())));
+      return !isPaid;
+    }).length;
     const subOrdersCount = orders.filter(isSubscriptionOrder).length;
     const subscriptionsTotal = Math.max(subOrdersCount, subscriptions.length);
     const returnsCount = orders.filter((o) => {
@@ -840,11 +848,13 @@ export function OrderList() {
                       : filteredOrders.map((order) => {
                           const meta = order.metadata || {};
                           const isSelected = selectedOrders.includes(order.id);
-                          const customerName = getCustomerName(order);
-                          const paymentStatus = (meta.payment_status || (order.status === "completed" ? "paid" : "pending")).toLowerCase();
+                          const rawPayment = String(order.payment_status || meta.payment_status || (order.status === "completed" ? "paid" : "pending")).toLowerCase();
+                          const isPaid = ["paid", "captured", "authorized", "partially_captured", "settled", "succeeded", "completed"].includes(rawPayment) ||
+                            meta.settled === true || meta.is_paid === true ||
+                            (Array.isArray(order.payment_collections) && order.payment_collections.some((pc) => ["captured", "authorized", "completed"].includes(String(pc?.status || "").toLowerCase())));
+                          const paymentStatus = isPaid ? "paid" : (rawPayment === "refunded" ? "refunded" : rawPayment === "partially_refunded" ? "partially_refunded" : rawPayment);
                           const isRefunded = paymentStatus === "refunded";
                           const isPartiallyRefunded = paymentStatus === "partially_refunded";
-                          const isPaid = paymentStatus === "paid";
                           const isFulfilled = (meta.fulfillment_status || (order.fulfillments?.length > 0 ? "fulfilled" : "unfulfilled")) === "fulfilled";
                           const returns = Array.isArray(meta.returns) ? meta.returns : [];
                           const returnStatus = meta.return_status || (returns.some((r) => r.status === "open") ? "return_requested" : returns.some((r) => r.status === "received") ? "returned" : null);

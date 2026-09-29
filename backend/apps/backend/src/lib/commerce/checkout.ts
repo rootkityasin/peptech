@@ -88,7 +88,7 @@ export async function prepareCheckout(scope:any,ledger:CommerceService,customer:
           {payment_intent_data:{metadata:{peptech_attempt:id,peptech_profile:context.profile}}}),
         cancel_url:`${origin.replace(/\/$/,"")}/checkout?cancelled=1`,
         success_url:`${origin.replace(/\/$/,"")}/checkout/success?attempt_id=${id}`,
-        expires_at:attempt.data.expires_at,}, {idempotencyKey:operationKey("checkout-hosted-v2",id)})
+        expires_at:attempt.data.expires_at,} as any, {idempotencyKey:operationKey("checkout-hosted-v2",id)})
       } catch(error:any) {
         // A definitive validation rejection created no session. Allow a fresh revision.
         // Network/unknown failures remain recoverable with the same idempotency key.

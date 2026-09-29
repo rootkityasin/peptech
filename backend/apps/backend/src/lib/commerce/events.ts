@@ -51,7 +51,7 @@ export async function reconcileSession(scope:any,ledger:CommerceService,sessionI
 }
 export async function reconcileInvoice(scope:any,ledger:CommerceService,invoiceId:string) {
   const context=stripeContext();const invoice=await context.stripe.invoices.retrieve(invoiceId)
-  const subscriptionId=objectId(invoice.parent?.subscription_details?.subscription)
+  const subscriptionId=objectId((invoice as any).parent?.subscription_details?.subscription || (invoice as any).subscription)
   if(!subscriptionId) return
   const subscription=await syncSubscription(ledger,subscriptionId)
   if(!subscription || invoice.livemode!==(context.mode==="live") || objectId(invoice.customer)!==subscription.data.stripe_customer_id) return
