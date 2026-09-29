@@ -28,7 +28,7 @@ export const checkoutSchema = z.object({
   ruo_accepted: z.literal(true),
   recurring_accepted: z.boolean(),
   payment_method: z.enum(["stripe"]).default("stripe"),
-  ui_mode: z.enum(["embedded", "embedded_page", "hosted_page"]).default("embedded").optional(),
+  ui_mode: z.enum(["embedded", "hosted", "embedded_page", "hosted_page"]).default("embedded").optional(),
 }).strict()
 
 export function fail(message: string, status = 400): never {
