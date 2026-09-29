@@ -18,6 +18,8 @@ backend/.medusa/
 build/
 dist/
 app/
+public/admin/assets/
+**/public/admin/assets/
 
 # Environment Variables
 .env

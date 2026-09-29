@@ -1166,341 +1166,79 @@ function OrderCreateFulfillmentForm({
 
     setIsSubmittingRM(true);
     try {
-      const resolvedLocationId =
-        selectedLocationId ||
-        stockLocations.options[0]?.value ||
-        initialShippingOption?.service_zone?.fulfillment_set?.location?.id ||
-        "sloc_01M2AQBJBGCFENNWHR7VJDHPCZ";
-
-      const resolvedShippingOptionId =
-        initialShippingOptionId ||
-        (isUk ? "so_01M2AQBJF4RGXHZWYACYK0FR42" : "so_01M2AQBJF4P8WHASPP2DZMC0KX");
-
-      const res = await fetch("/admin/custom/fulfillment", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          orderId: order.id,
-          location_id: resolvedLocationId,
-          shipping_option_id: resolvedShippingOptionId,
-          serviceCode,
-          weightInGrams: Number(weightInGrams) || 240,
-          packageFormatIdentifier: packageFormat,
-          dimensions: {
-            heightInMms: Number(dimHeight) || 80,
-            widthInMms: Number(dimWidth) || 160,
-            depthInMms: Number(dimDepth) || 220
-          },
-          includeLabelInResponse: Boolean(includeLabel),
-          no_notification: !data.send_notification,
-          items
-        })
-      });
-
-      const resData = await res.json();
-      if (!res.ok) {
-        throw new Error(resData.message || "Failed to create Royal Mail fulfillment");
-      }
-
-      if (resData.labelBase64 && includeLabel) {
-        downloadPdf(
-          resData.labelBase64,
-          \`Royal-Mail-Label-\${order.display_id || order.id}.pdf\`
-        );
-      }
-
-      toast.success(t("orders.fulfillment.toast.created"), {
-        description: resData.trackingNumber
-          ? \`Royal Mail tracking: \${resData.trackingNumber}\`
-          : undefined
-      });
-
-      handleSuccess(\`/orders/\${order.id}\`);
+      fs.rmSync(viteCacheDir, { recursive: true, force: true });
+      console.log('[PEPTECH] Successfully cleared stale Vite dependency cache');
     } catch (e) {
-      toast.error(
-        e instanceof Error ? e.message : t("errorBoundary.defaultTitle")
-      );
-    } finally {
-      setIsSubmittingRM(false);
+      console.warn('[PEPTECH WARN] Could not clear .vite cache:', e.message);
     }
-  });
-  useEffect(() => {
-    if (!initialShippingOption) {
-      return;
-    }
-    form.setValue(
-      "location_id",
-      initialShippingOption.service_zone.fulfillment_set.location.id
-    );
-    form.setValue("shipping_option_id", initialShippingOption.id);
-  }, [initialShippingOption]);
-  const fulfilledQuantityArray = (order.items || []).map(
-    (item) => item.requires_shipping === requiresShipping && item.detail?.fulfilled_quantity
-  );
-  useEffect(() => {
-    const itemsToFulfill = order?.items?.filter(
-      (item) => item.requires_shipping === requiresShipping && getFulfillableQuantity(item) > 0
-    ) || [];
-    setFulfillableItems(itemsToFulfill);
-    if (itemsToFulfill.length) {
-      form.clearErrors("root");
-    } else {
-      form.setError("root", {
-        type: "manual",
-        message: t("orders.fulfillment.error.noItems")
-      });
-    }
-    const quantityMap = itemsToFulfill.reduce((acc, item) => {
-      acc[item.id] = getFulfillableQuantity(item);
-      return acc;
-    }, {});
-    form.setValue("quantity", quantityMap);
-  }, [...fulfilledQuantityArray, requiresShipping]);
-  return /* @__PURE__ */ jsx(RouteFocusModal.Form, { form, children: /* @__PURE__ */ jsxs(
-    KeyboundForm,
-    {
-      onSubmit: handleSubmit,
-      className: "flex h-full flex-col overflow-hidden",
-      children: [
-        /* @__PURE__ */ jsx(RouteFocusModal.Header, {}),
-        /* @__PURE__ */ jsx(RouteFocusModal.Body, { className: "flex h-full w-full flex-col items-center divide-y overflow-y-auto", children: /* @__PURE__ */ jsx("div", { className: "flex size-full flex-col items-center overflow-auto p-16", children: /* @__PURE__ */ jsx("div", { className: "flex w-full max-w-[736px] flex-col justify-center px-2 pb-2", children: /* @__PURE__ */ jsxs("div", { className: "flex flex-col divide-y divide-dashed", children: [
-          /* @__PURE__ */ jsx("div", { className: "pb-8", children: /* @__PURE__ */ jsx(
-            Form.Field,
-            {
-              control: form.control,
-              name: "location_id",
-              render: ({ field: { ...field } }) => {
-                return /* @__PURE__ */ jsxs(Form.Item, { children: [
-                  /* @__PURE__ */ jsxs("div", { className: "flex flex-col gap-2 xl:flex-row xl:items-center", children: [
-                    /* @__PURE__ */ jsxs("div", { className: "flex-1", children: [
-                      /* @__PURE__ */ jsx(Form.Label, { children: t("fields.location") }),
-                      /* @__PURE__ */ jsx(Form.Hint, { children: t("orders.fulfillment.locationDescription") })
-                    ] }),
-                    /* @__PURE__ */ jsx("div", { className: "flex-1", children: /* @__PURE__ */ jsx(Form.Control, { children: /* @__PURE__ */ jsx(
-                      Combobox,
-                      {
-                        ...field,
-                        options: stockLocations.options,
-                        searchValue: stockLocations.searchValue,
-                        onSearchValueChange: stockLocations.onSearchValueChange,
-                        disabled: stockLocations.disabled
-                      }
-                    ) }) })
-                  ] }),
-                  /* @__PURE__ */ jsx(Form.ErrorMessage, {})
-                ] });
-              }
-            }
-          ) }),
-          /* @__PURE__ */ jsx("div", { className: "py-8", children: /* @__PURE__ */ jsxs("div", { className: "flex flex-col gap-3", children: [
-            /* @__PURE__ */ jsxs("div", { className: "flex flex-col gap-2 xl:flex-row xl:items-center", children: [
-              /* @__PURE__ */ jsxs("div", { className: "flex-1", children: [
-                /* @__PURE__ */ jsx(Form.Label, { children: t("fields.shippingMethod") }),
-                /* @__PURE__ */ jsx(Form.Hint, { children: "Official carrier integration for domestic & international dispatch" })
-              ] }),
-              /* @__PURE__ */ jsx("div", { className: "flex-1", children: /* @__PURE__ */ jsx("div", { className: "flex items-center justify-between p-3 rounded-lg border border-ui-border-base bg-ui-bg-subtle", children: /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-3", children: [
-                /* @__PURE__ */ jsx("div", { className: "flex items-center justify-center w-8 h-8 rounded-md bg-[#0B1F3A] text-[#00C5A0] font-bold text-xs", children: "RM" }),
-                /* @__PURE__ */ jsxs("div", { children: [
-                  /* @__PURE__ */ jsxs("div", { className: "text-xs font-semibold text-ui-fg-base flex items-center gap-1.5", children: [
-                    "Royal Mail Click & Drop",
-                    /* @__PURE__ */ jsx("span", { className: "inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-[#00C5A0]/10 text-[#00C5A0] border border-[#00C5A0]/20", children: isUk ? "Domestic UK" : "International Tracked" })
-                  ] }),
-                  /* @__PURE__ */ jsx("div", { className: "text-[11px] text-ui-fg-subtle", children: isUk ? "Royal Mail Tracked 24 / 48 (Domestic)" : "Royal Mail International Tracked (Worldwide)" })
-                ] })
-              ] }) }) })
-            ] }),
-            /* @__PURE__ */ jsxs("div", { className: "mt-2 p-4 rounded-lg border border-ui-border-base bg-ui-bg-subtle/50 space-y-4", children: [
-              /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4", children: [
-                /* @__PURE__ */ jsxs("div", { children: [
-                  /* @__PURE__ */ jsx("label", { className: "block text-xs font-medium text-ui-fg-base mb-1", children: "Royal Mail Service Code" }),
-                  /* @__PURE__ */ jsxs("select", {
-                    value: serviceCode,
-                    onChange: (e) => setServiceCode(e.target.value),
-                    className: "w-full text-xs rounded-md border border-ui-border-base bg-ui-bg-base p-2 text-ui-fg-base",
-                    children: [
-                      /* @__PURE__ */ jsx("option", { value: "AUTO", children: "AUTO — Default Account Rules (Recommended)" }),
-                      /* @__PURE__ */ jsx("option", { value: "TPN", children: "TPN — Royal Mail Tracked 24" }),
-                      /* @__PURE__ */ jsx("option", { value: "TPS", children: "TPS — Royal Mail Tracked 48" }),
-                      /* @__PURE__ */ jsx("option", { value: "OLP1", children: "OLP1 — Royal Mail 24 (Online Postage)" }),
-                      /* @__PURE__ */ jsx("option", { value: "OLP2", children: "OLP2 — Royal Mail 48 (Online Postage)" }),
-                      /* @__PURE__ */ jsx("option", { value: "TRM", children: "TRM — Royal Mail Tracked 24 (Signature)" }),
-                      /* @__PURE__ */ jsx("option", { value: "SD1", children: "SD1 — Special Delivery Guaranteed by 1pm" }),
-                      /* @__PURE__ */ jsx("option", { value: "OTA", children: "OTA — Royal Mail International Tracked" }),
-                      /* @__PURE__ */ jsx("option", { value: "OTC", children: "OTC — Royal Mail International Tracked & Signed" }),
-                      /* @__PURE__ */ jsx("option", { value: "OLS", children: "OLS — Royal Mail International Signed" })
-                    ]
-                  })
-                ] }),
-                /* @__PURE__ */ jsxs("div", { children: [
-                  /* @__PURE__ */ jsx("label", { className: "block text-xs font-medium text-ui-fg-base mb-1", children: "Packaging Profile" }),
-                  /* @__PURE__ */ jsxs("select", {
-                    value: selectedProfileId,
-                    onChange: (e) => handleProfileChange(e.target.value),
-                    className: "w-full text-xs rounded-md border border-ui-border-base bg-ui-bg-base p-2 text-ui-fg-base font-medium",
-                    children: [
-                      DEFAULT_PACKAGING_PROFILES.map((p) => /* @__PURE__ */ jsxs("option", { value: p.id, children: [
-                        p.name,
-                        " (",
-                        p.packageFormatLabel,
-                        " · ",
-                        p.weightInGrams,
-                        "g)"
-                      ] }, p.id)),
-                      /* @__PURE__ */ jsx("option", { value: "custom", children: "Custom Dimensions & Weight" })
-                    ]
-                  })
-                ] })
-              ] }),
-              /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1", children: [
-                /* @__PURE__ */ jsxs("div", { children: [
-                  /* @__PURE__ */ jsx("label", { className: "block text-[11px] font-medium text-ui-fg-subtle mb-1", children: "Gross Weight (g)" }),
-                  /* @__PURE__ */ jsx("input", {
-                    type: "number",
-                    value: weightInGrams,
-                    onChange: (e) => setWeightInGrams(Number(e.target.value)),
-                    className: "w-full text-xs rounded-md border border-ui-border-base bg-ui-bg-base p-1.5 text-ui-fg-base"
-                  })
-                ] }),
-                /* @__PURE__ */ jsxs("div", { children: [
-                  /* @__PURE__ */ jsx("label", { className: "block text-[11px] font-medium text-ui-fg-subtle mb-1", children: "Height (mm)" }),
-                  /* @__PURE__ */ jsx("input", {
-                    type: "number",
-                    value: dimHeight,
-                    onChange: (e) => setDimHeight(Number(e.target.value)),
-                    className: "w-full text-xs rounded-md border border-ui-border-base bg-ui-bg-base p-1.5 text-ui-fg-base"
-                  })
-                ] }),
-                /* @__PURE__ */ jsxs("div", { children: [
-                  /* @__PURE__ */ jsx("label", { className: "block text-[11px] font-medium text-ui-fg-subtle mb-1", children: "Width (mm)" }),
-                  /* @__PURE__ */ jsx("input", {
-                    type: "number",
-                    value: dimWidth,
-                    onChange: (e) => setDimWidth(Number(e.target.value)),
-                    className: "w-full text-xs rounded-md border border-ui-border-base bg-ui-bg-base p-1.5 text-ui-fg-base"
-                  })
-                ] }),
-                /* @__PURE__ */ jsxs("div", { children: [
-                  /* @__PURE__ */ jsx("label", { className: "block text-[11px] font-medium text-ui-fg-subtle mb-1", children: "Depth (mm)" }),
-                  /* @__PURE__ */ jsx("input", {
-                    type: "number",
-                    value: dimDepth,
-                    onChange: (e) => setDimDepth(Number(e.target.value)),
-                    className: "w-full text-xs rounded-md border border-ui-border-base bg-ui-bg-base p-1.5 text-ui-fg-base"
-                  })
-                ] })
-              ] }),
-              /* @__PURE__ */ jsxs("label", { className: "flex items-center gap-2 text-xs text-ui-fg-base cursor-pointer pt-1", children: [
-                /* @__PURE__ */ jsx("input", {
-                  type: "checkbox",
-                  checked: includeLabel,
-                  onChange: (e) => setIncludeLabel(e.target.checked),
-                  className: "rounded text-ui-fg-interactive"
-                }),
-                /* @__PURE__ */ jsx("span", { children: "Generate & download 6x4 thermal PDF label immediately upon fulfillment" })
-              ] })
-            ] })
-          ] }) }),
-          /* @__PURE__ */ jsxs("div", { children: [
-            /* @__PURE__ */ jsxs(Form.Item, { className: "mt-8", children: [
-              /* @__PURE__ */ jsx(Form.Label, { children: t("orders.fulfillment.itemsToFulfill") }),
-              /* @__PURE__ */ jsx(Form.Hint, { children: t("orders.fulfillment.itemsToFulfillDesc") }),
-              /* @__PURE__ */ jsx("div", { className: "flex flex-col gap-y-1", children: fulfillableItems.map((item) => {
-                return /* @__PURE__ */ jsx(
-                  OrderCreateFulfillmentItem,
-                  {
-                    form,
-                    item,
-                    locationId: selectedLocationId,
-                    disabled: false,
-                    reservations: reservations ?? [],
-                    currencyCode: order.currency_code
-                  },
-                  item.id
-                );
-              }) })
-            ] }),
-            form.formState.errors.root && /* @__PURE__ */ jsx(
-              Alert,
-              {
-                variant: "error",
-                dismissible: false,
-                className: "flex items-center",
-                children: form.formState.errors.root.message
-              }
-            )
-          ] }),
-          /* @__PURE__ */ jsx("div", { className: "mt-8 pt-8 ", children: /* @__PURE__ */ jsx(
-            Form.Field,
-            {
-              control: form.control,
-              name: "send_notification",
-              render: ({ field: { onChange, value, ...field } }) => {
-                return /* @__PURE__ */ jsxs(Form.Item, { children: [
-                  /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between", children: [
-                    /* @__PURE__ */ jsx(Form.Label, { children: t("orders.returns.sendNotification") }),
-                    /* @__PURE__ */ jsx(Form.Control, { children: /* @__PURE__ */ jsx(Form.Control, { children: /* @__PURE__ */ jsx(
-                      Switch,
-                      {
-                        dir: "ltr",
-                        className: "rtl:rotate-180",
-                        checked: !!value,
-                        onCheckedChange: onChange,
-                        ...field
-                      }
-                    ) }) })
-                  ] }),
-                  /* @__PURE__ */ jsx(Form.Hint, { className: "!mt-1", children: t("orders.fulfillment.sendNotificationHint") }),
-                  /* @__PURE__ */ jsx(Form.ErrorMessage, {})
-                ] });
-              }
-            }
-          ) })
-        ] }) }) }) }),
-        /* @__PURE__ */ jsx(RouteFocusModal.Footer, { children: /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-end gap-x-2", children: [
-          /* @__PURE__ */ jsx(RouteFocusModal.Close, { asChild: true, children: /* @__PURE__ */ jsx(Button, { size: "small", variant: "secondary", children: t("actions.cancel") }) }),
-          /* @__PURE__ */ jsx(
-            Button,
-            {
-              size: "small",
-              type: "submit",
-              isLoading: isSubmittingRM || isMutating,
-              children: "Confirm & Fulfill with Royal Mail"
-            }
-          )
-        ] }) })
-      ]
-    }
-  ) });
-}
-
-// Route Component
-function OrderCreateFulfillment() {
-  const { id } = useParams();
-  const [searchParams] = useSearchParams();
-  const requiresShipping = searchParams.get("requires_shipping") === "true";
-  const { order, isLoading, isError, error } = useOrder(id, {
-    fields: "currency_code,*items,*items.variant,+items.variant.product.shipping_profile.id,*shipping_address,+shipping_methods.shipping_option_id,no_notification"
-  });
-  if (isError) {
-    throw error;
   }
-  const ready = !isLoading && order;
-  return /* @__PURE__ */ jsx(RouteFocusModal, { children: ready && /* @__PURE__ */ jsx(
-    OrderCreateFulfillmentForm,
-    {
-      order,
-      requiresShipping
+
+  // 1. Update Order Detail
+  const detailPath = path.resolve(__dirname, 'OrderDetail.jsx');
+  const subDetailPath = path.resolve(__dirname, 'SubscriptionDetail.jsx');
+
+  if (fs.existsSync(detailPath)) {
+    const detailSource = fs.readFileSync(detailPath, 'utf8');
+
+    let subDetailSource = '';
+    if (fs.existsSync(subDetailPath)) {
+      subDetailSource = fs.readFileSync(subDetailPath, 'utf8');
     }
-  ) });
-}
+
+    const importRegex = /^import\s+[^;]+;\s*$/gm;
+
+    // Header imports (all hoisted to the very top)
+    const headerImports = [
+      'import { useState, useEffect, useMemo } from "react";',
+      'import { useParams, Link, useNavigate } from "react-router-dom";',
+      'import { useOrder, useUpdateOrder } from "./chunk-CHQR6GOM.mjs";',
+      'import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";',
+    ].join('\n');
+
+    // Strip imports from both files
+    const cleanSubDetail = subDetailSource
+      .replace(importRegex, '')
+      .replace(/export\s+default\s+[^;]+;\s*/g, '')
+      .replace(/export\s+function\s+SubscriptionDetail/g, 'function SubscriptionDetail')
+      .trim();
+
+    const cleanDetail = detailSource
+      .replace(importRegex, '')
+      .replace(/const DARK_MODE_CSS = `[\s\S]*?`;\r?\n?/, '')
+      .replace('export { OrderDetail as Component };', '')
+      .trim();
+
+    const exportSuffix = `
+const OrderDetailBreadcrumb = () => "Order / Subscription";
+const orderLoader = async () => null;
+const seo = () => ({ title: "Details - PEPTECH" });
+
 export {
-  OrderCreateFulfillment as Component
+  OrderDetail as Component,
+  OrderDetailBreadcrumb as Breadcrumb,
+  orderLoader as loader,
+  seo
 };
 `;
 
-    fs.writeFileSync(orderCreateFulfillmentMjsFile, completeChunkCode, 'utf8');
-    console.log('[PEPTECH] Successfully updated order-create-fulfillment-IF6OCW3B.mjs with complete Royal Mail implementation');
+    const combined = [
+      headerImports,
+      cleanSubDetail,
+      cleanDetail,
+      exportSuffix
+    ].filter(Boolean).join('\n\n');
+
+    const targetDetailFile = path.resolve(distDir, 'order-detail-D5MN4DFC.mjs');
+    fs.writeFileSync(targetDetailFile, combined, 'utf8');
+    console.log('[PEPTECH] Successfully updated order-detail-D5MN4DFC.mjs with Subscription Detail support');
+  }
+
+  // 2. Update Order List
+  const listPath = path.resolve(__dirname, 'OrderList.jsx');
+  if (fs.existsSync(listPath)) {
+    const listSource = fs.readFileSync(listPath, 'utf8');
+    const targetListFile = path.resolve(distDir, 'order-list-XGUCTQTG.mjs');
+    fs.writeFileSync(targetListFile, listSource, 'utf8');
+    console.log('[PEPTECH] Successfully updated order-list-XGUCTQTG.mjs');
   }
 }
-
