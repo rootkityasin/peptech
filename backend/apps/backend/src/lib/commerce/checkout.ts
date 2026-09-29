@@ -115,7 +115,7 @@ export async function prepareCheckout(scope: any, ledger: CommerceService, custo
           quote,
           revision: input.revision,
           origin,
-          uiMode: input.ui_mode || "hosted_page",
+          uiMode: input.ui_mode || "embedded",
         })
 
         attempt.data.session_id = result.sessionId
