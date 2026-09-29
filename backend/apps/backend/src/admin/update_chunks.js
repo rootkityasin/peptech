@@ -405,10 +405,13 @@ export const Thumbnail = ({ src, alt, size = "base" }: ThumbnailProps) => {
   // - Medusa's <LayoutComposer widgetsZonePrefix="order.details"> mounts custom widgets (like order-royal-mail-fulfillment.tsx).
   console.log('[PEPTECH] Preserving native Medusa 2.0 Order Detail and Order List components.');
 
-  // 2. Update Locations & Shipping LinksSection with Packaging Profiles link
-  const locationListFile = path.resolve(distDir, 'location-list-WQ7ZAUO7.mjs');
-  if (fs.existsSync(locationListFile)) {
-    let locJs = fs.readFileSync(locationListFile, 'utf8');
+  // 2. Update Locations & Shipping LinksSection and Settings navigation with Packaging Profiles link
+  // 2.1 Update all location-list-*.mjs chunks in dist
+  const distFiles = fs.readdirSync(distDir);
+  const locationListFiles = distFiles.filter(f => f.startsWith('location-list') && f.endsWith('.mjs'));
+  for (const locFile of locationListFiles) {
+    const locFilePath = path.resolve(distDir, locFile);
+    let locJs = fs.readFileSync(locFilePath, 'utf8');
     if (!locJs.includes('/settings/locations/packaging-profiles')) {
       const targetPattern = 'to: "/settings/locations/shipping-option-types",';
       const replacementPattern = `to: "/settings/locations/packaging-profiles",
@@ -423,13 +426,79 @@ export const Thumbnail = ({ src, alt, size = "base" }: ThumbnailProps) => {
         to: "/settings/locations/shipping-option-types",`;
       if (locJs.includes(targetPattern)) {
         locJs = locJs.replace(targetPattern, replacementPattern);
-        fs.writeFileSync(locationListFile, locJs, 'utf8');
-        console.log('[PEPTECH] Successfully added Packaging Profiles link to location-list-WQ7ZAUO7.mjs');
+        fs.writeFileSync(locFilePath, locJs, 'utf8');
+        console.log(`[PEPTECH] Successfully added Packaging Profiles link to ${locFile}`);
       }
     }
   }
 
-  // Also update source location-list.tsx
+  // 2.2 Update LinksSection in app.js
+  if (fs.existsSync(appJsFile)) {
+    let appJs = fs.readFileSync(appJsFile, 'utf8');
+    if (!appJs.includes('/settings/locations/packaging-profiles')) {
+      const appJsTarget = `to: "/settings/locations/shipping-option-types",
+            labelKey: t5("stockLocations.sidebar.shippingOptionTypes.label"),`;
+      const appJsReplacement = `to: "/settings/locations/packaging-profiles",
+            labelKey: "Packaging Profiles",
+            descriptionKey: "Box dimensions, gross weight presets, and packaging formats for Royal Mail dispatch.",
+            icon: /* @__PURE__ */ (0, import_jsx_runtime672.jsx)(import_icons166.ShoppingBag, {})
+          }
+        ),
+        /* @__PURE__ */ (0, import_jsx_runtime672.jsx)(
+          SidebarLink,
+          {
+            to: "/settings/locations/shipping-option-types",
+            labelKey: t5("stockLocations.sidebar.shippingOptionTypes.label"),`;
+      if (appJs.includes(appJsTarget)) {
+        appJs = appJs.replace(appJsTarget, appJsReplacement);
+        fs.writeFileSync(appJsFile, appJs, 'utf8');
+        console.log('[PEPTECH] Successfully added Packaging Profiles link to app.js LinksSection');
+      }
+    }
+
+    // 2.3 Update useBusinessRoutes in app.js
+    if (!appJs.includes('to: "/settings/locations/packaging-profiles"')) {
+      const appRoutesTarget = `to: "/settings/locations"\n          },`;
+      const appRoutesReplacement = `to: "/settings/locations"\n          },\n          {\n            label: "Packaging Profiles",\n            to: "/settings/locations/packaging-profiles"\n          },`;
+      if (appJs.includes(appRoutesTarget)) {
+        appJs = appJs.replace(appRoutesTarget, appRoutesReplacement);
+        fs.writeFileSync(appJsFile, appJs, 'utf8');
+        console.log('[PEPTECH] Successfully added Packaging Profiles to app.js useBusinessRoutes');
+      }
+    }
+  }
+
+  // 2.4 Update useBusinessRoutes in chunk-ZT6PMEES.mjs
+  const ztChunkFileEarly = path.resolve(distDir, 'chunk-ZT6PMEES.mjs');
+  if (fs.existsSync(ztChunkFileEarly)) {
+    let ztJs = fs.readFileSync(ztChunkFileEarly, 'utf8');
+    if (!ztJs.includes('to: "/settings/locations/packaging-profiles"')) {
+      const ztTarget = `to: "/settings/locations"\n      },`;
+      const ztReplacement = `to: "/settings/locations"\n      },\n      {\n        label: "Packaging Profiles",\n        to: "/settings/locations/packaging-profiles"\n      },`;
+      if (ztJs.includes(ztTarget)) {
+        ztJs = ztJs.replace(ztTarget, ztReplacement);
+        fs.writeFileSync(ztChunkFileEarly, ztJs, 'utf8');
+        console.log('[PEPTECH] Successfully added Packaging Profiles to chunk-ZT6PMEES.mjs useBusinessRoutes');
+      }
+    }
+  }
+
+  // 2.5 Update source settings-layout.tsx
+  const settingsLayoutTsx = path.resolve(dashboardRoot, 'src/components/layout/settings-layout/settings-layout.tsx');
+  if (fs.existsSync(settingsLayoutTsx)) {
+    let slTsx = fs.readFileSync(settingsLayoutTsx, 'utf8');
+    if (!slTsx.includes('/settings/locations/packaging-profiles')) {
+      const slTarget = `to: "/settings/locations",\n      },`;
+      const slReplacement = `to: "/settings/locations",\n      },\n      {\n        label: "Packaging Profiles",\n        to: "/settings/locations/packaging-profiles",\n      },`;
+      if (slTsx.includes(slTarget)) {
+        slTsx = slTsx.replace(slTarget, slReplacement);
+        fs.writeFileSync(settingsLayoutTsx, slTsx, 'utf8');
+        console.log('[PEPTECH] Successfully added Packaging Profiles link to source settings-layout.tsx');
+      }
+    }
+  }
+
+  // 2.6 Also update source location-list.tsx
   const locationListTsx = path.resolve(dashboardRoot, 'src/routes/locations/location-list/location-list.tsx');
   if (fs.existsSync(locationListTsx)) {
     let locTsx = fs.readFileSync(locationListTsx, 'utf8');

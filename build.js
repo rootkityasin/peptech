@@ -18,19 +18,25 @@ if (fs.existsSync(updateChunksScript)) {
 }
 
 // 1. Build Medusa backend and admin dashboard inside backend directory
-const baseNodeOptions = process.env.NODE_OPTIONS || '';
-const nodeOptionsWithTs = baseNodeOptions.includes('ts-node/register')
-  ? baseNodeOptions
-  : `${baseNodeOptions} -r ts-node/register`.trim();
+const cleanNodeOptions = (process.env.NODE_OPTIONS || '')
+  .replace(/-r\s+ts-node\/register/g, '')
+  .replace(/--require\s+ts-node\/register/g, '')
+  .trim();
+
+const buildEnv = {
+  ...process.env,
+  NODE_ENV: 'production',
+};
+if (cleanNodeOptions) {
+  buildEnv.NODE_OPTIONS = cleanNodeOptions;
+} else {
+  delete buildEnv.NODE_OPTIONS;
+}
 
 execSync('npx medusa build --lint false', {
   stdio: 'inherit',
   cwd: backendDir,
-  env: {
-    ...process.env,
-    NODE_ENV: 'production',
-    NODE_OPTIONS: nodeOptionsWithTs,
-  },
+  env: buildEnv,
 });
 
 const serverDir = path.resolve(backendDir, '.medusa/server');

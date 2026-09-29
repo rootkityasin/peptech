@@ -554,7 +554,7 @@ export default function OrderRoyalMailFulfillmentWidget({ data: order }: OrderWi
               setShowModal(true);
             }}
           >
-            + Create Royal Mail Shipment
+            + Fulfill Items with Royal Mail
           </Button>
         </div>
       </div>
@@ -578,7 +578,7 @@ export default function OrderRoyalMailFulfillmentWidget({ data: order }: OrderWi
             {isPaid && (
               <div className="mt-3">
                 <Button size="small" variant="primary" onClick={() => setShowModal(true)}>
-                  Generate Royal Mail 6x4 Label
+                  Fulfill Items with Royal Mail
                 </Button>
               </div>
             )}
@@ -702,7 +702,7 @@ export default function OrderRoyalMailFulfillmentWidget({ data: order }: OrderWi
             <div className="flex items-center justify-between border-b pb-3">
               <div>
                 <Heading level="h2" className="text-base font-semibold text-ui-fg-base">
-                  Generate Royal Mail Shipment
+                  Royal Mail Click & Drop Fulfillment
                 </Heading>
                 <Text size="small" className="text-ui-fg-subtle">
                   Order #{order?.display_id || order?.id} • Destination: {shipping.city || "Cambridge"}, {countryCode}
@@ -1067,5 +1067,5 @@ export default function OrderRoyalMailFulfillmentWidget({ data: order }: OrderWi
 }
 
 export const config = defineWidgetConfig({
-  zone: "order.details.after",
+  zone: "order.details.before",
 });
