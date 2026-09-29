@@ -45,7 +45,15 @@ export async function prepareCheckout(scope: any, ledger: CommerceService, custo
       try {
         const session = await context.stripe.checkout.sessions.retrieve(other.data.session_id)
         if (session.status === "open") await context.stripe.checkout.sessions.expire(session.id)
-        else if (session.status !== "expired" && session.payment_status === "paid") fail("A previous payment is awaiting confirmation. Check your orders before retrying.", 409)
+        else if (session.status !== "expired" && session.payment_status === "paid") {
+          try {
+            const { reconcileSession } = await import("./events.js")
+            await reconcileSession(scope, ledger, session.id)
+            continue
+          } catch {
+            fail("A previous payment is awaiting confirmation. Check your orders before retrying.", 409)
+          }
+        }
       } catch (e: any) {
         if (e?.status === 409) throw e
       }
