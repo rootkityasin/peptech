@@ -384,7 +384,54 @@ export default function OrderRoyalMailFulfillmentWidget({ data: order }: OrderWi
 
   // Local state for instant UI update after label creation
   const [localFulfillments, setLocalFulfillments] = useState<any[]>([]);
+  const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
 
+  const handleDeleteFulfillment = async (ful: any) => {
+    if (!order?.id) return;
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete Royal Mail shipment #${ful.id || ful.tracking_number}?\n\n` +
+      `This will cancel the order in Royal Mail Click & Drop and Medusa. Any printed postage labels must be destroyed.`
+    );
+    if (!confirmDelete) return;
+
+    const fulKey = ful.id || ful.tracking_number;
+    setIsDeletingId(fulKey);
+
+    try {
+      const res = await fetch("/admin/custom/fulfillment", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          orderId: order.id,
+          fulfillmentId: ful.id,
+          orderIdentifier: ful.order_identifier,
+          orderReference: order.display_id ? `PEP-${order.display_id}` : String(order.id),
+        }),
+      });
+
+      const resData = await res.json();
+      if (!res.ok) {
+        throw new Error(resData.message || "Failed to delete fulfillment");
+      }
+
+      setLocalFulfillments((prev) => prev.filter((f) => f.id !== ful.id && f.tracking_number !== ful.tracking_number));
+
+      if (toast) {
+        toast.success("Shipment Cancelled & Deleted", {
+          description: "Removed from Royal Mail Click & Drop and Medusa.",
+        });
+      }
+
+      setTimeout(() => {
+        window.location.reload();
+      }, 750);
+    } catch (err: any) {
+      alert("Error deleting shipment: " + (err.message || "Unknown error"));
+    } finally {
+      setIsDeletingId(null);
+    }
+  };
 
   // Existing Fulfillments from order metadata or order.fulfillments
   const fulfillments = useMemo(() => {
@@ -450,11 +497,19 @@ export default function OrderRoyalMailFulfillmentWidget({ data: order }: OrderWi
       setLocalFulfillments((prev) => [...prev, newFul]);
       setShowModal(false);
 
+      if (includeLabel && resData.labelBase64) {
+        downloadPdf(resData.labelBase64, `Royal-Mail-Label-${order.display_id || order.id}.pdf`);
+      }
+
       if (toast) {
         toast.success("Shipment Created", {
           description: `Royal Mail tracking: ${resData.trackingNumber}`,
         });
       }
+
+      setTimeout(() => {
+        window.location.reload();
+      }, 750);
     } catch (err: any) {
       setErrorMessage(err.message || "Fulfillment creation error");
     } finally {
@@ -607,6 +662,15 @@ export default function OrderRoyalMailFulfillmentWidget({ data: order }: OrderWi
                       onClick={() => downloadPdf(labelPdf, `Royal-Mail-Label-${order.display_id || order.id}.pdf`)}
                     >
                       ⬇️ Download PDF
+                    </Button>
+                    <Button
+                      size="small"
+                      variant="danger"
+                      disabled={isDeletingId === (ful.id || ful.tracking_number)}
+                      onClick={() => handleDeleteFulfillment(ful)}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50 font-medium"
+                    >
+                      {isDeletingId === (ful.id || ful.tracking_number) ? "Deleting..." : "🗑️ Delete"}
                     </Button>
                   </div>
 
