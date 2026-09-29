@@ -1,3 +1,12 @@
+// Register ts-node for TypeScript module resolution during Medusa CLI commands (e.g. generate-types)
+try {
+  require('ts-node/register');
+} catch (e) {
+  try {
+    require('ts-node').register({ transpileOnly: true });
+  } catch (err) {}
+}
+
 import { loadEnv, defineConfig } from '@medusajs/framework/utils'
 const fs = require('fs')
 const path = require('path')
