@@ -176,6 +176,10 @@ function isOrderPaymentSuccessful(order: any): boolean {
 }
 
 export default function OrderRoyalMailFulfillmentWidget({ data: order }: OrderWidgetProps) {
+  if (!order) {
+    return null;
+  }
+
   const [showModal, setShowModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -498,7 +502,7 @@ export default function OrderRoyalMailFulfillmentWidget({ data: order }: OrderWi
       setShowModal(false);
 
       if (includeLabel && resData.labelBase64) {
-        downloadPdf(resData.labelBase64, `Royal-Mail-Label-${order.display_id || order.id}.pdf`);
+        downloadPdf(resData.labelBase64, `Royal-Mail-Label-${order?.display_id || order?.id}.pdf`);
       }
 
       if (toast) {
@@ -659,7 +663,7 @@ export default function OrderRoyalMailFulfillmentWidget({ data: order }: OrderWi
                     <Button
                       size="small"
                       variant="secondary"
-                      onClick={() => downloadPdf(labelPdf, `Royal-Mail-Label-${order.display_id || order.id}.pdf`)}
+                      onClick={() => downloadPdf(labelPdf, `Royal-Mail-Label-${order?.display_id || order?.id}.pdf`)}
                     >
                       ⬇️ Download PDF
                     </Button>
@@ -701,7 +705,7 @@ export default function OrderRoyalMailFulfillmentWidget({ data: order }: OrderWi
                   Generate Royal Mail Shipment
                 </Heading>
                 <Text size="small" className="text-ui-fg-subtle">
-                  Order #{order.display_id || order.id} • Destination: {shipping.city || "Cambridge"}, {countryCode}
+                  Order #{order?.display_id || order?.id} • Destination: {shipping.city || "Cambridge"}, {countryCode}
                 </Text>
               </div>
               <button

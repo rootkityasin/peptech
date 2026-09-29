@@ -647,16 +647,79 @@ export const Thumbnail = ({ src, alt, size = "base" }: ThumbnailProps) => {
           path: match.pathname
         };
       }).filter(Boolean);`;
-    const appJsCrumbsNew = `return {
-          label,
-          path: match.pathname
-        };
-      }).filter(Boolean).filter((crumb, idx, arr) => idx === 0 || crumb.path !== arr[idx - 1].path || String(crumb.label) !== String(arr[idx - 1].label));`;
     if (appJs.includes(appJsCrumbsOld)) {
       appJs = appJs.replace(appJsCrumbsOld, appJsCrumbsNew);
       fs.writeFileSync(appJsFile, appJs, 'utf8');
       console.log('[PEPTECH] Successfully added breadcrumb deduplication to app.js');
     }
+  }
+
+  // 4.5 Merge settings and locations extension routes before :location_id in getRouteMap
+  if (fs.existsSync(ztChunkFile)) {
+    let ztJs = fs.readFileSync(ztChunkFile, 'utf8');
+    const ztLocTarget = `                {
+                  path: ":location_id",`;
+    const ztLocReplacement = `                ...((() => {
+                  const extLoc = (settingsRoutes || []).flatMap((r) => r?.children || []).find((c) => c && c.path === "locations");
+                  return extLoc?.children || [];
+                })()),
+                {
+                  path: ":location_id",`;
+    if (ztJs.includes(ztLocTarget) && !ztJs.includes('const extLoc = (settingsRoutes || [])')) {
+      ztJs = ztJs.replace(ztLocTarget, ztLocReplacement);
+    }
+    const ztSettingsTarget = `            ...settingsRoutes.flatMap((r) => r?.children || [])`;
+    const ztSettingsReplacement = `            ...(settingsRoutes || []).flatMap((r) => r?.children || []).filter((r) => r && r.path !== "locations")`;
+    if (ztJs.includes(ztSettingsTarget)) {
+      ztJs = ztJs.replace(ztSettingsTarget, ztSettingsReplacement);
+    }
+    fs.writeFileSync(ztChunkFile, ztJs, 'utf8');
+    console.log('[PEPTECH] Successfully patched locations route merging in chunk-ZT6PMEES.mjs');
+  }
+
+  if (fs.existsSync(appJsFile)) {
+    let appJs = fs.readFileSync(appJsFile, 'utf8');
+    const appLocTarget = `                {
+                  path: ":location_id",`;
+    const appLocReplacement = `                ...((() => {
+                  const extLoc = (settingsRoutes || []).flatMap((r) => r?.children || []).find((c) => c && c.path === "locations");
+                  return extLoc?.children || [];
+                })()),
+                {
+                  path: ":location_id",`;
+    if (appJs.includes(appLocTarget) && !appJs.includes('const extLoc = (settingsRoutes || [])')) {
+      appJs = appJs.replace(appLocTarget, appLocReplacement);
+    }
+    const appSettingsTarget = `            ...settingsRoutes.flatMap((r) => r?.children || [])`;
+    const appSettingsReplacement = `            ...(settingsRoutes || []).flatMap((r) => r?.children || []).filter((r) => r && r.path !== "locations")`;
+    if (appJs.includes(appSettingsTarget)) {
+      appJs = appJs.replace(appSettingsTarget, appSettingsReplacement);
+    }
+    fs.writeFileSync(appJsFile, appJs, 'utf8');
+    console.log('[PEPTECH] Successfully patched locations route merging in app.js');
+  }
+
+  const getRouteMapTsx = path.resolve(dashboardRoot, 'src/dashboard-app/routes/get-route.map.tsx');
+  if (fs.existsSync(getRouteMapTsx)) {
+    let grmTsx = fs.readFileSync(getRouteMapTsx, 'utf8');
+    const tsxLocTarget = `                {
+                  path: ":location_id",`;
+    const tsxLocReplacement = `                ...((() => {
+                  const extLoc = (settingsRoutes || []).flatMap((r) => r?.children || []).find((c) => c && c.path === "locations");
+                  return extLoc?.children || [];
+                })()),
+                {
+                  path: ":location_id",`;
+    if (grmTsx.includes(tsxLocTarget) && !grmTsx.includes('const extLoc = (settingsRoutes || [])')) {
+      grmTsx = grmTsx.replace(tsxLocTarget, tsxLocReplacement);
+    }
+    const tsxSettingsTarget = `            ...settingsRoutes.flatMap((r) => r?.children || []),`;
+    const tsxSettingsReplacement = `            ...(settingsRoutes || []).flatMap((r) => r?.children || []).filter((r) => r && r.path !== "locations"),`;
+    if (grmTsx.includes(tsxSettingsTarget)) {
+      grmTsx = grmTsx.replace(tsxSettingsTarget, tsxSettingsReplacement);
+    }
+    fs.writeFileSync(getRouteMapTsx, grmTsx, 'utf8');
+    console.log('[PEPTECH] Successfully patched locations route merging in get-route.map.tsx');
   }
 
   // 5. Update OrderCreateFulfillmentForm in chunk (order-create-fulfillment-IF6OCW3B.mjs)
