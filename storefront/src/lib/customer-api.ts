@@ -322,7 +322,7 @@ export async function registerCustomer(payload: CustomerRegisterPayload): Promis
  * Retrieve the current authenticated customer and addresses
  */
 export async function getCustomerMe(token: string): Promise<Customer> {
-  const response = await fetchWithTimeout(`${getBackendUrl()}/store/customers/me?fields=*addresses`, {
+  const response = await fetchWithTimeout(`${getBackendUrl()}/store/customers/me?fields=*addresses,+addresses.*`, {
     method: "GET",
     headers: {
       "Authorization": `Bearer ${token}`,
@@ -335,7 +335,28 @@ export async function getCustomerMe(token: string): Promise<Customer> {
   }
 
   const data = await response.json()
-  return data.customer
+  const customer: Customer = data.customer
+
+  // Medusa 2.0 fallback: if addresses list is empty, query /store/customers/me/addresses directly
+  if (!customer.addresses || customer.addresses.length === 0) {
+    try {
+      const addrRes = await fetchWithTimeout(`${getBackendUrl()}/store/customers/me/addresses`, {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "x-publishable-api-key": PUBLISHABLE_KEY,
+        },
+      })
+      if (addrRes.ok) {
+        const addrData = await addrRes.json()
+        if (Array.isArray(addrData.addresses) && addrData.addresses.length > 0) {
+          customer.addresses = addrData.addresses
+        }
+      }
+    } catch {}
+  }
+
+  return customer
 }
 
 /**
@@ -403,13 +424,32 @@ export async function deleteCustomerAddress(token: string, addressId: string): P
 }
 
 /**
+ * Fetch all saved delivery addresses for the authenticated customer
+ */
+export async function getCustomerAddresses(token: string): Promise<CustomerAddress[]> {
+  try {
+    const response = await fetchWithTimeout(`${getBackendUrl()}/store/customers/me/addresses`, {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "x-publishable-api-key": PUBLISHABLE_KEY,
+      },
+    })
+    if (!response.ok) return []
+    const data = await response.json()
+    return Array.isArray(data.addresses) ? data.addresses : []
+  } catch {
+    return []
+  }
+}
+
+/**
  * Fetch authenticated customer's order history from Medusa 2.0 PostgreSQL database
  */
 export async function getCustomerOrders(token?: string, customerId?: string, email?: string): Promise<any[]> {
   try {
     const params = new URLSearchParams()
     if (customerId) params.append("customer_id", customerId)
-    if (email) params.append("email", email)
 
     const headers: Record<string, string> = {
       "x-publishable-api-key": PUBLISHABLE_KEY,
@@ -475,5 +515,33 @@ export async function createStoreOrder(payload: any, token?: string): Promise<{ 
 
   const data = await response.json()
   return data
+}
+
+/**
+ * Fetch a single order receipt from Medusa 2.0 PostgreSQL database by order ID or display ID
+ */
+export async function getOrderReceipt(orderId: string, token?: string): Promise<any | null> {
+  try {
+    const headers: Record<string, string> = {
+      "x-publishable-api-key": PUBLISHABLE_KEY,
+    }
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`
+    }
+
+    const response = await fetchWithTimeout(`${getBackendUrl()}/store/custom/orders/${encodeURIComponent(orderId)}`, {
+      method: "GET",
+      headers,
+    })
+
+    if (response.ok) {
+      const data = await response.json()
+      return data.order || null
+    }
+    return null
+  } catch (err) {
+    console.warn(`Failed to fetch order ${orderId} receipt:`, err)
+    return null
+  }
 }
 

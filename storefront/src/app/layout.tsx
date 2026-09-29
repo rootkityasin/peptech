@@ -14,8 +14,8 @@ const geistSans = Geist({
 })
 
 export const metadata: Metadata = {
-  title: "PEPTECH® | Quality. Safety. Precision. | Rapid Testing Systems",
-  description: "The Complete PEPTECH® System. Reusable precision pen systems, individual test cartridges, and laboratory reagents.",
+  title: "PEPTECH® | Quality. Safety. Precision.",
+  description: "The Complete PEPTECH® System. Reusable precision pen systems, refill cartridges, and laboratory freeze-dried vials.",
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

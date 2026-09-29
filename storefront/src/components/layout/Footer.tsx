@@ -10,8 +10,8 @@ export function Footer() {
   const [email, setEmail] = useState("")
   const [subscribed, setSubscribed] = useState(false)
 
-  // Do not show global footer on checkout funnel pages (Figma Node 50:8021 / 52:8419)
-  if (pathname?.startsWith("/checkout")) return null
+  // Do not show global footer on checkout funnel or receipt pages
+  if (pathname?.startsWith("/checkout") || pathname?.startsWith("/receipt")) return null
 
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault()
@@ -22,7 +22,7 @@ export function Footer() {
   }
 
   return (
-    <footer className="bg-white border-t border-[#E2E8F0] pt-10 sm:pt-16 pb-8 sm:pb-10 text-[#64748B] text-xs">
+    <footer className="bg-white border-t border-[#E2E8F0] pt-10 sm:pt-16 pb-8 sm:pb-10 text-[#64748B] text-xs print:hidden">
       {/* Main 4-Column Footer Container - Figma Node 2:29623 */}
       <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8 sm:gap-10 pb-8 sm:pb-12">
@@ -37,6 +37,7 @@ export function Footer() {
                   width={125}
                   height={26}
                   className="object-contain"
+                  style={{ width: "auto", height: "auto" }}
                 />
               </div>
             </Link>

@@ -52,6 +52,16 @@ async function processEmail(scope:any,ledger:CommerceService,record:LedgerRecord
     const current=await ledger.get(record.id);if(!current||current.state==="done")return
     const {data}=current
     if(data.type!=="email")return
+
+    if (!process.env.STRIPE_EMAIL_HOST) {
+      const logger = scope.resolve("logger")
+      logger.info(`[Dev Email Simulation] Confirmation email simulated for ${data.to} (Order: ${data.order_id || data.reference})`)
+      current.state = "done"
+      current.data = { ...current.data, dev_simulated: true, simulated_at: new Date().toISOString() }
+      await ledger.save(current)
+      return
+    }
+
     await scope.resolve(Modules.NOTIFICATION).createNotifications({to:data.to,channel:"email",template:data.template,idempotency_key:record.id,
       data:{...data,idempotency_key:record.id},trigger_type:data.template,resource_id:data.reference,resource_type:"peptech-commerce"})
     const sent=await scope.resolve(Modules.NOTIFICATION).listNotifications({idempotency_key:record.id})

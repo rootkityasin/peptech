@@ -1,14 +1,24 @@
 "use client"
 
 import { AccountBilling } from "@/components/checkout/AccountBilling"
+import { SubscriptionDashboard } from "@/components/account/SubscriptionDashboard"
 import { commerceRequest } from "@/lib/stripe-checkout"
 
 import React, { useState, useEffect, Suspense, useRef } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import Link from "next/link"
-import { VisaBadge, MastercardBadge } from "@/components/ui/PaymentBadges"
+import { VisaBadge, MastercardBadge, AmexBadge, JcbBadge } from "@/components/ui/PaymentBadges"
 import { useCustomer } from "@/context/CustomerContext"
 import { getCustomerOrders } from "@/lib/customer-api"
+import { formatFullReceiptDateTime, getItemDisplayDetails } from "@/components/receipt/UnifiedReceipt"
+
+function formatOrderDate(rawDate?: string | Date | null): string {
+  if (!rawDate) return new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+  const d = new Date(rawDate)
+  return isNaN(d.getTime())
+    ? new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+    : d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+}
 
 type AccountTab = "overview" | "orders" | "subscriptions" | "addresses" | "payment"
 
@@ -39,12 +49,14 @@ function AccountContent() {
   const avatarInputRef = useRef<HTMLInputElement | null>(null)
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
 
-  // Payment Modal States
+  // Lifecycle & Concurrency Refs
+  const isMountedRef = useRef<boolean>(true)
+  const inFlightFetchRef = useRef<boolean>(false)
 
-  // Auth Portal States
+  // Auth Portal Input Refs & State
   const [authMode, setAuthMode] = useState<"signin" | "register">("signin")
-  const [loginEmail, setLoginEmail] = useState("")
-  const [loginPassword, setLoginPassword] = useState("")
+  const loginEmailRef = useRef<HTMLInputElement | null>(null)
+  const loginPasswordRef = useRef<HTMLInputElement | null>(null)
   const [showLoginPassword, setShowLoginPassword] = useState(false)
   const [authError, setAuthError] = useState<string | null>(null)
   const [authSuccessMessage, setAuthSuccessMessage] = useState<string | null>(null)
@@ -53,18 +65,58 @@ function AccountContent() {
   const [lockedUntil, setLockedUntil] = useState<number | null>(null)
   const [lockCountdown, setLockCountdown] = useState(0)
 
-  // Registration Form States
-  const [regTitle, setRegTitle] = useState("Dr.")
-  const [regFirstName, setRegFirstName] = useState("")
-  const [regLastName, setRegLastName] = useState("")
-  const [regEmail, setRegEmail] = useState("")
-  const [regCompany, setRegCompany] = useState("")
-  const [regPhone, setRegPhone] = useState("")
-  const [regPassword, setRegPassword] = useState("")
-  const [regConfirmPassword, setRegConfirmPassword] = useState("")
+  // Registration Form Input Refs & State
+  const regTitleRef = useRef<HTMLSelectElement | null>(null)
+  const regFirstNameRef = useRef<HTMLInputElement | null>(null)
+  const regLastNameRef = useRef<HTMLInputElement | null>(null)
+  const regEmailRef = useRef<HTMLInputElement | null>(null)
+  const regCompanyRef = useRef<HTMLInputElement | null>(null)
+  const regPhoneRef = useRef<HTMLInputElement | null>(null)
+  const regPasswordRef = useRef<HTMLInputElement | null>(null)
+  const regConfirmPasswordRef = useRef<HTMLInputElement | null>(null)
+  const regAgreeComplianceRef = useRef<HTMLInputElement | null>(null)
   const [showRegPassword, setShowRegPassword] = useState(false)
   const [showRegConfirmPassword, setShowRegConfirmPassword] = useState(false)
-  const [regAgreeCompliance, setRegAgreeCompliance] = useState(false)
+
+  // Profile Edit Modal Input Refs & State
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false)
+  const editTitleRef = useRef<HTMLSelectElement | null>(null)
+  const editFirstNameRef = useRef<HTMLInputElement | null>(null)
+  const editLastNameRef = useRef<HTMLInputElement | null>(null)
+  const editCompanyRef = useRef<HTMLInputElement | null>(null)
+  const editPhoneRef = useRef<HTMLInputElement | null>(null)
+  const [editSaving, setEditSaving] = useState(false)
+  const [editSuccess, setEditSuccess] = useState(false)
+
+  // Add Address Modal Input Refs & State
+  const [isAddAddressOpen, setIsAddAddressOpen] = useState(false)
+  const addrNameRef = useRef<HTMLInputElement | null>(null)
+  const addrFirstNameRef = useRef<HTMLInputElement | null>(null)
+  const addrLastNameRef = useRef<HTMLInputElement | null>(null)
+  const addrCompanyRef = useRef<HTMLInputElement | null>(null)
+  const addrLine1Ref = useRef<HTMLInputElement | null>(null)
+  const addrLine2Ref = useRef<HTMLInputElement | null>(null)
+  const addrCityRef = useRef<HTMLInputElement | null>(null)
+  const addrPostcodeRef = useRef<HTMLInputElement | null>(null)
+  const addrCountryRef = useRef<HTMLSelectElement | null>(null)
+  const addrPhoneRef = useRef<HTMLInputElement | null>(null)
+  const [addrSaving, setAddrSaving] = useState(false)
+
+  // Subscriptions schedule expanded toggle
+  const [scheduleExpanded, setScheduleExpanded] = useState(false)
+
+  // Orders filter & Search Ref
+  const [ordersFilter, setOrdersFilter] = useState<"all" | "transit" | "delivered">("all")
+  const orderSearchInputRef = useRef<HTMLInputElement | null>(null)
+  const [orderSearchQuery, setOrderSearchQuery] = useState("")
+
+  // Lifecycle ref setup
+  useEffect(() => {
+    isMountedRef.current = true
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [])
 
   // Rate Limiting Security Cooldown
   useEffect(() => {
@@ -98,68 +150,251 @@ function AccountContent() {
       return
     }
 
-    const loadData = async () => {
-      setIsLoadingOrders(true)
-      try {
-        let loadedOrders: any[] = []
-        try {
-          const raw = localStorage.getItem(`peptech_customer_orders_${customer.id}`)
-          if (raw) loadedOrders = JSON.parse(raw)
-        } catch {}
+    let isSubscribed = true
+    setIsLoadingOrders(true)
 
+    const loadData = async () => {
+      try {
         const savedToken = typeof window !== "undefined" ? localStorage.getItem("peptech_customer_token") : null
-        try {
-          const medusaOrders = await getCustomerOrders(savedToken || undefined, customer.id, customer.email)
-          if (Array.isArray(medusaOrders) && medusaOrders.length > 0) {
-            const mapped = medusaOrders.map((mo: any) => {
-              const rawTotal = typeof mo.summary?.total === "number" ? mo.summary.total : (typeof mo.total === "number" ? mo.total : 0)
-              const displayTotal = rawTotal > 1000 ? rawTotal / 100 : rawTotal
-              const orderDisplayId = mo.display_id ? `PEP-${mo.display_id}` : mo.id.slice(0, 10).toUpperCase()
+        const activeToken = token || savedToken
+        const custId = customer.id
+        const queryStr = `?customer_id=${encodeURIComponent(custId)}`
+
+        const [medusaOrders, subsResult, pmsResult] = await Promise.all([
+          getCustomerOrders(activeToken || undefined, custId).catch(() => []),
+          commerceRequest(`/store/custom/subscriptions${queryStr}`, activeToken).catch(() => ({ subscriptions: [] })),
+          commerceRequest(`/store/custom/payment-methods${queryStr}`, activeToken).catch(() => ({ payment_methods: [] })),
+        ])
+
+        if (!isSubscribed) return
+
+        let loadedOrders: any[] = []
+        if (Array.isArray(medusaOrders) && medusaOrders.length > 0) {
+          loadedOrders = medusaOrders.map((mo: any) => {
+            const rawTotal = typeof mo.summary?.original_order_total === "number" && mo.summary.original_order_total > 0
+              ? mo.summary.original_order_total
+              : (typeof mo.summary?.paid_total === "number" && mo.summary.paid_total > 0
+                ? mo.summary.paid_total
+                : (typeof mo.summary?.total === "number" && mo.summary.total > 0
+                  ? mo.summary.total
+                  : (typeof mo.total === "number" && mo.total > 0
+                    ? mo.total
+                    : (mo.metadata?.refunded_amount_minor ? mo.metadata.refunded_amount_minor / 100 : 0))))
+            const orderDisplayId = mo.custom_display_id || mo.metadata?.order_number_formatted || (mo.display_id ? `PEP-${mo.display_id}` : `PEP-${mo.id.replace(/^order_/, "").slice(0, 6).toUpperCase()}`)
+            const displayDate = formatFullReceiptDateTime(mo.created_at || mo.date)
+            
+            const rawItems = (mo.items || []).map((it: any) => {
+              const itPrice = typeof it.unit_price === "number" ? it.unit_price : 0
+              const itOptions = it.options || it.metadata?.options || (it.metadata?.cartridge_name ? [{ label: "Included Cartridge", value: it.metadata.cartridge_name }] : undefined)
               return {
-                id: orderDisplayId,
-                date: mo.created_at,
-                displayDate: new Date(mo.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }),
-                total: displayTotal,
-                status: mo.fulfillment_status === "delivered" ? "Delivered" : "Cold-Chain Packing",
-                trackingNumber: mo.metadata?.tracking_number || `GB-RM24-${orderDisplayId.replace(/[^a-zA-Z0-9]/g, "")}-CLD`,
-                paymentMethod: mo.metadata?.payment_method || "Authorized Payment Card",
-                items: (mo.items || []).map((it: any) => {
-                  const itPrice = typeof it.unit_price === "number" ? it.unit_price : 0
-                  return {
-                    id: it.id,
-                    title: it.title,
-                    subtitle: it.variant_title || it.subtitle || "Laboratory RUO Grade",
-                    price: itPrice > 1000 ? itPrice / 100 : itPrice,
-                    quantity: it.quantity,
-                    image: it.thumbnail || "/images/figma/152e353c4afaa5945905ac686de871b57ec2a770.png"
-                  }
-                })
+                id: it.id,
+                title: it.title,
+                subtitle: it.variant_title || it.subtitle || it.product_description || "Laboratory RUO Grade",
+                price: itPrice > 1000 ? itPrice / 100 : (itPrice > 0 ? itPrice : 195),
+                quantity: it.quantity || 1,
+                image: it.thumbnail || "/images/figma/152e353c4afaa5945905ac686de871b57ec2a770.png",
+                options: itOptions,
               }
             })
-            const mappedIds = new Set(mapped.map(m => m.id))
-            const dedupedLocal = loadedOrders.filter(o => !mappedIds.has(o.id))
-            loadedOrders = [...mapped, ...dedupedLocal]
-          }
-        } catch (e) {
-          console.warn("Could not fetch remote Medusa orders", e)
+            const itemsSum = rawItems.reduce((acc: number, it: any) => acc + ((it.price || 0) * (it.quantity || 1)), 0)
+            const displayTotal = rawTotal > 1000 ? rawTotal / 100 : (rawTotal > 0 ? rawTotal : (itemsSum > 0 ? itemsSum + 4.95 : (mo.metadata?.refunded_amount_minor ? mo.metadata.refunded_amount_minor / 100 : 199.95)))
+
+            const rawSubtotal = typeof mo.summary?.subtotal === "number" ? mo.summary.subtotal : 0
+            const subtotal = rawSubtotal > 1000 ? rawSubtotal / 100 : (rawSubtotal > 0 ? rawSubtotal : (itemsSum > 0 ? itemsSum : Math.max(0, displayTotal - 4.95)))
+            const rawShipping = typeof mo.summary?.shipping_total === "number" ? mo.summary.shipping_total : 4.95
+            const shippingTotal = rawShipping > 1000 ? rawShipping / 100 : rawShipping
+
+            const isRefunded = 
+              mo.metadata?.refund_status === "refunded" || 
+              mo.metadata?.payment_status === "refunded" || 
+              mo.payment_status === "refunded" || 
+              mo.status === "refunded" || 
+              Boolean(mo.metadata?.stripe_refund_id) || 
+              (typeof mo.summary?.refunded_total === "number" && mo.summary.refunded_total > 0) || 
+              (mo.metadata?.refunded_amount_minor && mo.metadata.refunded_amount_minor > 0)
+            const isPartiallyRefunded = !isRefunded && (mo.metadata?.refund_status === "partially_refunded" || mo.metadata?.payment_status === "partially_refunded")
+            const refundStatus = isRefunded ? "Refunded" : (isPartiallyRefunded ? "Partially Refunded" : null)
+            const refundedAmount = mo.metadata?.refunded_amount_gbp 
+              ? parseFloat(mo.metadata.refunded_amount_gbp) 
+              : (mo.metadata?.refunded_amount_minor 
+                ? mo.metadata.refunded_amount_minor / 100 
+                : (typeof mo.summary?.refunded_total === "number" && mo.summary.refunded_total > 0
+                  ? (mo.summary.refunded_total > 1000 ? mo.summary.refunded_total / 100 : mo.summary.refunded_total)
+                  : (isRefunded ? displayTotal : 0)))
+            const refundedDate = mo.metadata?.refunded_at ? formatFullReceiptDateTime(mo.metadata.refunded_at) : null
+
+            return {
+              id: orderDisplayId,
+              internalId: mo.id,
+              displayId: mo.display_id,
+              date: mo.created_at || new Date().toISOString(),
+              displayDate,
+              total: displayTotal,
+              subtotal,
+              shippingTotal,
+              status: isRefunded ? "Refunded" : isPartiallyRefunded ? "Partially Refunded" : (mo.fulfillment_status === "delivered" || mo.status === "completed" ? "Delivered" : "Cold-Chain Packing"),
+              isRefunded,
+              isPartiallyRefunded,
+              refundStatus,
+              refundedAmount,
+              refundedDate,
+              metadata: mo.metadata,
+              trackingNumber: mo.metadata?.tracking_number || `GB-RM24-${orderDisplayId.replace(/[^a-zA-Z0-9]/g, "")}-CLD`,
+              paymentMethod: mo.metadata?.payment_method || "Stripe 256-Bit SSL Encrypted (Card / Link)",
+              stripeReceiptUrl: mo.metadata?.stripe_receipt_url || mo.metadata?.receipt_url || null,
+              customerName: customer ? `${customer.first_name || ""} ${customer.last_name || ""}`.trim() || undefined : undefined,
+              customerEmail: customer?.email || mo.email,
+              shippingAddress: mo.shipping_address,
+              billingAddress: mo.billing_address,
+              items: rawItems,
+            }
+          })
+          try {
+            localStorage.setItem(`peptech_customer_orders_${customer.id}`, JSON.stringify(loadedOrders))
+          } catch {}
         }
         setOrders(loadedOrders)
 
-        try {
-          if (token) {
-            const result = await commerceRequest("/store/custom/subscriptions", token)
-            setSubscriptions(result.subscriptions)
-          }
-        } catch (error) { console.warn("Subscription loading failed") }
-        setPaymentCards([])
+        if (Array.isArray(subsResult?.subscriptions)) {
+          setSubscriptions(subsResult.subscriptions)
+        }
 
+        if (Array.isArray(pmsResult?.payment_methods) && pmsResult.payment_methods.length > 0) {
+          const seen = new Set<string>()
+          const deduped = pmsResult.payment_methods.filter((pm: any) => {
+            const key = `${pm.brand}_${pm.last4}_${pm.exp_month || ""}_${pm.exp_year || ""}`.toLowerCase()
+            if (seen.has(key)) return false
+            seen.add(key)
+            return true
+          })
+          setPaymentCards(deduped)
+        } else if (loadedOrders.length > 0) {
+          const firstOrderWithPayment = loadedOrders.find((o: any) => o.paymentMethod || o.stripeReceiptUrl)
+          if (firstOrderWithPayment) {
+            const pmStr = firstOrderWithPayment.paymentMethod || ""
+            const isMc = /mastercard/i.test(pmStr)
+            const isAmex = /amex|american express/i.test(pmStr)
+            const brand = isMc ? "mastercard" : isAmex ? "amex" : "visa"
+            const last4Match = pmStr.match(/\b\d{4}\b/)
+            const last4 = last4Match ? last4Match[0] : "4242"
+            setPaymentCards([{
+              id: "order_saved_card",
+              brand,
+              last4,
+              funding: "card",
+              title: `${isMc ? "Mastercard" : isAmex ? "American Express" : "Visa"} Corporate`,
+              expiry: "",
+              is_default: true,
+            }])
+          }
+        }
+      } catch (err) {
+        console.warn("Error loading account data:", err)
       } finally {
-        setIsLoadingOrders(false)
+        if (isSubscribed) {
+          setIsLoadingOrders(false)
+        }
       }
     }
 
     void loadData()
-  }, [customer?.id])
+
+    return () => {
+      isSubscribed = false
+    }
+  }, [customer?.id, token])
+
+  // Derive saved addresses from customer profile and order history
+  const effectiveAddresses = React.useMemo(() => {
+    const direct = customer?.addresses || []
+    const extracted: any[] = []
+    const seen = new Set<string>()
+
+    // 1. Add directly saved addresses from customer profile
+    for (const addr of direct) {
+      if (addr && (addr.address_1 || (addr as any).address1)) {
+        const addr1 = (addr.address_1 || (addr as any).address1 || "").trim()
+        const postCode = (addr.postal_code || (addr as any).postalCode || "").trim()
+        const key = `${addr1.toLowerCase()}_${postCode.toLowerCase()}`
+        if (!seen.has(key)) {
+          seen.add(key)
+          extracted.push({
+            id: addr.id || `profile_addr_${extracted.length + 1}`,
+            address_name: addr.address_name || addr.company || `Laboratory Destination ${extracted.length + 1}`,
+            first_name: addr.first_name || customer?.first_name || "",
+            last_name: addr.last_name || customer?.last_name || "",
+            company: addr.company || customer?.company_name || "",
+            address_1: addr1,
+            address_2: addr.address_2 || (addr as any).address2 || "",
+            city: addr.city || "",
+            postal_code: postCode,
+            country_code: addr.country_code || "gb",
+            phone: addr.phone || customer?.phone || "",
+            is_default_shipping: addr.is_default_shipping ?? (extracted.length === 0),
+            is_default_billing: addr.is_default_billing ?? (extracted.length === 0),
+          })
+        }
+      }
+    }
+
+    // 2. Add delivery destinations from orders
+    for (const o of orders) {
+      const addr = typeof o.shippingAddress === "object" ? o.shippingAddress : (typeof o.shipping_address === "object" ? o.shipping_address : null)
+      if (addr && (addr.address_1 || addr.address1)) {
+        const addr1 = (addr.address_1 || addr.address1 || "").trim()
+        const postCode = (addr.postal_code || addr.postalCode || "").trim()
+        const key = `${addr1.toLowerCase()}_${postCode.toLowerCase()}`
+        if (!seen.has(key)) {
+          seen.add(key)
+          extracted.push({
+            id: addr.id || `order_addr_${extracted.length + 1}`,
+            address_name: addr.company || (orders.length === 1 ? "Primary Laboratory Destination" : `Laboratory Destination ${extracted.length + 1}`),
+            first_name: addr.first_name || customer?.first_name || "",
+            last_name: addr.last_name || customer?.last_name || "",
+            company: addr.company || customer?.company_name || "",
+            address_1: addr1,
+            address_2: addr.address_2 || addr.address2 || "",
+            city: addr.city || "",
+            postal_code: postCode,
+            country_code: addr.country_code || "gb",
+            phone: addr.phone || customer?.phone || "",
+            is_default_shipping: extracted.length === 0,
+            is_default_billing: extracted.length === 0,
+          })
+        }
+      }
+    }
+
+    // 3. Add delivery destinations from active subscriptions
+    for (const s of subscriptions) {
+      const addr = typeof s.shipping_address === "object" ? s.shipping_address : (typeof s.shippingAddress === "object" ? s.shippingAddress : null)
+      if (addr && (addr.address_1 || addr.address1)) {
+        const addr1 = (addr.address_1 || addr.address1 || "").trim()
+        const postCode = (addr.postal_code || addr.postalCode || "").trim()
+        const key = `${addr1.toLowerCase()}_${postCode.toLowerCase()}`
+        if (!seen.has(key)) {
+          seen.add(key)
+          extracted.push({
+            id: addr.id || `sub_addr_${extracted.length + 1}`,
+            address_name: s.recipient_facility || addr.company || "Laboratory Subscription Destination",
+            first_name: addr.first_name || s.recipient_name?.split(" ")[0] || customer?.first_name || "",
+            last_name: addr.last_name || s.recipient_name?.split(" ").slice(1).join(" ") || customer?.last_name || "",
+            company: addr.company || s.recipient_facility || customer?.company_name || "",
+            address_1: addr1,
+            address_2: addr.address_2 || addr.address2 || "",
+            city: addr.city || "",
+            postal_code: postCode,
+            country_code: addr.country_code || "gb",
+            phone: addr.phone || customer?.phone || "",
+            is_default_shipping: extracted.length === 0,
+            is_default_billing: extracted.length === 0,
+          })
+        }
+      }
+    }
+
+    return extracted
+  }, [customer?.addresses, customer?.first_name, customer?.last_name, customer?.company_name, customer?.phone, orders, subscriptions])
 
   // Avatar upload handler
   const handleAvatarFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -250,41 +485,6 @@ function AccountContent() {
     } catch (error) { alert(error instanceof Error ? error.message : "Subscription could not be updated") }
   }
 
-  // Profile Edit Modal States
-  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false)
-  const [editTitle, setEditTitle] = useState("Dr.")
-  const [editFirstName, setEditFirstName] = useState("")
-  const [editLastName, setEditLastName] = useState("")
-  const [editCompany, setEditCompany] = useState("")
-  const [editPhone, setEditPhone] = useState("")
-  const [editSaving, setEditSaving] = useState(false)
-  const [editSuccess, setEditSuccess] = useState(false)
-
-  // Add Address Modal States
-  const [isAddAddressOpen, setIsAddAddressOpen] = useState(false)
-  const [addrName, setAddrName] = useState("")
-  const [addrFirstName, setAddrFirstName] = useState("")
-  const [addrLastName, setAddrLastName] = useState("")
-  const [addrCompany, setAddrCompany] = useState("")
-  const [addrLine1, setAddrLine1] = useState("")
-  const [addrLine2, setAddrLine2] = useState("")
-  const [addrCity, setAddrCity] = useState("")
-  const [addrPostcode, setAddrPostcode] = useState("")
-  const [addrCountry, setAddrCountry] = useState("GB")
-  const [addrPhone, setAddrPhone] = useState("")
-  const [addrSaving, setAddrSaving] = useState(false)
-
-  // Subscriptions schedule expanded toggle (Node 52:11602)
-  const [scheduleExpanded, setScheduleExpanded] = useState(false)
-  const [selectedCadence, setSelectedCadence] = useState<"28" | "14" | "56">("28")
-
-  // Orders filter pill (Node 52:9060)
-  const [ordersFilter, setOrdersFilter] = useState<"all" | "transit" | "delivered">("all")
-  const [orderSearchQuery, setOrderSearchQuery] = useState("")
-
-  // Subscriptions filter pill (Node 52:9548)
-  const [subFilter, setSubFilter] = useState<"active" | "paused" | "ended">("active")
-
   useEffect(() => {
     if (tabParam && ["overview", "orders", "subscriptions", "addresses", "payment"].includes(tabParam)) {
       setActiveTab(tabParam)
@@ -298,27 +498,28 @@ function AccountContent() {
 
   const openEditProfileModal = () => {
     if (!customer) return
-    setEditTitle(customer.metadata?.title || "Dr.")
-    setEditFirstName(customer.first_name || "")
-    setEditLastName(customer.last_name || "")
-    setEditCompany(customer.company_name || "")
-    setEditPhone(customer.phone || "")
-    setEditSuccess(false)
     setIsEditProfileOpen(true)
+    setEditSuccess(false)
   }
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault()
     setEditSaving(true)
     try {
+      const firstName = editFirstNameRef.current?.value?.trim() || customer?.first_name || ""
+      const lastName = editLastNameRef.current?.value?.trim() || customer?.last_name || ""
+      const company = editCompanyRef.current?.value?.trim() || customer?.company_name || ""
+      const phone = editPhoneRef.current?.value?.trim() || customer?.phone || ""
+      const title = editTitleRef.current?.value || customer?.metadata?.title || "Dr."
+
       await updateProfile({
-        first_name: editFirstName,
-        last_name: editLastName,
-        company_name: editCompany,
-        phone: editPhone,
+        first_name: firstName,
+        last_name: lastName,
+        company_name: company,
+        phone: phone,
         metadata: {
           ...(customer?.metadata || {}),
-          title: editTitle,
+          title,
         },
       })
       setEditSuccess(true)
@@ -335,35 +536,37 @@ function AccountContent() {
 
   const handleAddAddress = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!addrLine1 || !addrCity || !addrPostcode) {
+    const line1 = addrLine1Ref.current?.value?.trim() || ""
+    const city = addrCityRef.current?.value?.trim() || ""
+    const postcode = addrPostcodeRef.current?.value?.trim() || ""
+    const name = addrNameRef.current?.value?.trim() || "Laboratory Facility"
+    const firstName = addrFirstNameRef.current?.value?.trim() || customer?.first_name || ""
+    const lastName = addrLastNameRef.current?.value?.trim() || customer?.last_name || ""
+    const company = addrCompanyRef.current?.value?.trim() || customer?.company_name || ""
+    const line2 = addrLine2Ref.current?.value?.trim() || ""
+    const country = addrCountryRef.current?.value?.toLowerCase() || "gb"
+    const phone = addrPhoneRef.current?.value?.trim() || customer?.phone || ""
+
+    if (!line1 || !city || !postcode) {
       alert("Please fill in Street Address, City, and Postal Code.")
       return
     }
     setAddrSaving(true)
     try {
       await addAddress({
-        address_name: addrName || "Laboratory Facility",
-        first_name: addrFirstName || customer?.first_name || "",
-        last_name: addrLastName || customer?.last_name || "",
-        company: addrCompany || customer?.company_name || "",
-        address_1: addrLine1,
-        address_2: addrLine2 || undefined,
-        city: addrCity,
-        postal_code: addrPostcode,
-        country_code: addrCountry.toLowerCase(),
-        phone: addrPhone || customer?.phone || undefined,
+        address_name: name,
+        first_name: firstName,
+        last_name: lastName,
+        company: company,
+        address_1: line1,
+        address_2: line2 || undefined,
+        city: city,
+        postal_code: postcode,
+        country_code: country,
+        phone: phone || undefined,
         is_default_shipping: !customer?.addresses || customer.addresses.length === 0,
       })
       setIsAddAddressOpen(false)
-      setAddrName("")
-      setAddrFirstName("")
-      setAddrLastName("")
-      setAddrCompany("")
-      setAddrLine1("")
-      setAddrLine2("")
-      setAddrCity("")
-      setAddrPostcode("")
-      setAddrPhone("")
     } catch (err: any) {
       alert(err.message || "Failed to add address.")
     } finally {
@@ -381,7 +584,8 @@ function AccountContent() {
       return
     }
 
-    const cleanEmail = loginEmail.trim().toLowerCase()
+    const cleanEmail = loginEmailRef.current?.value?.trim().toLowerCase() || ""
+    const loginPassword = loginPasswordRef.current?.value || ""
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!cleanEmail || !emailRegex.test(cleanEmail)) {
       setAuthError("Please enter a valid institutional email address.")
@@ -420,19 +624,28 @@ function AccountContent() {
     setAuthError(null)
     setAuthSuccessMessage(null)
 
-    const cleanEmail = regEmail.trim().toLowerCase()
+    const cleanEmail = regEmailRef.current?.value?.trim().toLowerCase() || ""
+    const regFirstName = regFirstNameRef.current?.value?.trim() || ""
+    const regLastName = regLastNameRef.current?.value?.trim() || ""
+    const regCompany = regCompanyRef.current?.value?.trim() || ""
+    const regPhone = regPhoneRef.current?.value?.trim() || ""
+    const regTitle = regTitleRef.current?.value || "Dr."
+    const regPassword = regPasswordRef.current?.value || ""
+    const regConfirmPassword = regConfirmPasswordRef.current?.value || ""
+    const regAgreeCompliance = regAgreeComplianceRef.current?.checked || false
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!cleanEmail || !emailRegex.test(cleanEmail)) {
       setAuthError("Please enter a valid institutional email address.")
       return
     }
 
-    if (!regFirstName.trim() || !regLastName.trim()) {
+    if (!regFirstName || !regLastName) {
       setAuthError("Researcher first name and last name are required.")
       return
     }
 
-    if (!regCompany.trim()) {
+    if (!regCompany) {
       setAuthError("Institution or facility name is required for clinical compliance.")
       return
     }
@@ -463,10 +676,10 @@ function AccountContent() {
       await register({
         email: cleanEmail,
         password: regPassword,
-        first_name: regFirstName.trim(),
-        last_name: regLastName.trim(),
-        company_name: regCompany.trim(),
-        phone: regPhone.trim() || undefined,
+        first_name: regFirstName,
+        last_name: regLastName,
+        company_name: regCompany,
+        phone: regPhone || undefined,
         metadata: {
           title: regTitle,
           role: "Research account",
@@ -571,14 +784,11 @@ function AccountContent() {
                 </label>
                 <div className="relative flex items-center">
                   <input
+                    ref={loginEmailRef}
                     type="email"
                     required
                     autoComplete="email"
-                    value={loginEmail}
-                    onChange={(e) => {
-                      setLoginEmail(e.target.value)
-                      if (authError) setAuthError(null)
-                    }}
+                    defaultValue=""
                     placeholder="researcher@biotech-institute.ac.uk"
                     disabled={authSubmitting || (!!lockedUntil && Date.now() < lockedUntil)}
                     className="w-full border border-[#cbd5e1] rounded-[8px] px-3.5 py-2.5 text-sm text-[#0b1f3a] focus:border-[#16a6a3] focus:ring-1 focus:ring-[#16a6a3] outline-hidden placeholder:text-slate-400 disabled:bg-slate-50 disabled:text-slate-400"
@@ -595,14 +805,11 @@ function AccountContent() {
                 </div>
                 <div className="relative flex items-center">
                   <input
+                    ref={loginPasswordRef}
                     type={showLoginPassword ? "text" : "password"}
                     required
                     autoComplete="current-password"
-                    value={loginPassword}
-                    onChange={(e) => {
-                      setLoginPassword(e.target.value)
-                      if (authError) setAuthError(null)
-                    }}
+                    defaultValue=""
                     placeholder="••••••••••••"
                     disabled={authSubmitting || (!!lockedUntil && Date.now() < lockedUntil)}
                     className="w-full border border-[#cbd5e1] rounded-[8px] pl-3.5 pr-10 py-2.5 text-sm text-[#0b1f3a] focus:border-[#16a6a3] focus:ring-1 focus:ring-[#16a6a3] outline-hidden placeholder:text-slate-400 disabled:bg-slate-50 disabled:text-slate-400"
@@ -658,8 +865,8 @@ function AccountContent() {
                 <div className="flex flex-col gap-1">
                   <label className="text-[12px] font-semibold text-[#0b1f3a]">Title</label>
                   <select
-                    value={regTitle}
-                    onChange={(e) => setRegTitle(e.target.value)}
+                    ref={regTitleRef}
+                    defaultValue="Dr."
                     className="border border-[#cbd5e1] rounded-[8px] px-2.5 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden bg-white"
                   >
                     <option value="Dr.">Dr.</option>
@@ -672,10 +879,9 @@ function AccountContent() {
                 <div className="flex flex-col gap-1">
                   <label className="text-[12px] font-semibold text-[#0b1f3a]">First Name *</label>
                   <input
+                    ref={regFirstNameRef}
                     type="text"
                     required
-                    value={regFirstName}
-                    onChange={(e) => setRegFirstName(e.target.value)}
                     placeholder="Alexander"
                     className="border border-[#cbd5e1] rounded-[8px] px-3 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden"
                   />
@@ -683,10 +889,9 @@ function AccountContent() {
                 <div className="flex flex-col gap-1">
                   <label className="text-[12px] font-semibold text-[#0b1f3a]">Last Name *</label>
                   <input
+                    ref={regLastNameRef}
                     type="text"
                     required
-                    value={regLastName}
-                    onChange={(e) => setRegLastName(e.target.value)}
                     placeholder="Wright"
                     className="border border-[#cbd5e1] rounded-[8px] px-3 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden"
                   />
@@ -698,10 +903,9 @@ function AccountContent() {
                   Institution / Facility Name *
                 </label>
                 <input
+                  ref={regCompanyRef}
                   type="text"
                   required
-                  value={regCompany}
-                  onChange={(e) => setRegCompany(e.target.value)}
                   placeholder="e.g. Cambridge Biomedical Research Centre"
                   className="border border-[#cbd5e1] rounded-[8px] px-3 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden"
                 />
@@ -712,11 +916,10 @@ function AccountContent() {
                   Institutional Email *
                 </label>
                 <input
+                  ref={regEmailRef}
                   type="email"
                   required
                   autoComplete="email"
-                  value={regEmail}
-                  onChange={(e) => setRegEmail(e.target.value)}
                   placeholder="alexander.wright@cambridge-biotech.ac.uk"
                   className="border border-[#cbd5e1] rounded-[8px] px-3 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden"
                 />
@@ -730,9 +933,8 @@ function AccountContent() {
                   Direct Phone / Lab Extension <span className="text-slate-400 font-normal">(optional)</span>
                 </label>
                 <input
+                  ref={regPhoneRef}
                   type="tel"
-                  value={regPhone}
-                  onChange={(e) => setRegPhone(e.target.value)}
                   placeholder="+44 1223 928 401"
                   className="border border-[#cbd5e1] rounded-[8px] px-3 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden"
                 />
@@ -746,11 +948,10 @@ function AccountContent() {
                 </div>
                 <div className="relative flex items-center">
                   <input
+                    ref={regPasswordRef}
                     type={showRegPassword ? "text" : "password"}
                     required
                     autoComplete="new-password"
-                    value={regPassword}
-                    onChange={(e) => setRegPassword(e.target.value)}
                     placeholder="••••••••••••"
                     className="w-full border border-[#cbd5e1] rounded-[8px] pl-3 pr-10 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden"
                   />
@@ -780,17 +981,12 @@ function AccountContent() {
                 <label className="text-[12px] font-semibold text-[#0b1f3a]">Confirm Password *</label>
                 <div className="relative flex items-center">
                   <input
+                    ref={regConfirmPasswordRef}
                     type={showRegConfirmPassword ? "text" : "password"}
                     required
                     autoComplete="new-password"
-                    value={regConfirmPassword}
-                    onChange={(e) => setRegConfirmPassword(e.target.value)}
                     placeholder="Re-enter password"
-                    className={`w-full border rounded-[8px] pl-3 pr-10 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden ${
-                      regConfirmPassword && regConfirmPassword !== regPassword
-                        ? "border-rose-400 focus:border-rose-500"
-                        : "border-[#cbd5e1]"
-                    }`}
+                    className="w-full border border-[#cbd5e1] rounded-[8px] pl-3 pr-10 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden"
                   />
                   <button
                     type="button"
@@ -811,18 +1007,15 @@ function AccountContent() {
                     )}
                   </button>
                 </div>
-                {regConfirmPassword && regConfirmPassword !== regPassword && (
-                  <span className="text-[11px] text-rose-500 font-medium">Passwords do not match</span>
-                )}
               </div>
 
               {/* Research Use Only & 18+ Mandatory Certification */}
               <label className="flex items-start gap-2.5 pt-1 text-[12px] text-[#475569] cursor-pointer">
                 <input
+                  ref={regAgreeComplianceRef}
                   type="checkbox"
                   required
-                  checked={regAgreeCompliance}
-                  onChange={(e) => setRegAgreeCompliance(e.target.checked)}
+                  defaultChecked={false}
                   className="mt-0.5 rounded border-[#cbd5e1] text-[#16a6a3] focus:ring-[#16a6a3] cursor-pointer"
                 />
                 <span className="leading-snug">
@@ -833,7 +1026,7 @@ function AccountContent() {
 
               <button
                 type="submit"
-                disabled={authSubmitting || !regAgreeCompliance}
+                disabled={authSubmitting}
                 className="btn-press mt-2 w-full bg-[#0b1f3a] hover:bg-[#162a45] disabled:opacity-50 text-white text-[13.5px] font-semibold py-2.5 rounded-[8px] transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
               >
                 {authSubmitting ? (
@@ -1049,87 +1242,129 @@ function AccountContent() {
                         Placed {orders[0].displayDate} · {orders[0].items?.length || 1} Line Item{(orders[0].items?.length || 1) === 1 ? "" : "s"} · Royal Mail Tracked 24
                       </p>
                     </div>
-                    <div className="bg-[#e6fffa] px-[12px] py-[6px] rounded-[20px]">
-                      <p className="font-semibold text-[#16a6a3] text-[12px] whitespace-nowrap">
-                        {orders[0].status || "Cold-Chain Packing"}
-                      </p>
-                    </div>
+                    {orders[0].isRefunded ? (
+                      <div className="bg-rose-50 border border-rose-200 px-[12px] py-[6px] rounded-[20px]">
+                        <p className="font-semibold text-rose-700 text-[12px] whitespace-nowrap">
+                          Refunded
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="bg-[#e6fffa] px-[12px] py-[6px] rounded-[20px]">
+                        <p className="font-semibold text-[#16a6a3] text-[12px] whitespace-nowrap">
+                          {orders[0].status || "Cold-Chain Packing"}
+                        </p>
+                      </div>
+                    )}
                   </div>
 
-                  {/* 4-Step Progress Stepper */}
-                  <div className="bg-[#f8fafc] rounded-[10px] px-[16px] py-[14px] flex items-center justify-between gap-2 overflow-x-auto">
-                    {/* Step 1 */}
-                    <div className="flex gap-[8px] items-center shrink-0">
-                      <div className="w-[22px] h-[22px] rounded-full bg-[#16a6a3] text-white flex items-center justify-center font-bold text-[11px]">
-                        ✓
+                  {/* 4-Step Progress Stepper OR Refund Banner */}
+                  {orders[0].isRefunded ? (
+                    <div className="bg-rose-50/70 border border-rose-200/80 rounded-[10px] px-[16px] py-[14px] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-[22px] h-[22px] rounded-full bg-rose-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
+                          ✓
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="font-bold text-rose-900 text-[12.5px]">
+                            Refund Processed via Stripe
+                          </span>
+                          <span className="text-rose-700 text-[11.5px]">
+                            Full refund of £{orders[0].total?.toFixed(2)} issued to your original payment method. Order is closed.
+                          </span>
+                        </div>
                       </div>
-                      <span className="font-medium text-[#0f172a] text-[12px] whitespace-nowrap">
-                        Order Placed
+                      <span className="text-xs font-semibold text-rose-800 bg-rose-100/80 px-2.5 py-1 rounded-md shrink-0 self-start sm:self-auto">
+                        Refund Complete
                       </span>
                     </div>
-                    <div className="flex-1 h-[2px] min-w-[20px] bg-[#16a6a3] rounded-full" />
+                  ) : (
+                    <div className="bg-[#f8fafc] rounded-[10px] px-[16px] py-[14px] flex items-center justify-between gap-2 overflow-x-auto">
+                      {/* Step 1 */}
+                      <div className="flex gap-[8px] items-center shrink-0">
+                        <div className="w-[22px] h-[22px] rounded-full bg-[#16a6a3] text-white flex items-center justify-center font-bold text-[11px]">
+                          ✓
+                        </div>
+                        <span className="font-medium text-[#0f172a] text-[12px] whitespace-nowrap">
+                          Order Placed
+                        </span>
+                      </div>
+                      <div className="flex-1 h-[2px] min-w-[20px] bg-[#16a6a3] rounded-full" />
 
-                    {/* Step 2 */}
-                    <div className="flex gap-[8px] items-center shrink-0">
-                      <div className={`w-[22px] h-[22px] rounded-full ${orders[0].status === "Delivered" ? "bg-[#16a6a3] text-white" : "bg-[#0b1f3a] text-white ring-4 ring-[#0b1f3a]/10"} flex items-center justify-center font-bold text-[11px]`}>
-                        {orders[0].status === "Delivered" ? "✓" : "2"}
+                      {/* Step 2 */}
+                      <div className="flex gap-[8px] items-center shrink-0">
+                        <div className={`w-[22px] h-[22px] rounded-full ${orders[0].status === "Delivered" ? "bg-[#16a6a3] text-white" : "bg-[#0b1f3a] text-white ring-4 ring-[#0b1f3a]/10"} flex items-center justify-center font-bold text-[11px]`}>
+                          {orders[0].status === "Delivered" ? "✓" : "2"}
+                        </div>
+                        <span className="font-bold text-[#0b1f3a] text-[12px] whitespace-nowrap">
+                          Cold-Chain Packing
+                        </span>
                       </div>
-                      <span className="font-bold text-[#0b1f3a] text-[12px] whitespace-nowrap">
-                        Cold-Chain Packing
-                      </span>
-                    </div>
-                    <div className={`flex-1 h-[2px] min-w-[20px] ${orders[0].status === "Delivered" ? "bg-[#16a6a3]" : "bg-[#e2e8f0]"} rounded-full`} />
+                      <div className={`flex-1 h-[2px] min-w-[20px] ${orders[0].status === "Delivered" ? "bg-[#16a6a3]" : "bg-[#e2e8f0]"} rounded-full`} />
 
-                    {/* Step 3 */}
-                    <div className="flex gap-[8px] items-center shrink-0">
-                      <div className={`w-[22px] h-[22px] rounded-full ${orders[0].status === "Delivered" ? "bg-[#16a6a3] text-white" : "bg-[#cbd5e1] text-white"} flex items-center justify-center font-bold text-[11px]`}>
-                        {orders[0].status === "Delivered" ? "✓" : "3"}
+                      {/* Step 3 */}
+                      <div className="flex gap-[8px] items-center shrink-0">
+                        <div className={`w-[22px] h-[22px] rounded-full ${orders[0].status === "Delivered" ? "bg-[#16a6a3] text-white" : "bg-[#cbd5e1] text-white"} flex items-center justify-center font-bold text-[11px]`}>
+                          {orders[0].status === "Delivered" ? "✓" : "3"}
+                        </div>
+                        <span className="font-medium text-[#94a3b8] text-[12px] whitespace-nowrap">
+                          Dispatched (Tracked 24)
+                        </span>
                       </div>
-                      <span className="font-medium text-[#94a3b8] text-[12px] whitespace-nowrap">
-                        Dispatched (Tracked 24)
-                      </span>
-                    </div>
-                    <div className={`flex-1 h-[2px] min-w-[20px] ${orders[0].status === "Delivered" ? "bg-[#16a6a3]" : "bg-[#e2e8f0]"} rounded-full`} />
+                      <div className={`flex-1 h-[2px] min-w-[20px] ${orders[0].status === "Delivered" ? "bg-[#16a6a3]" : "bg-[#e2e8f0]"} rounded-full`} />
 
-                    {/* Step 4 */}
-                    <div className="flex gap-[8px] items-center shrink-0">
-                      <div className={`w-[22px] h-[22px] rounded-full ${orders[0].status === "Delivered" ? "bg-[#16a6a3] text-white" : "bg-[#cbd5e1] text-white"} flex items-center justify-center font-bold text-[11px]`}>
-                        {orders[0].status === "Delivered" ? "✓" : "4"}
+                      {/* Step 4 */}
+                      <div className="flex gap-[8px] items-center shrink-0">
+                        <div className={`w-[22px] h-[22px] rounded-full ${orders[0].status === "Delivered" ? "bg-[#16a6a3] text-white" : "bg-[#cbd5e1] text-white"} flex items-center justify-center font-bold text-[11px]`}>
+                          {orders[0].status === "Delivered" ? "✓" : "4"}
+                        </div>
+                        <span className="font-medium text-[#94a3b8] text-[12px] whitespace-nowrap">
+                          Delivered
+                        </span>
                       </div>
-                      <span className="font-medium text-[#94a3b8] text-[12px] whitespace-nowrap">
-                        Delivered
-                      </span>
                     </div>
-                  </div>
+                  )}
 
                   <div className="h-px bg-[#f1f5f9] w-full" />
 
                   {/* Ordered Items List */}
                   <div className="flex flex-col gap-[14px]">
-                    {orders[0].items?.map((item: any, idx: number) => (
-                      <div key={item.id || idx} className="flex items-center justify-between">
-                        <div className="flex gap-[14px] items-center">
-                          <div className="w-[48px] h-[48px] rounded-[8px] bg-slate-50 border border-slate-200 overflow-hidden flex items-center justify-center p-1 shrink-0">
-                            <img
-                              alt=""
-                              className="w-full h-full object-contain"
-                              src={item.image || "/images/figma/152e353c4afaa5945905ac686de871b57ec2a770.png"}
-                            />
+                    {orders[0].items?.map((item: any, idx: number) => {
+                      const { cleanTitle, specification, options } = getItemDisplayDetails(item)
+                      return (
+                        <div key={item.id || idx} className="flex items-start justify-between gap-4">
+                          <div className="flex gap-[14px] items-start">
+                            <div className="w-[48px] h-[48px] rounded-[8px] bg-slate-50 border border-slate-200 overflow-hidden flex items-center justify-center p-1 shrink-0 mt-0.5">
+                              <img
+                                alt=""
+                                className="w-full h-full object-contain"
+                                src={item.image || "/images/figma/152e353c4afaa5945905ac686de871b57ec2a770.png"}
+                              />
+                            </div>
+                            <div className="flex flex-col gap-[2px]">
+                              <p className="font-semibold text-[#0b1f3a] text-[13.5px]">
+                                {cleanTitle}
+                              </p>
+                              <p className="font-normal text-[#64748b] text-[12px]">
+                                {specification}
+                              </p>
+                              {options && options.length > 0 && (
+                                <div className="flex flex-col gap-0.5 mt-0.5 text-[11.5px]">
+                                  {options.map((opt: any, oIdx: number) => (
+                                    <span key={oIdx} className="text-slate-600">
+                                      <span className="text-slate-400 font-medium">{opt.label}: </span>
+                                      <span className="font-semibold text-slate-700">{opt.value}</span>
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
                           </div>
-                          <div className="flex flex-col gap-[3px]">
-                            <p className="font-semibold text-[#0b1f3a] text-[13.5px]">
-                              {item.title}
-                            </p>
-                            <p className="font-normal text-[#64748b] text-[12px]">
-                              {item.subtitle || `${item.quantity || 1}x Units`}
-                            </p>
-                          </div>
+                          <p className="font-bold text-[#0b1f3a] text-[14px] shrink-0 font-mono">
+                            £{((item.price || 0) * (item.quantity || 1)).toFixed(2)}
+                          </p>
                         </div>
-                        <p className="font-bold text-[#0b1f3a] text-[14px]">
-                          £{((item.price || 0) * (item.quantity || 1)).toFixed(2)}
-                        </p>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
 
                   <div className="h-px bg-[#f1f5f9] w-full" />
@@ -1137,25 +1372,33 @@ function AccountContent() {
                   {/* Actions Row */}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="flex gap-[8px] items-center text-[13px]">
-                      <span className="text-[#64748b]">Total Paid:</span>
+                      <span className="text-[#64748b]">{orders[0].isRefunded ? "Total Refunded:" : "Total Paid:"}</span>
                       <span className="font-bold text-[#0b1f3a] text-[16px]">£{orders[0].total?.toFixed(2)}</span>
-                      {orders[0].paymentMethod && (
+                      {orders[0].isRefunded ? (
+                        <span className="text-rose-600 font-semibold text-[12.5px]">(Refunded via Stripe)</span>
+                      ) : orders[0].paymentMethod ? (
                         <span className="text-[#94a3b8] text-[12.5px]">({orders[0].paymentMethod})</span>
-                      )}
+                      ) : null}
                     </div>
                     <div className="flex gap-[10px] items-center">
-                      <button
-                        type="button"
-                        onClick={() => handleTabChange("orders")}
-                        className="bg-[#0b1f3a] hover:bg-[#162a45] text-white text-[12.5px] font-semibold px-[16px] py-[8px] rounded-[6px] transition-colors cursor-pointer"
-                      >
-                        Live Dispatch Tracker →
-                      </button>
+                      {!orders[0].isRefunded && (
+                        <button
+                          type="button"
+                          onClick={() => handleTabChange("orders")}
+                          className="bg-[#0b1f3a] hover:bg-[#162a45] text-white text-[12.5px] font-semibold px-[16px] py-[8px] rounded-[6px] transition-colors cursor-pointer"
+                        >
+                          Live Dispatch Tracker →
+                        </button>
+                      )}
                       <Link
-                        href="/checkout/success"
-                        className="bg-[#f1f5f9] hover:bg-slate-200 text-[#0b1f3a] text-[12.5px] font-semibold px-[14px] py-[8px] rounded-[6px] transition-colors"
+                        href={`/receipt/${encodeURIComponent(orders[0].id)}`}
+                        target="_blank"
+                        className="bg-[#f1f5f9] hover:bg-slate-200 text-[#0b1f3a] text-[12.5px] font-semibold px-[14px] py-[8px] rounded-[6px] transition-colors inline-flex items-center gap-1.5"
                       >
-                        View Receipt Slip
+                        <svg className="w-3.5 h-3.5 text-[#16a6a3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <span>View &amp; Print Receipt ↗</span>
                       </Link>
                     </div>
                   </div>
@@ -1342,16 +1585,16 @@ function AccountContent() {
                     DEFAULT
                   </span>
                 </div>
-                {customer.addresses && customer.addresses.length > 0 ? (
+                {effectiveAddresses && effectiveAddresses.length > 0 ? (
                   <div className="text-[#0f172a] text-[13px] leading-[20px] font-normal">
                     <p className="font-semibold text-[#0b1f3a]">
-                      {customer.addresses[0].first_name} {customer.addresses[0].last_name}
+                      {effectiveAddresses[0].first_name} {effectiveAddresses[0].last_name}
                     </p>
-                    {customer.addresses[0].company && <p>{customer.addresses[0].company}</p>}
-                    <p>{customer.addresses[0].address_1}</p>
-                    {customer.addresses[0].address_2 && <p>{customer.addresses[0].address_2}</p>}
-                    <p>{customer.addresses[0].city}, {customer.addresses[0].postal_code}</p>
-                    <p>{customer.addresses[0].country_code?.toUpperCase() === "GB" ? "United Kingdom" : customer.addresses[0].country_code?.toUpperCase()}</p>
+                    {effectiveAddresses[0].company && <p>{effectiveAddresses[0].company}</p>}
+                    <p>{effectiveAddresses[0].address_1}</p>
+                    {effectiveAddresses[0].address_2 && <p>{effectiveAddresses[0].address_2}</p>}
+                    <p>{effectiveAddresses[0].city}, {effectiveAddresses[0].postal_code}</p>
+                    <p>{effectiveAddresses[0].country_code?.toUpperCase() === "GB" ? "United Kingdom" : effectiveAddresses[0].country_code?.toUpperCase()}</p>
                   </div>
                 ) : (
                   <div className="text-[#0f172a] text-[13px] leading-[20px] font-normal">
@@ -1387,16 +1630,22 @@ function AccountContent() {
                     <div className="flex items-center gap-[8px] py-1">
                       {paymentCards[0].brand === "mastercard" ? (
                         <MastercardBadge className="w-[32px] h-[20px]" monochrome />
+                      ) : paymentCards[0].brand === "amex" ? (
+                        <AmexBadge className="w-[32px] h-[20px]" monochrome />
+                      ) : paymentCards[0].brand === "jcb" ? (
+                        <JcbBadge className="w-[32px] h-[20px]" monochrome />
                       ) : (
                         <VisaBadge className="w-[32px] h-[20px]" monochrome />
                       )}
                       <p className="font-semibold text-[#0f172a] text-[13.5px]">
-                        {paymentCards[0].title || `${paymentCards[0].brand === "mastercard" ? "Mastercard" : "Visa"} Corporate`} ending in •••• {paymentCards[0].last4}
+                        {paymentCards[0].title || `${paymentCards[0].brand === "mastercard" ? "Mastercard" : paymentCards[0].brand === "amex" ? "American Express" : "Visa"} ${paymentCards[0].funding || "Card"}`} ending in •••• {paymentCards[0].last4}
                       </p>
                     </div>
-                    <p className="font-normal text-[#64748b] text-[12px]">
-                      {paymentCards[0].expiry ? `Expires: ${paymentCards[0].expiry} · ` : ""}Verified 3D Secure
-                    </p>
+                    {paymentCards[0].expiry && paymentCards[0].expiry !== "Verified" ? (
+                      <p className="font-normal text-[#64748b] text-[12px]">
+                        Expires: {paymentCards[0].expiry}
+                      </p>
+                    ) : null}
                   </div>
                 ) : (
                   <div className="flex flex-col gap-[6px]">
@@ -1534,99 +1783,151 @@ function AccountContent() {
                             Placed {order.displayDate} · Tracking: {order.trackingNumber || "GB-RM24-PENDING"}
                           </p>
                         </div>
-                        <div className="bg-[#e6fffa] px-[12px] py-[6px] rounded-[20px]">
-                          <p className="font-semibold text-[#16a6a3] text-[12px] whitespace-nowrap">
-                            {order.status || "Cold-Chain Packing"}
-                          </p>
-                        </div>
+                        {order.isRefunded ? (
+                          <div className="bg-rose-50 border border-rose-200 px-[12px] py-[6px] rounded-[20px]">
+                            <p className="font-semibold text-rose-700 text-[12px] whitespace-nowrap">
+                              Refunded
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="bg-[#e6fffa] px-[12px] py-[6px] rounded-[20px]">
+                            <p className="font-semibold text-[#16a6a3] text-[12px] whitespace-nowrap">
+                              {order.status || "Cold-Chain Packing"}
+                            </p>
+                          </div>
+                        )}
                       </div>
 
-                      {/* Stepper */}
-                      <div className="bg-[#f8fafc] rounded-[10px] px-[16px] py-[14px] flex items-center justify-between gap-2 overflow-x-auto">
-                        <div className="flex gap-[8px] items-center shrink-0">
-                          <div className="w-[22px] h-[22px] rounded-full bg-[#16a6a3] text-white flex items-center justify-center font-bold text-[11px]">
-                            ✓
+                      {/* Stepper or Refund Notice */}
+                      {order.isRefunded ? (
+                        <div className="bg-rose-50/70 border border-rose-200/80 rounded-[10px] px-[16px] py-[14px] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-[22px] h-[22px] rounded-full bg-rose-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
+                              ✓
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="font-bold text-rose-900 text-[12px]">
+                                Refund Processed via Stripe
+                              </span>
+                              <span className="text-rose-700 text-[11.5px]">
+                                Full refund of £{order.total?.toFixed(2)} issued to your original payment method. Order is closed.
+                              </span>
+                            </div>
                           </div>
-                          <span className="font-medium text-[#0f172a] text-[12px] whitespace-nowrap">
-                            Order Placed
+                          <span className="text-xs font-semibold text-rose-800 bg-rose-100/80 px-2.5 py-1 rounded-md self-start sm:self-auto">
+                            Refund Complete
                           </span>
                         </div>
-                        <div className="flex-1 h-[2px] min-w-[20px] bg-[#16a6a3] rounded-full" />
-                        <div className="flex gap-[8px] items-center shrink-0">
-                          <div className={`w-[22px] h-[22px] rounded-full ${order.status === "Delivered" ? "bg-[#16a6a3] text-white" : "bg-[#0b1f3a] text-white ring-4 ring-[#0b1f3a]/10"} flex items-center justify-center font-bold text-[11px]`}>
-                            {order.status === "Delivered" ? "✓" : "2"}
+                      ) : (
+                        <div className="bg-[#f8fafc] rounded-[10px] px-[16px] py-[14px] flex items-center justify-between gap-2 overflow-x-auto">
+                          <div className="flex gap-[8px] items-center shrink-0">
+                            <div className="w-[22px] h-[22px] rounded-full bg-[#16a6a3] text-white flex items-center justify-center font-bold text-[11px]">
+                              ✓
+                            </div>
+                            <span className="font-medium text-[#0f172a] text-[12px] whitespace-nowrap">
+                              Order Placed
+                            </span>
                           </div>
-                          <span className="font-bold text-[#0b1f3a] text-[12px] whitespace-nowrap">
-                            Cold-Chain Packing
-                          </span>
-                        </div>
-                        <div className={`flex-1 h-[2px] min-w-[20px] ${order.status === "Delivered" ? "bg-[#16a6a3]" : "bg-[#e2e8f0]"} rounded-full`} />
-                        <div className="flex gap-[8px] items-center shrink-0">
-                          <div className={`w-[22px] h-[22px] rounded-full ${order.status === "Delivered" ? "bg-[#16a6a3] text-white" : "bg-[#cbd5e1] text-white"} flex items-center justify-center font-bold text-[11px]`}>
-                            {order.status === "Delivered" ? "✓" : "3"}
+                          <div className="flex-1 h-[2px] min-w-[20px] bg-[#16a6a3] rounded-full" />
+                          <div className="flex gap-[8px] items-center shrink-0">
+                            <div className={`w-[22px] h-[22px] rounded-full ${order.status === "Delivered" ? "bg-[#16a6a3] text-white" : "bg-[#0b1f3a] text-white ring-4 ring-[#0b1f3a]/10"} flex items-center justify-center font-bold text-[11px]`}>
+                              {order.status === "Delivered" ? "✓" : "2"}
+                            </div>
+                            <span className="font-bold text-[#0b1f3a] text-[12px] whitespace-nowrap">
+                              Cold-Chain Packing
+                            </span>
                           </div>
-                          <span className="font-medium text-[#94a3b8] text-[12px] whitespace-nowrap">
-                            Dispatched (Tracked 24)
-                          </span>
-                        </div>
-                        <div className={`flex-1 h-[2px] min-w-[20px] ${order.status === "Delivered" ? "bg-[#16a6a3]" : "bg-[#e2e8f0]"} rounded-full`} />
-                        <div className="flex gap-[8px] items-center shrink-0">
-                          <div className={`w-[22px] h-[22px] rounded-full ${order.status === "Delivered" ? "bg-[#16a6a3] text-white" : "bg-[#cbd5e1] text-white"} flex items-center justify-center font-bold text-[11px]`}>
-                            {order.status === "Delivered" ? "✓" : "4"}
+                          <div className={`flex-1 h-[2px] min-w-[20px] ${order.status === "Delivered" ? "bg-[#16a6a3]" : "bg-[#e2e8f0]"} rounded-full`} />
+                          <div className="flex gap-[8px] items-center shrink-0">
+                            <div className={`w-[22px] h-[22px] rounded-full ${order.status === "Delivered" ? "bg-[#16a6a3] text-white" : "bg-[#cbd5e1] text-white"} flex items-center justify-center font-bold text-[11px]`}>
+                              {order.status === "Delivered" ? "✓" : "3"}
+                            </div>
+                            <span className="font-medium text-[#94a3b8] text-[12px] whitespace-nowrap">
+                              Dispatched (Tracked 24)
+                            </span>
                           </div>
-                          <span className="font-medium text-[#94a3b8] text-[12px] whitespace-nowrap">
-                            Delivered
-                          </span>
+                          <div className={`flex-1 h-[2px] min-w-[20px] ${order.status === "Delivered" ? "bg-[#16a6a3]" : "bg-[#e2e8f0]"} rounded-full`} />
+                          <div className="flex gap-[8px] items-center shrink-0">
+                            <div className={`w-[22px] h-[22px] rounded-full ${order.status === "Delivered" ? "bg-[#16a6a3] text-white" : "bg-[#cbd5e1] text-white"} flex items-center justify-center font-bold text-[11px]`}>
+                              {order.status === "Delivered" ? "✓" : "4"}
+                            </div>
+                            <span className="font-medium text-[#94a3b8] text-[12px] whitespace-nowrap">
+                              Delivered
+                            </span>
+                          </div>
                         </div>
-                      </div>
+                      )}
 
                       {/* Items */}
                       <div className="flex flex-col gap-[14px]">
-                        {order.items?.map((item: any, idx: number) => (
-                          <div key={item.id || idx} className="flex items-center justify-between">
-                            <div className="flex gap-[14px] items-center">
-                              <div className="w-[48px] h-[48px] rounded-[8px] bg-slate-50 border border-slate-200 overflow-hidden flex items-center justify-center p-1 shrink-0">
-                                <img
-                                  alt=""
-                                  className="w-full h-full object-contain"
-                                  src={item.image || "/images/figma/152e353c4afaa5945905ac686de871b57ec2a770.png"}
-                                />
+                        {order.items?.map((item: any, idx: number) => {
+                          const { cleanTitle, specification, options } = getItemDisplayDetails(item)
+                          return (
+                            <div key={item.id || idx} className="flex items-start justify-between gap-4">
+                              <div className="flex gap-[14px] items-start">
+                                <div className="w-[48px] h-[48px] rounded-[8px] bg-slate-50 border border-slate-200 overflow-hidden flex items-center justify-center p-1 shrink-0 mt-0.5">
+                                  <img
+                                    alt=""
+                                    className="w-full h-full object-contain"
+                                    src={item.image || "/images/figma/152e353c4afaa5945905ac686de871b57ec2a770.png"}
+                                  />
+                                </div>
+                                <div className="flex flex-col gap-[2px]">
+                                  <p className="font-semibold text-[#0b1f3a] text-[13.5px]">
+                                    {cleanTitle}
+                                  </p>
+                                  <p className="font-normal text-[#64748b] text-[12px]">
+                                    {specification}
+                                  </p>
+                                  {options && options.length > 0 && (
+                                    <div className="flex flex-col gap-0.5 mt-0.5 text-[11.5px]">
+                                      {options.map((opt: any, oIdx: number) => (
+                                        <span key={oIdx} className="text-slate-600">
+                                          <span className="text-slate-400 font-medium">{opt.label}: </span>
+                                          <span className="font-semibold text-slate-700">{opt.value}</span>
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
                               </div>
-                              <div className="flex flex-col gap-[3px]">
-                                <p className="font-semibold text-[#0b1f3a] text-[13.5px]">
-                                  {item.title}
-                                </p>
-                                <p className="font-normal text-[#64748b] text-[12px]">
-                                  {item.subtitle || `${item.quantity || 1}x Units`}
-                                </p>
-                              </div>
+                              <p className="font-bold text-[#0b1f3a] text-[14px] shrink-0 font-mono">
+                                £{((item.price || 0) * (item.quantity || 1)).toFixed(2)}
+                              </p>
                             </div>
-                            <p className="font-bold text-[#0b1f3a] text-[14px]">
-                              £{((item.price || 0) * (item.quantity || 1)).toFixed(2)}
-                            </p>
-                          </div>
-                        ))}
+                          )
+                        })}
                       </div>
 
                       <div className="h-px bg-[#f1f5f9] w-full" />
 
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <p className="font-bold text-[#0b1f3a] text-[15px]">
-                          Total Paid: £{order.total?.toFixed(2)}
-                        </p>
+                        <div className="flex gap-[8px] items-center text-[13px]">
+                          <span className="text-[#64748b]">{order.isRefunded ? "Total Refunded:" : "Total Paid:"}</span>
+                          <span className="font-bold text-[#0b1f3a] text-[15px]">£{order.total?.toFixed(2)}</span>
+                          {order.isRefunded && (
+                            <span className="text-rose-600 font-semibold text-[12px]">(Refunded via Stripe)</span>
+                          )}
+                        </div>
                         <div className="flex gap-[10px] items-center">
-                          <button
-                            type="button"
-                            onClick={() => alert(`Tracking ${order.trackingNumber || order.id}: Cold-chain shipment verified.`)}
-                            className="bg-[#0b1f3a] hover:bg-[#162a45] text-white text-[12px] font-semibold px-[14px] py-[8px] rounded-[6px] transition-colors cursor-pointer"
-                          >
-                            Track Live Dispatch →
-                          </button>
+                          {!order.isRefunded && (
+                            <button
+                              type="button"
+                              onClick={() => alert(`Tracking ${order.trackingNumber || order.id}: Cold-chain shipment verified.`)}
+                              className="bg-[#0b1f3a] hover:bg-[#162a45] text-white text-[12px] font-semibold px-[14px] py-[8px] rounded-[6px] transition-colors cursor-pointer"
+                            >
+                              Track Live Dispatch →
+                            </button>
+                          )}
                           <Link
-                            href="/checkout/success"
-                            className="bg-[#f1f5f9] hover:bg-slate-200 text-[#0b1f3a] text-[12px] font-semibold px-[14px] py-[8px] rounded-[6px] transition-colors"
+                            href={`/receipt/${encodeURIComponent(order.id)}`}
+                            target="_blank"
+                            className="bg-[#f1f5f9] hover:bg-slate-200 text-[#0b1f3a] text-[12px] font-semibold px-[14px] py-[8px] rounded-[6px] transition-colors inline-flex items-center gap-1.5 cursor-pointer"
                           >
-                            View Receipt Slip
+                            <svg className="w-3.5 h-3.5 text-[#16a6a3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <span>View &amp; Print Receipt ↗</span>
                           </Link>
                         </div>
                       </div>
@@ -1709,16 +2010,16 @@ function AccountContent() {
                     DEFAULT
                   </span>
                 </div>
-                {customer.addresses && customer.addresses.length > 0 ? (
+                {effectiveAddresses && effectiveAddresses.length > 0 ? (
                   <div className="text-[#0f172a] text-[13px] leading-[20px] font-normal">
                     <p className="font-semibold text-[#0b1f3a]">
-                      {customer.addresses[0].first_name} {customer.addresses[0].last_name}
+                      {effectiveAddresses[0].first_name} {effectiveAddresses[0].last_name}
                     </p>
-                    {customer.addresses[0].company && <p>{customer.addresses[0].company}</p>}
-                    <p>{customer.addresses[0].address_1}</p>
-                    {customer.addresses[0].address_2 && <p>{customer.addresses[0].address_2}</p>}
-                    <p>{customer.addresses[0].city}, {customer.addresses[0].postal_code}</p>
-                    <p>{customer.addresses[0].country_code?.toUpperCase() === "GB" ? "United Kingdom" : customer.addresses[0].country_code?.toUpperCase()}</p>
+                    {effectiveAddresses[0].company && <p>{effectiveAddresses[0].company}</p>}
+                    <p>{effectiveAddresses[0].address_1}</p>
+                    {effectiveAddresses[0].address_2 && <p>{effectiveAddresses[0].address_2}</p>}
+                    <p>{effectiveAddresses[0].city}, {effectiveAddresses[0].postal_code}</p>
+                    <p>{effectiveAddresses[0].country_code?.toUpperCase() === "GB" ? "United Kingdom" : effectiveAddresses[0].country_code?.toUpperCase()}</p>
                   </div>
                 ) : (
                   <div className="text-[#0f172a] text-[13px] leading-[20px] font-normal">
@@ -1738,7 +2039,21 @@ function AccountContent() {
         {/* ========================================================= */}
         {/* TAB 3: ACTIVE SUBSCRIPTIONS (Node 52:9548 & 52:11602) */}
         {/* ========================================================= */}
-        {activeTab === "subscriptions" && token && <AccountBilling token={token} subscriptionsOnly />}
+        {activeTab === "subscriptions" && (
+          <SubscriptionDashboard
+            token={token}
+            customerId={customer?.id}
+            customerEmail={customer?.email}
+            customerName={`${customer?.first_name || ""} ${customer?.last_name || ""}`.trim() || undefined}
+            customerAddresses={effectiveAddresses}
+            initialSubscriptions={subscriptions}
+            initialPaymentMethods={paymentCards}
+            onUpdateSubscription={(sub) => {
+              setSubscriptions((prev) => prev.map((s) => (s.id === sub.id ? sub : s)))
+            }}
+            onSwitchTab={handleTabChange}
+          />
+        )}
 
         {activeTab === "addresses" && (
           <div className="flex flex-col gap-[24px] w-full">
@@ -1760,9 +2075,9 @@ function AccountContent() {
               </button>
             </div>
 
-            {customer.addresses && customer.addresses.length > 0 ? (
+            {effectiveAddresses && effectiveAddresses.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-[24px] w-full">
-                {customer.addresses.map((addr, index) => (
+                {effectiveAddresses.map((addr, index) => (
                   <div
                     key={addr.id || index}
                     className="bg-white rounded-[16px] p-6 sm:p-[28px] border border-slate-100 shadow-xs flex flex-col justify-between gap-[18px] min-h-[276px]"
@@ -1838,7 +2153,17 @@ function AccountContent() {
         {/* ========================================================= */}
         {/* TAB 5: PAYMENT METHODS (Node 52:10035) */}
         {/* ========================================================= */}
-        {activeTab === "payment" && token && <AccountBilling token={token} />}
+        {activeTab === "payment" && (
+          <AccountBilling
+            token={token}
+            customerId={customer?.id}
+            customerEmail={customer?.email}
+            customerName={`${customer?.first_name || ""} ${customer?.last_name || ""}`.trim() || undefined}
+            customerAddresses={effectiveAddresses}
+            initialPaymentMethods={paymentCards}
+            initialSubscriptions={subscriptions}
+          />
+        )}
       </main>
 
       {/* ========================================================= */}
@@ -1883,7 +2208,7 @@ function AccountContent() {
                     />
                   ) : (
                     <span className="text-white font-bold text-base">
-                      {getInitials(editFirstName, editLastName)}
+                      {getInitials(customer?.first_name, customer?.last_name)}
                     </span>
                   )}
                 </div>
@@ -1916,8 +2241,8 @@ function AccountContent() {
                 <div className="flex flex-col gap-1">
                   <label className="text-[12px] font-semibold text-[#0b1f3a]">Title</label>
                   <select
-                    value={editTitle}
-                    onChange={(e) => setEditTitle(e.target.value)}
+                    ref={editTitleRef}
+                    defaultValue={customer?.metadata?.title || "Dr."}
                     className="border border-[#cbd5e1] rounded-[8px] px-2.5 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden bg-white"
                   >
                     <option value="Dr.">Dr.</option>
@@ -1929,20 +2254,20 @@ function AccountContent() {
                 <div className="flex flex-col gap-1">
                   <label className="text-[12px] font-semibold text-[#0b1f3a]">First Name</label>
                   <input
+                    ref={editFirstNameRef}
                     type="text"
                     required
-                    value={editFirstName}
-                    onChange={(e) => setEditFirstName(e.target.value)}
+                    defaultValue={customer?.first_name || ""}
                     className="border border-[#cbd5e1] rounded-[8px] px-3 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden"
                   />
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-[12px] font-semibold text-[#0b1f3a]">Last Name</label>
                   <input
+                    ref={editLastNameRef}
                     type="text"
                     required
-                    value={editLastName}
-                    onChange={(e) => setEditLastName(e.target.value)}
+                    defaultValue={customer?.last_name || ""}
                     className="border border-[#cbd5e1] rounded-[8px] px-3 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden"
                   />
                 </div>
@@ -1953,9 +2278,9 @@ function AccountContent() {
                   Affiliated Institution / Facility
                 </label>
                 <input
+                  ref={editCompanyRef}
                   type="text"
-                  value={editCompany}
-                  onChange={(e) => setEditCompany(e.target.value)}
+                  defaultValue={customer?.company_name || ""}
                   placeholder="e.g. Cambridge Biomedical Research Hub"
                   className="border border-[#cbd5e1] rounded-[8px] px-3 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden"
                 />
@@ -1966,9 +2291,9 @@ function AccountContent() {
                   Laboratory Contact Phone
                 </label>
                 <input
+                  ref={editPhoneRef}
                   type="tel"
-                  value={editPhone}
-                  onChange={(e) => setEditPhone(e.target.value)}
+                  defaultValue={customer?.phone || ""}
                   placeholder="+44 1223 928 401"
                   className="border border-[#cbd5e1] rounded-[8px] px-3 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden"
                 />
@@ -2025,9 +2350,8 @@ function AccountContent() {
                   Address Label / Facility Name
                 </label>
                 <input
+                  ref={addrNameRef}
                   type="text"
-                  value={addrName}
-                  onChange={(e) => setAddrName(e.target.value)}
                   placeholder="e.g. Cambridge Science Park Lab"
                   className="border border-[#cbd5e1] rounded-[8px] px-3 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden"
                 />
@@ -2037,20 +2361,20 @@ function AccountContent() {
                 <div className="flex flex-col gap-1">
                   <label className="text-[12px] font-semibold text-[#0b1f3a]">First Name</label>
                   <input
+                    ref={addrFirstNameRef}
                     type="text"
-                    value={addrFirstName}
-                    onChange={(e) => setAddrFirstName(e.target.value)}
-                    placeholder={customer?.first_name || "First Name"}
+                    defaultValue={customer?.first_name || ""}
+                    placeholder="First Name"
                     className="border border-[#cbd5e1] rounded-[8px] px-3 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden"
                   />
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-[12px] font-semibold text-[#0b1f3a]">Last Name</label>
                   <input
+                    ref={addrLastNameRef}
                     type="text"
-                    value={addrLastName}
-                    onChange={(e) => setAddrLastName(e.target.value)}
-                    placeholder={customer?.last_name || "Last Name"}
+                    defaultValue={customer?.last_name || ""}
+                    placeholder="Last Name"
                     className="border border-[#cbd5e1] rounded-[8px] px-3 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden"
                   />
                 </div>
@@ -2061,9 +2385,9 @@ function AccountContent() {
                   Department / Company
                 </label>
                 <input
+                  ref={addrCompanyRef}
                   type="text"
-                  value={addrCompany}
-                  onChange={(e) => setAddrCompany(e.target.value)}
+                  defaultValue={customer?.company_name || ""}
                   placeholder="e.g. Molecular Biology Facility"
                   className="border border-[#cbd5e1] rounded-[8px] px-3 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden"
                 />
@@ -2074,10 +2398,9 @@ function AccountContent() {
                   Street Address (Line 1) *
                 </label>
                 <input
+                  ref={addrLine1Ref}
                   type="text"
                   required
-                  value={addrLine1}
-                  onChange={(e) => setAddrLine1(e.target.value)}
                   placeholder="e.g. 10 Innovation Way"
                   className="border border-[#cbd5e1] rounded-[8px] px-3 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden"
                 />
@@ -2088,9 +2411,8 @@ function AccountContent() {
                   Suite / Floor / Unit (Line 2)
                 </label>
                 <input
+                  ref={addrLine2Ref}
                   type="text"
-                  value={addrLine2}
-                  onChange={(e) => setAddrLine2(e.target.value)}
                   placeholder="e.g. Unit 4B, Science Wing"
                   className="border border-[#cbd5e1] rounded-[8px] px-3 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden"
                 />
@@ -2100,10 +2422,9 @@ function AccountContent() {
                 <div className="flex flex-col gap-1">
                   <label className="text-[12px] font-semibold text-[#0b1f3a]">City *</label>
                   <input
+                    ref={addrCityRef}
                     type="text"
                     required
-                    value={addrCity}
-                    onChange={(e) => setAddrCity(e.target.value)}
                     placeholder="e.g. Cambridge"
                     className="border border-[#cbd5e1] rounded-[8px] px-3 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden"
                   />
@@ -2111,10 +2432,9 @@ function AccountContent() {
                 <div className="flex flex-col gap-1">
                   <label className="text-[12px] font-semibold text-[#0b1f3a]">Postal Code *</label>
                   <input
+                    ref={addrPostcodeRef}
                     type="text"
                     required
-                    value={addrPostcode}
-                    onChange={(e) => setAddrPostcode(e.target.value)}
                     placeholder="e.g. CB4 0GF"
                     className="border border-[#cbd5e1] rounded-[8px] px-3 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden"
                   />
@@ -2125,8 +2445,8 @@ function AccountContent() {
                 <div className="flex flex-col gap-1">
                   <label className="text-[12px] font-semibold text-[#0b1f3a]">Country</label>
                   <select
-                    value={addrCountry}
-                    onChange={(e) => setAddrCountry(e.target.value)}
+                    ref={addrCountryRef}
+                    defaultValue="GB"
                     className="border border-[#cbd5e1] rounded-[8px] px-2.5 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden bg-white"
                   >
                     <option value="GB">United Kingdom (GB)</option>
@@ -2138,9 +2458,9 @@ function AccountContent() {
                 <div className="flex flex-col gap-1">
                   <label className="text-[12px] font-semibold text-[#0b1f3a]">Phone</label>
                   <input
+                    ref={addrPhoneRef}
                     type="tel"
-                    value={addrPhone}
-                    onChange={(e) => setAddrPhone(e.target.value)}
+                    defaultValue={customer?.phone || ""}
                     placeholder="+44 20 7123 4567"
                     className="border border-[#cbd5e1] rounded-[8px] px-3 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden"
                   />
@@ -2167,10 +2487,6 @@ function AccountContent() {
           </div>
         </div>
       )}
-
-      {/* ========================================================= */}
-      {/* ADD PAYMENT CARD MODAL */}
-      {/* ========================================================= */}
 
     </div>
   )

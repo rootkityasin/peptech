@@ -5,7 +5,10 @@ import path from "path"
 
 const serveStaticImage = (req: MedusaRequest, res: MedusaResponse, next: MedusaNextFunction) => {
   const urlPath = req.originalUrl?.split("?")[0] || req.url?.split("?")[0] || ""
-  const imagePath = urlPath.replace(/^\/images\/?/, "")
+  let imagePath = urlPath.replace(/^\/images\/?/, "")
+  if (urlPath === "/logo.webp" || urlPath === "/app/logo.webp") {
+    imagePath = "logo.webp"
+  }
 
   if (!imagePath || imagePath.split(/[\\/]/).includes("..")) return next()
 
@@ -21,10 +24,22 @@ const serveStaticImage = (req: MedusaRequest, res: MedusaResponse, next: MedusaN
     return res.sendFile(fullPath2)
   }
 
-  // 3. Check in storefront/public/images/
+  // 3. Check in public/admin/
+  const fullPathAdmin = path.resolve(process.cwd(), "public/admin", imagePath)
+  if (fs.existsSync(fullPathAdmin) && fs.statSync(fullPathAdmin).isFile()) {
+    return res.sendFile(fullPathAdmin)
+  }
+
+  // 4. Check in storefront/public/images/
   const fullPath3 = path.resolve(process.cwd(), "../../../storefront/public/images", imagePath)
   if (fs.existsSync(fullPath3) && fs.statSync(fullPath3).isFile()) {
     return res.sendFile(fullPath3)
+  }
+
+  // 5. Check in storefront/public/
+  const fullPath4 = path.resolve(process.cwd(), "../../../storefront/public", imagePath)
+  if (fs.existsSync(fullPath4) && fs.statSync(fullPath4).isFile()) {
+    return res.sendFile(fullPath4)
   }
 
   next()
@@ -37,15 +52,31 @@ export default defineMiddlewares({
     { matcher: "/admin/payments/:id/refund", methods: ["POST"], middlewares: [authenticate("user", ["session", "bearer"]),guardNativeRefund] },
     { matcher: "/admin/custom/return", middlewares: [authenticate("user", ["session", "bearer"])] },
     { matcher: "/admin/custom/refund", middlewares: [authenticate("user", ["session", "bearer"])] },
-    { matcher: "/store/custom/orders", middlewares: [authenticate("customer", ["bearer"])] },
-    { matcher: "/store/custom/subscriptions", middlewares: [authenticate("customer", ["bearer"])] },
+    { matcher: "/store/custom/orders", middlewares: [authenticate("customer", ["bearer"], { allowUnauthenticated: true })] },
+    { matcher: "/store/custom/orders/*", middlewares: [authenticate("customer", ["bearer"], { allowUnauthenticated: true })] },
+    { matcher: "/store/custom/subscriptions", middlewares: [authenticate("customer", ["bearer"], { allowUnauthenticated: true })] },
+    { matcher: "/store/custom/subscriptions/*", middlewares: [authenticate("customer", ["bearer"], { allowUnauthenticated: true })] },
+    { matcher: "/store/custom/payment-methods", middlewares: [authenticate("customer", ["bearer"], { allowUnauthenticated: true })] },
+    { matcher: "/store/custom/payment-methods/*", middlewares: [authenticate("customer", ["bearer"], { allowUnauthenticated: true })] },
     { matcher: "/store/custom/checkout*", middlewares: [authenticate("customer", ["bearer"])] },
-    { matcher: "/store/custom/billing-portal", middlewares: [authenticate("customer", ["bearer"])] },
+    { matcher: "/store/custom/billing-portal", middlewares: [authenticate("customer", ["bearer"], { allowUnauthenticated: true })] },
     { matcher: "/admin/commerce*", middlewares: [authenticate("user", ["session", "bearer"])] },
     { matcher: "/admin/custom/subscriptions", middlewares: [authenticate("user", ["session", "bearer"])] },
     { matcher: "/hooks/peptech-stripe", bodyParser: { preserveRawBody: true, sizeLimit: "1mb" } },
     {
       matcher: "/images/*",
+      middlewares: [serveStaticImage],
+    },
+    {
+      matcher: "/app/images/*",
+      middlewares: [serveStaticImage],
+    },
+    {
+      matcher: "/logo.webp",
+      middlewares: [serveStaticImage],
+    },
+    {
+      matcher: "/app/logo.webp",
       middlewares: [serveStaticImage],
     },
   ],

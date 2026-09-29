@@ -34,6 +34,21 @@ export async function reconcileSession(scope:any,ledger:CommerceService,sessionI
   // Recover a session created before a process crash interrupted saving its ID.
   if(attempt.data.quote.tax_policy==="stripe_default"&&session.status!=="expired"&&session.automatic_tax.status!=="requires_location_inputs")attempt.data.quote=await checkoutTaxQuote(context.stripe,session,attempt.data.quote)
   attempt.data.session_id=session.id;attempt.data.stripe_customer_id=objectId(session.customer);await ledger.patch(attempt.id,{session_id:session.id,stripe_customer_id:attempt.data.stripe_customer_id,quote:attempt.data.quote})
+  if(attempt.owner_id && attempt.data.stripe_customer_id){
+    try{
+      const custKey = recordId("customer", context.profile, attempt.owner_id)
+      await ledger.create({
+        id: custKey,
+        kind: "customer",
+        profile: context.profile,
+        owner_id: attempt.owner_id,
+        state: "active",
+        data: { stripe_id: attempt.data.stripe_customer_id }
+      }).catch(async () => {
+        await ledger.patch(custKey, { stripe_id: attempt.data.stripe_customer_id }, "active").catch(() => {})
+      })
+    }catch{}
+  }
   if(session.status==="expired") {
     if(!["confirmed","held"].includes(attempt.state)) {attempt.state="expired";await ledger.save(attempt);await releaseQuote(scope,attempt.id)}
     return
@@ -41,13 +56,31 @@ export async function reconcileSession(scope:any,ledger:CommerceService,sessionI
   if(session.mode==="subscription" && session.subscription) {
     await syncSubscription(ledger,objectId(session.subscription)!)
     if(session.invoice) await reconcileInvoice(scope,ledger,objectId(session.invoice)!)
+    const latestAttempt = await ledger.get(attempt.id)
+    if (latestAttempt && latestAttempt.state === "open" && (session.payment_status === "paid" || session.status === "complete")) {
+      latestAttempt.state = "confirmed"
+      await ledger.save(latestAttempt)
+    }
     return
   }
   if(session.payment_status!=="paid") return
-  const pi=await context.stripe.paymentIntents.retrieve(objectId(session.payment_intent)!)
+  const pi=await context.stripe.paymentIntents.retrieve(objectId(session.payment_intent)!, { expand: ["latest_charge"] })
   if(pi.status!=="succeeded" || pi.metadata.peptech_attempt!==attempt.id) fail("Payment ownership mismatch",409)
+  if (pi.payment_method && attempt.data.stripe_customer_id) {
+    try {
+      const pmId = objectId(pi.payment_method)
+      if (pmId) {
+        await context.stripe.paymentMethods.update(pmId, { allow_redisplay: "always" }).catch(() => {})
+        await context.stripe.customers.update(attempt.data.stripe_customer_id, {
+          invoice_settings: { default_payment_method: pmId }
+        }).catch(() => {})
+      }
+    } catch {}
+  }
+  const chargeReceipt = typeof pi.latest_charge === "object" ? (pi.latest_charge as any)?.receipt_url : null
+  const receiptUrl = chargeReceipt || null
   await settleReceipt(scope,ledger,attempt,{reference:session.id,session_id:session.id,amount:pi.amount_received,
-    currency:pi.currency,payment_intent_id:pi.id})
+    currency:pi.currency,payment_intent_id:pi.id,receipt_url:receiptUrl})
 }
 export async function reconcileInvoice(scope:any,ledger:CommerceService,invoiceId:string) {
   const context=stripeContext();const invoice=await context.stripe.invoices.retrieve(invoiceId)
@@ -89,7 +122,7 @@ export async function reconcileInvoice(scope:any,ledger:CommerceService,invoiceI
   }
   if(attempt.data.quote.tax_policy==="stripe_default")quote=await invoiceTaxQuote(context.stripe,invoice,quote||attempt.data.quote)
   await settleReceipt(scope,ledger,attempt,{reference:invoice.id,invoice_id:invoice.id,amount:evidence.amount,
-    currency:invoice.currency,payment_intent_id:evidence.payment_intent_id},quote)
+    currency:invoice.currency,payment_intent_id:evidence.payment_intent_id,receipt_url:evidence.receipt_url||invoice.hosted_invoice_url||null},quote)
 }
 export async function processEvent(scope:any,ledger:CommerceService,eventId:string) {
   return ledger.locked(eventId,async()=>{

@@ -4,7 +4,7 @@ import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
 import CommerceService, { recordId } from "../../modules/peptech-commerce/service"
 import { assertEligibility, assertProduct, discounted, fail, toMinor } from "./policy"
 export type QuoteLine={ variant_id:string; line_id:string; name:string; sku:string; quantity:number; recurring:boolean;
-  tax_code?:string;tax_lines?:any[];tax_minor?:number;stripe_price_id?:string;base_minor:number; unit_minor:number; catalog_version:string; inventory:{id:string;quantity:number}[] }
+  tax_code?:string;tax_lines?:any[];tax_minor?:number;stripe_price_id?:string;base_minor:number; unit_minor:number; catalog_version:string; metadata?:Record<string,any>; inventory:{id:string;quantity:number}[] }
 export type Quote={ customer_id:string;email:string;address:any;billing_address?:any;delivery_collected?:boolean;currency:"gbp";lines:QuoteLine[];shipping_minor:number;
   total_minor:number;renewal_minor:number;region_id:string;sales_channel_id:string;location_id:string;shipping_option_id:string;
   stripe_tax_enabled?:boolean;stripe_tax_status?:string;shipping_tax_lines?:any[];shipping_tax_minor?:number;shipping_price_id?:string;default_tax_code?:string;tax_policy:string;policy_version:string;tax_rate:number;tax_inclusive:boolean;tax_minor:number;vat_registered:boolean;bank_instructions?:any }
@@ -18,8 +18,6 @@ export async function buildQuote(scope:any,ledger:CommerceService,customerId:str
   const context=useStripe?stripeContext():null
   const defaults=context?await stripeTaxDefaults(context.stripe,context.mode):null
   const tax=defaults?{rate:0,inclusive:defaults.inclusive,registered:defaults.enabled}:taxPolicy(policy,input.address.country_code)
-  if(input.payment_method==="bank_transfer"&&defaults?.enabled)fail("Taxed bank transfers require an operator-issued Stripe invoice. Please use card checkout.",409)
-  if(input.payment_method==="bank_transfer" && !policy.bank_instructions)fail("Bank transfer instructions are not configured",503)
   const customer=await scope.resolve(Modules.CUSTOMER).retrieveCustomer(customerId)
   assertEligibility(customer)
   const query=scope.resolve(ContainerRegistrationKeys.QUERY)
@@ -45,11 +43,11 @@ export async function buildQuote(scope:any,ledger:CommerceService,customerId:str
     lines.push({variant_id:item.variant_id,line_id:recordId("ordli",attemptId,String(lines.length)),
       name:approval!.data.canonical_name,sku:approval!.data.canonical_sku,quantity:item.quantity,recurring:item.recurring,
       tax_code:approval!.data.tax_code||defaults?.code,base_minor:base,unit_minor:item.recurring?discounted(base):base,catalog_version:approval!.data.version,
+      metadata:item.metadata||{},
       inventory:variant.inventory_items.map((i:any)=>({id:i.inventory_item_id,quantity:Number(i.required_quantity || 1)*item.quantity}))})
   }
   const recurring=lines.some(l=>l.recurring)
   if (recurring && !input.recurring_accepted) fail("Explicit recurring payment consent is required")
-  if (recurring && input.payment_method==="bank_transfer") fail("Subscriptions require a saved Stripe payment method")
   const shipping=input.address.country_code==="gb"?495:1500
   const subtotal=lines.reduce((sum,l)=>sum+l.unit_minor*l.quantity,shipping)
   const taxTotal=lines.reduce((sum,l)=>sum+taxMinor(l.unit_minor*l.quantity,tax.rate,tax.inclusive),taxMinor(shipping,tax.rate,tax.inclusive))
@@ -61,7 +59,7 @@ export async function buildQuote(scope:any,ledger:CommerceService,customerId:str
     renewal_minor:recurring?recurringSubtotal+(tax.inclusive?0:recurringTax):0,
     region_id:policy.region_id,sales_channel_id:policy.sales_channel_id,location_id:policy.location_id,
     shipping_option_id:policy.shipping_option_id,tax_policy:policy.tax_policy,policy_version:policy.version,
-    stripe_tax_enabled:defaults?.enabled,stripe_tax_status:defaults?.status,default_tax_code:defaults?.code,tax_rate:tax.rate,tax_inclusive:tax.inclusive,tax_minor:taxTotal,vat_registered:tax.registered,bank_instructions:policy.bank_instructions}
+    stripe_tax_enabled:defaults?.enabled,stripe_tax_status:defaults?.status,default_tax_code:defaults?.code,tax_rate:tax.rate,tax_inclusive:tax.inclusive,tax_minor:taxTotal,vat_registered:tax.registered}
 }
 export async function reserveQuote(scope:any,quote:Quote,reference:string) {
   const inventory=scope.resolve(Modules.INVENTORY)

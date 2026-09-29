@@ -1,6 +1,42 @@
 import { createHash } from "node:crypto"
 import { AsyncLocalStorage } from "node:async_hooks"
 const { Pool } = require("pg")
+
+let sharedCommercePool: any = null
+let sharedCommerceLockPool: any = null
+
+function getSharedPool(databaseUrl: string) {
+  if (!sharedCommercePool) {
+    sharedCommercePool = new Pool({
+      connectionString: databaseUrl,
+      max: 4,
+      idleTimeoutMillis: 10000,
+      connectionTimeoutMillis: 5000,
+      application_name: "peptech-commerce",
+    })
+    sharedCommercePool.on("error", (err: any) => {
+      console.warn("[CommerceService Pool Error]:", err?.message || err)
+    })
+  }
+  return sharedCommercePool
+}
+
+function getSharedLockPool(databaseUrl: string) {
+  if (!sharedCommerceLockPool) {
+    sharedCommerceLockPool = new Pool({
+      connectionString: databaseUrl,
+      max: 2,
+      idleTimeoutMillis: 10000,
+      connectionTimeoutMillis: 5000,
+      application_name: "peptech-commerce-locks",
+    })
+    sharedCommerceLockPool.on("error", (err: any) => {
+      console.warn("[CommerceService LockPool Error]:", err?.message || err)
+    })
+  }
+  return sharedCommerceLockPool
+}
+
 export type LedgerRecord<T = Record<string, any>> = {
   id: string; kind: string; profile: string; owner_id: string | null; state: string;
   data: T; created_at: Date; updated_at: Date
@@ -14,11 +50,10 @@ export default class CommerceService {
   private lockContext = new AsyncLocalStorage<any>()
   constructor(_container: unknown, options: { databaseUrl: string }) {
     if (!options.databaseUrl) throw new Error("Commerce database URL is required")
-    this.pool = new Pool({ connectionString: options.databaseUrl, max: 6,
-      connectionTimeoutMillis: 5000, application_name: "peptech-commerce" })
-    this.lockPool = new Pool({ connectionString: options.databaseUrl, max: 2, connectionTimeoutMillis: 5000, application_name: "peptech-commerce-locks" })
+    this.pool = getSharedPool(options.databaseUrl)
+    this.lockPool = getSharedLockPool(options.databaseUrl)
   }
-  async __onApplicationShutdown() { await Promise.all([this.pool.end(), this.lockPool.end()]) }
+  async __onApplicationShutdown() { /* shared pools stay alive across transient lifecycles */ }
   async get<T = Record<string, any>>(id: string): Promise<LedgerRecord<T> | null> {
     return (await this.pool.query("SELECT * FROM peptech_commerce_record WHERE id=$1", [id])).rows[0] || null
   }
@@ -51,24 +86,39 @@ export default class CommerceService {
     await this.pool.query("INSERT INTO peptech_commerce_audit(record_id,actor_id,action,details) VALUES($1,$2,$3,$4)",
       [id,actor,action,JSON.stringify(details)])
   }
-  // Session advisory locks use a dedicated connection, never a pooled query pair.
-  // Disconnect releases the lock. Durable operations + provider idempotency recover
-  // a process crash; application memory is never the concurrency authority.
+  // Transaction-level advisory locks are bound to the transaction scope and auto-released
+  // on COMMIT/ROLLBACK, preventing advisory lock leaks across PgBouncer pooled connections.
   async locked<T>(key: string, work: () => Promise<T>): Promise<T> {
     const parent = this.lockContext.getStore()
-    const connection = parent || await this.lockPool.connect()
-    let acquired = false
+    if (parent) return work()
+    const connection = await this.lockPool.connect()
+    let inTransaction = false
     try {
-      const result = await connection.query("SELECT pg_try_advisory_lock(hashtextextended($1,0)) AS acquired", [key])
-      acquired = result.rows[0].acquired
-      if (!acquired) { const error: any = new Error("This operation is already processing. Retry the same request."); error.status = 409; throw error }
-      return await this.lockContext.run(connection, work)
-    } finally {
-      if (acquired) {
-        try { await connection.query("SELECT pg_advisory_unlock(hashtextextended($1,0))", [key]) }
-        catch { if(!parent)connection.release(true); throw new Error("Commerce lock connection lost; reconcile operation before retry") }
+      await connection.query("BEGIN")
+      inTransaction = true
+      let acquired = false
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const result = await connection.query("SELECT pg_try_advisory_xact_lock(hashtextextended($1,0)) AS acquired", [key])
+        acquired = result.rows[0]?.acquired === true
+        if (acquired) break
+        await new Promise((resolve) => setTimeout(resolve, 250))
       }
-      if (!parent) connection.release()
+      if (!acquired) {
+        const error: any = new Error("This operation is already processing. Retry the same request.")
+        error.status = 409
+        throw error
+      }
+      const output = await this.lockContext.run(connection, work)
+      await connection.query("COMMIT")
+      inTransaction = false
+      return output
+    } catch (err) {
+      if (inTransaction) {
+        try { await connection.query("ROLLBACK") } catch {}
+      }
+      throw err
+    } finally {
+      connection.release()
     }
   }
 }
