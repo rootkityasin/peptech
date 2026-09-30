@@ -1,4 +1,5 @@
 import { defineRouteConfig } from "@medusajs/admin-sdk";
+import "../../../../styles/custom.css";
 import { Container, Heading, Text, Button, Input, Label, Badge, Table, Drawer, toast } from "@medusajs/ui";
 import { useState, useEffect } from "react";
 
@@ -56,7 +57,7 @@ const DEFAULT_PACKAGING_PROFILES: PackagingProfile[] = [
   },
 ];
 
-export default function PackagingProfilesPage() {
+const PackagingProfilesPage = () => {
   const [profiles, setProfiles] = useState<PackagingProfile[]>(DEFAULT_PACKAGING_PROFILES);
   const [isLoading, setIsLoading] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -479,6 +480,8 @@ export default function PackagingProfilesPage() {
     </div>
   );
 }
+
+export default PackagingProfilesPage
 
 export const config = defineRouteConfig({
   label: "Packaging Profiles",

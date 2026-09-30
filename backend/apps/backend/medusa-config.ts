@@ -1,13 +1,5 @@
-// Register ts-node for TypeScript module resolution during Medusa CLI commands (e.g. generate-types)
-try {
-  require('ts-node/register');
-} catch (e) {
-  try {
-    require('ts-node').register({ transpileOnly: true });
-  } catch (err) {}
-}
-
 import { loadEnv, defineConfig } from '@medusajs/framework/utils'
+import { adminOrderOverrides } from './admin-order-overrides'
 const fs = require('fs')
 const path = require('path')
 
@@ -63,11 +55,11 @@ module.exports = defineConfig({
     redisUrl: process.env.REDIS_URL,
     databaseDriverOptions: dbUrl?.includes('localhost') || dbUrl?.includes('127.0.0.1')
       ? { connection: { ssl: false } }
-      : { connection: { ssl: { rejectUnauthorized: false } } },
+      : { ssl: { rejectUnauthorized: false }, connection: { ssl: { rejectUnauthorized: false } } },
     http: {
-      storeCors: process.env.STORE_CORS || 'http://localhost:3000,http://localhost:8000,https://peptech.bio,https://www.peptech.bio,https://admin.peptech.bio,https://docs.medusajs.com',
-      adminCors: process.env.ADMIN_CORS || 'http://localhost:5173,http://localhost:9000,https://peptech.bio,https://www.peptech.bio,https://admin.peptech.bio,https://docs.medusajs.com',
-      authCors: process.env.AUTH_CORS || 'http://localhost:3000,http://localhost:5173,http://localhost:9000,http://localhost:8000,https://peptech.bio,https://www.peptech.bio,https://admin.peptech.bio,https://docs.medusajs.com',
+      storeCors: process.env.STORE_CORS || 'http://localhost:3000,http://127.0.0.1:3000,http://localhost:8000,http://127.0.0.1:8000,https://peptech.bio,https://www.peptech.bio,https://admin.peptech.bio,https://docs.medusajs.com',
+      adminCors: process.env.ADMIN_CORS || 'http://localhost:5173,http://127.0.0.1:5173,http://localhost:9000,http://127.0.0.1:9000,https://peptech.bio,https://www.peptech.bio,https://admin.peptech.bio,https://docs.medusajs.com',
+      authCors: process.env.AUTH_CORS || 'http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173,http://localhost:9000,http://127.0.0.1:9000,http://localhost:8000,http://127.0.0.1:8000,https://peptech.bio,https://www.peptech.bio,https://admin.peptech.bio,https://docs.medusajs.com',
       jwtSecret: process.env.JWT_SECRET || 'supersecret',
       cookieSecret: process.env.COOKIE_SECRET || 'supersecret',
     },
@@ -78,6 +70,14 @@ module.exports = defineConfig({
   },
   admin: {
     disable: false,
+    vite: () => ({
+      ...adminOrderOverrides(),
+      // Keep Vite's dependency optimizer separate from production artifacts.
+      // Do not purge it during builds: a running dev server still references it.
+      ...(process.env.NODE_ENV !== "production" && {
+        cacheDir: path.resolve(process.cwd(), "node_modules/.vite-medusa-development-orders"),
+      }),
+    }),
   },
   modules: [
     {
@@ -106,7 +106,7 @@ module.exports = defineConfig({
         ],
       },
     },
-    { key: "peptechCommerce", resolve: "./src/modules/peptech-commerce", options: { databaseUrl: process.env.STRIPE_COMMERCE_DATABASE_URL || dbUrl } },
+    { key: "peptechCommerce", resolve: "./src/modules/peptech-commerce", options: { databaseUrl: process.env.STRIPE_COMMERCE_DATABASE_URL || rawDbUrl } },
     ...stripeModules(),
     ...commerceRuntimeModules(),
     ...commerceEmailModules(),

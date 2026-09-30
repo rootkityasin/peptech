@@ -1,4 +1,5 @@
 import { defineRouteConfig } from "@medusajs/admin-sdk"
+import "../../styles/custom.css"
 import {
   Container,
   Heading,
@@ -82,7 +83,7 @@ function formatDate(timestamp: string | number | undefined | null): string {
   }
 }
 
-export default function CommercePage() {
+const CommercePage = () => {
   const [activeTab, setActiveTab] = useState("subscriptions")
   const [busy, setBusy] = useState(false)
   const [statusMessage, setStatusMessage] = useState<{ type: "success" | "error" | "info"; text: string } | null>(null)
@@ -1042,7 +1043,7 @@ export default function CommercePage() {
                   setModalAlert(null)
                 }}
               >
-                ✕
+                Close
               </Button>
             </div>
 
@@ -1144,4 +1145,7 @@ export default function CommercePage() {
 
 export const config = defineRouteConfig({
   label: "Payments and billing",
+  icon: CreditCard,
 })
+
+export default CommercePage

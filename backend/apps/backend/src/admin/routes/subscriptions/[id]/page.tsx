@@ -1,3 +1,5 @@
+import { defineRouteConfig } from "@medusajs/admin-sdk";
+import "../../../styles/custom.css";
 import { useState, useEffect, useMemo } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
@@ -162,7 +164,7 @@ function resolveSubItemThumbnail(item) {
   return clean;
 }
 
-export function SubscriptionDetail({ subscriptionId: propSubId }) {
+export const SubscriptionDetail = ({ subscriptionId: propSubId }) => {
   const { id: paramId } = useParams();
   const subId = propSubId || paramId;
   const navigate = useNavigate();

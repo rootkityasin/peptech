@@ -3,14 +3,16 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**", ".next/**"]
+      "outputs": ["dist/**", ".next/**", ".medusa/server/**"],
+      "env": ["NODE_ENV", "MEDUSA_BACKEND_URL", "MEDUSA_ADMIN_BACKEND_URL", "MEDUSA_ADMIN_STOREFRONT_URL", "ADMIN_AUTH_TYPE", "ADMIN_JWT_TOKEN_STORAGE_KEY", "VITE_*", "PLUGIN_*"]
     },
     "dev": {
       "cache": false,
       "persistent": true
     },
     "start": {
-      "dependsOn": ["^build"]
+      "cache": false,
+      "persistent": true
     },
     "lint": {
       "outputs": []

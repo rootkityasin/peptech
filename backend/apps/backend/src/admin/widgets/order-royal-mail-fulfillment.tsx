@@ -1,6 +1,7 @@
 import { defineWidgetConfig } from "@medusajs/admin-sdk";
 import { Container, Heading, Text, Button, Badge, Input, Label, toast, Toaster } from "@medusajs/ui";
 import { useState, useMemo, useEffect } from "react";
+import "../styles/custom.css";
 
 interface OrderWidgetProps {
   data: any;
@@ -175,7 +176,7 @@ function isOrderPaymentSuccessful(order: any): boolean {
   return false;
 }
 
-export default function OrderRoyalMailFulfillmentWidget({ data: order }: OrderWidgetProps) {
+const OrderRoyalMailFulfillmentWidget = ({ data: order }: OrderWidgetProps) => {
   if (!order) {
     return null;
   }
@@ -554,17 +555,17 @@ export default function OrderRoyalMailFulfillmentWidget({ data: order }: OrderWi
               setShowModal(true);
             }}
           >
-            + Fulfill Items with Royal Mail
+            Fulfill Items with Royal Mail
           </Button>
         </div>
       </div>
 
-      {/* Payment Gate Notice if Unpaid */}
+      {/* Payment Notice if Unpaid */}
       {!isPaid && (
-        <div className="p-4 bg-orange-50/60 border-l-4 border-orange-500 text-xs text-orange-900 flex items-center justify-between">
+        <div className="p-3 bg-amber-50 border-l-4 border-amber-500 text-xs text-amber-900 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="font-semibold">⚠️ Payment Gate:</span>
-            <span>Order payment status is currently unpaid. Mark as paid before generating postage labels.</span>
+            <span className="font-semibold">Payment Notice:</span>
+            <span>Order is currently unpaid. Mark as paid before generating Royal Mail postage labels.</span>
           </div>
           <Badge color="orange" size="small">Unpaid</Badge>
         </div>
@@ -592,7 +593,7 @@ export default function OrderRoyalMailFulfillmentWidget({ data: order }: OrderWi
                   <div className="flex items-center gap-2">
                     <span className="font-semibold text-sm text-ui-fg-base">#{ful.id || `RM-PKG-${idx + 1}`}</span>
                     <Badge color={ful.is_official_carrier_label !== false ? "green" : "orange"} size="small">
-                      {ful.is_official_carrier_label !== false ? "Royal Mail Label Ready" : "Simulated Preview"}
+                      {ful.is_official_carrier_label !== false ? "Ready to Dispatch" : "Saved to Click & Drop"}
                     </Badge>
                     {ful.service_code && <Badge color="grey" size="small">{ful.service_code}</Badge>}
                   </div>
@@ -611,7 +612,7 @@ export default function OrderRoyalMailFulfillmentWidget({ data: order }: OrderWi
                   </div>
 
                   <div>
-                    <div className="text-ui-fg-muted text-[11px]">Tracking & Click & Drop ID</div>
+                    <div className="text-ui-fg-muted text-[11px]">Tracking Reference</div>
                     <div className="font-mono font-semibold text-ui-fg-interactive mt-0.5">
                       {ful.tracking_number || "Generated"}
                     </div>
@@ -625,29 +626,10 @@ export default function OrderRoyalMailFulfillmentWidget({ data: order }: OrderWi
                   <div>
                     <div className="text-ui-fg-muted text-[11px]">Destination</div>
                     <div className="font-medium text-ui-fg-base mt-0.5">
-                      {shipping.city || "Cambridge"}, {countryCode} {isUk ? "🇬🇧" : "🌐"}
+                      {shipping.city || "Cambridge"}, {countryCode} {isUk ? "(UK)" : "(International)"}
                     </div>
                   </div>
                 </div>
-
-                {(!ful.is_official_carrier_label || (ful.label_errors && ful.label_errors.length > 0)) && (
-                  <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-md text-[11px] text-amber-900 flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                      <span>ℹ️</span>
-                      <span>
-                        <strong>Royal Mail API Notice:</strong> {ful.label_errors?.[0]?.message || `Official 2D barcode thermal label generation via API requires an active Royal Mail OBA account. Order #${ful.order_identifier} was saved to Click & Drop.`}
-                      </span>
-                    </div>
-                    <a
-                      href="https://business.parcel.royalmail.com/orders"
-                      target="_blank"
-                      rel="noreferrer"
-                      className="font-semibold text-ui-fg-interactive hover:underline shrink-0 ml-2"
-                    >
-                      Print in Click & Drop ↗
-                    </a>
-                  </div>
-                )}
 
                 {/* Print & Download Action Buttons */}
                 <div className="pt-3 border-t flex items-center justify-between">
@@ -658,14 +640,14 @@ export default function OrderRoyalMailFulfillmentWidget({ data: order }: OrderWi
                       onClick={() => openPdfPrintWindow(labelPdf, ful.order_identifier)}
                       className="font-medium"
                     >
-                      {ful.is_official_carrier_label ? "🖨️ Print 6x4 Label" : "📄 View Dispatch Slip"}
+                      {ful.is_official_carrier_label ? "Print Label" : "View Dispatch Slip"}
                     </Button>
                     <Button
                       size="small"
                       variant="secondary"
                       onClick={() => downloadPdf(labelPdf, `Royal-Mail-Label-${order?.display_id || order?.id}.pdf`)}
                     >
-                      ⬇️ Download PDF
+                      Download PDF
                     </Button>
                     <Button
                       size="small"
@@ -674,7 +656,7 @@ export default function OrderRoyalMailFulfillmentWidget({ data: order }: OrderWi
                       onClick={() => handleDeleteFulfillment(ful)}
                       className="text-red-600 hover:text-red-700 hover:bg-red-50 font-medium"
                     >
-                      {isDeletingId === (ful.id || ful.tracking_number) ? "Deleting..." : "🗑️ Delete"}
+                      {isDeletingId === (ful.id || ful.tracking_number) ? "Deleting..." : "Delete"}
                     </Button>
                   </div>
 
@@ -685,7 +667,7 @@ export default function OrderRoyalMailFulfillmentWidget({ data: order }: OrderWi
                       rel="noreferrer"
                       className="text-xs font-semibold text-ui-fg-interactive hover:underline inline-flex items-center gap-1"
                     >
-                      Track on Royal Mail ↗
+                      Track on Royal Mail &rarr;
                     </a>
                   )}
                 </div>
@@ -710,9 +692,9 @@ export default function OrderRoyalMailFulfillmentWidget({ data: order }: OrderWi
               </div>
               <button
                 onClick={() => setShowModal(false)}
-                className="text-ui-fg-muted hover:text-ui-fg-base text-lg font-bold p-1"
+                className="text-ui-fg-muted hover:text-ui-fg-base text-sm font-semibold p-1 cursor-pointer"
               >
-                ✕
+                Close
               </button>
             </div>
 
@@ -723,9 +705,6 @@ export default function OrderRoyalMailFulfillmentWidget({ data: order }: OrderWi
               </div>
               <div className="text-ui-fg-subtle">
                 {shipping.address_1 || "Address Line 1"}, {shipping.city || "Cambridge"}, {shipping.postal_code || "CB4 0AB"}, {countryCode}
-              </div>
-              <div className="text-ui-fg-muted text-[11px]">
-                Items in package: {order?.items?.length || 1} line item(s) (RUO Synthetic Peptides)
               </div>
             </div>
 
@@ -752,197 +731,22 @@ export default function OrderRoyalMailFulfillmentWidget({ data: order }: OrderWi
                 </select>
               </div>
 
-              {/* Packaging Profile Dropdown & Manager (Black Theme) */}
-              <div className="bg-black text-white p-3.5 rounded-lg border border-neutral-800 space-y-2.5 shadow-sm">
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs font-semibold text-white tracking-wide">
-                    Packaging Profile
-                  </Label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const nextState = !showProfileManager;
-                      setShowProfileManager(nextState);
-                      setProfileManagerMsg("");
-                      if (nextState) {
-                        copyCurrentFormValues();
-                      }
-                    }}
-                    className="text-xs text-[#00C5A0] hover:text-[#16A6A3] font-medium hover:underline inline-flex items-center gap-1 cursor-pointer transition-colors"
-                  >
-                    {showProfileManager ? "✕ Close Profile Manager" : "+ Create / Manage Profiles"}
-                  </button>
-                </div>
-
+              {/* Packaging Profile Dropdown */}
+              <div>
+                <Label className="text-xs font-medium text-ui-fg-base mb-1 block">Packaging Profile</Label>
                 <select
                   value={selectedProfileId}
                   onChange={(e) => handleProfileChange(e.target.value)}
-                  className="w-full border border-neutral-700 rounded-md p-2 text-xs bg-[#18181b] text-white font-medium focus:outline-none focus:border-[#00C5A0]"
+                  className="w-full border rounded-md p-2 text-xs bg-ui-bg-base text-ui-fg-base font-medium"
                 >
-                  <option value="" className="bg-[#18181b] text-neutral-300">-- Choose a Packaging Profile (Optional) --</option>
+                  <option value="">-- Standard Package --</option>
                   {profiles.map((p) => (
-                    <option key={p.id} value={p.id} className="bg-[#18181b] text-white">
-                      {p.name} ({p.weightInGrams}g • {p.packageFormatLabel || p.packageFormatIdentifier} • {p.dimensions.heightInMms}×{p.dimensions.widthInMms}×{p.dimensions.depthInMms}mm)
+                    <option key={p.id} value={p.id}>
+                      {p.name} ({p.weightInGrams}g • {p.packageFormatLabel || p.packageFormatIdentifier})
                     </option>
                   ))}
-                  <option value="custom" className="bg-[#18181b] text-neutral-300">Custom (Manual Entry)</option>
+                  <option value="custom">Custom (Manual Entry)</option>
                 </select>
-
-                {/* Inline Profile Creator / Manager (Dark Theme) */}
-                {showProfileManager && (
-                  <div className="pt-3 border-t border-neutral-800 mt-2 space-y-3 bg-[#111113] p-3 rounded-md border border-neutral-800 text-white">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-white">
-                        {editingProfileId ? "✏️ Edit Packaging Profile" : "Create New Packaging Profile"}
-                      </span>
-                      <div className="flex items-center gap-2">
-                        {editingProfileId && (
-                          <button
-                            type="button"
-                            onClick={cancelEditProfile}
-                            className="text-[11px] text-neutral-400 hover:text-white cursor-pointer"
-                          >
-                            ✕ Cancel
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={copyCurrentFormValues}
-                          className="text-[11px] text-[#00C5A0] hover:underline cursor-pointer"
-                        >
-                          📋 Copy values from form
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2 text-xs">
-                      <div>
-                        <Label className="text-[11px] font-medium text-neutral-300 mb-0.5 block">Profile Name</Label>
-                        <Input
-                          value={newProfileName}
-                          onChange={(e) => setNewProfileName(e.target.value)}
-                          placeholder="e.g. 5x Vial Cold Pack Mailer"
-                          className="bg-[#18181b] border-neutral-700 text-white placeholder-neutral-500"
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <Label className="text-[11px] font-medium text-neutral-300 mb-0.5 block">Package Format</Label>
-                          <select
-                            value={newProfileFormat}
-                            onChange={(e) => setNewProfileFormat(e.target.value)}
-                            className="w-full border border-neutral-700 rounded-md p-1.5 text-xs bg-[#18181b] text-white"
-                          >
-                            <option value="smallParcel">Small Parcel</option>
-                            <option value="largeLetter">Large Letter</option>
-                            <option value="mediumParcel">Medium Parcel</option>
-                            <option value="parcel">Parcel</option>
-                            <option value="largeParcel">Large Parcel</option>
-                          </select>
-                        </div>
-                        <div>
-                          <Label className="text-[11px] font-medium text-neutral-300 mb-0.5 block">Gross Weight (g)</Label>
-                          <Input
-                            type="number"
-                            value={newProfileWeight}
-                            onChange={(e) => setNewProfileWeight(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                            className="bg-[#18181b] border-neutral-700 text-white"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <Label className="text-[11px] font-medium text-neutral-300 mb-0.5 block">Outer Dimensions (H × W × D mm)</Label>
-                        <div className="grid grid-cols-3 gap-1.5">
-                          <Input
-                            type="number"
-                            value={newProfileH}
-                            onChange={(e) => setNewProfileH(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                            placeholder="H"
-                            className="bg-[#18181b] border-neutral-700 text-white"
-                          />
-                          <Input
-                            type="number"
-                            value={newProfileW}
-                            onChange={(e) => setNewProfileW(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                            placeholder="W"
-                            className="bg-[#18181b] border-neutral-700 text-white"
-                          />
-                          <Input
-                            type="number"
-                            value={newProfileD}
-                            onChange={(e) => setNewProfileD(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                            placeholder="D"
-                            className="bg-[#18181b] border-neutral-700 text-white"
-                          />
-                        </div>
-                      </div>
-
-                      {profileManagerMsg && (
-                        <div className="text-[11px] text-[#00C5A0] font-medium">
-                          {profileManagerMsg}
-                        </div>
-                      )}
-
-                      <div className="flex items-center justify-end gap-2 pt-1">
-                        <Button
-                          size="small"
-                          variant="secondary"
-                          onClick={() => {
-                            cancelEditProfile();
-                            setShowProfileManager(false);
-                          }}
-                          className="border-neutral-700 text-neutral-300 hover:bg-neutral-800"
-                        >
-                          Close
-                        </Button>
-                        <Button
-                          size="small"
-                          variant="primary"
-                          disabled={isSavingProfile || !newProfileName.trim()}
-                          onClick={handleSaveProfile}
-                          className="bg-[#16A6A3] hover:bg-[#00C5A0] text-white"
-                        >
-                          {isSavingProfile ? "Saving..." : editingProfileId ? "Update Profile" : "Save Profile"}
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* List of Profiles with Edit & Delete */}
-                    <div className="pt-2 border-t border-neutral-800 text-xs space-y-1.5">
-                      <span className="text-[11px] font-semibold text-neutral-400 block">Existing Profiles:</span>
-                      {profiles.map((p) => (
-                        <div key={p.id} className="flex items-center justify-between p-1.5 bg-[#18181b] rounded border border-neutral-800 text-[11px]">
-                          <div>
-                            <span className="font-semibold text-white">{p.name}</span>
-                            <span className="text-neutral-400 ml-1.5">
-                              ({p.weightInGrams}g, {p.packageFormatLabel || p.packageFormatIdentifier}, {p.dimensions.heightInMms}×{p.dimensions.widthInMms}×{p.dimensions.depthInMms}mm)
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1 shrink-0 ml-2">
-                            <button
-                              type="button"
-                              onClick={() => startEditProfile(p)}
-                              className="text-[#00C5A0] hover:underline px-1 cursor-pointer font-medium"
-                              title="Edit profile"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteProfile(p.id, p.name)}
-                              className="text-red-400 hover:text-red-300 font-bold px-1 cursor-pointer"
-                              title="Delete profile"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* Weight & Format */}
@@ -1065,6 +869,8 @@ export default function OrderRoyalMailFulfillmentWidget({ data: order }: OrderWi
     </Container>
   );
 }
+
+export default OrderRoyalMailFulfillmentWidget
 
 export const config = defineWidgetConfig({
   zone: "order.details.before",

@@ -13,6 +13,18 @@ if (process.env.DATABASE_URL) {
 const path = require('path');
 const fs = require('fs');
 
+// Production always runs the compiled application, never the TypeScript tree.
+const serverDir = fs.existsSync(path.join(__dirname, 'medusa-config.ts'))
+  ? path.join(__dirname, '.medusa/server')
+  : __dirname;
+if (!fs.existsSync(path.join(serverDir, 'medusa-config.js')) ||
+    !fs.existsSync(path.join(serverDir, 'public/admin/index.html'))) {
+  console.error('[PEPTECH] Production build missing. Run npm run build before npm start.');
+  process.exit(1);
+}
+process.env.NODE_ENV = 'production';
+process.chdir(serverDir);
+
 console.log('[PEPTECH] Backend server script executing in:', process.cwd());
 
 // Ensure process.argv has at least [node, scriptPath]
@@ -20,11 +32,8 @@ while (process.argv.length < 2) {
   process.argv.push(__filename);
 }
 
-// Ensure 'start' or 'develop' command is explicitly present
-const hasCommand = process.argv.slice(2).some(arg => !arg.startsWith('-'));
-if (!hasCommand) {
-  process.argv.splice(2, 0, 'start');
-}
+// This entrypoint is production-only; development uses `medusa develop`.
+process.argv = [process.argv[0], __filename, 'start', ...process.argv.slice(2)];
 
 // Pass port from environment variable (critical for Hostinger and cloud reverse proxies)
 const port = process.env.PORT || '9000';

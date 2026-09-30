@@ -6,16 +6,6 @@ console.log('[PEPTECH] Starting Medusa production build...');
 
 const backendDir = path.resolve(__dirname, 'backend/apps/backend');
 
-// 0. Sync custom admin chunks (OrderList & OrderDetail) before build
-const updateChunksScript = path.resolve(backendDir, 'src/admin/update_chunks.js');
-if (fs.existsSync(updateChunksScript)) {
-  try {
-    console.log('[PEPTECH] Syncing custom admin chunks...');
-    require(updateChunksScript);
-  } catch (chunkErr) {
-    console.warn('[PEPTECH WARN] Could not run update_chunks.js:', chunkErr.message);
-  }
-}
 
 // 1. Build Medusa backend and admin dashboard inside backend directory
 const cleanNodeOptions = (process.env.NODE_OPTIONS || '')
@@ -33,7 +23,7 @@ if (cleanNodeOptions) {
   delete buildEnv.NODE_OPTIONS;
 }
 
-execSync('npx medusa build --lint false', {
+execSync('npm run build', {
   stdio: 'inherit',
   cwd: backendDir,
   env: buildEnv,
@@ -42,11 +32,9 @@ execSync('npx medusa build --lint false', {
 const serverDir = path.resolve(backendDir, '.medusa/server');
 const adminPublicDir = path.join(serverDir, 'public/admin');
 
-// 2. Mirror admin build directly to root /app and backend public/admin
+// 2. Mirror production assets for the hosting preset, never into source public/.
 const rootAppDir = path.resolve(__dirname, 'app');
 const rootAppAssetsDir = path.join(rootAppDir, 'assets');
-const backendPublicAdminDir = path.join(backendDir, 'public/admin');
-const backendPublicAdminAssetsDir = path.join(backendPublicAdminDir, 'assets');
 
 if (fs.existsSync(adminPublicDir)) {
   // Mirror to root /app
@@ -56,12 +44,6 @@ if (fs.existsSync(adminPublicDir)) {
   fs.cpSync(adminPublicDir, rootAppDir, { recursive: true });
   console.log('[PEPTECH] Mirrored admin build to root /app directory.');
 
-  // Mirror to backend/apps/backend/public/admin
-  if (fs.existsSync(backendPublicAdminAssetsDir)) {
-    fs.rmSync(backendPublicAdminAssetsDir, { recursive: true, force: true });
-  }
-  fs.cpSync(adminPublicDir, backendPublicAdminDir, { recursive: true });
-  console.log('[PEPTECH] Mirrored admin build to backend/apps/backend/public/admin directory.');
 }
 
 // 3. Prepare dist directory (for Hostinger 'Other' preset)
@@ -98,7 +80,6 @@ const logoSource = fs.existsSync(path.resolve(__dirname, 'storefront/public/logo
 if (fs.existsSync(logoSource)) {
   const logoTargets = [
     path.join(adminPublicDir, 'logo.webp'),
-    path.join(backendPublicAdminDir, 'logo.webp'),
     path.join(distDir, 'app/logo.webp'),
     path.join(distDir, 'public/admin/logo.webp'),
   ];
@@ -115,8 +96,6 @@ if (fs.existsSync(logoSource)) {
 const imagesSource = path.resolve(__dirname, 'storefront/public/images');
 if (fs.existsSync(imagesSource)) {
   const imagesTargets = [
-    path.join(backendDir, 'public/images'),
-    path.join(backendDir, 'public/admin/images'),
     path.join(serverDir, 'public/images'),
     path.join(serverDir, 'public/admin/images'),
     path.join(rootAppDir, 'images'),
@@ -136,7 +115,6 @@ if (fs.existsSync(imagesSource)) {
 
 const htmlTargets = [
   path.join(rootAppDir, 'index.html'),
-  path.join(backendPublicAdminDir, 'index.html'),
   path.join(adminPublicDir, 'index.html'),
   path.join(distDir, 'app/index.html'),
 ];
@@ -199,29 +177,6 @@ require(path.join(backendDir, 'server.js'));
 fs.writeFileSync(path.join(standaloneDir, 'server.js'), standaloneScript);
 fs.writeFileSync(path.join(standaloneDir, 'package.json'), JSON.stringify({ name: "peptech-server", private: true, main: "server.js" }, null, 2));
 
-// 5. Inject Dark Theme CSS into all admin asset bundles
-const darkThemeFile = path.resolve(backendDir, 'src/admin/dark_theme.css');
-if (fs.existsSync(darkThemeFile)) {
-  const darkCss = fs.readFileSync(darkThemeFile, 'utf8');
-  const targetDirs = [rootAppDir, backendPublicAdminDir, path.join(distDir, 'app'), nextStaticDir];
-  for (const dir of targetDirs) {
-    const assetsDir = path.join(dir, 'assets');
-    if (fs.existsSync(assetsDir)) {
-      const files = fs.readdirSync(assetsDir);
-      for (const f of files) {
-        if (f.endsWith('.css')) {
-          const cssPath = path.join(assetsDir, f);
-          let css = fs.readFileSync(cssPath, 'utf8');
-          if (!css.includes('PEPTECH® Dark Mode Styles')) {
-            fs.writeFileSync(cssPath, css + '\n\n' + darkCss, 'utf8');
-            console.log(`[PEPTECH] Injected dark theme into ${path.relative(__dirname, cssPath)}`);
-          }
-        }
-      }
-    }
-  }
-}
 
 console.log('[PEPTECH] Prepared .next/standalone and dist build outputs.');
 console.log('[PEPTECH] Production build completed successfully!');
-

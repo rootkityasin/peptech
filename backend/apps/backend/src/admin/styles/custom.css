@@ -1,17 +1,30 @@
 /* ========================================================
-   PEPTECH® Dark Mode Styles for Orders & Subscriptions
+   PEPTECH® Clean Custom Admin Design & Theme Styles
    ======================================================== */
 
-html.dark .orders-theme-root,
-.dark .orders-theme-root,
+/* Dark Theme Variables & Surface Overrides */
+html.dark,
+.dark {
+  --peptech-navy: #0B1F3A;
+  --peptech-teal: #00C5A0;
+  --peptech-teal-hover: #16A6A3;
+}
+
+html.dark body,
+.dark body,
 html.dark [class*="min-h-screen"],
-.dark [class*="min-h-screen"] {
+.dark [class*="min-h-screen"],
+html.dark .orders-theme-root,
+.dark .orders-theme-root {
   background-color: #121214 !important;
   color: #f4f4f5 !important;
 }
 
+/* Card & Surface Containers */
 html.dark .orders-theme-root .bg-white,
-.dark .orders-theme-root .bg-white {
+.dark .orders-theme-root .bg-white,
+html.dark .bg-ui-bg-base,
+.dark .bg-ui-bg-base {
   background-color: #1c1c1f !important;
   color: #f4f4f5 !important;
 }
@@ -21,50 +34,76 @@ html.dark .orders-theme-root [class*="bg-[#f6f6f7]"],
 html.dark .orders-theme-root [class*="bg-[#fafbfb]"],
 .dark .orders-theme-root [class*="bg-[#fafbfb]"],
 html.dark .orders-theme-root [class*="bg-[#f9fafb]"],
-.dark .orders-theme-root [class*="bg-[#f9fafb]"] {
+.dark .orders-theme-root [class*="bg-[#f9fafb]"],
+html.dark .bg-ui-bg-subtle,
+.dark .bg-ui-bg-subtle {
   background-color: #161618 !important;
 }
 
+/* Borders & Dividers */
 html.dark .orders-theme-root [class*="border-[#e1e3e5]"],
 .dark .orders-theme-root [class*="border-[#e1e3e5]"],
 html.dark .orders-theme-root [class*="border-[#c9cccf]"],
 .dark .orders-theme-root [class*="border-[#c9cccf]"],
+html.dark .border-ui-border-base,
+.dark .border-ui-border-base,
 html.dark .orders-theme-root [class*="divide-[#e1e3e5]"] > :not([hidden]) ~ :not([hidden]),
 .dark .orders-theme-root [class*="divide-[#e1e3e5]"] > :not([hidden]) ~ :not([hidden]) {
   border-color: #27272a !important;
 }
 
+/* Typography Hierarchy */
 html.dark .orders-theme-root [class*="text-[#202223]"],
 .dark .orders-theme-root [class*="text-[#202223]"],
 html.dark .orders-theme-root h1, html.dark .orders-theme-root h2, html.dark .orders-theme-root h3,
-.dark .orders-theme-root h1, .dark .orders-theme-root h2, .dark .orders-theme-root h3 {
+.dark .orders-theme-root h1, .dark .orders-theme-root h2, .dark .orders-theme-root h3,
+html.dark .text-ui-fg-base,
+.dark .text-ui-fg-base {
   color: #f4f4f5 !important;
 }
 
 html.dark .orders-theme-root [class*="text-[#5c5f62]"],
-.dark .orders-theme-root [class*="text-[#5c5f62]"] {
+.dark .orders-theme-root [class*="text-[#5c5f62]"],
+html.dark .text-ui-fg-subtle,
+.dark .text-ui-fg-subtle {
   color: #a1a1aa !important;
 }
 
 html.dark .orders-theme-root [class*="text-[#8c9196]"],
 .dark .orders-theme-root [class*="text-[#8c9196]"],
 html.dark .orders-theme-root [class*="text-[#c9cccf]"],
-.dark .orders-theme-root [class*="text-[#c9cccf]"] {
+.dark .orders-theme-root [class*="text-[#c9cccf]"],
+html.dark .text-ui-fg-muted,
+.dark .text-ui-fg-muted {
   color: #71717a !important;
 }
 
+/* Table Rows & Interactive Hover */
 html.dark .orders-theme-root tr:hover,
 .dark .orders-theme-root tr:hover,
 html.dark .orders-theme-root tr[class*="hover:bg-[#f6f6f7]"]:hover,
-.dark .orders-theme-root tr[class*="hover:bg-[#f6f6f7]"]:hover {
+.dark .orders-theme-root tr[class*="hover:bg-[#f6f6f7]"]:hover,
+html.dark tr[data-state="selected"],
+.dark tr[data-state="selected"] {
   background-color: #232326 !important;
 }
 
+/* Links & Brand Accents */
 html.dark .orders-theme-root [class*="text-[#2c6ecb]"],
-.dark .orders-theme-root [class*="text-[#2c6ecb]"] {
-  color: #60a5fa !important;
+.dark .orders-theme-root [class*="text-[#2c6ecb]"],
+html.dark .text-ui-fg-interactive,
+.dark .text-ui-fg-interactive {
+  color: #00C5A0 !important;
 }
 
+html.dark .orders-theme-root [class*="text-[#2c6ecb]"]:hover,
+.dark .orders-theme-root [class*="text-[#2c6ecb]"]:hover,
+html.dark .text-ui-fg-interactive:hover,
+.dark .text-ui-fg-interactive:hover {
+  color: #16A6A3 !important;
+}
+
+/* Buttons */
 html.dark .orders-theme-root button.bg-white,
 .dark .orders-theme-root button.bg-white,
 html.dark .orders-theme-root button[class*="bg-white"],
@@ -81,26 +120,32 @@ html.dark .orders-theme-root button[class*="bg-white"]:hover,
   background-color: #2c2c30 !important;
 }
 
-html.dark .orders-theme-root input[type="text"],
-.dark .orders-theme-root input[type="text"],
-html.dark .orders-theme-root input[type="search"],
-.dark .orders-theme-root input[type="search"],
-html.dark .orders-theme-root textarea,
-.dark .orders-theme-root textarea,
-html.dark .orders-theme-root select,
-.dark .orders-theme-root select {
+/* Form Controls & Inputs */
+html.dark input[type="text"],
+.dark input[type="text"],
+html.dark input[type="search"],
+.dark input[type="search"],
+html.dark input[type="number"],
+.dark input[type="number"],
+html.dark textarea,
+.dark textarea,
+html.dark select,
+.dark select {
   background-color: #161618 !important;
   border-color: #3f3f46 !important;
   color: #f4f4f5 !important;
 }
 
-html.dark .orders-theme-root input[type="text"]::placeholder,
-.dark .orders-theme-root input[type="text"]::placeholder,
-html.dark .orders-theme-root input[type="search"]::placeholder,
-.dark .orders-theme-root input[type="search"]::placeholder {
+html.dark input[type="text"]::placeholder,
+.dark input[type="text"]::placeholder,
+html.dark input[type="search"]::placeholder,
+.dark input[type="search"]::placeholder,
+html.dark input[type="number"]::placeholder,
+.dark input[type="number"]::placeholder {
   color: #71717a !important;
 }
 
+/* Badges & Status Tags */
 html.dark .orders-theme-root [class*="bg-[#e4e5e7]"],
 .dark .orders-theme-root [class*="bg-[#e4e5e7]"] {
   background-color: #27272a !important;
@@ -134,14 +179,14 @@ html.dark .orders-theme-root [class*="bg-[#f1f2f3]"],
   border-color: #3f3f46 !important;
 }
 
-html.dark .orders-theme-root input[type="checkbox"],
-.dark .orders-theme-root input[type="checkbox"] {
+html.dark input[type="checkbox"],
+.dark input[type="checkbox"] {
   background-color: #27272a !important;
   border-color: #3f3f46 !important;
 }
 
 /* ========================================================
-   Hide Documentation & Changelog from Admin User Menu
+   PEPTECH® Clean UI: Hide Docs & Changelog from User Menu
    ======================================================== */
 a[href*="docs.medusajs.com"],
 a[href*="medusajs.com/changelog"],
@@ -150,5 +195,42 @@ a[href*="medusajs.com/changelog"],
 div[role="menuitem"]:has(a[href*="docs.medusajs.com"]),
 div[role="menuitem"]:has(a[href*="medusajs.com/changelog"]) {
   display: none !important;
+}
+
+/* PEPTECH Brand Logo in Login Badge */
+.peptech-logo-badge {
+  background-color: #0B1F3A;
+  border: 1px solid rgba(0, 197, 160, 0.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+/* ========================================================
+   Sidebar Extension Icons: Remove shadow & border box
+   ======================================================== */
+nav [class*="shadow-borders-base"],
+aside [class*="shadow-borders-base"],
+[data-sidebar] [class*="shadow-borders-base"],
+nav .shadow-borders-base,
+aside .shadow-borders-base,
+a [class*="shadow-borders-base"],
+div[class*="shadow-borders-base"]:has(svg),
+[class*="shadow-borders-base"]:has(svg),
+aside div:has(> div > svg),
+nav div:has(> div > svg),
+aside .bg-ui-bg-base:has(svg),
+nav .bg-ui-bg-base:has(svg) {
+  box-shadow: none !important;
+  -webkit-box-shadow: none !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  outline: none !important;
+}
+
+aside [class*="shadow-borders-base"] > div,
+nav [class*="shadow-borders-base"] > div {
+  width: auto !important;
+  height: auto !important;
+  overflow: visible !important;
 }
 
