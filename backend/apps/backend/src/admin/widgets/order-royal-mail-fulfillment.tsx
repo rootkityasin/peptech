@@ -1,4 +1,5 @@
 import { defineWidgetConfig } from "@medusajs/admin-sdk";
+import { adminFetch as fetch } from "../lib/sdk";
 import { Container, Heading, Text, Button, Badge, Input, Label, toast, Toaster } from "@medusajs/ui";
 import { useState, useMemo, useEffect } from "react";
 import "../styles/custom.css";
@@ -221,7 +222,7 @@ const OrderRoyalMailFulfillmentWidget = ({ data: order }: OrderWidgetProps) => {
   // Fetch packaging profiles from backend API with localStorage fallback
   const fetchProfiles = async () => {
     try {
-      const res = await fetch("/admin/custom/packaging-profiles", { credentials: "include" });
+      const res = await adminFetch("/admin/custom/packaging-profiles", { credentials: "include" });
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data.profiles) && data.profiles.length > 0) {
@@ -317,7 +318,7 @@ const OrderRoyalMailFulfillmentWidget = ({ data: order }: OrderWidgetProps) => {
         payload.id = editingProfileId;
       }
 
-      const res = await fetch("/admin/custom/packaging-profiles", {
+      const res = await adminFetch("/admin/custom/packaging-profiles", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -365,7 +366,7 @@ const OrderRoyalMailFulfillmentWidget = ({ data: order }: OrderWidgetProps) => {
   const handleDeleteProfile = async (id: string, name: string) => {
     if (!confirm(`Delete packaging profile "${name}"?`)) return;
     try {
-      const res = await fetch(`/admin/custom/packaging-profiles?id=${encodeURIComponent(id)}`, {
+      const res = await adminFetch(`/admin/custom/packaging-profiles?id=${encodeURIComponent(id)}`, {
         method: "DELETE",
         credentials: "include",
       });
@@ -403,7 +404,7 @@ const OrderRoyalMailFulfillmentWidget = ({ data: order }: OrderWidgetProps) => {
     setIsDeletingId(fulKey);
 
     try {
-      const res = await fetch("/admin/custom/fulfillment", {
+      const res = await adminFetch("/admin/custom/fulfillment", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -458,7 +459,7 @@ const OrderRoyalMailFulfillmentWidget = ({ data: order }: OrderWidgetProps) => {
     setErrorMessage("");
 
     try {
-      const response = await fetch("/admin/custom/fulfillment", {
+      const response = await adminFetch("/admin/custom/fulfillment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -626,7 +627,7 @@ const OrderRoyalMailFulfillmentWidget = ({ data: order }: OrderWidgetProps) => {
                   <div>
                     <div className="text-ui-fg-muted text-[11px]">Destination</div>
                     <div className="font-medium text-ui-fg-base mt-0.5">
-                      {shipping.city || "Cambridge"}, {countryCode} {isUk ? "(UK)" : "(International)"}
+                      {shipping.city ? `${shipping.city}, ` : ""}{countryCode} {isUk ? "(UK)" : "(International)"}
                     </div>
                   </div>
                 </div>
@@ -687,7 +688,7 @@ const OrderRoyalMailFulfillmentWidget = ({ data: order }: OrderWidgetProps) => {
                   Royal Mail Click & Drop Fulfillment
                 </Heading>
                 <Text size="small" className="text-ui-fg-subtle">
-                  Order #{order?.display_id || order?.id} • Destination: {shipping.city || "Cambridge"}, {countryCode}
+                  Order #{order?.display_id || order?.id} • Destination: {[shipping.city, countryCode].filter(Boolean).join(", ")}
                 </Text>
               </div>
               <button
@@ -704,7 +705,7 @@ const OrderRoyalMailFulfillmentWidget = ({ data: order }: OrderWidgetProps) => {
                 {shipping.first_name || ""} {shipping.last_name || ""} {shipping.company ? `(${shipping.company})` : ""}
               </div>
               <div className="text-ui-fg-subtle">
-                {shipping.address_1 || "Address Line 1"}, {shipping.city || "Cambridge"}, {shipping.postal_code || "CB4 0AB"}, {countryCode}
+                {[shipping.address_1, shipping.city, shipping.postal_code, countryCode].filter(Boolean).join(", ")}
               </div>
             </div>
 

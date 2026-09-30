@@ -39,6 +39,11 @@ loadStripeEnv()
 
 loadEnv(process.env.NODE_ENV || 'development', process.cwd())
 
+// In-memory sessions disappear on every development restart. Native dashboard
+// and custom screens share an isolated bearer token by default instead.
+process.env.ADMIN_AUTH_TYPE ||= "jwt"
+process.env.ADMIN_JWT_TOKEN_STORAGE_KEY ||= "peptech_admin_token"
+
 const defaultDatabaseUrl = 'postgresql://localhost:5432/peptech'
 const rawDbUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || defaultDatabaseUrl
 const dbUrl = rawDbUrl.replace(/([?&])sslmode=[^&]*(&|$)/gi, (match: string, prefix: string, suffix: string) => {
@@ -61,12 +66,18 @@ module.exports = defineConfig({
       adminCors: process.env.ADMIN_CORS || 'http://localhost:5173,http://127.0.0.1:5173,http://localhost:9000,http://127.0.0.1:9000,https://peptech.bio,https://www.peptech.bio,https://admin.peptech.bio,https://docs.medusajs.com',
       authCors: process.env.AUTH_CORS || 'http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173,http://localhost:9000,http://127.0.0.1:9000,http://localhost:8000,http://127.0.0.1:8000,https://peptech.bio,https://www.peptech.bio,https://admin.peptech.bio,https://docs.medusajs.com',
       jwtSecret: process.env.JWT_SECRET || 'supersecret',
+      jwtExpiresIn: process.env.JWT_EXPIRES_IN || '30d',
       cookieSecret: process.env.COOKIE_SECRET || 'supersecret',
     },
     cookieOptions: {
-      secure: false,
+      secure: process.env.NODE_ENV === "production",
       sameSite: 'lax',
-    }
+    },
+    sessionOptions: {
+      name: "peptech.sid",
+      resave: false,
+      rolling: true,
+    },
   },
   admin: {
     disable: false,

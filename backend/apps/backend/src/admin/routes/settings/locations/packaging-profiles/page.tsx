@@ -1,4 +1,5 @@
 import { defineRouteConfig } from "@medusajs/admin-sdk";
+import { adminFetch as fetch } from "../../../../lib/sdk";
 import "../../../../styles/custom.css";
 import { Container, Heading, Text, Button, Input, Label, Badge, Table, Drawer, toast } from "@medusajs/ui";
 import { useState, useEffect } from "react";

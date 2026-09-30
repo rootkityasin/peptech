@@ -2,139 +2,8 @@ import { useState, useMemo, useEffect } from "react";
 import "../../styles/custom.css";
 import { Link, useNavigate } from "react-router-dom";
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
-
-function useOrders(params = {}) {
-  const [orders, setOrders] = useState([]);
-  const [count, setCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-
-  const refetch = async () => {
-    try {
-      setIsLoading(true);
-      if (typeof window !== "undefined" && window.__sdk?.admin?.order) {
-        try {
-          const data = await window.__sdk.admin.order.list(params);
-          if (data && Array.isArray(data.orders)) {
-            setOrders(data.orders);
-            setCount(data.count !== undefined ? data.count : data.orders.length);
-            return;
-          }
-        } catch (sdkErr) {
-          console.warn("SDK order fetch failed, falling back to fetch:", sdkErr);
-        }
-      }
-      const query = new URLSearchParams();
-      if (params.limit) query.set("limit", String(params.limit));
-      if (params.order) query.set("order", params.order);
-      if (params.fields) query.set("fields", params.fields);
-      const res = await fetch("/admin/orders?" + query.toString(), {
-        credentials: "include",
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setOrders(data.orders || []);
-        setCount(data.count !== undefined ? data.count : (data.orders ? data.orders.length : 0));
-      }
-    } catch (e) {
-      console.error("Failed to fetch orders:", e);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    refetch();
-  }, []);
-
-  return { orders, count, isLoading, refetch };
-}
-
-const SAMPLE_REFERENCE_ORDERS = [
-  {
-    id: "order_01H1016DEMO",
-    display_id: 1016,
-    created_at: new Date(Date.now() - 3600000 * 2).toISOString(),
-    email: "devon.lane@example.com",
-    total: 228.0,
-    currency_code: "USD",
-    status: "pending",
-    metadata: {
-      customer_name: "Devon Lane",
-      payment_status: "pending",
-      fulfillment_status: "unfulfilled",
-      promotion: { code: "SUB28-10" },
-      tags: ["Walmart"],
-      order_type: "subscription_renewal",
-      subscription_id: "sub_01H1016",
-    },
-    items: [{ title: "GHK-Cu 50mg Refill Cartridge", subtitle: "Refill Cartridge (28-day Sub)", quantity: 2 }],
-  },
-  {
-    id: "order_01H1015DEMO",
-    display_id: 1015,
-    created_at: new Date(Date.now() - 3600000 * 18).toISOString(),
-    email: "robert.fox@example.com",
-    total: 145.0,
-    currency_code: "GBP",
-    status: "completed",
-    metadata: {
-      customer_name: "Robert Fox",
-      payment_status: "paid",
-      fulfillment_status: "fulfilled",
-      tags: ["VIP"],
-    },
-    items: [{ title: "BPC-157 Complete Pen Set", quantity: 1 }],
-  },
-  {
-    id: "order_01H1014DEMO",
-    display_id: 1014,
-    created_at: new Date(Date.now() - 3600000 * 36).toISOString(),
-    email: "jane.cooper@example.com",
-    total: 89.0,
-    currency_code: "GBP",
-    status: "completed",
-    metadata: {
-      customer_name: "Jane Cooper",
-      payment_status: "refunded",
-      fulfillment_status: "unfulfilled",
-      promotion: { code: "SUB28-10" },
-      order_type: "subscription_renewal",
-    },
-    items: [{ title: "TB-500 Refill Cartridge", quantity: 1 }],
-  },
-  {
-    id: "order_01H1013DEMO",
-    display_id: 1013,
-    created_at: new Date(Date.now() - 3600000 * 60).toISOString(),
-    email: "wade.warren@example.com",
-    total: 450.0,
-    currency_code: "GBP",
-    status: "completed",
-    metadata: {
-      customer_name: "Wade Warren",
-      payment_status: "paid",
-      fulfillment_status: "fulfilled",
-      tags: ["Wholesale"],
-    },
-    items: [{ title: "NAD+ Lyophilised Vials (Pack of 10)", quantity: 3 }],
-  },
-  {
-    id: "order_01H1012DEMO",
-    display_id: 1012,
-    created_at: new Date(Date.now() - 3600000 * 84).toISOString(),
-    email: "esther.howard@example.com",
-    total: 75.0,
-    currency_code: "GBP",
-    status: "pending",
-    metadata: {
-      customer_name: "Esther Howard",
-      payment_status: "pending",
-      fulfillment_status: "unfulfilled",
-      tags: [],
-    },
-    items: [{ title: "Semaglutide 5mg Vial", quantity: 1 }],
-  },
-];
+import { useOrders } from "../../lib/order-queries";
+import { paymentStatus as getPaymentStatus, fulfillmentStatus as getFulfillmentStatus, customerName as getCustomerName, isSubscriptionOrder, statusLabel } from "../../lib/order-data";
 
 export function OrderList() {
   const navigate = useNavigate();
@@ -148,7 +17,6 @@ export function OrderList() {
   const [filterReturn, setFilterReturn] = useState("all");
   const [filterPromotion, setFilterPromotion] = useState("all");
   const [showFilterMenu, setShowFilterMenu] = useState(false);
-  const [subscriptions, setSubscriptions] = useState([]);
   const [sortField, setSortField] = useState("date"); // "date" | "order"
   const [sortDirection, setSortDirection] = useState("desc"); // "desc" | "asc"
 
@@ -162,92 +30,35 @@ export function OrderList() {
   };
 
   // Fetch orders (latest first)
-  const { orders = [], count = 0, isLoading, refetch } = useOrders({
-    limit: 100,
-    order: "-created_at",
-    fields: "id,display_id,created_at,email,total,currency_code,status,metadata,shipping_address,items,fulfillments",
-  });
-
-  const effectiveOrders = useMemo(() => {
-    if (orders && orders.length > 0) return orders;
-    return !isLoading ? SAMPLE_REFERENCE_ORDERS : [];
-  }, [orders, isLoading]);
-
-  // Fetch subscriptions from custom admin route
-  const fetchSubscriptions = async () => {
-    try {
-      const res = await fetch("/admin/custom/subscriptions", { credentials: "include" });
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data.subscriptions)) {
-          setSubscriptions(data.subscriptions);
-        }
-      }
-    } catch (e) {}
-  };
-
-  useEffect(() => {
-    fetchSubscriptions();
-  }, []);
-
-  // Helper to detect subscription orders
-  const isSubscriptionOrder = (order) => {
-    const meta = order?.metadata || {};
-    const tags = Array.isArray(meta.tags) ? meta.tags : [];
-    return (
-      meta.order_type === "subscription_renewal" ||
-      Boolean(meta.subscription_id) ||
-      tags.some((t) => String(t).toLowerCase().includes("subscri")) ||
-      (order?.items || []).some(
-        (it) =>
-          it.metadata?.is_subscription ||
-          it.subtitle?.includes("Refill") ||
-          String(it.title).toLowerCase().includes("subscription")
-      )
-    );
-  };
-
-  // Helper for customer display name
-  const getCustomerName = (order) => {
-    const first = order.shipping_address?.first_name;
-    const last = order.shipping_address?.last_name;
-    const full = `${first || ""} ${last || ""}`.trim();
-    if (full) return full;
-    if (order.metadata?.customer_name) return order.metadata.customer_name;
-    if (order.email) {
-      if (order.email.includes("rostova")) return "Elena Rostova";
-      return order.email;
-    }
-    return "Elena Rostova";
-  };
+  const { orders: effectiveOrders, isLoading, error, refetch } = useOrders();
 
   // Filter and sort orders logic
   const filteredOrders = useMemo(() => {
     const list = (effectiveOrders || []).filter((order) => {
       const meta = order.metadata || {};
       const tags = Array.isArray(meta.tags) ? meta.tags : [];
-      const paymentStatus = (meta.payment_status || (order.status === "completed" ? "paid" : "pending")).toLowerCase();
-      const fulfillmentStatus = (meta.fulfillment_status || (order.fulfillments?.length > 0 ? "fulfilled" : "unfulfilled")).toLowerCase();
+      const paymentStatus = getPaymentStatus(order);
+      const fulfillmentStatus = getFulfillmentStatus(order);
       const returns = Array.isArray(meta.returns) ? meta.returns : [];
       const returnStatus = meta.return_status || (returns.some((r) => r.status === "open") ? "return_requested" : returns.some((r) => r.status === "received") ? "returned" : null);
 
       // Tab filter
       if (activeTab === "open" && order.status === "completed") return false;
-      if (activeTab === "unfulfilled" && fulfillmentStatus === "fulfilled") return false;
-      if (activeTab === "unpaid" && paymentStatus === "paid") return false;
+      if (activeTab === "unfulfilled" && !["not_fulfilled", "partially_fulfilled"].includes(fulfillmentStatus)) return false;
+      if (activeTab === "unpaid" && !["not_paid", "awaiting", "authorized", "partially_authorized", "partially_captured"].includes(paymentStatus)) return false;
       if (activeTab === "subscriptions" && !isSubscriptionOrder(order)) return false;
       if (activeTab === "returns" && !returnStatus && returns.length === 0) return false;
 
       // Dropdown filters
       if (filterPayment !== "all" && paymentStatus !== filterPayment) return false;
-      if (filterFulfillment !== "all" && fulfillmentStatus !== filterFulfillment) return false;
+      if (filterFulfillment !== "all" && fulfillmentStatus !== (filterFulfillment === "unfulfilled" ? "not_fulfilled" : filterFulfillment)) return false;
       if (filterReturn !== "all") {
         if (filterReturn === "return_requested" && returnStatus !== "return_requested") return false;
         if (filterReturn === "returned" && returnStatus !== "returned") return false;
         if (filterReturn === "none" && returnStatus) return false;
       }
       if (filterPromotion !== "all") {
-        const hasSub28 = meta.promotion?.code === "SUB28-10" || meta.order_type === "subscription_renewal" || Boolean(meta.subscription_id);
+        const hasSub28 = meta.promotion?.code === "SUB28-10";
         if (filterPromotion === "SUB28-10" && !hasSub28) return false;
         if (filterPromotion === "none" && hasSub28) return false;
       }
@@ -256,7 +67,7 @@ export function OrderList() {
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
         const displayId = String(order.display_id || "").toLowerCase();
-        const name = `${order.shipping_address?.first_name || ""} ${order.shipping_address?.last_name || ""}`.toLowerCase();
+        const name = getCustomerName(order).toLowerCase();
         const email = (order.email || "").toLowerCase();
         const tagsStr = tags.join(" ").toLowerCase();
         if (!(displayId.includes(q) || name.includes(q) || email.includes(q) || tagsStr.includes(q))) {
@@ -290,17 +101,17 @@ export function OrderList() {
   const counts = useMemo(() => {
     const all = effectiveOrders.length;
     const open = effectiveOrders.filter((o) => o.status !== "completed").length;
-    const unfulfilled = effectiveOrders.filter((o) => (o.metadata?.fulfillment_status || (o.fulfillments?.length > 0 ? "fulfilled" : "unfulfilled")) !== "fulfilled").length;
-    const unpaid = effectiveOrders.filter((o) => (o.metadata?.payment_status || "pending") !== "paid").length;
+    const unfulfilled = effectiveOrders.filter((o) => ["not_fulfilled", "partially_fulfilled"].includes(getFulfillmentStatus(o))).length;
+    const unpaid = effectiveOrders.filter((o) => ["not_paid", "awaiting", "authorized", "partially_authorized", "partially_captured"].includes(getPaymentStatus(o))).length;
     const subOrdersCount = effectiveOrders.filter(isSubscriptionOrder).length;
-    const subscriptionsTotal = Math.max(subOrdersCount, subscriptions.length);
+    const subscriptionsTotal = subOrdersCount;
     const returnsCount = effectiveOrders.filter((o) => {
       const meta = o.metadata || {};
       const rets = Array.isArray(meta.returns) ? meta.returns : [];
       return meta.return_status || rets.length > 0;
     }).length;
     return { all, open, unfulfilled, unpaid, subscriptions: subscriptionsTotal, returns: returnsCount };
-  }, [effectiveOrders, subscriptions]);
+  }, [effectiveOrders]);
 
   // Checkbox toggle
   const toggleSelectAll = () => {
@@ -345,6 +156,7 @@ export function OrderList() {
   return _jsxs("div", {
     className: "min-h-screen bg-[#f6f6f7] p-4 sm:p-6 text-[#202223] font-sans antialiased orders-theme-root",
     children: [
+      error && _jsxs("div", { role: "alert", children: ["Unable to load orders: ", error.message, _jsx("button", { onClick: () => refetch(), children: "Retry" })] }),
       // Top Header: Title & Export
       _jsxs("div", {
         className: "flex items-center justify-between mb-5",
@@ -607,19 +419,19 @@ export function OrderList() {
                           children: _jsx("td", {
                             colSpan: 7,
                             className: "py-14 text-center text-[#5c5f62]",
-                            children: isLoading ? "Loading orders..." : "No orders found matching your filters.",
+                            children: isLoading ? "Loading orders..." : error ? "Orders could not be loaded." : "No orders found matching your filters.",
                           }),
                         })
                       : filteredOrders.map((order) => {
                           const meta = order.metadata || {};
                           const isSelected = selectedOrders.includes(order.id);
                           const customerName = getCustomerName(order);
-                          const paymentStatus = (meta.payment_status || (order.status === "completed" ? "paid" : "pending")).toLowerCase();
+                          const paymentStatus = getPaymentStatus(order);
                           const isRefunded = paymentStatus === "refunded";
                           const isPaid = paymentStatus === "paid";
-                          const isFulfilled = (meta.fulfillment_status || (order.fulfillments?.length > 0 ? "fulfilled" : "unfulfilled")) === "fulfilled";
+                          const isFulfilled = ["fulfilled", "shipped", "delivered"].includes(getFulfillmentStatus(order));
                           const tags = Array.isArray(meta.tags) ? meta.tags : [];
-                          const hasPromo = meta.promotion?.code === "SUB28-10" || meta.order_type === "subscription_renewal" || Boolean(meta.subscription_id);
+                          const hasPromo = Boolean(meta.promotion?.code);
 
                           return _jsxs(
                             "tr",
@@ -686,8 +498,8 @@ export function OrderList() {
                                             hasPromo &&
                                               _jsx("span", {
                                                 className: "inline-flex items-center px-2 py-0.5 text-[11px] font-medium bg-[#ecfdf5] text-[#065f46] border border-[#a7f3d0] rounded-md shadow-2xs",
-                                                title: "10% Subscribe & Save Protocol Promotion Applied",
-                                                children: "SUB28-10 (-10%)",
+                                                title: "Recorded order promotion",
+                                                children: meta.promotion.code,
                                               }),
                                             tags.map((tag) =>
                                               _jsx(
@@ -728,7 +540,7 @@ export function OrderList() {
                                         className: "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#ffea8a] text-[#202223]",
                                         children: [
                                           _jsx("span", { className: "w-1.5 h-1.5 rounded-full border border-[#8c9196]" }),
-                                          "Pending",
+                                          statusLabel(paymentStatus),
                                         ],
                                       }),
                                 }),
@@ -741,14 +553,14 @@ export function OrderList() {
                                         className: "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#e4e5e7] text-[#202223]",
                                         children: [
                                           _jsx("span", { className: "w-1.5 h-1.5 rounded-full bg-[#5c5f62]" }),
-                                          "Fulfilled",
+                                          statusLabel(getFulfillmentStatus(order)),
                                         ],
                                       })
                                     : _jsxs("span", {
                                         className: "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#ffea8a] text-[#202223]",
                                         children: [
                                           _jsx("span", { className: "w-1.5 h-1.5 rounded-full border border-[#8c9196]" }),
-                                          "Unfulfilled",
+                                          statusLabel(getFulfillmentStatus(order)),
                                         ],
                                       }),
                                 }),

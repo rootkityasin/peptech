@@ -82,6 +82,7 @@ async function auditAdminRoutes() {
             document.cookie = "_medusa_jwt=" + d.token + "; path=/; max-age=86400";
             localStorage.setItem("_medusa_jwt", d.token);
             localStorage.setItem("medusa_auth_token", d.token);
+            localStorage.setItem("peptech_admin_token", d.token);
           }
           return d;
         } catch (e) {
@@ -93,7 +94,7 @@ async function auditAdminRoutes() {
 
     const routesToTest = [
       "/app/orders",
-      "/app/orders/order_01H1016DEMO",
+      "/app/orders/order_1b6a98ed6d6131e3ec1a5b3c9121e00343cb4a1a",
       "/app/products",
       "/app/categories",
       "/app/collections",
@@ -103,6 +104,7 @@ async function auditAdminRoutes() {
       "/app/price-lists",
       "/app/commerce",
       "/app/subscriptions",
+      "/app/subscriptions/subscription_6cd98e351e22abe27a5ced7cdc379e3afdde3ca9",
       "/app/settings",
       "/app/settings/locations/packaging-profiles"
     ];

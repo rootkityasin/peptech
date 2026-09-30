@@ -1,4 +1,5 @@
 import { defineRouteConfig } from "@medusajs/admin-sdk"
+import { adminFetch as fetch } from "../../lib/sdk"
 import "../../styles/custom.css"
 import {
   Container,

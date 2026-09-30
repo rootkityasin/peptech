@@ -3,7 +3,7 @@ import { ArrowPath } from "@medusajs/icons";
 import "../../styles/custom.css";
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Container, Heading, Text, Button, Badge } from "@medusajs/ui";
+import { adminFetch } from "../../lib/sdk";
 
 const SubscriptionsPage = () => {
   const [subscriptions, setSubscriptions] = useState([]);
@@ -14,13 +14,13 @@ const SubscriptionsPage = () => {
   const fetchSubscriptions = async () => {
     try {
       setIsLoading(true);
-      const res = await fetch("/admin/custom/subscriptions", { credentials: "include" });
+      const res = await adminFetch("/admin/custom/subscriptions");
       if (res.ok) {
         const data = await res.json();
         setSubscriptions(data.subscriptions || []);
       }
     } catch (e) {
-      console.error(e);
+      console.error("Failed to load subscriptions:", e);
     } finally {
       setIsLoading(false);
     }
@@ -32,10 +32,9 @@ const SubscriptionsPage = () => {
 
   const handleAction = async (sub, action) => {
     try {
-      await fetch("/admin/custom/subscriptions", {
+      await adminFetch("/admin/custom/subscriptions", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({
           customer_id: sub.customer_id,
           subscription_id: sub.id,
@@ -44,7 +43,7 @@ const SubscriptionsPage = () => {
       });
       fetchSubscriptions();
     } catch (err) {
-      console.error(err);
+      console.error("Failed to execute subscription action:", err);
     }
   };
 
@@ -130,16 +129,16 @@ const SubscriptionsPage = () => {
                 <tr key={sub.id} className="hover:bg-[#f6f6f7]">
                   <td className="p-3 font-semibold text-[#00C5A0]">
                     <Link to={"/subscriptions/" + sub.id} className="hover:underline">
-                      {sub.id}
+                      {sub.sub_display_id || sub.id}
                     </Link>
                   </td>
                   <td className="p-3">
-                    <div className="font-medium">{sub.customer_name || sub.email || "Elena Rostova"}</div>
-                    <div className="text-[11px] text-[#5c5f62]">{sub.email || "customer@peptech.bio"}</div>
+                    <div className="font-medium">{sub.customer_name || sub.email || "Customer unavailable"}</div>
+                    {sub.email && <div className="text-[11px] text-[#5c5f62]">{sub.email}</div>}
                   </td>
-                  <td className="p-3 font-medium">Every 28 Days</td>
+                  <td className="p-3 font-medium">{sub.frequency || `Every ${sub.cadence_days || 28} Days`}</td>
                   <td className="p-3 font-semibold text-emerald-600">10% OFF</td>
-                  <td className="p-3 text-[#5c5f62]">{sub.next_renewal_date || "In 28 days"}</td>
+                  <td className="p-3 text-[#5c5f62]">{sub.next_renewal_date || sub.nextBillingDate || "-"}</td>
                   <td className="p-3">
                     <span
                       className={"px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase " + (
@@ -184,9 +183,9 @@ const SubscriptionsPage = () => {
       </div>
     </div>
   );
-}
+};
 
-export default SubscriptionsPage
+export default SubscriptionsPage;
 
 export const config = defineRouteConfig({
   label: "Subscriptions",

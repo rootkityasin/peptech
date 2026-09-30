@@ -3,6 +3,7 @@ import "../../../styles/custom.css";
 import { useState, useEffect, useMemo } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
+import { adminFetch } from "../../../lib/sdk";
 
 const DARK_MODE_CSS = `
 html.dark .orders-theme-root,
@@ -194,9 +195,7 @@ export const SubscriptionDetail = ({ subscriptionId: propSubId }) => {
   const fetchSubscriptionData = async () => {
     try {
       setIsLoading(true);
-      const res = await fetch(`/admin/custom/subscriptions?id=${encodeURIComponent(subId)}`, {
-        headers: { "Content-Type": "application/json" },
-      });
+      const res = await adminFetch(`/admin/custom/subscriptions?id=${encodeURIComponent(subId)}`);
       if (res.ok) {
         const data = await res.json();
         if (data.subscription) {
@@ -209,10 +208,10 @@ export const SubscriptionDetail = ({ subscriptionId: propSubId }) => {
       }
 
       // Fallback: fetch all subscriptions and find matching
-      const allRes = await fetch("/admin/custom/subscriptions");
+      const allRes = await adminFetch("/admin/custom/subscriptions");
       if (allRes.ok) {
         const allData = await allRes.json();
-        const found = (allData.subscriptions || []).find((s) => s.id === subId);
+        const found = (allData.subscriptions || []).find((s) => s.id === subId || s.stripe_id === subId);
         if (found) {
           setSubscription(found);
           setRenewalOrders(found.orders || allData.subscription_orders || []);
@@ -222,54 +221,10 @@ export const SubscriptionDetail = ({ subscriptionId: propSubId }) => {
         }
       }
 
-      // Default synthetic object if fresh installation
-      const fallback = {
-        id: subId || "SUB-MUED926O-9414",
-        title: "GVK-00 50 Test Cartridge (3ml Prefilled)",
-        frequency: "Every 28 Days (Standard Cycle)",
-        status: "Active",
-        price: 44.10,
-        unit_price: 49.00,
-        discount_amount: 4.90,
-        shipping_amount: 4.95,
-        total_price: 49.05,
-        nextBillingDate: "18 Nov 2026",
-        nextDispatchDate: "18 Nov 2026",
-        quantity: 1,
-        cardEnding: "4242",
-        cardBrand: "Visa",
-        customer_email: "dr.elena.rostova.340979@oxford-biotech.ac.uk",
-        customer_name: "Elena Rostova",
-        created_at: new Date().toISOString(),
-        shipping_address: {
-          first_name: "Elena",
-          last_name: "Rostova",
-          address_1: "Robert Robinson Avenue",
-          address_2: "The Oxford Science Park",
-          city: "Oxford",
-          postal_code: "OX4 4GA",
-          country_code: "gb",
-          phone: "+44 1865 784000",
-        },
-        tags: ["Active Subscriber", "Cartridge Refill", "Cold-Chain Tracked 24"],
-        notes: "Research Protocol RUO-28D; Cold-chain replenishment cycle. Store at 2-8°C upon arrival.",
-        items: [
-          {
-            id: "item_gvk_cartridge",
-            title: "GVK-00 50 Test Cartridge (3ml Prefilled)",
-            variant_sku: "PEP-GVK-00-50",
-            unit_price: 49.00,
-            quantity: 1,
-            discount_percent: 10,
-            recurring_price: 44.10,
-          },
-        ],
-      };
-      setSubscription(fallback);
-      setEditNotes(fallback.notes);
-      setEditAddress(fallback.shipping_address);
+      setSubscription(null);
     } catch (e) {
       console.error("Failed to load subscription:", e);
+      setSubscription(null);
     } finally {
       setIsLoading(false);
     }
@@ -289,7 +244,7 @@ export const SubscriptionDetail = ({ subscriptionId: propSubId }) => {
     if (!subscription) return;
     setIsMutating(true);
     try {
-      const res = await fetch("/admin/custom/subscriptions", {
+      const res = await adminFetch("/admin/custom/subscriptions", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -302,7 +257,7 @@ export const SubscriptionDetail = ({ subscriptionId: propSubId }) => {
         const data = await res.json();
         if (action === "cancel") {
           showToast("Subscription contract cancelled.");
-          setTimeout(() => navigate("/orders"), 1000);
+          setTimeout(() => navigate("/subscriptions"), 1000);
           return;
         }
         if (data.subscription) {
@@ -341,7 +296,7 @@ export const SubscriptionDetail = ({ subscriptionId: propSubId }) => {
     const updatedTags = [...currentTags, tagToAdd];
     setIsSavingTag(true);
     try {
-      const res = await fetch("/admin/custom/subscriptions", {
+      const res = await adminFetch("/admin/custom/subscriptions", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -368,7 +323,7 @@ export const SubscriptionDetail = ({ subscriptionId: propSubId }) => {
     const currentTags = Array.isArray(subscription.tags) ? subscription.tags : [];
     const updatedTags = currentTags.filter((t) => t !== tagToRemove);
     try {
-      const res = await fetch("/admin/custom/subscriptions", {
+      const res = await adminFetch("/admin/custom/subscriptions", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -391,7 +346,7 @@ export const SubscriptionDetail = ({ subscriptionId: propSubId }) => {
   const handleSaveNotes = async () => {
     if (!subscription) return;
     try {
-      const res = await fetch("/admin/custom/subscriptions", {
+      const res = await adminFetch("/admin/custom/subscriptions", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -434,10 +389,25 @@ export const SubscriptionDetail = ({ subscriptionId: propSubId }) => {
     });
   };
 
-  if (isLoading || !subscription) {
+  if (isLoading) {
     return _jsx("div", {
       className: "min-h-screen bg-[#f6f6f7] p-8 flex items-center justify-center text-[#5c5f62]",
       children: "Loading subscription details...",
+    });
+  }
+
+  if (!subscription) {
+    return _jsxs("div", {
+      className: "min-h-screen bg-[#f6f6f7] p-8 flex flex-col items-center justify-center text-[#5c5f62] gap-4 orders-theme-root",
+      children: [
+        _jsx("div", { className: "text-lg font-semibold text-[#202223]", children: "Subscription not found" }),
+        _jsx("p", { className: "text-xs text-[#5c5f62]", children: `No subscription record found matching ID: ${subId || "unknown"}` }),
+        _jsx(Link, {
+          to: "/subscriptions",
+          className: "px-4 py-2 text-xs font-semibold rounded bg-[#00C5A0] text-white hover:bg-[#00b08f] no-underline",
+          children: "Back to Subscriptions",
+        }),
+      ],
     });
   }
 
@@ -445,11 +415,11 @@ export const SubscriptionDetail = ({ subscriptionId: propSubId }) => {
   const tags = Array.isArray(subscription.tags) ? subscription.tags : [];
   const shipping = subscription.shipping_address || {};
   const items = subscription.items || [];
-  const baseSubtotal = subscription.unit_price || 49.00;
-  const discountAmount = subscription.discount_amount || 4.90;
-  const recurringSubtotal = subscription.price || 44.10;
+  const baseSubtotal = subscription.unit_price || subscription.price || 0;
+  const discountAmount = subscription.discount_amount || 0;
+  const recurringSubtotal = subscription.price || 0;
   const shippingFee = subscription.shipping_amount || 4.95;
-  const cycleTotal = subscription.total_price || recurringSubtotal + shippingFee;
+  const cycleTotal = subscription.total_price || (recurringSubtotal + shippingFee);
 
   return _jsxs("div", {
     className: "min-h-screen bg-[#f6f6f7] p-4 sm:p-6 text-[#202223] font-sans antialiased orders-theme-root",
@@ -772,14 +742,21 @@ export const SubscriptionDetail = ({ subscriptionId: propSubId }) => {
                                 className: "flex justify-between pt-1 text-xs text-[#5c5f62]",
                                 children: [
                                   _jsx("span", { children: "Payment method" }),
-                                  _jsxs("span", {
-                                    className: "font-medium text-[#202223]",
-                                    children: [
-                                      subscription.cardBrand || "Visa",
-                                      " ending in ",
-                                      subscription.cardEnding || "4242",
-                                    ],
-                                  }),
+                                  subscription.cardEnding ? (
+                                    _jsxs("span", {
+                                      className: "font-medium text-[#202223]",
+                                      children: [
+                                        subscription.cardBrand || "Card",
+                                        " ending in ",
+                                        subscription.cardEnding,
+                                      ],
+                                    })
+                                  ) : (
+                                    _jsx("span", {
+                                      className: "font-medium text-[#5c5f62]",
+                                      children: "Tokenized Payment Method",
+                                    })
+                                  ),
                                 ],
                               }),
                             ],
@@ -1027,7 +1004,7 @@ export const SubscriptionDetail = ({ subscriptionId: propSubId }) => {
                                     className: "text-[#5c5f62]",
                                     children: [
                                       "Contract registered for ",
-                                      subscription.customer_name || "Elena Rostova",
+                                      subscription.customer_name || subscription.customer_email || "Customer",
                                       " with 28-day cadence.",
                                     ],
                                   }),
@@ -1052,12 +1029,12 @@ export const SubscriptionDetail = ({ subscriptionId: propSubId }) => {
                                 children: [
                                   _jsx("div", {
                                     className: "font-semibold text-[#202223]",
-                                    children: "Initial Order #12 Generated & Payment Tokenized",
+                                    children: "Initial Order Generated & Payment Tokenized",
                                   }),
                                   _jsxs("div", {
                                     className: "text-[#5c5f62]",
                                     children: [
-                                      "First cycle dispatched to registered laboratory address via Royal Mail Tracked 24.",
+                                      "Cycle scheduled for dispatch to registered address via Royal Mail Tracked.",
                                     ],
                                   }),
                                   _jsx("div", {
@@ -1145,7 +1122,7 @@ export const SubscriptionDetail = ({ subscriptionId: propSubId }) => {
                             children: [
                               _jsx("div", {
                                 className: "text-sm font-semibold text-[#2c6ecb] hover:underline cursor-pointer",
-                                children: subscription.customer_name || "Elena Rostova",
+                                children: subscription.customer_name || subscription.customer_email || "Customer",
                               }),
                               _jsx("div", {
                                 className: "text-xs text-[#008060] font-medium mt-0.5",
@@ -1176,7 +1153,7 @@ export const SubscriptionDetail = ({ subscriptionId: propSubId }) => {
                           }),
                           _jsx("div", {
                             className: "text-xs text-[#202223] break-all",
-                            children: subscription.customer_email || "dr.elena.rostova.340979@oxford-biotech.ac.uk",
+                            children: subscription.customer_email || subscription.email || "No email on record",
                           }),
                           subscription.customer_phone &&
                             _jsx("div", {
@@ -1206,15 +1183,15 @@ export const SubscriptionDetail = ({ subscriptionId: propSubId }) => {
                           }),
                           _jsx("div", {
                             className: "font-medium",
-                            children: `${shipping.first_name || "Elena"} ${shipping.last_name || "Rostova"}`,
+                            children: [shipping.first_name, shipping.last_name].filter(Boolean).join(" ") || subscription.customer_name || "Recipient unassigned",
                           }),
-                          _jsx("div", { children: shipping.address_1 || "Robert Robinson Avenue" }),
+                          _jsx("div", { children: shipping.address_1 || "Address not provided" }),
                           shipping.address_2 && _jsx("div", { children: shipping.address_2 }),
                           _jsxs("div", {
                             children: [
-                              shipping.city || "Oxford",
+                              shipping.city || "",
                               " ",
-                              shipping.postal_code || "OX4 4GA",
+                              shipping.postal_code || "",
                             ],
                           }),
                           _jsx("div", {
@@ -1242,7 +1219,7 @@ export const SubscriptionDetail = ({ subscriptionId: propSubId }) => {
                               _jsxs("span", {
                                 children: [
                                   "Ending in ",
-                                  _jsx("strong", { children: subscription.cardEnding || "4242" }),
+                                  _jsx("strong", { children: subscription.cardEnding || "" }),
                                 ],
                               }),
                             ],
