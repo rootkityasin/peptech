@@ -57,7 +57,7 @@ export async function settleReceipt(scope:any,ledger:CommerceService,attempt:Led
           subscription_id:attempt.data.subscription_id||null,fulfillment_hold:true,tax_policy:q.tax_policy,order_number_formatted:orderNumber,stripe_receipt_url:stripeReceiptUrl},
         items:q.lines.map(l=>({id:l.line_id,variant_id:l.variant_id,title:l.name,variant_sku:l.sku,quantity:l.quantity,
           unit_price:l.unit_minor/100,is_tax_inclusive:q.tax_inclusive||false,tax_lines:l.tax_lines||(q.vat_registered?[{rate:q.tax_rate,code:"VAT",description:"VAT"}]:[]),requires_shipping:true,metadata:{catalog_version:l.catalog_version,recurring:l.recurring,...(l.metadata||{})}})),
-        shipping_methods:[{name:"Royal Mail Tracked",amount:q.shipping_minor/100,shipping_option_id:q.shipping_option_id,is_tax_inclusive:q.tax_inclusive||false,tax_lines:q.shipping_tax_lines||(q.vat_registered?[{rate:q.tax_rate,code:"VAT",description:"VAT"}]:[])}]}
+        shipping_methods:[{name:q.shipping_option_name||q.shipping_option_id||"Royal Mail Tracked",amount:q.shipping_minor/100,shipping_option_id:q.shipping_option_id,is_tax_inclusive:q.tax_inclusive||false,tax_lines:q.shipping_tax_lines||(q.vat_registered?[{rate:q.tax_rate,code:"VAT",description:"VAT"}]:[])}]}
       await importCommerceOrder(scope).run({input,context:{transactionId:recordId("workflow",id)}})
       if(q.customer_id&&q.address&&q.address.address_1){
         try{

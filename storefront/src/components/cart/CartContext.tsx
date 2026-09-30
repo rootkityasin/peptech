@@ -1,6 +1,8 @@
 "use client"
 
 import React, { createContext, useContext, useState, useEffect } from "react"
+import { getCountryByName } from "@/lib/countries"
+import { getShippingOptions, type ShippingOption } from "@/lib/shipping-options"
 
 export interface CartItemOption {
   label: string
@@ -43,6 +45,12 @@ interface CartContextType {
   country: string
   setCountry: (country: string) => void
   currency: "GBP" | "USD" | "EUR"
+  shippingOptions: ShippingOption[]
+  shippingOptionId: string | null
+  setShippingOptionId: (id: string) => void
+  selectedShippingOption: ShippingOption | null
+  shippingAvailable: boolean
+  shippingReady: boolean
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined)
@@ -55,6 +63,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [country, setCountry] = useState<string>("United Kingdom")
   const [destination, setDestinationState] = useState<"UK" | "INTL">("UK")
+  const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>([])
+  const [shippingOptionId, setShippingOptionIdState] = useState<string | null>(null)
+  const [shippingLoaded, setShippingLoaded] = useState(false)
 
   const setDestination = (dest: "UK" | "INTL") => {
     setDestinationState(dest)
@@ -92,6 +103,30 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       // ignore
     }
   }, [items, loaded])
+
+  // Resolve the shipping options Medusa serves for the chosen destination.
+  useEffect(() => {
+    if (!loaded) return
+    let cancelled = false
+    const countryCode = getCountryByName(country).code.toLowerCase()
+    getShippingOptions(countryCode).then((options) => {
+      if (cancelled) return
+      setShippingOptions(options)
+      setShippingOptionIdState((current) =>
+        current && options.some((option) => option.id === current)
+          ? current
+          : options[0]?.id || null
+      )
+      setShippingLoaded(true)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [country, loaded])
+
+  const setShippingOptionId = (id: string) => {
+    setShippingOptionIdState(id)
+  }
 
   const addItem = (itemData: Omit<CartItem, "quantity">, quantity = 1) => {
     setItems((prev) => {
@@ -148,8 +183,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     return acc + itemPrice * i.quantity
   }, 0)
 
-  // Royal Mail rates: £4.95 UK / £15 approved international destinations
-  const shippingCost = items.length > 0 ? (destination === "UK" ? 4.95 : 15.0) : 0
+  // Authoritative rates come from Medusa; an empty list means no option is
+  // configured for this destination and checkout will refuse to price it.
+  const selectedShippingOption = shippingOptions.find((option) => option.id === shippingOptionId) || null
+  const shippingAvailable = shippingLoaded && shippingOptions.length > 0
+  const shippingCost = items.length > 0 && selectedShippingOption ? selectedShippingOption.amount : 0
   const total = subtotal + shippingCost
 
   const currency = country === "United Kingdom" ? "GBP" : (["Germany", "France", "Italy", "Spain", "Netherlands", "Ireland", "Sweden", "Denmark", "Belgium", "Austria", "Finland", "Portugal", "Poland", "Czech Republic"].includes(country) ? "EUR" : "USD")
@@ -174,6 +212,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         country,
         setCountry: handleSetCountry,
         currency,
+        shippingOptions,
+        shippingOptionId,
+        setShippingOptionId,
+        selectedShippingOption,
+        shippingAvailable,
+        shippingReady: shippingLoaded,
       }}
     >
       {children}

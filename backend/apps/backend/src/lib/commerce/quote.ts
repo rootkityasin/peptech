@@ -3,17 +3,18 @@ import {taxMinor,taxPolicy,stripeTaxDefaults} from "./tax"
 import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
 import CommerceService, { recordId } from "../../modules/peptech-commerce/service"
 import { assertEligibility, assertProduct, discounted, fail, toMinor } from "./policy"
+import { resolveShippingOption, type ShippingOptionQuote } from "./shipping"
 export type QuoteLine={ variant_id:string; line_id:string; name:string; sku:string; quantity:number; recurring:boolean;
   tax_code?:string;tax_lines?:any[];tax_minor?:number;stripe_price_id?:string;base_minor:number; unit_minor:number; catalog_version:string; metadata?:Record<string,any>; inventory:{id:string;quantity:number}[] }
 export type Quote={ customer_id:string;email:string;address:any;billing_address?:any;delivery_collected?:boolean;currency:"gbp";lines:QuoteLine[];shipping_minor:number;
-  total_minor:number;renewal_minor:number;region_id:string;sales_channel_id:string;location_id:string;shipping_option_id:string;
+  total_minor:number;renewal_minor:number;region_id:string;sales_channel_id:string;location_id:string;shipping_option_id:string;shipping_option_name?:string;
   stripe_tax_enabled?:boolean;stripe_tax_status?:string;shipping_tax_lines?:any[];shipping_tax_minor?:number;shipping_price_id?:string;default_tax_code?:string;tax_policy:string;policy_version:string;tax_rate:number;tax_inclusive:boolean;tax_minor:number;vat_registered:boolean;bank_instructions?:any }
 export async function buildQuote(scope:any,ledger:CommerceService,customerId:string,input:any,attemptId:string):Promise<Quote> {
   input={...input,address:input.address||{country_code:input.country_code}}
   const settings=await ledger.get("commerce_settings")
   if (settings?.state!=="enabled") fail("Checkout is not enabled yet",503)
   const policy=settings.data
-  if (!policy.destinations?.includes(input.address.country_code)) fail("Shipping is unavailable for this destination")
+  const shippingOption:ShippingOptionQuote=await resolveShippingOption(scope,policy,input.address.country_code,input.shipping_option_id)
   const useStripe=policy.tax_policy==="stripe_default"
   const context=useStripe?stripeContext():null
   const defaults=context?await stripeTaxDefaults(context.stripe,context.mode):null
@@ -48,7 +49,7 @@ export async function buildQuote(scope:any,ledger:CommerceService,customerId:str
   }
   const recurring=lines.some(l=>l.recurring)
   if (recurring && !input.recurring_accepted) fail("Explicit recurring payment consent is required")
-  const shipping=input.address.country_code==="gb"?495:1500
+  const shipping=shippingOption.amount_minor
   const subtotal=lines.reduce((sum,l)=>sum+l.unit_minor*l.quantity,shipping)
   const taxTotal=lines.reduce((sum,l)=>sum+taxMinor(l.unit_minor*l.quantity,tax.rate,tax.inclusive),taxMinor(shipping,tax.rate,tax.inclusive))
   const recurringLines=lines.filter(l=>l.recurring)
@@ -58,7 +59,7 @@ export async function buildQuote(scope:any,ledger:CommerceService,customerId:str
     total_minor:subtotal+(tax.inclusive?0:taxTotal),
     renewal_minor:recurring?recurringSubtotal+(tax.inclusive?0:recurringTax):0,
     region_id:policy.region_id,sales_channel_id:policy.sales_channel_id,location_id:policy.location_id,
-    shipping_option_id:policy.shipping_option_id,tax_policy:policy.tax_policy,policy_version:policy.version,
+    shipping_option_id:shippingOption.id,shipping_option_name:shippingOption.name,tax_policy:policy.tax_policy,policy_version:policy.version,
     stripe_tax_enabled:defaults?.enabled,stripe_tax_status:defaults?.status,default_tax_code:defaults?.code,tax_rate:tax.rate,tax_inclusive:tax.inclusive,tax_minor:taxTotal,vat_registered:tax.registered}
 }
 export async function reserveQuote(scope:any,quote:Quote,reference:string) {

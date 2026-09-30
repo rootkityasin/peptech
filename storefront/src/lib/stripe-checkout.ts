@@ -20,6 +20,8 @@ export type CheckoutSession = {
   currency: string
   renewalTotal: number
   shipping: number
+  shippingOptionId?: string | null
+  shippingOptionName?: string | null
   paymentMethod: string
   reference: string
   items: { name: string; quantity: number; recurring: boolean; unitPrice: number }[]
@@ -72,6 +74,7 @@ export async function prepareStripeCheckout(input: {
   recurringAccepted?: boolean
   paymentMethod?: "stripe"
   uiMode?: "embedded" | "hosted_page"
+  shippingOptionId?: string
 }): Promise<CheckoutSession> {
   const items = await Promise.all(
     input.items.map(async (item) => {
@@ -126,6 +129,7 @@ export async function prepareStripeCheckout(input: {
     ruo_accepted: input.ruoAccepted,
     recurring_accepted: input.recurringAccepted === true,
     payment_method: input.paymentMethod || "stripe",
+    ...(input.shippingOptionId ? { shipping_option_id: input.shippingOptionId } : {}),
     ui_mode: input.uiMode || "embedded",
   }
 

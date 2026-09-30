@@ -418,7 +418,7 @@ export const SubscriptionDetail = ({ subscriptionId: propSubId }) => {
   const baseSubtotal = subscription.unit_price || subscription.price || 0;
   const discountAmount = subscription.discount_amount || 0;
   const recurringSubtotal = subscription.price || 0;
-  const shippingFee = subscription.shipping_amount || 4.95;
+  const shippingFee = subscription.shipping_amount ?? 0;
   const cycleTotal = subscription.total_price || (recurringSubtotal + shippingFee);
 
   return _jsxs("div", {
@@ -727,7 +727,7 @@ export const SubscriptionDetail = ({ subscriptionId: propSubId }) => {
                               _jsxs("div", {
                                 className: "flex justify-between",
                                 children: [
-                                  _jsx("span", { children: "Royal Mail Tracked 24" }),
+                                  _jsx("span", { children: subscription.shipping_option_name || "Shipping" }),
                                   _jsx("span", { className: "font-semibold text-[#202223]", children: formatPrice(shippingFee) }),
                                 ],
                               }),

@@ -261,7 +261,9 @@ export function presentSubscription(record: LedgerRecord) {
       unit_price: (l.unit_minor || 0) / 100,
       metadata: l.metadata || {},
     })),
-    shipping_amount: (q.shipping_minor || 495) / 100,
+    shipping_amount: (q.shipping_minor ?? 0) / 100,
+    shipping_option_id: q.shipping_option_id || null,
+    shipping_option_name: q.shipping_option_name || null,
     locked_discount_pct: 10,
   }
 }

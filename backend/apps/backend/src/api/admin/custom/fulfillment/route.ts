@@ -722,14 +722,25 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
       locationId = "sloc_01M2AQBJBGCFENNWHR7VJDHPCZ";
     }
 
-    // Resolve Shipping Option ID
+    // Resolve Shipping Option ID from the request, the order, then commerce settings
     let shippingOptionId =
       body.shipping_option_id ||
       order.shipping_methods?.[0]?.shipping_option_id;
     if (!shippingOptionId) {
-      shippingOptionId = isUk
-        ? "so_01M2AQBJF4RGXHZWYACYK0FR42"
-        : "so_01M2AQBJF4P8WHASPP2DZMC0KX";
+      try {
+        const settings = await req.scope
+          .resolve("peptechCommerce")
+          .get("commerce_settings");
+        shippingOptionId = settings?.data?.shipping_option_id || null;
+      } catch {
+        shippingOptionId = null;
+      }
+    }
+    if (!shippingOptionId) {
+      return res.status(409).json({
+        message:
+          "No shipping option is recorded on this order. Set a default shipping option in Commerce settings before fulfilling.",
+      });
     }
 
     // Execute Medusa 2.0 Core Workflows

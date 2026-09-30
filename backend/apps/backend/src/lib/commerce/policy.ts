@@ -28,6 +28,7 @@ export const checkoutSchema = z.object({
   ruo_accepted: z.literal(true),
   recurring_accepted: z.boolean(),
   payment_method: z.enum(["stripe"]).default("stripe"),
+  shipping_option_id: z.string().trim().min(3).max(100).optional(),
   ui_mode: z.enum(["embedded", "hosted", "embedded_page", "hosted_page"]).default("embedded").optional(),
 }).strict()
 

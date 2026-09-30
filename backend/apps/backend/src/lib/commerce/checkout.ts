@@ -194,6 +194,8 @@ export function publicAttempt(attempt: LedgerRecord) {
     renewalTotal: q.renewal_minor / 100,
     items: q.lines.map((l) => ({ name: l.name, quantity: l.quantity, recurring: l.recurring, unitPrice: l.unit_minor / 100 })),
     shipping: q.shipping_minor / 100,
+    shippingOptionId: q.shipping_option_id || null,
+    shippingOptionName: q.shipping_option_name || null,
     tax: q.tax_minor / 100 || 0,
     taxInclusive: q.tax_inclusive,
     paymentMethod: attempt.data.payment_method,

@@ -11,6 +11,7 @@ import {
   Table,
   Badge,
   StatusBadge,
+  Select,
   Tabs,
   Alert,
   Textarea,
@@ -129,6 +130,14 @@ const CommercePage = () => {
     sort_code: "",
     account_number: "",
   })
+  const [shippingOptions, setShippingOptions] = useState<any[]>([])
+  const [shippingDefaults, setShippingDefaults] = useState({
+    shipping_option_id: "",
+    location_id: "",
+    region_id: "",
+    sales_channel_id: "",
+    destinations: "",
+  })
 
   // Load subscriptions
   const loadSubscriptions = async () => {
@@ -179,6 +188,26 @@ const CommercePage = () => {
     }
   }
 
+  // Load the shipping options Medusa serves from the configured location
+  const loadShippingOptions = async () => {
+    try {
+      const data = await apiRequest("/admin/commerce/shipping-options")
+      const options = Array.isArray(data?.options) ? data.options : []
+      setShippingOptions(options)
+      setShippingDefaults({
+        shipping_option_id: data?.shipping_option_id || options[0]?.id || "",
+        location_id: data?.location_id || "",
+        region_id: data?.region_id || "",
+        sales_channel_id: data?.sales_channel_id || "",
+        destinations: Array.isArray(data?.destinations) && data.destinations.length
+          ? data.destinations.join(", ")
+          : "gb",
+      })
+    } catch (e: any) {
+      console.error("Failed to load shipping options:", e)
+    }
+  }
+
   // Load diagnostics
   const loadDiagnostics = async (kind: string) => {
     try {
@@ -195,6 +224,7 @@ const CommercePage = () => {
     void loadReceipts()
     void loadAttempts()
     void loadSettings()
+    void loadShippingOptions()
   }, [])
 
   // Diagnostics kind change
@@ -327,29 +357,71 @@ const CommercePage = () => {
     }
   }
 
+  // Persist commerce settings. The shipping option and destination list come
+  // from Medusa, so they are never guessed from hardcoded identifiers.
+  const saveSettings = async (overrides: Record<string, unknown> = {}) => {
+    const currentSettings = await apiRequest("/admin/commerce/settings")
+    const currentData = currentSettings?.settings?.data || {}
+    const payload: any = {
+      ...currentData,
+      enabled: true,
+      region_id: currentData.region_id || "reg_01M2AQBJ9A89RTYJDP98PH1R6X",
+      sales_channel_id: currentData.sales_channel_id || "sc_01M2AQBJ6MH9H44S2ZK2E68F74",
+      location_id: currentData.location_id || "sloc_01M2AQBJBGCFENNWHR7VJDHPCZ",
+      tax_policy: "stripe_default",
+      tax_evidence_ref: currentData.tax_evidence_ref || "Stripe Dashboard defaults",
+      version: currentData.version || "v1",
+      destinations: currentData.destinations?.length ? currentData.destinations : ["gb"],
+      ...overrides,
+    }
+    if (!payload.shipping_option_id) {
+      payload.shipping_option_id = shippingDefaults.shipping_option_id || shippingOptions[0]?.id || ""
+    }
+    if (!String(payload.shipping_option_id).trim()) {
+      throw new Error("No shipping option is available for the delivery location. Create one under Settings > Shipping, then refresh.")
+    }
+    const destinations = payload.destinations
+    if (!Array.isArray(destinations) || !destinations.length) {
+      throw new Error("Enter at least one destination country code, for example gb.")
+    }
+    return apiRequest("/admin/commerce/settings", payload)
+  }
+
   // Save bank transfer settings
   const handleSaveBankSettings = async (e: React.FormEvent) => {
     e.preventDefault()
     setBusy(true)
     try {
-      const currentSettings = await apiRequest("/admin/commerce/settings")
-      const currentData = currentSettings?.settings?.data || {}
-      await apiRequest("/admin/commerce/settings", {
-        ...currentData,
-        enabled: true,
-        region_id: currentData.region_id || "reg_01M2AQBJ9A89RTYJDP98PH1R6X",
-        sales_channel_id: currentData.sales_channel_id || "sc_01M2AQBJ6MH9H44S2ZK2E68F74",
-        location_id: currentData.location_id || "sloc_01M2AQBJBGCFENNWHR7VJDHPCZ",
-        shipping_option_id: currentData.shipping_option_id || "so_01M2AQBJF4RGXHZWYACYK0FR42",
-        destinations: currentData.destinations || ["gb"],
-        tax_policy: "stripe_default",
-        tax_evidence_ref: "Stripe Dashboard defaults",
-        version: "v1",
-        bank_instructions: bankSettings,
-      })
+      await saveSettings({ bank_instructions: bankSettings })
       showNotification("success", "Bank transfer instructions updated successfully.")
     } catch (e: any) {
       showNotification("error", e?.message || "Failed to save bank settings")
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  // Save the default shipping option used when a customer makes no selection
+  const handleSaveShippingSettings = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setBusy(true)
+    try {
+      const optionId = shippingDefaults.shipping_option_id.trim()
+      if (!optionId || !shippingOptions.some((option) => option.id === optionId)) {
+        throw new Error("Select a shipping option returned by Medusa.")
+      }
+      const destinations = shippingDefaults.destinations
+        .split(",")
+        .map((code) => code.trim().toLowerCase())
+        .filter((code) => /^[a-z]{2}$/.test(code))
+      if (!destinations.length) {
+        throw new Error("Enter at least one destination country code, for example gb.")
+      }
+      await saveSettings({ shipping_option_id: optionId, destinations })
+      showNotification("success", "Shipping configuration updated successfully.")
+      await loadShippingOptions()
+    } catch (e: any) {
+      showNotification("error", e?.message || "Failed to save shipping settings")
     } finally {
       setBusy(false)
     }
@@ -404,6 +476,7 @@ const CommercePage = () => {
                 void loadReceipts()
                 void loadAttempts()
                 void loadSettings()
+                void loadShippingOptions()
                 showNotification("info", "Dashboard data refreshed.")
               }}
             >
@@ -883,6 +956,110 @@ const CommercePage = () => {
                 <span>↗</span>
               </a>
             </div>
+          </div>
+
+          {/* Shipping Options Card */}
+          <div className="rounded-xl border border-ui-border-base bg-ui-bg-subtle p-5">
+            <div className="flex items-start justify-between pb-3 border-b border-ui-border-base mb-4 gap-4">
+              <div>
+                <Heading level="h2" className="text-base font-semibold text-ui-fg-base">
+                  Shipping Options
+                </Heading>
+                <Text className="text-sm text-ui-fg-muted">
+                  Checkout prices, labels and order shipping methods are read live from these Medusa shipping options
+                  for the customer&rsquo;s delivery destination.
+                </Text>
+              </div>
+              <StatusBadge color={shippingOptions.length ? "green" : "red"}>
+                {shippingOptions.length ? `${shippingOptions.length} available` : "No options"}
+              </StatusBadge>
+            </div>
+
+            {shippingOptions.length === 0 ? (
+              <Alert variant="warning" title="No shipping options are served from the configured location">
+                Customers cannot complete checkout until a shipping option exists for this location under
+                Settings &rsaquo; Shipping.
+              </Alert>
+            ) : (
+              <div className="rounded-lg border border-ui-border-base overflow-hidden">
+                <Table>
+                  <Table.Header>
+                    <Table.Row>
+                      <Table.HeaderCell>Option</Table.HeaderCell>
+                      <Table.HeaderCell>Type</Table.HeaderCell>
+                      <Table.HeaderCell>Price</Table.HeaderCell>
+                      <Table.HeaderCell>Coverage</Table.HeaderCell>
+                      <Table.HeaderCell>ID</Table.HeaderCell>
+                    </Table.Row>
+                  </Table.Header>
+                  <Table.Body>
+                    {shippingOptions.map((option) => (
+                      <Table.Row key={option.id}>
+                        <Table.Cell className="font-semibold text-sm">{option.name}</Table.Cell>
+                        <Table.Cell className="text-sm">
+                          {option.code || option.description || option.price_type}
+                        </Table.Cell>
+                        <Table.Cell className="font-semibold text-sm">{formatGbp(option.amount_minor)}</Table.Cell>
+                        <Table.Cell className="text-sm">
+                          {option.countries?.length
+                            ? option.countries.join(", ").toUpperCase()
+                            : "All destinations"}
+                        </Table.Cell>
+                        <Table.Cell className="font-mono text-xs text-ui-fg-muted">{option.id}</Table.Cell>
+                      </Table.Row>
+                    ))}
+                  </Table.Body>
+                </Table>
+              </div>
+            )}
+
+            <form
+              onSubmit={handleSaveShippingSettings}
+              className="mt-4 pt-4 border-t border-ui-border-base flex flex-col gap-4 max-w-md"
+            >
+              <div>
+                <Label>Default Shipping Option</Label>
+                <Select
+                  value={shippingDefaults.shipping_option_id || undefined}
+                  onValueChange={(value) => setShippingDefaults({ ...shippingDefaults, shipping_option_id: value })}
+                  disabled={busy || !shippingOptions.length}
+                >
+                  <Select.Trigger className="mt-1.5 w-full">
+                    <Select.Value placeholder="Select a shipping option" />
+                  </Select.Trigger>
+                  <Select.Content>
+                    {shippingOptions.map((option) => (
+                      <Select.Item key={option.id} value={option.id}>
+                        {option.name} &middot; {formatGbp(option.amount_minor)}
+                      </Select.Item>
+                    ))}
+                  </Select.Content>
+                </Select>
+                <Text className="text-xs text-ui-fg-muted mt-1">
+                  Applied when a customer makes no explicit selection; a customer choice always wins.
+                </Text>
+              </div>
+
+              <div>
+                <Label>Reference Destinations</Label>
+                <Input
+                  value={shippingDefaults.destinations}
+                  onChange={(e) => setShippingDefaults({ ...shippingDefaults, destinations: e.target.value })}
+                  placeholder="gb, de, fr"
+                  disabled={busy}
+                />
+                <Text className="text-xs text-ui-fg-muted mt-1">
+                  Comma-separated country codes kept for catalogue reference. Live availability comes from the Medusa
+                  service zones attached to each option.
+                </Text>
+              </div>
+
+              <div className="pt-1">
+                <Button disabled={busy} variant="primary">
+                  {busy ? "Saving..." : "Save Shipping Configuration"}
+                </Button>
+              </div>
+            </form>
           </div>
 
           {/* Bank Instructions Card */}

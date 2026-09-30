@@ -6,7 +6,17 @@ import Image from "next/image"
 import { useCart } from "@/components/cart/CartContext"
 
 export default function CartPage() {
-  const { items, removeItem, updateQuantity, subtotal, destination, setDestination } = useCart()
+  const {
+    items,
+    removeItem,
+    updateQuantity,
+    subtotal,
+    destination,
+    setDestination,
+    shippingCost,
+    selectedShippingOption,
+    shippingAvailable,
+  } = useCart()
   const [promoCode, setPromoCode] = useState("")
   const [promoApplied, setPromoApplied] = useState(false)
   const [promoError, setPromoError] = useState("")
@@ -26,8 +36,8 @@ export default function CartPage() {
 
   const discountAmount = promoApplied ? subtotal * 0.1 : 0
   const finalSubtotal = subtotal - discountAmount
-  const shippingCost = items.length === 0 ? 0 : destination === "UK" ? (finalSubtotal >= 100 ? 0 : 4.95) : 15.0
-  const total = finalSubtotal + shippingCost
+  const shippingDisplay = items.length === 0 ? 0 : shippingCost
+  const total = finalSubtotal + shippingDisplay
 
   return (
     <main className="min-h-screen bg-[#f8fafc]">
@@ -265,14 +275,20 @@ export default function CartPage() {
 
                   <div className="flex justify-between items-center">
                     <div>
-                      <span>{destination === "UK" ? "Royal Mail Tracked 24" : "Royal Mail International Tracked"}</span>
+                      <span>
+                        {items.length === 0
+                          ? "Shipping"
+                          : shippingAvailable
+                            ? selectedShippingOption?.name || "Shipping"
+                            : "Shipping unavailable"}
+                      </span>
                       <div className="flex gap-2 text-[10px] text-slate-500 mt-0.5">
                         <button
                           type="button"
                           onClick={() => setDestination("UK")}
                           className={`hover:underline cursor-pointer ${destination === "UK" ? "font-bold text-[#0b1f3a]" : "text-slate-400"}`}
                         >
-                          UK (£4.95 / Free &gt; £100)
+                          United Kingdom
                         </button>
                         <span>•</span>
                         <button
@@ -280,18 +296,27 @@ export default function CartPage() {
                           onClick={() => setDestination("INTL")}
                           className={`hover:underline cursor-pointer ${destination === "INTL" ? "font-bold text-[#0b1f3a]" : "text-slate-400"}`}
                         >
-                          Worldwide (£15.00)
+                          International
                         </button>
                       </div>
                     </div>
                     <span className="text-[#0b1f3a] font-medium">
-                      {shippingCost === 0 ? (
+                      {items.length === 0 || !shippingAvailable ? (
+                        <span className="text-slate-400">—</span>
+                      ) : shippingDisplay === 0 ? (
                         <span className="text-emerald-600 font-bold uppercase">Free</span>
                       ) : (
-                        `£${shippingCost.toFixed(2)}`
+                        `£${shippingDisplay.toFixed(2)}`
                       )}
                     </span>
                   </div>
+
+                  {items.length > 0 && !shippingAvailable && (
+                    <p className="text-[11px] text-amber-600 font-semibold leading-relaxed">
+                      No shipping method is configured for this destination yet. Choose another destination, or try
+                      again shortly.
+                    </p>
+                  )}
 
                   <div className="border-t border-[#e2e8f0] pt-3 flex justify-between items-baseline">
                     <span className="font-bold text-sm text-[#0b1f3a]">Estimated Total</span>

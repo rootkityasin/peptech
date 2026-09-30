@@ -10,7 +10,20 @@ import { EmbeddedStripeCheckout } from "@/components/checkout/EmbeddedStripeChec
 import { getCustomerOrders, getCustomerAddresses } from "@/lib/customer-api"
 
 export default function CheckoutPage() {
-  const { items, subtotal, shippingCost, country, setCountry, removeItem } = useCart()
+  const {
+    items,
+    subtotal,
+    shippingCost,
+    country,
+    setCountry,
+    removeItem,
+    shippingOptions,
+    shippingOptionId,
+    setShippingOptionId,
+    selectedShippingOption,
+    shippingAvailable,
+    shippingReady,
+  } = useCart()
   const {
     customer,
     token,
@@ -302,6 +315,13 @@ export default function CheckoutPage() {
     setError("")
 
     try {
+      if (!shippingReady) {
+        throw new Error("Shipping rates are still loading. Please try again in a moment.")
+      }
+      if (!shippingAvailable || !shippingOptionId) {
+        throw new Error("Shipping is unavailable for this destination. Choose another destination.")
+      }
+
       const currentCountryCode = getCountryByName(country).code.toLowerCase()
       const selectedAddr = availableAddresses[selectedAddressIndex]
       const addrCountryCode = (selectedAddr?.country_code || currentCountryCode).toLowerCase()
@@ -345,6 +365,7 @@ export default function CheckoutPage() {
         recurringAccepted: recurring,
         paymentMethod: "stripe",
         uiMode: "embedded",
+        shippingOptionId,
       })
 
       if (session.clientSecret) {
@@ -472,9 +493,13 @@ export default function CheckoutPage() {
               <span className="font-semibold text-white">{money(subtotal)}</span>
             </div>
             <div className="flex justify-between text-slate-300">
-              <span>Royal Mail Tracked 24 (Domestic UK)</span>
+              <span>
+                {shippingAvailable
+                  ? selectedShippingOption?.name || "Shipping"
+                  : "Shipping unavailable"}
+              </span>
               <span className="font-semibold text-white">
-                {shippingCost === 0 ? "FREE" : money(shippingCost)}
+                {!shippingAvailable ? "—" : shippingCost === 0 ? "FREE" : money(shippingCost)}
               </span>
             </div>
             <div className="flex justify-between text-slate-400 text-xs items-center">
@@ -503,7 +528,7 @@ export default function CheckoutPage() {
                     {customer?.first_name} {customer?.last_name} · {customer?.email}
                   </p>
                   <p className="text-slate-500 mt-0.5">
-                    Delivery: {country} · Royal Mail Tracked
+                    Delivery: {country} · {selectedShippingOption?.name || "Shipping"}
                   </p>
                 </div>
                 <button
@@ -806,6 +831,56 @@ export default function CheckoutPage() {
                 </select>
               </label>
 
+              {/* Shipping Method Selection */}
+              <div className="block text-xs font-bold text-[#0B1F3A]">
+                Shipping Method
+                {!shippingReady ? (
+                  <div className="mt-1.5 rounded-xl border border-slate-200 p-3.5 text-sm text-slate-500 animate-pulse">
+                    Loading available shipping methods&hellip;
+                  </div>
+                ) : shippingOptions.length === 0 ? (
+                  <div className="mt-1.5 rounded-xl border border-amber-300 bg-amber-50 p-3.5 text-sm text-amber-800 font-medium">
+                    No shipping method is available for this destination. Choose another country to continue.
+                  </div>
+                ) : (
+                  <div className="mt-1.5 flex flex-col gap-2">
+                    {shippingOptions.map((option) => {
+                      const active = option.id === shippingOptionId
+                      return (
+                        <button
+                          key={option.id}
+                          type="button"
+                          disabled={busy}
+                          onClick={() => setShippingOptionId(option.id)}
+                          className={`flex items-center justify-between gap-3 rounded-xl border p-3.5 text-left transition-colors cursor-pointer ${
+                            active
+                              ? "border-[#16A6A3] bg-teal-50/60 ring-1 ring-[#16A6A3]"
+                              : "border-slate-300 bg-white hover:border-slate-400"
+                          }`}
+                        >
+                          <span className="flex items-center gap-3 min-w-0">
+                            <span
+                              className={`inline-block h-3.5 w-3.5 shrink-0 rounded-full border-2 ${
+                                active ? "border-[#16A6A3] bg-[#16A6A3]" : "border-slate-300"
+                              }`}
+                            />
+                            <span className="min-w-0">
+                              <span className="block text-sm font-bold text-[#0B1F3A] truncate">{option.name}</span>
+                              {option.description ? (
+                                <span className="block text-xs text-slate-500 truncate">{option.description}</span>
+                              ) : null}
+                            </span>
+                          </span>
+                          <span className="text-sm font-bold text-[#0B1F3A] shrink-0">
+                            {option.amount === 0 ? "FREE" : money(option.amount)}
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+
               {/* Auto-filled Delivery Address Details */}
               <div className="rounded-xl border border-slate-200 p-4 space-y-3 bg-white">
                 <div className="flex items-center justify-between">
@@ -969,7 +1044,7 @@ export default function CheckoutPage() {
 
               {/* Submit CTA Button */}
               <button
-                disabled={busy || !ruo || (hasSubscription && !recurring)}
+                disabled={busy || !ruo || (hasSubscription && !recurring) || !shippingReady || !shippingAvailable}
                 type="submit"
                 className="w-full rounded-xl bg-[#0B1F3A] hover:bg-[#162A45] p-4 font-bold text-sm text-white disabled:opacity-50 transition-colors shadow-sm cursor-pointer flex items-center justify-center gap-2"
               >
@@ -982,6 +1057,12 @@ export default function CheckoutPage() {
                   <span>Continue to Stripe Checkout →</span>
                 )}
               </button>
+
+              {shippingReady && !shippingAvailable && (
+                <p role="alert" className="text-xs text-amber-700 bg-amber-50 p-3 rounded-lg border border-amber-200">
+                  No shipping method is available for this destination. Select a different delivery country.
+                </p>
+              )}
 
               <p className="text-center text-xs text-slate-500">
                 Payment fields will automatically pre-populate with your verified researcher details.
