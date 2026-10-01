@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import "../../styles/custom.css";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { adminFetch } from "../../lib/sdk";
-import { orderFields } from "../../lib/order-data";
+import { orderFields, paymentStatus as getPaymentStatus } from "../../lib/order-data";
 
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
 
@@ -499,16 +499,11 @@ function StandardOrderDetail({ id }) {
   const notes = meta.notes || `Order# ${order.display_id || order.id.slice(-6)}\nShipping: Royal Mail Tracked UK / Worldwide`;
   const fulfillments = meta.fulfillments || (order.fulfillments && order.fulfillments.length > 0 ? order.fulfillments : []);
   const isFulfilled = (meta.fulfillment_status || (fulfillments && fulfillments.length > 0 ? "fulfilled" : "unfulfilled")) === "fulfilled" || order.fulfillment_status === "fulfilled";
-  const rawPayment = String(order.payment_status || meta.payment_status || (order.status === "completed" ? "captured" : "not_paid")).toLowerCase();
-  const isCaptured = ["paid", "captured", "settled", "succeeded"].includes(rawPayment) ||
-    meta.settled === true || meta.is_paid === true ||
-    (Array.isArray(order.payment_collections) && order.payment_collections.some((pc) => ["captured", "completed"].includes(String(pc?.status || "").toLowerCase())));
-  const isAuthorized = !isCaptured && (["authorized", "partially_captured"].includes(rawPayment) ||
-    (Array.isArray(order.payment_collections) && order.payment_collections.some((pc) => ["authorized"].includes(String(pc?.status || "").toLowerCase()))));
-  const isPaid = isCaptured;
-  const isRefunded = rawPayment === "refunded" || order.payment_status === "refunded";
-  const isPartiallyRefunded = rawPayment === "partially_refunded" || order.payment_status === "partially_refunded";
-  const paymentStatus = isRefunded ? "refunded" : isPartiallyRefunded ? "partially_refunded" : isCaptured ? "paid" : isAuthorized ? "authorized" : (rawPayment || "not_paid");
+  const paymentStatus = getPaymentStatus(order);
+  const isPaid = paymentStatus === "paid";
+  const isRefunded = paymentStatus === "refunded";
+  const isPartiallyRefunded = paymentStatus === "partially_refunded";
+  const isAuthorized = paymentStatus === "authorized";
   const refunds = Array.isArray(meta.refunds) ? meta.refunds : [];
   const refundedTotal = Number(meta.refunded_total || 0);
   const returns = Array.isArray(meta.returns) ? meta.returns : [];
@@ -1407,35 +1402,36 @@ function StandardOrderDetail({ id }) {
                     className: "px-4 py-3 border-t border-[#e1e3e5] bg-[#fafbfb] space-y-2",
                     children: [
                       // Order Tagged as Paid
-                      _jsxs("div", {
-                        className: "flex items-center justify-between text-xs",
-                        children: [
-                          _jsxs("div", {
-                            className: "flex items-center gap-2",
-                            children: [
-                              _jsx("svg", {
-                                className: "w-4 h-4 text-[#008060]",
-                                fill: "currentColor",
-                                viewBox: "0 0 20 20",
-                                children: _jsx("path", {
-                                  fillRule: "evenodd",
-                                  d: "M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z",
-                                  clipRule: "evenodd",
+                      isPaid &&
+                        _jsxs("div", {
+                          className: "flex items-center justify-between text-xs",
+                          children: [
+                            _jsxs("div", {
+                              className: "flex items-center gap-2",
+                              children: [
+                                _jsx("svg", {
+                                  className: "w-4 h-4 text-[#008060]",
+                                  fill: "currentColor",
+                                  viewBox: "0 0 20 20",
+                                  children: _jsx("path", {
+                                    fillRule: "evenodd",
+                                    d: "M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z",
+                                    clipRule: "evenodd",
+                                  }),
                                 }),
-                              }),
-                              _jsx("span", {
-                                className: "font-bold tracking-wide uppercase text-[#202223]",
-                                children: "ORDER TAGGED AS PAID",
-                              }),
-                            ],
-                          }),
-                          _jsx("button", {
-                            onClick: () => alert("Inventory restock workflow initiated."),
-                            className: "px-2.5 py-1 text-xs font-medium text-[#202223] bg-white border border-[#c9cccf] hover:bg-[#f6f6f7] rounded shadow-sm",
-                            children: "Restock",
-                          }),
-                        ],
-                      }),
+                                _jsx("span", {
+                                  className: "font-bold tracking-wide uppercase text-[#202223]",
+                                  children: "ORDER TAGGED AS PAID",
+                                }),
+                              ],
+                            }),
+                            _jsx("button", {
+                              onClick: () => alert("Inventory restock workflow initiated."),
+                              className: "px-2.5 py-1 text-xs font-medium text-[#202223] bg-white border border-[#c9cccf] hover:bg-[#f6f6f7] rounded shadow-sm",
+                              children: "Restock",
+                            }),
+                          ],
+                        }),
 
                       // All items shipped
                       isFulfilled &&
