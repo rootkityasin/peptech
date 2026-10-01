@@ -240,35 +240,8 @@ function resolveSubItemThumbnail(item) {
   return clean;
 }
 
-// Subscription routes are handled at /subscriptions/:id
-
-
-// internal component
-
 export function OrderDetail() {
   const { id } = useParams();
-  const navigate = useNavigate();
-
-  const isSubscription = Boolean(
-    id &&
-    (id.startsWith("SUB-") ||
-     id.startsWith("sub_") ||
-     id.toUpperCase().startsWith("SUB") ||
-     id.includes("MUED"))
-  );
-
-  useEffect(() => {
-    if (isSubscription) {
-      navigate(`/subscriptions/${id}`, { replace: true });
-    }
-  }, [id, isSubscription, navigate]);
-
-  if (isSubscription) {
-    return _jsx("div", {
-      className: "min-h-screen bg-[#f6f6f7] p-8 flex items-center justify-center text-[#5c5f62]",
-      children: "Redirecting to subscription details...",
-    });
-  }
 
   return _jsx(StandardOrderDetail, { id });
 }
