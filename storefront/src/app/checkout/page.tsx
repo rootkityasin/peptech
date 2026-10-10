@@ -13,6 +13,11 @@ export default function CheckoutPage() {
   const {
     items,
     subtotal,
+    promoDiscount,
+    finalSubtotal,
+    appliedPromo,
+    applyPromoCode,
+    removePromoCode,
     shippingCost,
     country,
     setCountry,
@@ -41,7 +46,8 @@ export default function CheckoutPage() {
   const [error, setError] = useState("")
   const [embeddedSession, setEmbeddedSession] = useState<CheckoutSession | null>(null)
   const [couponCode, setCouponCode] = useState("")
-  const [couponApplied, setCouponApplied] = useState(false)
+  const [couponError, setCouponError] = useState("")
+  const [couponLoading, setCouponLoading] = useState(false)
 
   // Auth Portal States (Inline Sign In / Register)
   const [authMode, setAuthMode] = useState<"signin" | "register">("signin")
@@ -366,6 +372,7 @@ export default function CheckoutPage() {
         paymentMethod: "stripe",
         uiMode: "embedded",
         shippingOptionId,
+        promoCode: appliedPromo?.code || undefined,
       })
 
       if (session.clientSecret) {
@@ -409,7 +416,7 @@ export default function CheckoutPage() {
           <div className="pt-2">
             <p className="text-sm font-medium text-slate-400">Total due today</p>
             <h2 className="text-4xl sm:text-5xl font-extrabold text-white tracking-tight mt-1">
-              {money(subtotal + shippingCost)}
+              {money(finalSubtotal + (shippingAvailable ? shippingCost : 0))}
             </h2>
           </div>
 
@@ -461,29 +468,59 @@ export default function CheckoutPage() {
           )}
 
           {/* Promo / Coupon Box */}
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={couponCode}
-              onChange={(e) => setCouponCode(e.target.value)}
-              placeholder="Add promo or coupon code"
-              className="flex-1 rounded-xl bg-slate-900/60 border border-slate-700/80 px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#16A6A3]"
-            />
-            <button
-              type="button"
-              onClick={() => {
-                if (couponCode.trim()) {
-                  setCouponApplied(true)
-                  setTimeout(() => setCouponApplied(false), 3000)
-                }
-              }}
-              className="rounded-xl bg-slate-800 hover:bg-slate-700 text-white px-5 py-2.5 text-xs font-semibold tracking-wide border border-slate-700 transition-colors cursor-pointer"
-            >
-              Apply
-            </button>
-          </div>
-          {couponApplied && (
-            <p className="text-xs text-[#00C5A0]">Institutional promo code applied to order verification.</p>
+          {appliedPromo ? (
+            <div className="rounded-xl bg-slate-900/80 border border-emerald-500/40 p-3.5 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-bold text-[#00C5A0] flex items-center gap-1.5">
+                  <span>✓</span> {appliedPromo.code} ({appliedPromo.discountType === "percentage" ? `${appliedPromo.discountValue}% OFF` : `£${appliedPromo.discountValue} OFF`})
+                </p>
+                <p className="text-[11px] text-slate-300">{appliedPromo.title}</p>
+              </div>
+              <button
+                type="button"
+                onClick={removePromoCode}
+                className="text-xs font-semibold text-rose-400 hover:text-rose-300 hover:underline cursor-pointer ml-3 shrink-0"
+              >
+                Remove
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={couponCode}
+                  onChange={(e) => {
+                    setCouponCode(e.target.value)
+                    if (couponError) setCouponError("")
+                  }}
+                  placeholder="Add promo or coupon code"
+                  className="flex-1 rounded-xl bg-slate-900/60 border border-slate-700/80 px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#16A6A3]"
+                />
+                <button
+                  type="button"
+                  disabled={couponLoading || !couponCode.trim()}
+                  onClick={async () => {
+                    if (!couponCode.trim()) return
+                    setCouponLoading(true)
+                    setCouponError("")
+                    const res = await applyPromoCode(couponCode)
+                    setCouponLoading(false)
+                    if (!res.success) {
+                      setCouponError(res.message || "Invalid promotional code.")
+                    } else {
+                      setCouponCode("")
+                    }
+                  }}
+                  className="rounded-xl bg-slate-800 hover:bg-slate-700 text-white px-5 py-2.5 text-xs font-semibold tracking-wide border border-slate-700 transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  {couponLoading ? "Applying..." : "Apply"}
+                </button>
+              </div>
+              {couponError && (
+                <p className="text-xs text-rose-400">{couponError}</p>
+              )}
+            </div>
           )}
 
           {/* Price Breakdown */}
@@ -492,6 +529,12 @@ export default function CheckoutPage() {
               <span>Subtotal</span>
               <span className="font-semibold text-white">{money(subtotal)}</span>
             </div>
+            {appliedPromo && promoDiscount > 0 && (
+              <div className="flex justify-between text-[#00C5A0]">
+                <span>Promotional Discount ({appliedPromo.code})</span>
+                <span className="font-semibold">-{money(promoDiscount)}</span>
+              </div>
+            )}
             <div className="flex justify-between text-slate-300">
               <span>
                 {shippingAvailable
@@ -508,7 +551,9 @@ export default function CheckoutPage() {
             </div>
             <div className="flex justify-between text-base font-bold text-white pt-3 border-t border-slate-800/80">
               <span>Total due today</span>
-              <span className="text-xl text-[#00C5A0]">{money(subtotal + shippingCost)}</span>
+              <span className="text-xl text-[#00C5A0]">
+                {money(finalSubtotal + (shippingAvailable ? shippingCost : 0))}
+              </span>
             </div>
           </div>
         </div>

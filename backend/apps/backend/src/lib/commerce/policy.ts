@@ -30,6 +30,7 @@ export const checkoutSchema = z.object({
   payment_method: z.enum(["stripe"]).default("stripe"),
   shipping_option_id: z.string().trim().min(3).max(100).optional(),
   ui_mode: z.enum(["embedded", "hosted", "embedded_page", "hosted_page"]).default("embedded").optional(),
+  promo_code: z.string().trim().max(50).optional().nullable(),
 }).strict()
 
 export function fail(message: string, status = 400): never {

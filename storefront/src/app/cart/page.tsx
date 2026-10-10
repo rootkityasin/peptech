@@ -11,33 +11,37 @@ export default function CartPage() {
     removeItem,
     updateQuantity,
     subtotal,
+    promoDiscount,
+    finalSubtotal,
+    appliedPromo,
+    applyPromoCode,
+    removePromoCode,
     destination,
     setDestination,
     shippingCost,
     selectedShippingOption,
     shippingAvailable,
+    total,
   } = useCart()
-  const [promoCode, setPromoCode] = useState("")
-  const [promoApplied, setPromoApplied] = useState(false)
+  const [promoInput, setPromoInput] = useState("")
   const [promoError, setPromoError] = useState("")
+  const [promoLoading, setPromoLoading] = useState(false)
 
-  const handleApplyPromo = (e: React.FormEvent) => {
+  const handleApplyPromo = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!promoCode.trim()) return
-
-    if (promoCode.trim().toUpperCase() === "RESEARCH10") {
-      setPromoApplied(true)
-      setPromoError("")
+    if (!promoInput.trim()) return
+    setPromoLoading(true)
+    setPromoError("")
+    const res = await applyPromoCode(promoInput)
+    setPromoLoading(false)
+    if (!res.success) {
+      setPromoError(res.message || "Invalid promotional code.")
     } else {
-      setPromoError("Invalid promo code. Use RESEARCH10 for 10% off.")
-      setPromoApplied(false)
+      setPromoInput("")
     }
   }
 
-  const discountAmount = promoApplied ? subtotal * 0.1 : 0
-  const finalSubtotal = subtotal - discountAmount
   const shippingDisplay = items.length === 0 ? 0 : shippingCost
-  const total = finalSubtotal + shippingDisplay
 
   return (
     <main className="min-h-screen bg-[#f8fafc]">
@@ -230,34 +234,51 @@ export default function CartPage() {
                   Order Financial Summary
                 </h3>
 
-                {/* Promo Code Form */}
-                <form onSubmit={handleApplyPromo} className="space-y-2">
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="Promo code (try RESEARCH10)"
-                      value={promoCode}
-                      onChange={(e) => setPromoCode(e.target.value)}
-                      className="w-full px-3.5 py-2 rounded-xl border border-[#e2e8f0] text-xs focus:outline-hidden focus:border-[#16a6a3]"
-                    />
+                {/* Promo Code Section */}
+                {appliedPromo ? (
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-bold text-emerald-800 flex items-center gap-1.5">
+                        <span>✓</span> {appliedPromo.code} ({appliedPromo.discountType === "percentage" ? `${appliedPromo.discountValue}% OFF` : `£${appliedPromo.discountValue} OFF`})
+                      </p>
+                      <p className="text-[11px] text-emerald-700">{appliedPromo.title}</p>
+                    </div>
                     <button
-                      type="submit"
-                      className="px-4 py-2 rounded-xl bg-[#0b1f3a] hover:bg-[#16a6a3] text-white text-xs font-bold transition-colors shrink-0"
+                      type="button"
+                      onClick={removePromoCode}
+                      className="text-[11px] font-semibold text-rose-600 hover:text-rose-800 hover:underline cursor-pointer ml-2 shrink-0"
                     >
-                      Apply
+                      Remove
                     </button>
                   </div>
-                  {promoApplied && (
-                    <p className="text-[11px] text-emerald-600 font-semibold">
-                      ✓ Promo RESEARCH10 applied: 10% discount!
-                    </p>
-                  )}
-                  {promoError && (
-                    <p className="text-[11px] text-red-500 font-semibold">
-                      {promoError}
-                    </p>
-                  )}
-                </form>
+                ) : (
+                  <form onSubmit={handleApplyPromo} className="space-y-2">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Enter promo code"
+                        value={promoInput}
+                        onChange={(e) => {
+                          setPromoInput(e.target.value)
+                          if (promoError) setPromoError("")
+                        }}
+                        className="w-full px-3.5 py-2 rounded-xl border border-[#e2e8f0] text-xs focus:outline-hidden focus:border-[#16a6a3]"
+                      />
+                      <button
+                        type="submit"
+                        disabled={promoLoading || !promoInput.trim()}
+                        className="px-4 py-2 rounded-xl bg-[#0b1f3a] hover:bg-[#16a6a3] text-white text-xs font-bold transition-colors shrink-0 disabled:opacity-50 cursor-pointer"
+                      >
+                        {promoLoading ? "Applying..." : "Apply"}
+                      </button>
+                    </div>
+                    {promoError && (
+                      <p className="text-[11px] text-red-500 font-semibold">
+                        {promoError}
+                      </p>
+                    )}
+                  </form>
+                )}
 
                 {/* Pricing Calculation Rows */}
                 <div className="space-y-2.5 text-xs text-[#64748b] border-t border-[#e2e8f0] pt-4">
@@ -266,10 +287,10 @@ export default function CartPage() {
                     <span className="text-[#0b1f3a] font-semibold">£{subtotal.toFixed(2)}</span>
                   </div>
 
-                  {promoApplied && (
+                  {appliedPromo && promoDiscount > 0 && (
                     <div className="flex justify-between text-emerald-600 font-semibold">
-                      <span>Promotional Discount (10%)</span>
-                      <span>-£{discountAmount.toFixed(2)}</span>
+                      <span>Promotional Discount ({appliedPromo.code})</span>
+                      <span>-£{promoDiscount.toFixed(2)}</span>
                     </div>
                   )}
 

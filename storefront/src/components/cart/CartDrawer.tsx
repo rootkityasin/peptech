@@ -14,13 +14,7 @@ export function CartDrawer() {
   } = useCart()
 
   // Calculate items total
-  const itemsTotal = items.reduce((acc, item) => {
-    const unitPrice =
-      item.isSubscription && item.discountPercent
-        ? item.price * (1 - item.discountPercent / 100)
-        : item.price
-    return acc + unitPrice * item.quantity
-  }, 0)
+  const itemsTotal = items.reduce((acc, item) => acc + item.price * item.quantity, 0)
 
   // Prevent background scrolling when drawer is open
   useEffect(() => {
@@ -187,12 +181,8 @@ export function CartDrawer() {
             </div>
           ) : (
             items.map((item) => {
-              const unitPrice =
-                item.isSubscription && item.discountPercent
-                  ? item.price * (1 - item.discountPercent / 100)
-                  : item.price
+              const unitPrice = item.price
               const itemTotal = unitPrice * item.quantity
-              const originalItemTotal = item.price * item.quantity
 
               const subtitle =
                 item.format === "pen-set"
@@ -257,11 +247,6 @@ export function CartDrawer() {
                           <p className="font-bold text-[#0b1f3a] text-[14px] leading-none">
                             £{itemTotal.toFixed(2)}
                           </p>
-                          {item.isSubscription && item.discountPercent && (
-                            <p className="font-normal line-through text-[#94a3b8] text-[11px] leading-none">
-                              £{originalItemTotal.toFixed(2)}
-                            </p>
-                          )}
                         </div>
 
                         {/* Qty Stepper with Click Animation */}

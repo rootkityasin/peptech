@@ -3,10 +3,21 @@
 import React, { createContext, useContext, useState, useEffect } from "react"
 import { getCountryByName } from "@/lib/countries"
 import { getShippingOptions, type ShippingOption } from "@/lib/shipping-options"
+import { getBackendUrl } from "@/lib/customer-api"
 
 export interface CartItemOption {
   label: string
   value: string
+}
+
+export interface AppliedPromotion {
+  id: string
+  code: string
+  title: string
+  discountType: "percentage" | "fixed"
+  discountValue: number
+  discountAmount: number
+  currencyCode: string
 }
 
 export interface CartItem {
@@ -38,6 +49,11 @@ interface CartContextType {
   setIsDrawerOpen: (open: boolean) => void
   itemCount: number
   subtotal: number
+  promoDiscount: number
+  finalSubtotal: number
+  appliedPromo: AppliedPromotion | null
+  applyPromoCode: (code: string) => Promise<{ success: boolean; message?: string }>
+  removePromoCode: () => void
   shippingCost: number
   total: number
   destination: "UK" | "INTL"
@@ -66,6 +82,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>([])
   const [shippingOptionId, setShippingOptionIdState] = useState<string | null>(null)
   const [shippingLoaded, setShippingLoaded] = useState(false)
+  const [appliedPromo, setAppliedPromo] = useState<AppliedPromotion | null>(null)
 
   const setDestination = (dest: "UK" | "INTL") => {
     setDestinationState(dest)
@@ -88,6 +105,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           setItems(parsed)
         }
       }
+      const savedPromo = localStorage.getItem("peptech_applied_promo")
+      if (savedPromo) {
+        setAppliedPromo(JSON.parse(savedPromo))
+      }
     } catch {
       // ignore
     }
@@ -103,6 +124,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       // ignore
     }
   }, [items, loaded])
+
+  // Clear any applied promo if cart is empty
+  useEffect(() => {
+    if (loaded && items.length === 0 && appliedPromo) {
+      setAppliedPromo(null)
+      try {
+        localStorage.removeItem("peptech_applied_promo")
+      } catch {}
+    }
+  }, [items.length, loaded, appliedPromo])
 
   // Resolve the shipping options Medusa serves for the chosen destination.
   useEffect(() => {
@@ -163,32 +194,98 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const clearCart = () => {
     setItems([])
+    setAppliedPromo(null)
     try {
       localStorage.removeItem("peptech_cart")
+      localStorage.removeItem("peptech_applied_promo")
     } catch {}
   }
 
   const clearCartIfUnchanged = (snapshot: string) => {
-    setItems(current => {
+    setItems((current) => {
       // Preserve additions/changes from another tab or a later basket revision.
       if (JSON.stringify(current) !== snapshot || localStorage.getItem("peptech_cart") !== snapshot) return current
       localStorage.removeItem("peptech_cart")
+      localStorage.removeItem("peptech_applied_promo")
+      setAppliedPromo(null)
       return []
     })
   }
 
   const itemCount = items.reduce((acc, i) => acc + i.quantity, 0)
-  const subtotal = items.reduce((acc, i) => {
-    const itemPrice = i.isSubscription && i.discountPercent ? i.price * (1 - i.discountPercent / 100) : i.price
-    return acc + itemPrice * i.quantity
-  }, 0)
+  const subtotal = items.reduce((acc, i) => acc + i.price * i.quantity, 0)
+
+  // Calculate dynamic promotional discount - ONLY when user enters a promo code
+  const promoDiscount = React.useMemo(() => {
+    if (!appliedPromo) return 0
+    if (subtotal <= 0) return 0
+
+    if (appliedPromo.discountType === "percentage") {
+      return Number(((subtotal * appliedPromo.discountValue) / 100).toFixed(2))
+    }
+    if (appliedPromo.discountType === "fixed") {
+      return Math.min(appliedPromo.discountValue, subtotal)
+    }
+    return 0
+  }, [subtotal, appliedPromo])
+
+  const finalSubtotal = Math.max(0, subtotal - promoDiscount)
+
+  const applyPromoCode = async (code: string): Promise<{ success: boolean; message?: string }> => {
+    if (!code || !code.trim()) {
+      return { success: false, message: "Please enter a promotional code." }
+    }
+    try {
+      const base = getBackendUrl()
+      const pubKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "pk_556de0f5ea4724394f147569c8b5066ecda7a0d39bd60eb15b2550b2d5c52246"
+      const res = await fetch(`${base}/store/custom/promotions/validate`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-publishable-api-key": pubKey,
+        },
+        body: JSON.stringify({
+          code: code.trim(),
+          subtotal,
+          currency_code: "gbp",
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok || !data.valid) {
+        return { success: false, message: data.message || "Invalid promotional code." }
+      }
+      const promo: AppliedPromotion = {
+        id: data.promotion.id,
+        code: data.promotion.code,
+        title: data.promotion.title,
+        discountType: data.promotion.discount_type,
+        discountValue: data.promotion.discount_value,
+        discountAmount: data.promotion.discount_amount,
+        currencyCode: data.promotion.currency_code,
+      }
+      setAppliedPromo(promo)
+      try {
+        localStorage.setItem("peptech_applied_promo", JSON.stringify(promo))
+      } catch {}
+      return { success: true }
+    } catch (err: any) {
+      return { success: false, message: err.message || "Failed to connect to promo verification service." }
+    }
+  }
+
+  const removePromoCode = () => {
+    setAppliedPromo(null)
+    try {
+      localStorage.removeItem("peptech_applied_promo")
+    } catch {}
+  }
 
   // Authoritative rates come from Medusa; an empty list means no option is
   // configured for this destination and checkout will refuse to price it.
   const selectedShippingOption = shippingOptions.find((option) => option.id === shippingOptionId) || null
   const shippingAvailable = shippingLoaded && shippingOptions.length > 0
   const shippingCost = items.length > 0 && selectedShippingOption ? selectedShippingOption.amount : 0
-  const total = subtotal + shippingCost
+  const total = finalSubtotal + shippingCost
 
   const currency = country === "United Kingdom" ? "GBP" : (["Germany", "France", "Italy", "Spain", "Netherlands", "Ireland", "Sweden", "Denmark", "Belgium", "Austria", "Finland", "Portugal", "Poland", "Czech Republic"].includes(country) ? "EUR" : "USD")
 
@@ -200,11 +297,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         removeItem,
         updateQuantity,
         clearCart,
-      clearCartIfUnchanged,
+        clearCartIfUnchanged,
         isDrawerOpen,
         setIsDrawerOpen,
         itemCount,
         subtotal,
+        promoDiscount,
+        finalSubtotal,
+        appliedPromo,
+        applyPromoCode,
+        removePromoCode,
         shippingCost,
         total,
         destination,

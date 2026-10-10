@@ -75,6 +75,7 @@ export async function prepareStripeCheckout(input: {
   paymentMethod?: "stripe"
   uiMode?: "embedded" | "hosted_page"
   shippingOptionId?: string
+  promoCode?: string
 }): Promise<CheckoutSession> {
   const items = await Promise.all(
     input.items.map(async (item) => {
@@ -131,6 +132,7 @@ export async function prepareStripeCheckout(input: {
     payment_method: input.paymentMethod || "stripe",
     ...(input.shippingOptionId ? { shipping_option_id: input.shippingOptionId } : {}),
     ui_mode: input.uiMode || "embedded",
+    ...(input.promoCode ? { promo_code: input.promoCode } : {}),
   }
 
   const fingerprint = JSON.stringify({ body, email: input.email })

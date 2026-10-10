@@ -184,9 +184,7 @@ export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
       price: product.price,
       isSubscription: product.isSubscriptionEligible,
       subscriptionIntervalDays: product.isSubscriptionEligible ? 28 : undefined,
-      discountPercent: product.isSubscriptionEligible ? 10 : undefined,
       sku: product.sku || "",
-
     })
     setIsDrawerOpen(true)
   }
@@ -621,7 +619,7 @@ export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
                       onChange={() => setSelectedPurchaseType("sub")}
                       className="accent-[#0b1f3a] size-[15px]"
                     />
-                    <span className="font-semibold text-[#0b1f3a] text-[12px]">Subscribe &amp; Save (10% off)</span>
+                    <span className="font-semibold text-[#0b1f3a] text-[12px]">Subscribe &amp; Deliver (28-day)</span>
                   </div>
                   <span className="font-normal text-[#64748b] text-[11px] bg-white px-2 py-0.5 rounded border border-[#e2e8f0]">({subCount})</span>
                 </label>
@@ -819,7 +817,7 @@ export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
                   onChange={() => setSelectedPurchaseType("sub")}
                   className="accent-[#0b1f3a] size-[15px]"
                 />
-                <span className="font-semibold text-[#0b1f3a] text-[12px]">Subscribe &amp; Save (10% off)</span>
+                <span className="font-semibold text-[#0b1f3a] text-[12px]">Subscribe &amp; Deliver (28-day)</span>
               </div>
               <span className="font-normal text-[#94a3b8] text-[11px]">({subCount})</span>
             </label>
@@ -934,29 +932,13 @@ export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
 
                       {/* Price Row */}
                       <div className="flex gap-[6px] items-center justify-center pt-1.5 whitespace-nowrap">
-                        {product.isSubscriptionEligible && product.subscribePrice ? (
-                          <>
-                            <span className="font-bold text-[#0b1f3a] text-[15px]">
-                              £{product.subscribePrice.toFixed(2)}
-                            </span>
-                            <span className="font-normal text-[#64748b] text-[11px]">
-                              / 28 days
-                            </span>
-                            <div className="bg-[#e6fffa] border border-[#99f6e4] px-[5px] py-[2px] rounded-[4px]">
-                              <span className="font-bold text-[#0d7b78] text-[9px]">
-                                Save 10%
-                              </span>
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <span className="font-bold text-[#0b1f3a] text-[15px]">
-                              £{product.price.toFixed(2)}
-                            </span>
-                            <span className="font-normal text-[#64748b] text-[11px]">
-                              One-Time Purchase
-                            </span>
-                          </>
+                        <span className="font-bold text-[#0b1f3a] text-[15px]">
+                          £{product.price.toFixed(2)}
+                        </span>
+                        {product.isSubscriptionEligible && (
+                          <span className="font-normal text-[#64748b] text-[11px]">
+                            • 28-day available
+                          </span>
                         )}
                       </div>
                     </div>
@@ -1040,13 +1022,8 @@ export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
                   <div className="flex items-center gap-4 shrink-0">
                     <div className="text-right">
                       <div className="text-[16px] font-bold text-[#0b1f3a]">
-                        £{(product.subscribePrice || product.price).toFixed(2)}
+                        £{product.price.toFixed(2)}
                       </div>
-                      {product.isSubscriptionEligible && (
-                        <span className="text-[10px] font-bold text-[#0d7b78] bg-[#e6fffa] px-1.5 py-0.5 rounded border border-[#99f6e4]">
-                          Save 10%
-                        </span>
-                      )}
                     </div>
                     <div className="flex items-center gap-2">
                       <Link

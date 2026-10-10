@@ -15,8 +15,8 @@ export function VialBuyBox({ product }: VialBuyBoxProps) {
   const [quantity, setQuantity] = useState(1)
 
   const oneTimePrice = product.price
-  const subscribePrice = product.subscribePrice || Number((product.price * 0.9).toFixed(2))
-  const activePrice = purchaseType === "subscription" ? subscribePrice : oneTimePrice
+  const subscribePrice = product.price
+  const activePrice = oneTimePrice
   const totalPrice = activePrice * quantity
 
   const batchCode = `VIAL-${product.category.toUpperCase().slice(0, 3)}-2026-04A`
@@ -34,12 +34,11 @@ export function VialBuyBox({ product }: VialBuyBoxProps) {
         price: product.price,
         isSubscription: purchaseType === "subscription",
         subscriptionIntervalDays: purchaseType === "subscription" ? 28 : undefined,
-        discountPercent: purchaseType === "subscription" ? 10 : undefined,
         sku: product.sku||"",
 
         image: product.image,
         options: [
-          { label: "Purchase Type", value: purchaseType === "subscription" ? "28-Day Subscription (10% off)" : "One-Time Order" },
+          { label: "Purchase Type", value: purchaseType === "subscription" ? "28-Day Automated Protocol" : "One-Time Order" },
           { label: "Format", value: "Lyophilised Research Vial" },
           { label: "Reconstitution", value: "Compatible with Bacteriostatic Water USP" },
         ],
@@ -166,10 +165,10 @@ export function VialBuyBox({ product }: VialBuyBoxProps) {
             <div className="flex flex-col gap-[2px] items-start">
               <div className="flex gap-[8px] items-center">
                 <span className="font-semibold text-[#0b1f3a] text-[14px]">
-                  Subscribe &amp; Save
+                  Subscribe &amp; Deliver
                 </span>
-                <span className="bg-[#dcfce7] text-[#15803d] text-[11px] font-bold px-[6px] py-[2px] rounded-[4px]">
-                  10% OFF
+                <span className="bg-[#e0f2fe] text-[#0369a1] text-[11px] font-bold px-[6px] py-[2px] rounded-[4px]">
+                  28-Day Protocol
                 </span>
               </div>
               <span className="text-[#64748b] text-[12px]">
@@ -178,7 +177,7 @@ export function VialBuyBox({ product }: VialBuyBoxProps) {
             </div>
           </div>
           <span className="font-bold text-[#0b1f3a] text-[14px]">
-            £{subscribePrice.toFixed(2)}
+            £{oneTimePrice.toFixed(2)}
           </span>
         </div>
 

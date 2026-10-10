@@ -1,5 +1,6 @@
-import {guardFulfillment,guardNativeRefund,retiredPaymentCreation} from "../lib/commerce/guards"
+import { guardFulfillment, guardNativeRefund, retiredPaymentCreation } from "../lib/commerce/guards"
 import { authenticate, defineMiddlewares, MedusaRequest, MedusaResponse, MedusaNextFunction } from "@medusajs/framework/http"
+import { validatePromoMiddlewares } from "./store/custom/promotions/validate/middlewares"
 import fs from "fs"
 import path from "path"
 
@@ -47,11 +48,13 @@ const serveStaticImage = (req: MedusaRequest, res: MedusaResponse, next: MedusaN
 
 export default defineMiddlewares({
   routes: [
+    ...validatePromoMiddlewares,
     { matcher: "/store/payment-collections/:id/payment-sessions", methods: ["POST"], middlewares: [retiredPaymentCreation] },
-    { matcher: "/admin/orders/:id/fulfillments", methods: ["POST"], middlewares: [authenticate("user", ["session", "bearer"]),guardFulfillment] },
-    { matcher: "/admin/payments/:id/refund", methods: ["POST"], middlewares: [authenticate("user", ["session", "bearer"]),guardNativeRefund] },
+    { matcher: "/admin/orders/:id/fulfillments", methods: ["POST"], middlewares: [authenticate("user", ["session", "bearer"]), guardFulfillment] },
+    { matcher: "/admin/payments/:id/refund", methods: ["POST"], middlewares: [authenticate("user", ["session", "bearer"]), guardNativeRefund] },
     { matcher: "/admin/custom/return", middlewares: [authenticate("user", ["session", "bearer"])] },
     { matcher: "/admin/custom/refund", middlewares: [authenticate("user", ["session", "bearer"])] },
+    { matcher: "/admin/custom/promotions*", middlewares: [authenticate("user", ["session", "bearer"])] },
     { matcher: "/store/custom/orders", middlewares: [authenticate("customer", ["bearer"], { allowUnauthenticated: true })] },
     { matcher: "/store/custom/orders/*", middlewares: [authenticate("customer", ["bearer"], { allowUnauthenticated: true })] },
     { matcher: "/store/custom/subscriptions", middlewares: [authenticate("customer", ["bearer"], { allowUnauthenticated: true })] },

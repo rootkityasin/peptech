@@ -510,11 +510,7 @@ function StandardOrderDetail({ id }) {
   const returnStatus = meta.return_status || (returns.some((r) => r.status === "open") ? "return_requested" : returns.some((r) => r.status === "received") ? "returned" : null);
   const isReturnRequested = returnStatus === "return_requested";
   const isReturned = returnStatus === "returned";
-  const orderPromotion = meta.promotion || (meta.has_subscription ? {
-    code: "SUB28-10",
-    name: "Subscribe & Save (28-Day Cycle)",
-    discount_percent: 10,
-  } : null);
+  const orderPromotion = meta.promotion || null;
 
   // Customer info
   const shipping = order.shipping_address || {};
@@ -1044,8 +1040,8 @@ function StandardOrderDetail({ id }) {
                 _jsxs("span", {
                   className: "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#f0fdf4] text-[#15803d] border border-[#bbf7d0]",
                   children: [
-                    orderPromotion.code || "SUB28-10",
-                    _jsx("span", { className: "text-[11px] font-normal text-[#166534]", children: "(-10%)" }),
+                    orderPromotion.code,
+                    _jsx("span", { className: "text-[11px] font-normal text-[#166534]", children: `(-${orderPromotion.discount_percent || 10}%)` }),
                   ],
                 })
               ) : null,
@@ -1272,7 +1268,7 @@ function StandardOrderDetail({ id }) {
                               className: "flex justify-between",
                               children: [
                                 _jsx("span", {
-                                  children: `Promotion (${orderPromotion.code || "SUB28-10"}${orderPromotion.name ? ` · ${orderPromotion.name}` : ""})`,
+                                  children: `Promotion (${orderPromotion.code}${orderPromotion.name ? ` · ${orderPromotion.name}` : ""})`,
                                 }),
                                 _jsx("span", {
                                   className: "font-semibold text-[#202223]",
