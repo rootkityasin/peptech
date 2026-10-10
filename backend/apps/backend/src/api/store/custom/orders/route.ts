@@ -1,12 +1,11 @@
 import type { AuthenticatedMedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { Modules } from "@medusajs/framework/utils"
-import { endpoint } from "../../../../lib/commerce/http"
+import { actor, endpoint } from "../../../../lib/commerce/http"
 
 export async function GET(req: AuthenticatedMedusaRequest, res: MedusaResponse) {
   res.setHeader("Cache-Control", "no-store")
   return endpoint(res, async () => {
-    const customerId = req.auth_context?.actor_id || (req.query.customer_id as string)
-    const email = (req.query.email as string)?.trim().toLowerCase()
+    const customerId = actor(req)
 
     const orderFields = [
       "id",
@@ -33,24 +32,18 @@ export async function GET(req: AuthenticatedMedusaRequest, res: MedusaResponse) 
 
     let orders: any[] = []
 
-    let resolvedEmail = email
-    if (!resolvedEmail && customerId) {
-      try {
-        const customerModule = req.scope.resolve(Modules.CUSTOMER)
-        const cust = await customerModule.retrieveCustomer(customerId).catch(() => null)
-        if (cust?.email) resolvedEmail = cust.email.trim().toLowerCase()
-      } catch {}
-    }
+    let resolvedEmail: string | null = null
+    try {
+      const customerModule = req.scope.resolve(Modules.CUSTOMER)
+      const cust = await customerModule.retrieveCustomer(customerId).catch(() => null)
+      if (cust?.email) resolvedEmail = cust.email.trim().toLowerCase()
+    } catch {}
+
+    const filters: any = resolvedEmail
+      ? { $or: [{ customer_id: customerId }, { email: resolvedEmail }] }
+      : { customer_id: customerId }
 
     try {
-      const filters: any = {}
-      if (customerId && resolvedEmail) {
-        filters.$or = [{ customer_id: customerId }, { email: resolvedEmail }]
-      } else if (customerId) {
-        filters.customer_id = customerId
-      } else if (resolvedEmail) {
-        filters.email = resolvedEmail
-      }
 
       const { data = [] } = await req.scope.resolve("query").graph({
         entity: "order",
@@ -62,15 +55,6 @@ export async function GET(req: AuthenticatedMedusaRequest, res: MedusaResponse) 
     } catch {
       try {
         const orderModule = req.scope.resolve(Modules.ORDER)
-        const filters: any = {}
-        if (customerId && resolvedEmail) {
-          filters.$or = [{ customer_id: customerId }, { email: resolvedEmail }]
-        } else if (customerId) {
-          filters.customer_id = customerId
-        } else if (resolvedEmail) {
-          filters.email = resolvedEmail
-        }
-
         const [list] = await orderModule.listAndCountOrders(
           filters,
           { relations: ["items", "shipping_address", "billing_address", "summary"], order: { created_at: "DESC" }, take: 50 }

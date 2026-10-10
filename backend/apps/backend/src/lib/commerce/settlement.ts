@@ -7,6 +7,7 @@ import { signReceipt } from "../../modules/stripe-checkout/service"
 import { stripeContext,objectId } from "./stripe"
 import { fail } from "./policy"
 import { Quote,reserveQuote } from "./quote"
+import { recordPromotionUsage } from "./promotions"
 
 export function generateOrderNumber(seed: string): string {
   const hash = createHash("sha256").update(seed).digest("hex")
@@ -55,7 +56,14 @@ export async function settleReceipt(scope:any,ledger:CommerceService,attempt:Led
         sales_channel_id:q.sales_channel_id,status:"pending",shipping_address:cleanAddress(q.address),billing_address:cleanAddress(q.billing_address||q.address),
         no_notification:true,metadata:{peptech_receipt_id:id,peptech_attempt:attempt.id,payment_gateway:evidence.source||"stripe",
           subscription_id:attempt.data.subscription_id||null,fulfillment_hold:true,tax_policy:q.tax_policy,order_number_formatted:orderNumber,stripe_receipt_url:stripeReceiptUrl,
-          tags:attempt.data.subscription_id?["Sub-Order"]:[]},
+          tags:attempt.data.subscription_id?["Sub-Order"]:[],
+          ...(q.promo_code ? {
+            promotion: {
+              code: q.promo_code,
+              name: q.promo_name || q.promo_code,
+              discount_minor: q.promo_discount_minor || 0,
+            }
+          } : {})},
         items:q.lines.map(l=>({id:l.line_id,variant_id:l.variant_id,title:l.name,variant_sku:l.sku,quantity:l.quantity,
           unit_price:l.unit_minor/100,is_tax_inclusive:q.tax_inclusive||false,tax_lines:l.tax_lines||(q.vat_registered?[{rate:q.tax_rate,code:"VAT",description:"VAT"}]:[]),requires_shipping:true,metadata:{catalog_version:l.catalog_version,recurring:l.recurring,...(l.metadata||{})}})),
         shipping_methods:[{name:q.shipping_option_name||q.shipping_option_id||"Royal Mail Tracked",amount:q.shipping_minor/100,shipping_option_id:q.shipping_option_id,is_tax_inclusive:q.tax_inclusive||false,tax_lines:q.shipping_tax_lines||(q.vat_registered?[{rate:q.tax_rate,code:"VAT",description:"VAT"}]:[])}]}
@@ -147,6 +155,11 @@ export async function settleReceipt(scope:any,ledger:CommerceService,attempt:Led
     await capturePaymentWorkflow(scope).run({input:{payment_id:paymentRecord.id}})
     }
     receipt.state="confirmed";receipt.data.order_id=orderId;receipt.data.order_number=orderNumber;receipt.data.display_id=orderNumber;receipt.data.stripe_receipt_url=stripeReceiptUrl;receipt.data.payment_id=paymentRecord.id;await ledger.save(receipt)
+    if(q.promo_code){
+      await recordPromotionUsage(q.promo_code, orderId).catch((err: any)=>{
+        console.warn("[settleReceipt] Failed to record promotion usage:", err?.message || err)
+      })
+    }
     if(!renewal) await ledger.locked(attempt.id,async()=>{
       const latest=await ledger.get(attempt.id)
       if(latest){latest.state="confirmed";latest.data.order_id=orderId;latest.data.order_number=orderNumber;latest.data.display_id=orderNumber;latest.data.stripe_receipt_url=stripeReceiptUrl;await ledger.save(latest)}

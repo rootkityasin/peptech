@@ -1,4 +1,7 @@
-const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "pk_556de0f5ea4724394f147569c8b5066ecda7a0d39bd60eb15b2550b2d5c52246"
+const PUBLISHABLE_KEY = (process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "").trim()
+if (!PUBLISHABLE_KEY && process.env.NODE_ENV === "production" && typeof window !== "undefined") {
+  console.error("[PEPTECH CRITICAL] Missing NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY environment variable.")
+}
 
 /**
  * Dynamically resolves the Medusa backend URL.

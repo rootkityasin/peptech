@@ -1,9 +1,10 @@
 import type { AuthenticatedMedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { Modules } from "@medusajs/framework/utils"
-import { endpoint } from "../../../../../lib/commerce/http"
+import { actor, endpoint } from "../../../../../lib/commerce/http"
 
 export async function GET(req: AuthenticatedMedusaRequest, res: MedusaResponse) {
   return endpoint(res, async () => {
+    const customerId = actor(req)
     const rawId = req.params.id
     if (!rawId) {
       return res.status(400).json({ message: "Order ID is required" })
@@ -103,6 +104,19 @@ export async function GET(req: AuthenticatedMedusaRequest, res: MedusaResponse) 
     }
 
     if (order) {
+      let customerEmail: string | null = null
+      try {
+        const customerModule = req.scope.resolve(Modules.CUSTOMER)
+        const cust = await customerModule.retrieveCustomer(customerId).catch(() => null)
+        if (cust?.email) customerEmail = cust.email.trim().toLowerCase()
+      } catch {}
+
+      const orderEmail = (order.email || "").trim().toLowerCase()
+      const isOwner = order.customer_id === customerId || (customerEmail && orderEmail === customerEmail)
+      if (!isOwner) {
+        return res.status(403).json({ message: "You are not authorized to view this order." })
+      }
+
       const lineItems = order.items || []
       const itemsTotalMinor = lineItems.reduce((acc: number, it: any) => acc + ((Number(it.unit_price) || 0) * (Number(it.quantity) || 1)), 0)
       const metaMinor = Number(order.metadata?.refunded_amount_minor) || 0

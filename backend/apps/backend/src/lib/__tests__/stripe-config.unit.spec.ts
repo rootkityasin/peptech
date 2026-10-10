@@ -65,4 +65,29 @@ describe("Stripe account configuration", () => {
       expect(env.STRIPE_PUBLISHABLE_KEY).toBeUndefined()
     } finally { fs.rmSync(dir, { recursive: true, force: true }) }
   })
+  it("configures a dedicated signingSecret and never falls back to apiKey", () => {
+    const customSigningSecret = "custom_test_signing_secret_at_least_32_characters_long"
+    const modulesWithCustom = stripeModules({
+      ...testEnv,
+      STRIPE_COMMERCE_SIGNING_SECRET: customSigningSecret,
+    })
+    const checkoutProvider = (modulesWithCustom[0] as any).options.providers.find((p: any) => p.resolve.includes("stripe-checkout"))
+    expect(checkoutProvider.options.signingSecret).toBe(customSigningSecret)
+    expect(checkoutProvider.options.signingSecret).not.toBe(testEnv.STRIPE_API_KEY)
+
+    const modulesDefault = stripeModules(testEnv)
+    const defaultProvider = (modulesDefault[0] as any).options.providers.find((p: any) => p.resolve.includes("stripe-checkout"))
+    expect(defaultProvider.options.signingSecret).toBe("dev_stripe_commerce_signing_secret_min_32_chars")
+    expect(defaultProvider.options.signingSecret).not.toBe(testEnv.STRIPE_API_KEY)
+  })
+  it("rejects missing or short STRIPE_COMMERCE_SIGNING_SECRET in live mode", () => {
+    const liveEnv = {
+      ...testEnv,
+      STRIPE_API_KEY: "rk_live_fixture",
+      STRIPE_PUBLISHABLE_KEY: "pk_live_fixture",
+      STRIPE_LIVE_APPROVED: "true",
+      STRIPE_COMMERCE_SIGNING_SECRET: "short_secret",
+    }
+    expect(stripeModules(liveEnv)).toEqual([])
+  })
 })

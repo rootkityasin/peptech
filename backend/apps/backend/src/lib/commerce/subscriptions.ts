@@ -204,10 +204,10 @@ export function presentSubscription(record: LedgerRecord) {
   }
 
   const cadenceLabel = cadenceDays === 14
-    ? "14-Day Cycle"
+    ? "Accelerated Protocol"
     : cadenceDays === 56
-    ? "56-Day Cycle"
-    : "28-Day Standard Cycle"
+    ? "8-Week Maintenance"
+    : "Standard Cycle"
 
   const frequency = `Every ${cadenceDays} Days (${cadenceLabel})`
   const custName = [q.address?.first_name, q.address?.last_name].filter(Boolean).join(" ") || q.email || "Customer unavailable"

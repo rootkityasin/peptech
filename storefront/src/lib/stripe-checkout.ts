@@ -1,7 +1,10 @@
 import type { CartItem } from "@/components/cart/CartContext"
 import { getBackendUrl } from "./customer-api"
 
-const publishableKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "pk_556de0f5ea4724394f147569c8b5066ecda7a0d39bd60eb15b2550b2d5c52246"
+const publishableKey = (process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "").trim()
+if (!publishableKey && process.env.NODE_ENV === "production" && typeof window !== "undefined") {
+  console.error("[PEPTECH CRITICAL] Missing NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY environment variable.")
+}
 
 export type CheckoutSession = {
   attemptId: string
@@ -26,6 +29,9 @@ export type CheckoutSession = {
   reference: string
   items: { name: string; quantity: number; recurring: boolean; unitPrice: number }[]
   subscriptionId?: string
+  promoDiscount?: number
+  promoCode?: string
+  subtotal?: number
 }
 
 export type CheckoutAddress = {
@@ -75,6 +81,7 @@ export async function prepareStripeCheckout(input: {
   paymentMethod?: "stripe"
   uiMode?: "embedded" | "hosted_page"
   shippingOptionId?: string
+  promoCode?: string
 }): Promise<CheckoutSession> {
   const items = await Promise.all(
     input.items.map(async (item) => {
@@ -130,6 +137,7 @@ export async function prepareStripeCheckout(input: {
     recurring_accepted: input.recurringAccepted === true,
     payment_method: input.paymentMethod || "stripe",
     ...(input.shippingOptionId ? { shipping_option_id: input.shippingOptionId } : {}),
+    ...(input.promoCode ? { promo_code: input.promoCode } : {}),
     ui_mode: input.uiMode || "embedded",
   }
 
@@ -185,4 +193,50 @@ export async function completeStripeCheckout(cartId: string, token: string) {
   const result = await commerceRequest(`/store/carts/${encodeURIComponent(cartId)}/complete`, token, {})
   if (result.type !== "order") throw new Error("Payment confirmation is pending. Do not start another payment.")
   return result.order
+}
+
+export type PromoValidationResult = {
+  valid: boolean
+  code?: string
+  title?: string
+  type?: "percentage" | "fixed"
+  value?: number
+  discount_minor?: number
+  discount_gbp?: string
+  message?: string
+}
+
+export async function validatePromoCode(
+  code: string,
+  items: CartItem[],
+  token?: string | null
+): Promise<PromoValidationResult> {
+  const cleanCode = (code || "").trim()
+  if (!cleanCode) {
+    return { valid: false, message: "Please enter a promo code." }
+  }
+
+  const payloadItems = items.map((i) => ({
+    variant_id: i.variantId || i.id,
+    quantity: i.quantity,
+    recurring: i.isSubscription || false,
+    unit_minor: Math.round(Number(i.price) * 100),
+  }))
+
+  try {
+    return await commerceRequest(
+      "/store/custom/promotions/validate",
+      token,
+      {
+        code: cleanCode,
+        items: payloadItems,
+      },
+      "POST"
+    )
+  } catch (err: any) {
+    return {
+      valid: false,
+      message: err.message || "Invalid or inactive promo code.",
+    }
+  }
 }

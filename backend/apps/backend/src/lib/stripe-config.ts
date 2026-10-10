@@ -61,13 +61,21 @@ export function stripeModules(env: NodeJS.ProcessEnv = process.env) {
   try {
     const config = getStripeConfig(env)
     if (!config) return []
+    const rawSigningSecret = (env.STRIPE_COMMERCE_SIGNING_SECRET || "").trim()
+    if (!rawSigningSecret && (process.env.NODE_ENV === "production" || config.mode === "live")) {
+      throw new Error("STRIPE_COMMERCE_SIGNING_SECRET must be configured with at least 32 characters in production")
+    }
+    if (rawSigningSecret && rawSigningSecret.length < 32 && (process.env.NODE_ENV === "production" || config.mode === "live")) {
+      throw new Error("STRIPE_COMMERCE_SIGNING_SECRET must be at least 32 characters in production")
+    }
+    const signingSecret = rawSigningSecret || "dev_stripe_commerce_signing_secret_min_32_chars"
     return [{ resolve: "@medusajs/medusa/payment", options: { providers: [{
       resolve: "@medusajs/payment-stripe", id: config.id,
       options: { apiKey: config.apiKey, webhookSecret: config.webhookSecret,
         capture: true, automaticPaymentMethods: true },
     }, {
       resolve: path.resolve(__dirname, "../modules/stripe-checkout"), id: config.id,
-      options: { apiKey: config.apiKey, signingSecret:env.STRIPE_COMMERCE_SIGNING_SECRET||config.apiKey, profile: `${config.accountId}:${config.mode}:v1` },
+      options: { apiKey: config.apiKey, signingSecret, profile: `${config.accountId}:${config.mode}:v1` },
     }] } }]
   } catch (err: any) {
     console.warn(`[PEPTECH WARN] Stripe module disabled: ${err.message}`)

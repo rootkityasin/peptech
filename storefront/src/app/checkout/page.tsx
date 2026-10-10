@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react"
 import Link from "next/link"
 import { useCart } from "@/components/cart/CartContext"
 import { useCustomer } from "@/context/CustomerContext"
-import { prepareStripeCheckout, type CheckoutSession } from "@/lib/stripe-checkout"
+import { prepareStripeCheckout, validatePromoCode, type CheckoutSession, type PromoValidationResult } from "@/lib/stripe-checkout"
 import { COUNTRIES, getCountryByName } from "@/lib/countries"
 import { EmbeddedStripeCheckout } from "@/components/checkout/EmbeddedStripeCheckout"
 import { getCustomerOrders, getCustomerAddresses } from "@/lib/customer-api"
@@ -41,7 +41,9 @@ export default function CheckoutPage() {
   const [error, setError] = useState("")
   const [embeddedSession, setEmbeddedSession] = useState<CheckoutSession | null>(null)
   const [couponCode, setCouponCode] = useState("")
-  const [couponApplied, setCouponApplied] = useState(false)
+  const [appliedPromo, setAppliedPromo] = useState<PromoValidationResult | null>(null)
+  const [validatingPromo, setValidatingPromo] = useState(false)
+  const [promoMessage, setPromoMessage] = useState<{ text: string; isError: boolean } | null>(null)
 
   // Auth Portal States (Inline Sign In / Register)
   const [authMode, setAuthMode] = useState<"signin" | "register">("signin")
@@ -224,6 +226,57 @@ export default function CheckoutPage() {
   const money = (n: number) =>
     new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(n)
 
+  const promoDiscountPounds = appliedPromo?.discount_gbp
+    ? parseFloat(appliedPromo.discount_gbp)
+    : appliedPromo?.discount_minor
+    ? appliedPromo.discount_minor / 100
+    : 0
+  const finalTotalDue = Math.max(0, subtotal - promoDiscountPounds + (shippingAvailable ? shippingCost : 0))
+
+  const handleApplyPromo = async () => {
+    if (!couponCode.trim()) {
+      setPromoMessage({ text: "Please enter a promo code.", isError: true })
+      return
+    }
+    setValidatingPromo(true)
+    setPromoMessage(null)
+    try {
+      const res = await validatePromoCode(couponCode, items, token)
+      if (res.valid && res.code) {
+        setAppliedPromo(res)
+        setPromoMessage({ text: res.message || `Promo code "${res.code}" applied.`, isError: false })
+      } else {
+        setAppliedPromo(null)
+        setPromoMessage({ text: res.message || "Invalid or inactive promo code.", isError: true })
+      }
+    } catch (err: any) {
+      setAppliedPromo(null)
+      setPromoMessage({ text: err.message || "Unable to validate promo code.", isError: true })
+    } finally {
+      setValidatingPromo(false)
+    }
+  }
+
+  const handleRemovePromo = () => {
+    setAppliedPromo(null)
+    setCouponCode("")
+    setPromoMessage(null)
+  }
+
+  // Re-verify promo when items change in the basket
+  useEffect(() => {
+    if (appliedPromo?.code) {
+      validatePromoCode(appliedPromo.code, items, token).then((res) => {
+        if (res.valid && res.code) {
+          setAppliedPromo(res)
+        } else {
+          setAppliedPromo(null)
+          setPromoMessage({ text: "Promo code removed: items no longer meet discount criteria.", isError: true })
+        }
+      }).catch(() => {})
+    }
+  }, [items])
+
   // Inline Sign-In Handler
   async function handleInlineLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -366,6 +419,7 @@ export default function CheckoutPage() {
         paymentMethod: "stripe",
         uiMode: "embedded",
         shippingOptionId,
+        promoCode: appliedPromo?.code,
       })
 
       if (session.clientSecret) {
@@ -409,7 +463,7 @@ export default function CheckoutPage() {
           <div className="pt-2">
             <p className="text-sm font-medium text-slate-400">Total due today</p>
             <h2 className="text-4xl sm:text-5xl font-extrabold text-white tracking-tight mt-1">
-              {money(subtotal + shippingCost)}
+              {money(finalTotalDue)}
             </h2>
           </div>
 
@@ -461,30 +515,40 @@ export default function CheckoutPage() {
           )}
 
           {/* Promo / Coupon Box */}
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={couponCode}
-              onChange={(e) => setCouponCode(e.target.value)}
-              placeholder="Add promo or coupon code"
-              className="flex-1 rounded-xl bg-slate-900/60 border border-slate-700/80 px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#16A6A3]"
-            />
-            <button
-              type="button"
-              onClick={() => {
-                if (couponCode.trim()) {
-                  setCouponApplied(true)
-                  setTimeout(() => setCouponApplied(false), 3000)
-                }
-              }}
-              className="rounded-xl bg-slate-800 hover:bg-slate-700 text-white px-5 py-2.5 text-xs font-semibold tracking-wide border border-slate-700 transition-colors cursor-pointer"
-            >
-              Apply
-            </button>
+          <div className="space-y-2">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={couponCode}
+                onChange={(e) => {
+                  setCouponCode(e.target.value)
+                  if (promoMessage) setPromoMessage(null)
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault()
+                    handleApplyPromo()
+                  }
+                }}
+                placeholder="Add promo or coupon code"
+                disabled={validatingPromo}
+                className="flex-1 rounded-xl bg-slate-900/60 border border-slate-700/80 px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#16A6A3] uppercase"
+              />
+              <button
+                type="button"
+                onClick={handleApplyPromo}
+                disabled={validatingPromo || !couponCode.trim()}
+                className="rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-white px-5 py-2.5 text-xs font-semibold tracking-wide border border-slate-700 transition-colors cursor-pointer"
+              >
+                {validatingPromo ? "Verifying..." : "Apply"}
+              </button>
+            </div>
+            {promoMessage && (
+              <p className={`text-xs ${promoMessage.isError ? "text-rose-400" : "text-[#00C5A0]"}`}>
+                {promoMessage.text}
+              </p>
+            )}
           </div>
-          {couponApplied && (
-            <p className="text-xs text-[#00C5A0]">Institutional promo code applied to order verification.</p>
-          )}
 
           {/* Price Breakdown */}
           <div className="space-y-2.5 pt-4 border-t border-slate-800/80 text-sm">
@@ -492,6 +556,21 @@ export default function CheckoutPage() {
               <span>Subtotal</span>
               <span className="font-semibold text-white">{money(subtotal)}</span>
             </div>
+            {appliedPromo && promoDiscountPounds > 0 && (
+              <div className="flex justify-between text-[#00C5A0]">
+                <span className="flex items-center gap-1.5">
+                  <span>Discount ({appliedPromo.code})</span>
+                  <button
+                    type="button"
+                    onClick={handleRemovePromo}
+                    className="text-slate-400 hover:text-rose-400 text-xs ml-1 underline cursor-pointer"
+                  >
+                    (remove)
+                  </button>
+                </span>
+                <span className="font-semibold">-{money(promoDiscountPounds)}</span>
+              </div>
+            )}
             <div className="flex justify-between text-slate-300">
               <span>
                 {shippingAvailable
@@ -508,7 +587,7 @@ export default function CheckoutPage() {
             </div>
             <div className="flex justify-between text-base font-bold text-white pt-3 border-t border-slate-800/80">
               <span>Total due today</span>
-              <span className="text-xl text-[#00C5A0]">{money(subtotal + shippingCost)}</span>
+              <span className="text-xl text-[#00C5A0]">{money(finalTotalDue)}</span>
             </div>
           </div>
         </div>

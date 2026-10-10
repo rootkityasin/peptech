@@ -7,8 +7,7 @@ import { recordId } from "../../../../modules/peptech-commerce/service"
 export async function GET(req: AuthenticatedMedusaRequest, res: MedusaResponse) {
   res.setHeader("Cache-Control", "no-store")
   return endpoint(res, async () => {
-    const customerId = (req.query?.customer_id as string) || req.auth_context?.actor_id || (req.body as any)?.customer_id
-    if (!customerId) return { payment_methods: [] }
+    const customerId = actor(req)
 
     const context = stripeContext()
     const ledger = commerce(req)

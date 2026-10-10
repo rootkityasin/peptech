@@ -40,7 +40,10 @@ export interface StoreProduct {
 }
 
 const DEFAULT_BACKEND_URL = "http://localhost:9000"
-const DEFAULT_PUBLISHABLE_KEY = "pk_556de0f5ea4724394f147569c8b5066ecda7a0d39bd60eb15b2550b2d5c52246"
+const publishableKey = (process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "").trim()
+if (!publishableKey && process.env.NODE_ENV === "production" && typeof window !== "undefined") {
+  console.error("[PEPTECH CRITICAL] Missing NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY environment variable.")
+}
 
 /**
  * Dynamically resolves the Medusa backend URL.
@@ -59,7 +62,7 @@ export function getMedusaBackendUrl(): string {
  */
 export const medusa = new Medusa({
   baseUrl: getMedusaBackendUrl(),
-  publishableKey: process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || DEFAULT_PUBLISHABLE_KEY,
+  publishableKey,
   debug: process.env.NODE_ENV === "development",
 })
 

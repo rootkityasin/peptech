@@ -4,10 +4,11 @@ import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
 import CommerceService, { recordId } from "../../modules/peptech-commerce/service"
 import { assertEligibility, assertProduct, discounted, fail, toMinor } from "./policy"
 import { resolveShippingOption, type ShippingOptionQuote } from "./shipping"
+import { lookupActivePromotion, calculatePromotionDiscount } from "./promotions"
 export type QuoteLine={ variant_id:string; line_id:string; name:string; sku:string; quantity:number; recurring:boolean;
   tax_code?:string;tax_lines?:any[];tax_minor?:number;stripe_price_id?:string;base_minor:number; unit_minor:number; catalog_version:string; metadata?:Record<string,any>; inventory:{id:string;quantity:number}[] }
 export type Quote={ customer_id:string;email:string;address:any;billing_address?:any;delivery_collected?:boolean;currency:"gbp";lines:QuoteLine[];shipping_minor:number;
-  total_minor:number;renewal_minor:number;region_id:string;sales_channel_id:string;location_id:string;shipping_option_id:string;shipping_option_name?:string;
+  total_minor:number;renewal_minor:number;promo_code?:string;promo_id?:string;promo_discount_minor?:number;promo_name?:string;region_id:string;sales_channel_id:string;location_id:string;shipping_option_id:string;shipping_option_name?:string;
   stripe_tax_enabled?:boolean;stripe_tax_status?:string;shipping_tax_lines?:any[];shipping_tax_minor?:number;shipping_price_id?:string;default_tax_code?:string;tax_policy:string;policy_version:string;tax_rate:number;tax_inclusive:boolean;tax_minor:number;vat_registered:boolean;bank_instructions?:any }
 export async function buildQuote(scope:any,ledger:CommerceService,customerId:string,input:any,attemptId:string):Promise<Quote> {
   input={...input,address:input.address||{country_code:input.country_code}}
@@ -55,9 +56,34 @@ export async function buildQuote(scope:any,ledger:CommerceService,customerId:str
   const recurringLines=lines.filter(l=>l.recurring)
   const recurringSubtotal=recurringLines.reduce((sum,l)=>sum+l.unit_minor*l.quantity,shipping)
   const recurringTax=recurringLines.reduce((sum,l)=>sum+taxMinor(l.unit_minor*l.quantity,tax.rate,tax.inclusive),taxMinor(shipping,tax.rate,tax.inclusive))
+
+  let promoDiscountMinor = 0
+  let promoDetails: { code?: string; id?: string; name?: string } = {}
+
+  if (input.promo_code) {
+    const promoResult = await lookupActivePromotion(input.promo_code)
+    if (!promoResult.valid || !promoResult.promotion) {
+      fail(promoResult.message || "Applied promo code is invalid or inactive", 400)
+    }
+    const promo = promoResult.promotion
+    promoDiscountMinor = calculatePromotionDiscount(
+      promo,
+      lines.map((l) => ({ unit_minor: l.unit_minor, quantity: l.quantity, recurring: l.recurring }))
+    )
+    promoDetails = {
+      code: promo.code,
+      id: promo.id,
+      name: promo.metadata?.title || promo.code,
+    }
+  }
+
+  const totalBeforePromo = subtotal + (tax.inclusive ? 0 : taxTotal)
+  const total_minor = Math.max(0, totalBeforePromo - promoDiscountMinor)
+
   return {customer_id:customerId,email:customer.email,address:input.address,currency:"gbp",lines,shipping_minor:shipping,
-    total_minor:subtotal+(tax.inclusive?0:taxTotal),
+    total_minor,
     renewal_minor:recurring?recurringSubtotal+(tax.inclusive?0:recurringTax):0,
+    promo_code:promoDetails.code,promo_id:promoDetails.id,promo_discount_minor:promoDiscountMinor,promo_name:promoDetails.name,
     region_id:policy.region_id,sales_channel_id:policy.sales_channel_id,location_id:policy.location_id,
     shipping_option_id:shippingOption.id,shipping_option_name:shippingOption.name,tax_policy:policy.tax_policy,policy_version:policy.version,
     stripe_tax_enabled:defaults?.enabled,stripe_tax_status:defaults?.status,default_tax_code:defaults?.code,tax_rate:tax.rate,tax_inclusive:tax.inclusive,tax_minor:taxTotal,vat_registered:tax.registered}

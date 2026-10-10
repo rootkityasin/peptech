@@ -12,7 +12,12 @@ export default class StripeCheckoutProvider extends AbstractPaymentProvider {
   private profile:string
   constructor(container:any,options:any) {
     super(container,options)
-    this.secret=options.signingSecret||options.apiKey;this.profile=options.profile
+    const secret = (options.signingSecret || "").trim()
+    if (!secret && process.env.NODE_ENV === "production") {
+      throw new Error("signingSecret is required for receipt attestation in production")
+    }
+    this.secret = secret || "dev_stripe_commerce_signing_secret_min_32_chars"
+    this.profile=options.profile
     this.stripe=new Stripe(options.apiKey,{apiVersion:"2025-09-30.clover" as any,maxNetworkRetries:2,timeout:15000})
   }
   private validate(data:any) {
