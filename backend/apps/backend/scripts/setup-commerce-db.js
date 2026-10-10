@@ -1,7 +1,12 @@
 const { Client } = require("pg");
 const { createHash } = require("node:crypto");
 
-const dbUrl = "postgresql://postgres.ubzoovlhbnztjwemvrwo:Peptech2026!@aws-0-eu-west-2.pooler.supabase.com:6543/postgres";
+require("dotenv").config();
+const dbUrl = process.env.DATABASE_URL;
+if (!dbUrl) {
+  console.error("DATABASE_URL environment variable is required.");
+  process.exit(1);
+}
 const client = new Client({ connectionString: dbUrl, ssl: { rejectUnauthorized: false } });
 
 function recordId(kind, ...parts) {
