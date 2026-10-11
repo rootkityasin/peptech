@@ -268,15 +268,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }, [items, loaded])
 
-  // Clear any applied promo if cart is empty
-  useEffect(() => {
-    if (loaded && items.length === 0 && appliedPromo) {
-      setAppliedPromo(null)
-      try {
-        localStorage.removeItem("peptech_applied_promo")
-      } catch {}
-    }
-  }, [items.length, loaded, appliedPromo])
+  // Clear any applied promo if user clears the cart (handled in clearCart)
+  // Preserving appliedPromo across empty carts allows visitors to click 'Apply Code' in the announcement bar before adding items
 
   // Resolve the shipping options Medusa serves for the chosen destination.
   useEffect(() => {
