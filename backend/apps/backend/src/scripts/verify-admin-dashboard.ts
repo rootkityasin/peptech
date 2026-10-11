@@ -92,7 +92,7 @@ export default async function verifyAdminDashboard({
       variantId: variant?.id,
       sku: variant?.sku,
       category: product?.categories?.[0]?.name,
-      prices: variant?.prices?.map((p: any) => `${p.currency_code.toUpperCase()} ${p.amount}`),
+      prices: (variant as any)?.prices?.map((p: any) => `${p.currency_code.toUpperCase()} ${p.amount}`),
       ledgerApproval: catalogRecord?.state === "approved" ? "APPROVED" : "PENDING",
       destinations: catalogRecord?.data?.destinations,
     },

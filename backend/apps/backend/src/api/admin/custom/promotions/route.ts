@@ -140,7 +140,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
       const promotionModule = req.scope.resolve(Modules.PROMOTION)
       const promo = await promotionModule.retrievePromotion(promotion_id)
       const newUsed = Number(promo?.used || 0) + 1
-      await promotionModule.updatePromotions({ id: promotion_id, used: newUsed })
+      await (promotionModule as any).updatePromotions({ id: promotion_id, used: newUsed } as any)
 
       return res.status(200).json({ success: true, message: `Linked order ${order_id} to promotion ${promotion_id}` })
     }
