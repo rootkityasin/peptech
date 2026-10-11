@@ -4,6 +4,7 @@ import React from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
+import { useCart } from "@/components/cart/CartContext"
 
 const FIGMA_REFILLS = [
   {
@@ -45,7 +46,8 @@ const FIGMA_REFILLS = [
 ]
 
 export function RefillsSection() {
-  const router=useRouter()
+  const router = useRouter()
+  const { autoSavings } = useCart()
   const handleAddCartridge = (_item?: unknown) => router.push("/refills")
 
   return (
@@ -154,7 +156,12 @@ export function RefillsSection() {
                     </p>
                     <div className="flex items-center justify-center gap-1 text-[11px]">
                       <span className="text-[#64748b]">Subscribe &amp; Save</span>
-                      <span className="font-bold text-[#0d7b78] bg-[#e6fffa] px-1 py-0.5 rounded text-[10px]">£{item.subPrice.toFixed(2)}</span>
+                      <span className="font-bold text-[#0d7b78] bg-[#e6fffa] px-1 py-0.5 rounded text-[10px]">
+                        £{(autoSavings.discountType === "percentage"
+                          ? Number((item.price * (1 - autoSavings.discountValue / 100)).toFixed(2))
+                          : Math.max(0, Number((item.price - autoSavings.discountValue).toFixed(2)))
+                        ).toFixed(2)}
+                      </span>
                     </div>
                   </div>
                 </Link>
@@ -219,7 +226,7 @@ export function RefillsSection() {
         <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-[8px] h-[48px] w-full flex items-center justify-center gap-[10px] px-4">
           <img src="/images/figma/5a5cf195bb5ca3a772d64cd94711197cd2748bd6.svg" alt="" className="size-[18px]" />
           <p className="font-medium text-[#0b1f3a] text-[13px] text-center">
-            Flexible subscriptions — pause, skip or cancel anytime. Save 10% on every order.
+            Flexible subscriptions — pause, skip or cancel anytime. {autoSavings.saveText} on every order.
           </p>
         </div>
 

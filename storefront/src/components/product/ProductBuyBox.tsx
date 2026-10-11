@@ -117,7 +117,7 @@ export function ProductBuyBox({
   const dynamicSubPrice = autoSavings.discountType === "percentage"
     ? Number((currentOneTimePrice * (1 - autoSavings.discountValue / 100)).toFixed(2))
     : Math.max(0, Number((currentOneTimePrice - autoSavings.discountValue).toFixed(2)))
-  const currentSubscribePrice = product?.subscribePrice ?? subscribePrice ?? dynamicSubPrice
+  const currentSubscribePrice = dynamicSubPrice
   const totalPrice = purchaseType === "subscription" ? currentSubscribePrice : currentOneTimePrice
 
   // Determine title with balanced line break matching "Complete PEPTECH®\nPen Set"
@@ -212,7 +212,7 @@ export function ProductBuyBox({
         </span>
         {purchaseType === "subscription" && (
           <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
-            10% Subscribe &amp; Save
+            {autoSavings.discountType === "percentage" ? `${autoSavings.discountValue}% Subscribe & Save` : `${autoSavings.badgeText} Subscribe & Save`}
           </span>
         )}
       </div>

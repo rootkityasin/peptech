@@ -10,13 +10,15 @@ interface VialBuyBoxProps {
 }
 
 export function VialBuyBox({ product }: VialBuyBoxProps) {
-  const { addItem, setIsDrawerOpen } = useCart()
+  const { addItem, setIsDrawerOpen, autoSavings } = useCart()
   const [purchaseType, setPurchaseType] = useState<"one-time" | "subscription">("one-time")
   const [quantity, setQuantity] = useState(1)
 
   const oneTimePrice = product.price
-  const subscribePrice = product.price
-  const activePrice = oneTimePrice
+  const subscribePrice = autoSavings.discountType === "percentage"
+    ? Number((oneTimePrice * (1 - autoSavings.discountValue / 100)).toFixed(2))
+    : Math.max(0, Number((oneTimePrice - autoSavings.discountValue).toFixed(2)))
+  const activePrice = purchaseType === "subscription" ? subscribePrice : oneTimePrice
   const totalPrice = activePrice * quantity
 
   const batchCode = `VIAL-${product.category.toUpperCase().slice(0, 3)}-2026-04A`
@@ -31,9 +33,10 @@ export function VialBuyBox({ product }: VialBuyBoxProps) {
         productHandle: product.handle,
         format: "vial",
         strength: product.categoryLabel,
-        price: product.price,
+        price: purchaseType === "subscription" ? subscribePrice : product.price,
         isSubscription: purchaseType === "subscription",
         subscriptionIntervalDays: purchaseType === "subscription" ? 28 : undefined,
+        discountPercent: autoSavings.discountType === "percentage" ? autoSavings.discountValue : undefined,
         sku: product.sku||"",
 
         image: product.image,
@@ -107,7 +110,7 @@ export function VialBuyBox({ product }: VialBuyBoxProps) {
         </span>
         {purchaseType === "subscription" && (
           <span className="text-[#64748b] text-[13px] font-medium">
-            every 28 days (save 10%)
+            every 28 days ({autoSavings.saveText.toLowerCase()})
           </span>
         )}
       </div>
@@ -176,9 +179,14 @@ export function VialBuyBox({ product }: VialBuyBoxProps) {
               </span>
             </div>
           </div>
-          <span className="font-bold text-[#0b1f3a] text-[14px]">
-            £{oneTimePrice.toFixed(2)}
-          </span>
+          <div className="flex flex-col items-end shrink-0 ml-2">
+            <span className="font-bold text-[#0b1f3a] text-[14px]">
+              £{subscribePrice.toFixed(2)}
+            </span>
+            <span className="text-[11px] font-semibold text-emerald-600">
+              {autoSavings.saveText}
+            </span>
+          </div>
         </div>
 
       </div>

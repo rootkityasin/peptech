@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react"
 import Link from "next/link"
+import { useCart } from "@/components/cart/CartContext"
 
 interface StepItem {
   number: number
@@ -102,6 +103,7 @@ function UpwardNumber({
 }
 
 export function PeptechJourney() {
+  const { autoSavings } = useCart()
   const sectionRef = useRef<HTMLElement>(null)
   const [activeStep, setActiveStep] = useState<number>(1)
   const [scrollProgress, setScrollProgress] = useState<number>(0.1)
@@ -381,7 +383,9 @@ export function PeptechJourney() {
                           }`}
                         >
                           <span className="text-[#64748b] line-clamp-1 pr-2">
-                            {step.detail}
+                            {step.number === 3
+                              ? `Quick click-in 28-day refill cartridges with ${autoSavings.discountType === "percentage" ? `${autoSavings.discountValue}%` : autoSavings.badgeText} Subscribe & Save discount.`
+                              : step.detail}
                           </span>
 
                           {step.actionLabel && step.actionHref ? (
@@ -456,7 +460,7 @@ export function PeptechJourney() {
                 <span className="text-[#16a6a3] font-bold">✓</span> Zero Single-Use Plastic Waste
               </span>
               <span className="flex items-center gap-1 text-[#0b1f3a] font-medium">
-                <span className="text-[#16a6a3] font-bold">✓</span> 10% Subscriber Savings
+                <span className="text-[#16a6a3] font-bold">✓</span> {autoSavings.text} Subscriber Savings
               </span>
             </div>
           </div>

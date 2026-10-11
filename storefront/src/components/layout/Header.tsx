@@ -10,7 +10,7 @@ import { CATALOG_PRODUCTS } from "@/data/catalog"
 
 export function Header() {
   const pathname = usePathname()
-  const { itemCount, setIsDrawerOpen } = useCart()
+  const { itemCount, setIsDrawerOpen, autoSavings } = useCart()
   const { customer, isAuthenticated } = useCustomer()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [shopMenuOpen, setShopMenuOpen] = useState(false)
@@ -307,7 +307,9 @@ export function Header() {
                         <h4 className="text-[13px] font-semibold text-[#0b1f3a] group-hover/item:text-[#16a6a3] transition-colors">
                           Refill Cartridges
                         </h4>
-                        <span className="text-[11.5px] text-[#16a6a3] font-medium">From £95 · 10% Sub Discount</span>
+                        <span className="text-[11.5px] text-[#16a6a3] font-medium">
+                          From £95 · {autoSavings.discountType === "percentage" ? `${autoSavings.discountValue}%` : autoSavings.badgeText} Sub Discount
+                        </span>
                       </div>
                       <p className="text-[11.5px] text-[#64748b] leading-normal mt-0.5">
                         Snap-in cartridges engineered exclusively for the reusable pen body.
