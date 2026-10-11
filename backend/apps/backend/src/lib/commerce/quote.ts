@@ -52,6 +52,7 @@ export type Quote = {
   tax_minor: number
   vat_registered: boolean
   bank_instructions?: any
+  free_shipping?: boolean
   promo?: {
     id: string
     code: string
@@ -223,8 +224,33 @@ export async function buildQuote(
 
   const recurring = lines.some((l) => l.recurring)
   if (recurring && !input.recurring_accepted) fail("Explicit recurring payment consent is required")
-  const shipping = shippingOption.amount_minor
-  const subtotal = lines.reduce((sum, l) => sum + l.unit_minor * l.quantity, shipping)
+
+  // Free shipping auto-waiver: Check if basket subtotal meets active threshold
+  const itemsSubtotalMinor = lines.reduce((sum, l) => sum + l.unit_minor * l.quantity, 0)
+  let freeShippingApplied = false
+  try {
+    const { data: shippingPromos = [] } = await query.graph({
+      entity: "promotion",
+      fields: ["id", "code", "status", "is_automatic", "metadata", "application_method.*"],
+      filters: {
+        status: "active",
+      },
+    })
+    const activeFreeShip = shippingPromos.find(
+      (p: any) => p.application_method?.target_type === "shipping_methods" || p.code === "FREESHIP150"
+    )
+    if (activeFreeShip && activeFreeShip.status === "active") {
+      const thresholdMinor = Math.round(Number(activeFreeShip.metadata?.threshold || 150) * 100)
+      if (itemsSubtotalMinor >= thresholdMinor) {
+        freeShippingApplied = true
+      }
+    }
+  } catch (fsErr) {
+    console.warn("[PEPTECH Quote] Free shipping query error:", fsErr)
+  }
+
+  const shipping = freeShippingApplied ? 0 : shippingOption.amount_minor
+  const subtotal = itemsSubtotalMinor + shipping
   const taxTotal = lines.reduce((sum, l) => sum + taxMinor(l.unit_minor * l.quantity, tax.rate, tax.inclusive), taxMinor(shipping, tax.rate, tax.inclusive))
   const recurringLines = lines.filter((l) => l.recurring)
   const recurringSubtotal = recurringLines.reduce((sum, l) => sum + l.unit_minor * l.quantity, shipping)
@@ -236,6 +262,7 @@ export async function buildQuote(
     currency: "gbp",
     lines,
     shipping_minor: shipping,
+    free_shipping: freeShippingApplied,
     total_minor: subtotal + (tax.inclusive ? 0 : taxTotal),
     renewal_minor: recurring ? recurringSubtotal + (tax.inclusive ? 0 : recurringTax) : 0,
     region_id: policy.region_id,

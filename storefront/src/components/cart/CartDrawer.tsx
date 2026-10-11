@@ -18,6 +18,7 @@ export function CartDrawer() {
     finalSubtotal,
     autoSavings,
     appliedPromo,
+    freeShipping,
   } = useCart()
 
   const itemsTotal = subtotal
@@ -103,35 +104,43 @@ export function CartDrawer() {
         </div>
 
         {/* Free Shipping Dynamic Progress Indicator */}
-        {items.length > 0 && (
-          <div className="w-full px-6 py-3 bg-[#f8fafc] border-b border-[#e2e8f0] space-y-1.5 shrink-0">
-            <div className="flex items-center justify-between text-[11.5px]">
-              <span className="font-medium text-[#0b1f3a]">
-                {itemsTotal >= 150 ? (
-                  <span className="text-emerald-700 font-semibold flex items-center gap-1.5">
-                    <span className="text-emerald-600 font-bold">✓</span>
-                    <span>Free Royal Mail Tracked 24 Unlocked!</span>
-                  </span>
-                ) : (
-                  <span>
-                    Add <strong className="text-[#16a6a3]">£{(150 - itemsTotal).toFixed(2)}</strong> more for Free Tracked 24 Shipping
-                  </span>
-                )}
-              </span>
-              <span className="text-[11px] font-semibold text-[#94a3b8]">
-                {Math.min(100, Math.round((itemsTotal / 150) * 100))}%
-              </span>
+        {freeShipping?.enabled && items.length > 0 && (() => {
+          const threshold = freeShipping?.threshold || 150
+          const isFreeUnlocked = itemsTotal >= threshold
+          const remaining = Math.max(0, threshold - itemsTotal)
+          const progressPercent = Math.min(100, Math.round((itemsTotal / threshold) * 100))
+          const progressWidth = Math.min(100, Math.max(6, (itemsTotal / threshold) * 100))
+
+          return (
+            <div className="w-full px-6 py-3 bg-[#f8fafc] border-b border-[#e2e8f0] space-y-1.5 shrink-0">
+              <div className="flex items-center justify-between text-[11.5px]">
+                <span className="font-medium text-[#0b1f3a]">
+                  {isFreeUnlocked ? (
+                    <span className="text-emerald-700 font-semibold flex items-center gap-1.5">
+                      <span className="text-emerald-600 font-bold">✓</span>
+                      <span>Free Royal Mail Tracked 24 Unlocked!</span>
+                    </span>
+                  ) : (
+                    <span>
+                      Add <strong className="text-[#16a6a3]">£{remaining.toFixed(2)}</strong> more for Free Tracked 24 Shipping
+                    </span>
+                  )}
+                </span>
+                <span className="text-[11px] font-semibold text-[#94a3b8]">
+                  {progressPercent}%
+                </span>
+              </div>
+              <div className="w-full h-1.5 bg-[#e2e8f0] rounded-full overflow-hidden">
+                <div
+                  className={`h-full transition-all duration-500 ease-out rounded-full ${
+                    isFreeUnlocked ? "bg-emerald-500" : "bg-[#16a6a3]"
+                  }`}
+                  style={{ width: `${progressWidth}%` }}
+                />
+              </div>
             </div>
-            <div className="w-full h-1.5 bg-[#e2e8f0] rounded-full overflow-hidden">
-              <div
-                className={`h-full transition-all duration-500 ease-out rounded-full ${
-                  itemsTotal >= 150 ? "bg-emerald-500" : "bg-[#16a6a3]"
-                }`}
-                style={{ width: `${Math.min(100, Math.max(6, (itemsTotal / 150) * 100))}%` }}
-              />
-            </div>
-          </div>
-        )}
+          )
+        })()}
 
         {/* 02 Drawer Body - Items List */}
         <div

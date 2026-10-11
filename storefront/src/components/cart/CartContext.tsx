@@ -59,6 +59,20 @@ export interface FeaturedPromoConfig {
   announcement: string
 }
 
+export interface FreeShippingConfig {
+  enabled: boolean
+  threshold: number
+  title: string
+  code: string
+}
+
+export const DEFAULT_FREE_SHIPPING: FreeShippingConfig = {
+  enabled: true,
+  threshold: 150,
+  title: "Free Tracked 24 Shipping over £150",
+  code: "FREESHIP150",
+}
+
 export interface CartItem {
   variantId?: string
   productHandle?: string
@@ -99,6 +113,7 @@ interface CartContextType {
   removePromoCode: () => void
   autoSavings: AutoSavingsConfig
   featuredPromo: FeaturedPromoConfig | null
+  freeShipping: FreeShippingConfig
   shippingCost: number
   total: number
   destination: "UK" | "INTL"
@@ -130,6 +145,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [appliedPromo, setAppliedPromo] = useState<AppliedPromotion | null>(null)
   const [autoSavings, setAutoSavings] = useState<AutoSavingsConfig>(DEFAULT_AUTO_SAVINGS)
   const [featuredPromo, setFeaturedPromo] = useState<FeaturedPromoConfig | null>(null)
+  const [freeShipping, setFreeShipping] = useState<FreeShippingConfig>(DEFAULT_FREE_SHIPPING)
 
   const setDestination = (dest: "UK" | "INTL") => {
     setDestinationState(dest)
@@ -168,6 +184,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         const parsedFeatured = JSON.parse(savedFeatured)
         if (parsedFeatured && parsedFeatured.code) {
           setFeaturedPromo(parsedFeatured)
+        }
+      }
+      const savedFreeShipping = localStorage.getItem("peptech_free_shipping")
+      if (savedFreeShipping) {
+        const parsedFree = JSON.parse(savedFreeShipping)
+        if (parsedFree && parsedFree.threshold !== undefined) {
+          setFreeShipping(parsedFree)
         }
       }
     } catch {
@@ -244,6 +267,19 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             setFeaturedPromo(null)
             try {
               localStorage.removeItem("peptech_featured_promo")
+            } catch {}
+          }
+
+          if (data?.success && data?.free_shipping) {
+            const freshFreeShipping: FreeShippingConfig = {
+              enabled: Boolean(data.free_shipping.enabled),
+              threshold: Number(data.free_shipping.threshold || 150),
+              title: data.free_shipping.title || "Free Tracked 24 Shipping",
+              code: data.free_shipping.code || "FREESHIP150",
+            }
+            setFreeShipping(freshFreeShipping)
+            try {
+              localStorage.setItem("peptech_free_shipping", JSON.stringify(freshFreeShipping))
             } catch {}
           }
         }
@@ -462,7 +498,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   // configured for this destination and checkout will refuse to price it.
   const selectedShippingOption = shippingOptions.find((option) => option.id === shippingOptionId) || null
   const shippingAvailable = shippingLoaded && shippingOptions.length > 0
-  const shippingCost = items.length > 0 && selectedShippingOption ? selectedShippingOption.amount : 0
+  const isFreeShippingUnlocked = freeShipping?.enabled && finalSubtotal >= (freeShipping?.threshold || 150)
+  const shippingCost = items.length > 0 && selectedShippingOption
+    ? (isFreeShippingUnlocked ? 0 : selectedShippingOption.amount)
+    : 0
   const total = finalSubtotal + shippingCost
 
   const currency = country === "United Kingdom" ? "GBP" : (["Germany", "France", "Italy", "Spain", "Netherlands", "Ireland", "Sweden", "Denmark", "Belgium", "Austria", "Finland", "Portugal", "Poland", "Czech Republic"].includes(country) ? "EUR" : "USD")
@@ -491,6 +530,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         removePromoCode,
         autoSavings,
         featuredPromo,
+        freeShipping,
         shippingCost,
         total,
         destination,

@@ -75,14 +75,19 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
       autoPromos = fallbackResult.data || []
     }
 
-    const autoPromo = autoPromos[0]
+    // Filter autoPromos to item/order promotions so shipping promos do not overwrite subscription auto-savings
+    const itemAutoPromo = autoPromos.find(
+      (p: any) => p.application_method?.target_type !== "shipping_methods"
+    ) || autoPromos.find((p: any) => p.code === "AUTODIS") || autoPromos[0]
+
+    const autoPromo = itemAutoPromo
     let autoDiscountType = "percentage"
     let autoDiscountValue = 10
     let autoCurrencyCode = "gbp"
     let autoPromoCode = "AUTODIS"
     let autoPromoId = "promo_default"
 
-    if (autoPromo) {
+    if (autoPromo && autoPromo.application_method?.target_type !== "shipping_methods") {
       autoPromoId = autoPromo.id
       autoPromoCode = autoPromo.code
       const method = autoPromo.application_method
@@ -107,6 +112,37 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
       : `Save ${autoCurrencySymbol}${autoDiscountValue}`
 
     const autoFullText = `Every 28 days · ${autoText}`
+
+    // Free Shipping Promotion (target_type: "shipping_methods" or code: "FREESHIP150")
+    let freeShippingPromo = autoPromos.find(
+      (p: any) => p.application_method?.target_type === "shipping_methods" || p.code === "FREESHIP150"
+    )
+
+    if (!freeShippingPromo) {
+      try {
+        const { data: fsPromos = [] } = await query.graph({
+          entity: "promotion",
+          fields: [
+            "id",
+            "code",
+            "type",
+            "status",
+            "is_automatic",
+            "metadata",
+            "application_method.*",
+          ],
+          filters: {
+            code: "FREESHIP150",
+          },
+        })
+        freeShippingPromo = fsPromos[0]
+      } catch {}
+    }
+
+    const freeShippingEnabled = freeShippingPromo ? freeShippingPromo.status === "active" : true
+    const freeShippingThreshold = Number(freeShippingPromo?.metadata?.threshold || 150)
+    const freeShippingTitle = freeShippingPromo?.metadata?.title || `Free Tracked 24 Shipping over £${freeShippingThreshold}`
+    const freeShippingCode = freeShippingPromo?.code || "FREESHIP150"
 
     // 2. Fetch active manual promotion codes (is_automatic: false) to feature on storefront
     const { data: manualPromos = [] } = await query.graph({
@@ -189,6 +225,12 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
         save_text: autoSaveText,
       },
       featured_promo: featuredPromo,
+      free_shipping: {
+        enabled: freeShippingEnabled,
+        threshold: freeShippingThreshold,
+        title: freeShippingTitle,
+        code: freeShippingCode,
+      },
     })
   } catch (err: any) {
     console.error("[PEPTECH ACTIVE PROMOTIONS API ERROR]:", err)
@@ -217,6 +259,12 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
         badge_text: "10% Off",
         save_text: "Save 10%",
         announcement: "Use code RESEARCH10 for 10% off one-time research orders",
+      },
+      free_shipping: {
+        enabled: true,
+        threshold: 150,
+        title: "Free Tracked 24 Shipping over £150",
+        code: "FREESHIP150",
       },
     })
   }

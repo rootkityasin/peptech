@@ -82,6 +82,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
 
       totalDiscountedOrders += orders.length
 
+      const isShipping = method.target_type === "shipping_methods" || p.code === "FREESHIP150"
       return {
         id: p.id,
         code: p.code,
@@ -90,15 +91,19 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
         is_automatic: Boolean(p.is_automatic),
         status: p.status,
         discount_value: Number(method.value || 10),
-        discount_type: method.type || "percentage",
+        discount_type: isShipping ? "shipping" : (method.type || "percentage"),
+        target_type: method.target_type || "items",
         allocation: method.allocation || "across",
         currency_code: method.currency_code || "gbp",
         used_count: orders.length || p.used || 0,
+        metadata: p.metadata || {},
         orders,
         created_at: p.created_at,
         updated_at: p.updated_at,
       }
     })
+
+    const freeShipRecord = enrichedPromotions.find((p: any) => p.code === "FREESHIP150" || p.discount_type === "shipping")
 
     return res.status(200).json({
       success: true,
@@ -106,6 +111,13 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
         total_promotions: enrichedPromotions.length,
         active_promotions: enrichedPromotions.filter((p: any) => p.status === "active").length,
         total_orders_discounted: totalDiscountedOrders,
+        free_shipping: {
+          id: freeShipRecord?.id || "promo_01M4N0Z5NDS97Y18JSA5T7YBZ3",
+          code: "FREESHIP150",
+          enabled: freeShipRecord ? freeShipRecord.status === "active" : true,
+          threshold: Number(freeShipRecord?.metadata?.threshold || 150),
+          title: freeShipRecord?.metadata?.title || "Free Tracked 24 Shipping over £150",
+        },
       },
       promotions: enrichedPromotions,
     })
@@ -115,10 +127,57 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
   }
 }
 
-// POST /admin/custom/promotions - Manually link an order to a promotion or toggle promotion status
+// POST /admin/custom/promotions - Manually link an order to a promotion, update free shipping, or toggle promotion status
 export async function POST(req: MedusaRequest, res: MedusaResponse) {
   try {
-    const { action, promotion_id, order_id, status } = req.body as any
+    const { action, promotion_id, order_id, status, threshold, enabled, title } = req.body as any
+
+    if (action === "update_free_shipping") {
+      const promotionModule = req.scope.resolve(Modules.PROMOTION)
+      const query = req.scope.resolve(ContainerRegistrationKeys.QUERY) || req.scope.resolve("query")
+
+      const { data: promos = [] } = await query.graph({
+        entity: "promotion",
+        fields: ["id", "code", "status", "metadata", "application_method.*", "rules.*"],
+        filters: { code: "FREESHIP150" },
+      })
+
+      const promoId = promos[0]?.id || promotion_id || "promo_01M4N0Z5NDS97Y18JSA5T7YBZ3"
+      const numThreshold = Number(threshold || 150)
+      const isEnabled = enabled !== undefined ? Boolean(enabled) : true
+      const displayTitle = title || `Free Tracked 24 Shipping over £${numThreshold}`
+
+      await (promotionModule as any).updatePromotions({
+        id: promoId,
+        status: isEnabled ? "active" : "disabled",
+        metadata: {
+          title: displayTitle,
+          threshold: numThreshold,
+        },
+      })
+
+      if (promos[0]?.rules?.[0]?.id) {
+        try {
+          await (promotionModule as any).updatePromotionRules([
+            {
+              id: promos[0].rules[0].id,
+              values: [String(numThreshold)],
+            },
+          ])
+        } catch {}
+      }
+
+      return res.status(200).json({
+        success: true,
+        free_shipping: {
+          id: promoId,
+          code: "FREESHIP150",
+          enabled: isEnabled,
+          threshold: numThreshold,
+          title: displayTitle,
+        },
+      })
+    }
 
     if (action === "toggle_status" && promotion_id) {
       const promotionModule = req.scope.resolve(Modules.PROMOTION)
