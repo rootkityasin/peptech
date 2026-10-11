@@ -10,7 +10,14 @@ import { CATALOG_PRODUCTS } from "@/data/catalog"
 
 export function Header() {
   const pathname = usePathname()
-  const { itemCount, setIsDrawerOpen, autoSavings } = useCart()
+  const {
+    itemCount,
+    setIsDrawerOpen,
+    autoSavings,
+    featuredPromo,
+    applyPromoCode,
+    appliedPromo,
+  } = useCart()
   const { customer, isAuthenticated } = useCustomer()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [shopMenuOpen, setShopMenuOpen] = useState(false)
@@ -129,8 +136,35 @@ export function Header() {
       {/* 01 Top Announcement Bar - Figma Node 2:29210 */}
       <div className="w-full bg-[#0e2a47] text-white text-[12px] h-[38px] flex items-center px-4 sm:px-8 border-b border-white/10 z-50 relative print:hidden">
         <div className="max-w-[1240px] w-full mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="font-normal text-[#e2e8f0]">Precision Today. Better Tomorrow.</span>
+          <div className="flex items-center gap-2 overflow-hidden text-ellipsis whitespace-nowrap">
+            {featuredPromo ? (
+              <div className="flex items-center gap-2">
+                <span className="bg-[#16a6a3]/25 text-[#00c5a0] text-[10px] font-bold px-1.5 py-0.5 rounded tracking-wide uppercase border border-[#16a6a3]/40">
+                  Promo
+                </span>
+                <span className="font-normal text-[#e2e8f0] truncate text-[11.5px] sm:text-[12px]">
+                  Use code <strong className="font-bold text-white tracking-wider">{featuredPromo.code}</strong> for {featuredPromo.badgeText} one-time research orders
+                </span>
+                {appliedPromo?.code === featuredPromo.code ? (
+                  <span className="text-[11px] font-semibold text-emerald-400 flex items-center gap-1 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-500/30 shrink-0">
+                    ✓ Applied
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await applyPromoCode(featuredPromo.code)
+                      setIsDrawerOpen(true)
+                    }}
+                    className="text-[11px] font-semibold text-[#16a6a3] hover:text-white underline underline-offset-2 ml-1 transition-colors cursor-pointer shrink-0"
+                  >
+                    Apply Code →
+                  </button>
+                )}
+              </div>
+            ) : (
+              <span className="font-normal text-[#e2e8f0]">Precision Today. Better Tomorrow.</span>
+            )}
           </div>
           <div className="flex items-center gap-[16px] text-[#e2e8f0] text-[12px] font-normal shrink-0">
             <Link href="/how-it-works" className="hover:text-white transition-colors hidden sm:inline">

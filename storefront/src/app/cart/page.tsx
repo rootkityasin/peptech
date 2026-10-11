@@ -11,12 +11,15 @@ export default function CartPage() {
     removeItem,
     updateQuantity,
     subtotal,
+    subscriptionSavings,
     promoDiscount,
+    totalSavings,
     finalSubtotal,
     appliedPromo,
     applyPromoCode,
     removePromoCode,
     autoSavings,
+    featuredPromo,
     destination,
     setDestination,
     shippingCost,
@@ -253,32 +256,57 @@ export default function CartPage() {
                     </button>
                   </div>
                 ) : (
-                  <form onSubmit={handleApplyPromo} className="space-y-2">
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        placeholder="Enter promo code"
-                        value={promoInput}
-                        onChange={(e) => {
-                          setPromoInput(e.target.value)
-                          if (promoError) setPromoError("")
-                        }}
-                        className="w-full px-3.5 py-2 rounded-xl border border-[#e2e8f0] text-xs focus:outline-hidden focus:border-[#16a6a3]"
-                      />
-                      <button
-                        type="submit"
-                        disabled={promoLoading || !promoInput.trim()}
-                        className="px-4 py-2 rounded-xl bg-[#0b1f3a] hover:bg-[#16a6a3] text-white text-xs font-bold transition-colors shrink-0 disabled:opacity-50 cursor-pointer"
-                      >
-                        {promoLoading ? "Applying..." : "Apply"}
-                      </button>
-                    </div>
-                    {promoError && (
-                      <p className="text-[11px] text-red-500 font-semibold">
-                        {promoError}
-                      </p>
+                  <div className="space-y-2">
+                    {featuredPromo && !appliedPromo && (
+                      <div className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-[#0b1f3a]">
+                        <div className="flex items-center gap-2 truncate">
+                          <span className="bg-[#16a6a3] text-white text-[10px] font-bold px-1.5 py-0.5 rounded">CODE</span>
+                          <span className="truncate">Active promo: <strong>{featuredPromo.code}</strong> ({featuredPromo.badgeText})</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            setPromoLoading(true)
+                            setPromoError("")
+                            const res = await applyPromoCode(featuredPromo.code)
+                            setPromoLoading(false)
+                            if (!res.success) {
+                              setPromoError(res.message || "Failed to apply promo.")
+                            }
+                          }}
+                          className="text-[#16a6a3] hover:underline font-bold shrink-0 ml-2 cursor-pointer"
+                        >
+                          Apply →
+                        </button>
+                      </div>
                     )}
-                  </form>
+                    <form onSubmit={handleApplyPromo} className="space-y-2">
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          placeholder="Enter promo code"
+                          value={promoInput}
+                          onChange={(e) => {
+                            setPromoInput(e.target.value)
+                            if (promoError) setPromoError("")
+                          }}
+                          className="w-full px-3.5 py-2 rounded-xl border border-[#e2e8f0] text-xs focus:outline-hidden focus:border-[#16a6a3]"
+                        />
+                        <button
+                          type="submit"
+                          disabled={promoLoading || !promoInput.trim()}
+                          className="px-4 py-2 rounded-xl bg-[#0b1f3a] hover:bg-[#16a6a3] text-white text-xs font-bold transition-colors shrink-0 disabled:opacity-50 cursor-pointer"
+                        >
+                          {promoLoading ? "Applying..." : "Apply"}
+                        </button>
+                      </div>
+                      {promoError && (
+                        <p className="text-[11px] text-red-500 font-semibold">
+                          {promoError}
+                        </p>
+                      )}
+                    </form>
+                  </div>
                 )}
 
                 {/* Pricing Calculation Rows */}
@@ -288,10 +316,27 @@ export default function CartPage() {
                     <span className="text-[#0b1f3a] font-semibold">£{subtotal.toFixed(2)}</span>
                   </div>
 
+                  {/* Automatic Subscribe & Save Auto-Savings */}
+                  {subscriptionSavings > 0 && (
+                    <div className="flex justify-between text-emerald-600 font-semibold">
+                      <span>Subscribe &amp; Save ({autoSavings.text})</span>
+                      <span>-£{subscriptionSavings.toFixed(2)}</span>
+                    </div>
+                  )}
+
+                  {/* Manual Promotional Code Discount */}
                   {appliedPromo && promoDiscount > 0 && (
                     <div className="flex justify-between text-emerald-600 font-semibold">
-                      <span>Promotional Discount ({appliedPromo.code})</span>
+                      <span>Promo Code ({appliedPromo.code})</span>
                       <span>-£{promoDiscount.toFixed(2)}</span>
+                    </div>
+                  )}
+
+                  {/* Combined Total Savings Indicator */}
+                  {totalSavings > 0 && (
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-lg px-2.5 py-1.5 flex justify-between items-center text-emerald-800 font-bold text-[11px]">
+                      <span>Total Savings Applied</span>
+                      <span>£{totalSavings.toFixed(2)}</span>
                     </div>
                   )}
 

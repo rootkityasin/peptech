@@ -13,12 +13,15 @@ export default function CheckoutPage() {
   const {
     items,
     subtotal,
+    subscriptionSavings,
     promoDiscount,
+    totalSavings,
     finalSubtotal,
     appliedPromo,
     applyPromoCode,
     removePromoCode,
     autoSavings,
+    featuredPromo,
     shippingCost,
     country,
     setCountry,
@@ -486,7 +489,32 @@ export default function CheckoutPage() {
               </button>
             </div>
           ) : (
-            <div className="space-y-1.5">
+            <div className="space-y-2">
+              {featuredPromo && !appliedPromo && (
+                <div className="rounded-xl bg-slate-900/60 border border-slate-700/60 p-2.5 flex items-center justify-between">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="bg-[#16A6A3] text-white text-[10px] font-bold px-1.5 py-0.5 rounded">CODE</span>
+                    <span className="text-xs text-slate-300 truncate">
+                      Active promo: <strong className="text-white">{featuredPromo.code}</strong> ({featuredPromo.badgeText})
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setCouponLoading(true)
+                      setCouponError("")
+                      const res = await applyPromoCode(featuredPromo.code)
+                      setCouponLoading(false)
+                      if (!res.success) {
+                        setCouponError(res.message || "Failed to apply code.")
+                      }
+                    }}
+                    className="text-xs text-[#00C5A0] hover:underline font-semibold shrink-0 ml-2 cursor-pointer"
+                  >
+                    Apply →
+                  </button>
+                </div>
+              )}
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -530,12 +558,31 @@ export default function CheckoutPage() {
               <span>Subtotal</span>
               <span className="font-semibold text-white">{money(subtotal)}</span>
             </div>
+
+            {/* Automatic Subscribe & Save Auto-Savings */}
+            {subscriptionSavings > 0 && (
+              <div className="flex justify-between text-[#00C5A0]">
+                <span>Subscribe &amp; Save ({autoSavings.text})</span>
+                <span className="font-semibold">-{money(subscriptionSavings)}</span>
+              </div>
+            )}
+
+            {/* Manual Promotional Code Discount */}
             {appliedPromo && promoDiscount > 0 && (
               <div className="flex justify-between text-[#00C5A0]">
-                <span>Promotional Discount ({appliedPromo.code})</span>
+                <span>Promo Code ({appliedPromo.code})</span>
                 <span className="font-semibold">-{money(promoDiscount)}</span>
               </div>
             )}
+
+            {/* Combined Total Savings Indicator */}
+            {totalSavings > 0 && (
+              <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/30 px-3 py-1.5 flex justify-between items-center text-xs text-emerald-300 font-bold">
+                <span>Total Savings Applied</span>
+                <span>{money(totalSavings)}</span>
+              </div>
+            )}
+
             <div className="flex justify-between text-slate-300">
               <span>
                 {shippingAvailable

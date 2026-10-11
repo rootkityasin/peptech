@@ -30,7 +30,13 @@ export async function POST(
   applyCors(req, res)
   res.setHeader("Cache-Control", "no-store")
   try {
-    const { code, subtotal, currency_code } = req.validatedBody || (req.body as any) || {}
+    const {
+      code,
+      subtotal,
+      one_time_subtotal,
+      has_subscription_items,
+      currency_code,
+    } = req.validatedBody || (req.body as any) || {}
 
     if (!code || typeof code !== "string" || !code.trim()) {
       return res.status(400).json({ valid: false, message: "Please provide a valid promotional code." })
@@ -64,6 +70,15 @@ export async function POST(
       return res.status(404).json({ valid: false, message: "Invalid or inactive promotional code." })
     }
 
+    // Guard: If code is automatic, alert user that it is already active without entering a code
+    if (promo.is_automatic) {
+      return res.status(200).json({
+        valid: false,
+        is_automatic: true,
+        message: `Promotion code '${promo.code}' is automatic and already applied to qualifying subscription orders without entering a code.`,
+      })
+    }
+
     // Check redemption limits
     if (promo.limit !== null && promo.limit !== undefined && Number(promo.used || 0) >= Number(promo.limit)) {
       return res.status(400).json({ valid: false, message: "This promotional code has reached its maximum redemptions." })
@@ -72,16 +87,31 @@ export async function POST(
     const method = promo.application_method
     const discountType = method?.type || "percentage"
     const discountValue = Number(method?.value || 0)
-    const numericSubtotal = Math.max(0, Number(subtotal) || 0)
+
+    // Stacking rule: Manual promo codes apply strictly to one-time purchase items
+    const parsedOneTimeSubtotal = Number(one_time_subtotal)
+    const parsedSubtotal = Number(subtotal) || 0
+
+    // Determine target subtotal for one-time orders
+    const targetSubtotal = !isNaN(parsedOneTimeSubtotal) && parsedOneTimeSubtotal >= 0
+      ? parsedOneTimeSubtotal
+      : parsedSubtotal
+
+    if (has_subscription_items && targetSubtotal <= 0) {
+      return res.status(200).json({
+        valid: false,
+        message: `Promo code '${promo.code}' applies to one-time purchase items. Your cart contains subscription items with automatic 28-day Subscribe & Save pricing.`,
+      })
+    }
 
     let discountAmount = 0
     if (discountType === "percentage") {
-      discountAmount = Number(((numericSubtotal * discountValue) / 100).toFixed(2))
+      discountAmount = Number(((targetSubtotal * discountValue) / 100).toFixed(2))
     } else if (discountType === "fixed") {
-      discountAmount = Math.min(discountValue, numericSubtotal)
+      discountAmount = Math.min(discountValue, targetSubtotal)
     }
 
-    const title = promo.metadata?.title || (promo.code === "RESEARCH10" ? "Institutional Research Discount (10% Off)" : promo.code)
+    const title = promo.metadata?.title || (promo.code === "RESEARCH10" ? "Institutional Research Discount (10% Off)" : `Promo Code ${promo.code}`)
 
     return res.status(200).json({
       valid: true,
@@ -93,6 +123,7 @@ export async function POST(
         discount_value: discountValue,
         discount_amount: discountAmount,
         currency_code: method?.currency_code || currency_code || "gbp",
+        applied_to: "one_time",
       },
     })
   } catch (err: any) {

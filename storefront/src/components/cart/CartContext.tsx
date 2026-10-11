@@ -46,6 +46,19 @@ export const DEFAULT_AUTO_SAVINGS: AutoSavingsConfig = {
   saveText: "Save 10%",
 }
 
+export interface FeaturedPromoConfig {
+  id: string
+  code: string
+  title: string
+  isAutomatic: boolean
+  discountType: "percentage" | "fixed"
+  discountValue: number
+  currencyCode: string
+  badgeText: string
+  saveText: string
+  announcement: string
+}
+
 export interface CartItem {
   variantId?: string
   productHandle?: string
@@ -75,12 +88,17 @@ interface CartContextType {
   setIsDrawerOpen: (open: boolean) => void
   itemCount: number
   subtotal: number
+  oneTimeSubtotal: number
+  subscriptionSubtotal: number
+  subscriptionSavings: number
   promoDiscount: number
+  totalSavings: number
   finalSubtotal: number
   appliedPromo: AppliedPromotion | null
   applyPromoCode: (code: string) => Promise<{ success: boolean; message?: string }>
   removePromoCode: () => void
   autoSavings: AutoSavingsConfig
+  featuredPromo: FeaturedPromoConfig | null
   shippingCost: number
   total: number
   destination: "UK" | "INTL"
@@ -111,6 +129,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [shippingLoaded, setShippingLoaded] = useState(false)
   const [appliedPromo, setAppliedPromo] = useState<AppliedPromotion | null>(null)
   const [autoSavings, setAutoSavings] = useState<AutoSavingsConfig>(DEFAULT_AUTO_SAVINGS)
+  const [featuredPromo, setFeaturedPromo] = useState<FeaturedPromoConfig | null>(null)
 
   const setDestination = (dest: "UK" | "INTL") => {
     setDestinationState(dest)
@@ -144,16 +163,23 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           setAutoSavings(parsedAuto)
         }
       }
+      const savedFeatured = localStorage.getItem("peptech_featured_promo")
+      if (savedFeatured) {
+        const parsedFeatured = JSON.parse(savedFeatured)
+        if (parsedFeatured && parsedFeatured.code) {
+          setFeaturedPromo(parsedFeatured)
+        }
+      }
     } catch {
       // ignore
     }
     setLoaded(true)
   }, [])
 
-  // Fetch dynamic automatic promotion from admin panel
+  // Fetch dynamic automatic and manual promotions from backend
   useEffect(() => {
     let cancelled = false
-    const fetchAutoSavings = async () => {
+    const fetchPromotions = async () => {
       try {
         const base = getBackendUrl()
         const pubKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "pk_556de0f5ea4724394f147569c8b5066ecda7a0d39bd60eb15b2550b2d5c52246"
@@ -163,19 +189,23 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
         let res: Response | null = null
         try {
-          res = await fetch(`${base}/store/custom/promotions/auto-savings`, { headers })
+          res = await fetch(`${base}/store/custom/promotions/active`, { headers })
         } catch (directErr) {
           if (base) {
             try {
-              res = await fetch("/store/custom/promotions/auto-savings", { headers })
-            } catch {}
+              res = await fetch("/store/custom/promotions/active", { headers })
+            } catch {
+              try {
+                res = await fetch(`${base}/store/custom/promotions/auto-savings`, { headers })
+              } catch {}
+            }
           }
         }
 
         if (res && res.ok && !cancelled) {
           const data = await res.json()
           if (data?.success && data?.auto_savings) {
-            const fresh: AutoSavingsConfig = {
+            const freshAuto: AutoSavingsConfig = {
               id: data.auto_savings.id || "promo_default",
               code: data.auto_savings.code || "AUTODIS",
               isAutomatic: Boolean(data.auto_savings.is_automatic),
@@ -187,18 +217,42 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
               badgeText: data.auto_savings.badge_text || "10% Off",
               saveText: data.auto_savings.save_text || "Save 10%",
             }
-            setAutoSavings(fresh)
+            setAutoSavings(freshAuto)
             try {
-              localStorage.setItem("peptech_auto_savings", JSON.stringify(fresh))
+              localStorage.setItem("peptech_auto_savings", JSON.stringify(freshAuto))
+            } catch {}
+          }
+
+          if (data?.success && data?.featured_promo) {
+            const freshFeatured: FeaturedPromoConfig = {
+              id: data.featured_promo.id,
+              code: data.featured_promo.code,
+              title: data.featured_promo.title,
+              isAutomatic: false,
+              discountType: data.featured_promo.discount_type || "percentage",
+              discountValue: Number(data.featured_promo.discount_value || 10),
+              currencyCode: data.featured_promo.currency_code || "gbp",
+              badgeText: data.featured_promo.badge_text || "10% Off",
+              saveText: data.featured_promo.save_text || "Save 10%",
+              announcement: data.featured_promo.announcement || `Use code ${data.featured_promo.code} for discount on one-time orders`,
+            }
+            setFeaturedPromo(freshFeatured)
+            try {
+              localStorage.setItem("peptech_featured_promo", JSON.stringify(freshFeatured))
+            } catch {}
+          } else if (data?.success && data?.featured_promo === null) {
+            setFeaturedPromo(null)
+            try {
+              localStorage.removeItem("peptech_featured_promo")
             } catch {}
           }
         }
       } catch {
-        // Keep existing autoSavings on fetch failure
+        // Keep existing configurations on fetch failure
       }
     }
 
-    fetchAutoSavings()
+    fetchPromotions()
     return () => {
       cancelled = true
     }
@@ -304,20 +358,42 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const itemCount = items.reduce((acc, i) => acc + i.quantity, 0)
   const subtotal = items.reduce((acc, i) => acc + i.price * i.quantity, 0)
 
-  // Calculate dynamic promotional discount - ONLY when user enters a promo code
+  // Explicit separation: One-time items vs Subscription items
+  const oneTimeSubtotal = items
+    .filter((i) => !i.isSubscription)
+    .reduce((acc, i) => acc + i.price * i.quantity, 0)
+
+  const subscriptionSubtotal = items
+    .filter((i) => i.isSubscription)
+    .reduce((acc, i) => acc + i.price * i.quantity, 0)
+
+  // Compute exact Subscribe & Save automatic discount amount from base catalog price
+  const subscriptionSavings = items
+    .filter((i) => i.isSubscription)
+    .reduce((acc, i) => {
+      const discountPct = i.discountPercent || (autoSavings.discountType === "percentage" ? autoSavings.discountValue : 10)
+      if (discountPct > 0 && discountPct < 100) {
+        const fullPrice = i.price / (1 - discountPct / 100)
+        return acc + (fullPrice - i.price) * i.quantity
+      }
+      return acc
+    }, 0)
+
+  // Calculate promotional discount strictly applied to one-time purchase items
   const promoDiscount = React.useMemo(() => {
     if (!appliedPromo) return 0
-    if (subtotal <= 0) return 0
+    if (oneTimeSubtotal <= 0) return 0
 
     if (appliedPromo.discountType === "percentage") {
-      return Number(((subtotal * appliedPromo.discountValue) / 100).toFixed(2))
+      return Number(((oneTimeSubtotal * appliedPromo.discountValue) / 100).toFixed(2))
     }
     if (appliedPromo.discountType === "fixed") {
-      return Math.min(appliedPromo.discountValue, subtotal)
+      return Math.min(appliedPromo.discountValue, oneTimeSubtotal)
     }
     return 0
-  }, [subtotal, appliedPromo])
+  }, [oneTimeSubtotal, appliedPromo])
 
+  const totalSavings = Number((subscriptionSavings + promoDiscount).toFixed(2))
   const finalSubtotal = Math.max(0, subtotal - promoDiscount)
 
   const applyPromoCode = async (code: string): Promise<{ success: boolean; message?: string }> => {
@@ -328,6 +404,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     const payload = JSON.stringify({
       code: code.trim(),
       subtotal,
+      one_time_subtotal: oneTimeSubtotal,
+      has_subscription_items: items.some((i) => i.isSubscription),
       currency_code: "gbp",
     })
 
@@ -409,12 +487,17 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         setIsDrawerOpen,
         itemCount,
         subtotal,
+        oneTimeSubtotal,
+        subscriptionSubtotal,
+        subscriptionSavings,
         promoDiscount,
+        totalSavings,
         finalSubtotal,
         appliedPromo,
         applyPromoCode,
         removePromoCode,
         autoSavings,
+        featuredPromo,
         shippingCost,
         total,
         destination,

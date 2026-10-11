@@ -11,10 +11,16 @@ export function CartDrawer() {
     updateQuantity,
     isDrawerOpen,
     setIsDrawerOpen,
+    subtotal,
+    subscriptionSavings,
+    promoDiscount,
+    totalSavings,
+    finalSubtotal,
+    autoSavings,
+    appliedPromo,
   } = useCart()
 
-  // Calculate items total
-  const itemsTotal = items.reduce((acc, item) => acc + item.price * item.quantity, 0)
+  const itemsTotal = subtotal
 
   // Prevent background scrolling when drawer is open
   useEffect(() => {
@@ -311,28 +317,45 @@ export function CartDrawer() {
             data-node-id="47:7519"
             data-name="03 Drawer Footer - Checkout Actions"
           >
-            <div
-              className="flex items-center justify-between w-full"
-              data-node-id="47:7743"
-              data-name="Total Row"
-            >
-              <div className="flex flex-col">
-                <p
-                  className="font-medium text-[#64748b] text-[14px]"
-                  data-node-id="47:7744"
-                >
-                  Subtotal
-                </p>
-                <p className="text-[11px] text-[#94a3b8]">
-                  Taxes &amp; shipping calculated at checkout
+            <div className="flex flex-col gap-2 w-full text-xs">
+              <div className="flex items-center justify-between text-[#64748b]">
+                <span>Subtotal</span>
+                <span className="font-semibold text-[#0b1f3a]">£{subtotal.toFixed(2)}</span>
+              </div>
+
+              {/* Automatic Subscribe & Save Auto-Savings */}
+              {subscriptionSavings > 0 && (
+                <div className="flex items-center justify-between text-[#00c5a0] font-semibold">
+                  <span>Subscribe &amp; Save ({autoSavings.text})</span>
+                  <span>-£{subscriptionSavings.toFixed(2)}</span>
+                </div>
+              )}
+
+              {/* Manual Promotional Code Discount */}
+              {appliedPromo && promoDiscount > 0 && (
+                <div className="flex items-center justify-between text-[#00c5a0] font-semibold">
+                  <span>Promo Code ({appliedPromo.code})</span>
+                  <span>-£{promoDiscount.toFixed(2)}</span>
+                </div>
+              )}
+
+              {/* Total Savings Indicator */}
+              {totalSavings > 0 && (
+                <div className="bg-emerald-50 border border-emerald-200 rounded-lg px-2.5 py-1.5 flex justify-between items-center text-emerald-800 font-bold text-[11px]">
+                  <span>Total Savings</span>
+                  <span>£{totalSavings.toFixed(2)}</span>
+                </div>
+              )}
+
+              <div className="flex items-baseline justify-between pt-1 border-t border-[#e2e8f0]">
+                <div>
+                  <p className="font-bold text-[#0b1f3a] text-[15px]">Total due today</p>
+                  <p className="text-[11px] text-[#94a3b8]">Taxes &amp; shipping calculated at checkout</p>
+                </div>
+                <p className="font-bold text-[#0b1f3a] text-[22px]">
+                  £{finalSubtotal.toFixed(2)}
                 </p>
               </div>
-              <p
-                className="font-bold text-[#0b1f3a] text-[22px]"
-                data-node-id="47:7745"
-              >
-                £{itemsTotal.toFixed(2)}
-              </p>
             </div>
             <Link
               href="/checkout"
