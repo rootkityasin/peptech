@@ -136,10 +136,11 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
       const promotionModule = req.scope.resolve(Modules.PROMOTION)
       const query = req.scope.resolve(ContainerRegistrationKeys.QUERY) || req.scope.resolve("query")
 
+      const filter = promotion_id ? { id: promotion_id } : { code: "FREESHIP150" }
       const { data: promos = [] } = await query.graph({
         entity: "promotion",
         fields: ["id", "code", "status", "metadata", "application_method.*", "rules.*"],
-        filters: { code: "FREESHIP150" },
+        filters: filter,
       })
 
       const promoId = promos[0]?.id || promotion_id || "promo_01M4N0Z5NDS97Y18JSA5T7YBZ3"
