@@ -240,7 +240,22 @@ export async function buildQuote(
       (p: any) => p.application_method?.target_type === "shipping_methods" || p.code === "FREESHIP150"
     )
     if (activeFreeShip && activeFreeShip.status === "active") {
-      const thresholdMinor = Math.round(Number(activeFreeShip.metadata?.threshold || 150) * 100)
+      let threshold = 150
+      if (activeFreeShip.metadata?.threshold) {
+        threshold = Number(activeFreeShip.metadata.threshold)
+      } else {
+        const title = String(activeFreeShip.metadata?.title || activeFreeShip.title || "")
+        const match = title.match(/(?:over|spend|above|min|minimum)\s*[£$€]?\s*(\d+(?:\.\d+)?)/i)
+        if (match && Number(match[1]) > 0) {
+          threshold = Number(match[1])
+        } else {
+          const codeMatch = String(activeFreeShip.code || "").match(/(\d+)/)
+          if (codeMatch && Number(codeMatch[1]) > 0) {
+            threshold = Number(codeMatch[1])
+          }
+        }
+      }
+      const thresholdMinor = Math.round(threshold * 100)
       if (itemsSubtotalMinor >= thresholdMinor) {
         freeShippingApplied = true
       }

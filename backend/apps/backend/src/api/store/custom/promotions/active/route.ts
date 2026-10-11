@@ -139,8 +139,26 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
       } catch {}
     }
 
+    function extractThreshold(promo: any, fallback = 150): number {
+      if (promo?.metadata?.threshold) {
+        const val = Number(promo.metadata.threshold)
+        if (!isNaN(val) && val > 0) return val
+      }
+      const title = String(promo?.metadata?.title || promo?.title || "")
+      const match = title.match(/(?:over|spend|above|min|minimum)\s*[£$€]?\s*(\d+(?:\.\d+)?)/i)
+      if (match && Number(match[1]) > 0) {
+        return Number(match[1])
+      }
+      const code = String(promo?.code || "")
+      const codeMatch = code.match(/(\d+)/)
+      if (codeMatch && Number(codeMatch[1]) > 0) {
+        return Number(codeMatch[1])
+      }
+      return fallback
+    }
+
     const freeShippingEnabled = freeShippingPromo ? freeShippingPromo.status === "active" : true
-    const freeShippingThreshold = Number(freeShippingPromo?.metadata?.threshold || 150)
+    const freeShippingThreshold = extractThreshold(freeShippingPromo, 150)
     const freeShippingTitle = freeShippingPromo?.metadata?.title || `Free Tracked 24 Shipping over £${freeShippingThreshold}`
     const freeShippingCode = freeShippingPromo?.code || "FREESHIP150"
 
