@@ -16,6 +16,7 @@ export default function CartPage() {
     appliedPromo,
     applyPromoCode,
     removePromoCode,
+    autoSavings,
     destination,
     setDestination,
     shippingCost,
@@ -167,7 +168,7 @@ export default function CartPage() {
                       )}
                       {item.isSubscription ? (
                         <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#16a6a3]/10 text-[#16a6a3]">
-                          🔄 28-Day Subscribe &amp; Save (10% Off)
+                          🔄 28-Day Subscribe &amp; Save ({autoSavings.badgeText})
                         </span>
                       ) : (
                         <span className="inline-flex items-center text-[10px] font-medium text-[#64748b]">

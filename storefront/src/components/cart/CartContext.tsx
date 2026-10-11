@@ -20,6 +20,32 @@ export interface AppliedPromotion {
   currencyCode: string
 }
 
+export interface AutoSavingsConfig {
+  id: string
+  code: string
+  isAutomatic: boolean
+  discountType: "percentage" | "fixed"
+  discountValue: number
+  currencyCode: string
+  text: string
+  fullText: string
+  badgeText: string
+  saveText: string
+}
+
+export const DEFAULT_AUTO_SAVINGS: AutoSavingsConfig = {
+  id: "promo_01AUTODISAUTOPEPT",
+  code: "AUTODIS",
+  isAutomatic: true,
+  discountType: "percentage",
+  discountValue: 10,
+  currencyCode: "gbp",
+  text: "10% auto-savings",
+  fullText: "Every 28 days · 10% auto-savings",
+  badgeText: "10% Off",
+  saveText: "Save 10%",
+}
+
 export interface CartItem {
   variantId?: string
   productHandle?: string
@@ -54,6 +80,7 @@ interface CartContextType {
   appliedPromo: AppliedPromotion | null
   applyPromoCode: (code: string) => Promise<{ success: boolean; message?: string }>
   removePromoCode: () => void
+  autoSavings: AutoSavingsConfig
   shippingCost: number
   total: number
   destination: "UK" | "INTL"
@@ -83,6 +110,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [shippingOptionId, setShippingOptionIdState] = useState<string | null>(null)
   const [shippingLoaded, setShippingLoaded] = useState(false)
   const [appliedPromo, setAppliedPromo] = useState<AppliedPromotion | null>(null)
+  const [autoSavings, setAutoSavings] = useState<AutoSavingsConfig>(DEFAULT_AUTO_SAVINGS)
 
   const setDestination = (dest: "UK" | "INTL") => {
     setDestinationState(dest)
@@ -109,10 +137,71 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       if (savedPromo) {
         setAppliedPromo(JSON.parse(savedPromo))
       }
+      const savedAutoSavings = localStorage.getItem("peptech_auto_savings")
+      if (savedAutoSavings) {
+        const parsedAuto = JSON.parse(savedAutoSavings)
+        if (parsedAuto && parsedAuto.text) {
+          setAutoSavings(parsedAuto)
+        }
+      }
     } catch {
       // ignore
     }
     setLoaded(true)
+  }, [])
+
+  // Fetch dynamic automatic promotion from admin panel
+  useEffect(() => {
+    let cancelled = false
+    const fetchAutoSavings = async () => {
+      try {
+        const base = getBackendUrl()
+        const pubKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "pk_556de0f5ea4724394f147569c8b5066ecda7a0d39bd60eb15b2550b2d5c52246"
+        const headers = {
+          "x-publishable-api-key": pubKey,
+        }
+
+        let res: Response | null = null
+        try {
+          res = await fetch(`${base}/store/custom/promotions/auto-savings`, { headers })
+        } catch (directErr) {
+          if (base) {
+            try {
+              res = await fetch("/store/custom/promotions/auto-savings", { headers })
+            } catch {}
+          }
+        }
+
+        if (res && res.ok && !cancelled) {
+          const data = await res.json()
+          if (data?.success && data?.auto_savings) {
+            const fresh: AutoSavingsConfig = {
+              id: data.auto_savings.id || "promo_default",
+              code: data.auto_savings.code || "AUTODIS",
+              isAutomatic: Boolean(data.auto_savings.is_automatic),
+              discountType: data.auto_savings.discount_type || "percentage",
+              discountValue: Number(data.auto_savings.discount_value || 10),
+              currencyCode: data.auto_savings.currency_code || "gbp",
+              text: data.auto_savings.text || "10% auto-savings",
+              fullText: data.auto_savings.full_text || "Every 28 days · 10% auto-savings",
+              badgeText: data.auto_savings.badge_text || "10% Off",
+              saveText: data.auto_savings.save_text || "Save 10%",
+            }
+            setAutoSavings(fresh)
+            try {
+              localStorage.setItem("peptech_auto_savings", JSON.stringify(fresh))
+            } catch {}
+          }
+        }
+      } catch {
+        // Keep existing autoSavings on fetch failure
+      }
+    }
+
+    fetchAutoSavings()
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   // Save to local storage
@@ -325,6 +414,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         appliedPromo,
         applyPromoCode,
         removePromoCode,
+        autoSavings,
         shippingCost,
         total,
         destination,

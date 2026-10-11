@@ -18,6 +18,7 @@ export default function CheckoutPage() {
     appliedPromo,
     applyPromoCode,
     removePromoCode,
+    autoSavings,
     shippingCost,
     country,
     setCountry,
@@ -448,7 +449,7 @@ export default function CheckoutPage() {
                     </div>
                     <p className="text-xs text-slate-400 mt-0.5">
                       {item.isSubscription
-                        ? "Every 28 days · 10% auto-savings"
+                        ? `Every 28 days · ${item.discountPercent ? `${item.discountPercent}% auto-savings` : autoSavings.text}`
                         : "Medical Applicator + Cartridge + Sterile Needles"}
                     </p>
                     <div className="flex items-center gap-3 mt-1.5 text-xs text-slate-400">
@@ -1056,7 +1057,7 @@ export default function CheckoutPage() {
                     className="mt-0.5 rounded border-slate-300 text-[#16A6A3] focus:ring-[#16A6A3]"
                   />
                   <span className="leading-snug">
-                    I authorise payment today and every 28 days for recurring items, with 10% off product prices plus
+                    I authorise payment today and every 28 days for recurring items, with {autoSavings.badgeText} product prices plus
                     delivery and applicable tax. I can pause, skip or cancel future renewals at any time in my account.
                   </span>
                 </label>

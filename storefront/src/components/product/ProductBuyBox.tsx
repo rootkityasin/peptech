@@ -25,7 +25,7 @@ export function ProductBuyBox({
   subscribePrice,
   tag = "PEN SYSTEM",
 }: ProductBuyBoxProps) {
-  const { addItem, setIsDrawerOpen } = useCart()
+  const { addItem, setIsDrawerOpen, autoSavings } = useCart()
   const [purchaseType, setPurchaseType] = useState<"one-time" | "subscription">("one-time")
   
   const isRefill =
@@ -114,7 +114,10 @@ export function ProductBuyBox({
   }, [isDropdownOpen])
 
   const currentOneTimePrice = product?.price ?? price
-  const currentSubscribePrice = product?.subscribePrice ?? subscribePrice ?? Number((currentOneTimePrice * 0.9).toFixed(2))
+  const dynamicSubPrice = autoSavings.discountType === "percentage"
+    ? Number((currentOneTimePrice * (1 - autoSavings.discountValue / 100)).toFixed(2))
+    : Math.max(0, Number((currentOneTimePrice - autoSavings.discountValue).toFixed(2)))
+  const currentSubscribePrice = product?.subscribePrice ?? subscribePrice ?? dynamicSubPrice
   const totalPrice = purchaseType === "subscription" ? currentSubscribePrice : currentOneTimePrice
 
   // Determine title with balanced line break matching "Complete PEPTECH®\nPen Set"
@@ -149,6 +152,7 @@ export function ProductBuyBox({
       price: recurring ? currentSubscribePrice : currentOneTimePrice,
       isSubscription: recurring,
       subscriptionIntervalDays: recurring ? 28 : undefined,
+      discountPercent: autoSavings.discountType === "percentage" ? autoSavings.discountValue : undefined,
       sku: product?.sku || "",
       image: product?.image || "/images/peptech/mockup1.webp",
       options,
@@ -395,7 +399,7 @@ export function ProductBuyBox({
                 £{currentSubscribePrice.toFixed(2)}
               </span>
               <span className="text-[11px] font-semibold text-emerald-600">
-                Save 10%
+                {autoSavings.saveText}
               </span>
             </div>
           </div>
