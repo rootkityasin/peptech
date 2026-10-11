@@ -117,6 +117,7 @@ export async function buildQuote(
     const base = toMinor(prices[0].calculated_amount)
     if (base <= 0) fail("Product price requires review", 409)
     if (!variant.manage_inventory || !variant.inventory_items?.length) fail("Tracked inventory is required before sale", 409)
+    const unitMinor = item.recurring ? discounted(base) : base
     lines.push({
       variant_id: item.variant_id,
       line_id: recordId("ordli", attemptId, String(lines.length)),
@@ -126,7 +127,7 @@ export async function buildQuote(
       recurring: item.recurring,
       tax_code: approval!.data.tax_code || defaults?.code,
       base_minor: base,
-      unit_minor: base,
+      unit_minor: unitMinor,
       catalog_version: approval!.data.version,
       metadata: item.metadata || {},
       inventory: variant.inventory_items.map((i: any) => ({
@@ -148,6 +149,7 @@ export async function buildQuote(
           "status",
           "limit",
           "used",
+          "is_automatic",
           "metadata",
           "application_method.*",
         ],
@@ -157,46 +159,59 @@ export async function buildQuote(
       })
 
       const promoRecord = promotions[0]
+      // Anti-cheating & Stacking rules:
+      // 1. Promo must be active
+      // 2. Promo must NOT be automatic (automatic codes are already applied to recurring items)
+      // 3. Promo must not have exhausted redemption limits
       if (
         promoRecord &&
         promoRecord.status === "active" &&
+        !promoRecord.is_automatic &&
         (promoRecord.limit == null || Number(promoRecord.used || 0) < Number(promoRecord.limit)) &&
         promoRecord.application_method
       ) {
         const method = promoRecord.application_method
         const val = Number(method.value)
         let totalDiscountMinor = 0
-        if (method.type === "percentage") {
-          for (const l of lines) {
-            const lineDiscount = Math.round((l.unit_minor * val) / 100)
-            l.unit_minor = Math.max(1, l.unit_minor - lineDiscount)
-            totalDiscountMinor += lineDiscount * l.quantity
-          }
-          if (totalDiscountMinor > 0) {
-            promoData = {
-              id: promoRecord.id,
-              code: promoRecord.code,
-              title: promoRecord.metadata?.title || promoRecord.code,
-              discount_percent: val,
-              discount_minor: totalDiscountMinor,
+
+        // Non-stacking rule: Manual promo codes apply strictly to one-time purchase items
+        const eligibleLines = lines.filter((l) => !l.recurring)
+
+        if (eligibleLines.length > 0) {
+          if (method.type === "percentage") {
+            for (const l of eligibleLines) {
+              const lineDiscount = Math.round((l.unit_minor * val) / 100)
+              l.unit_minor = Math.max(1, l.unit_minor - lineDiscount)
+              totalDiscountMinor += lineDiscount * l.quantity
             }
-          }
-        } else if (method.type === "fixed") {
-          const targetDiscount = Math.round(val * 100)
-          const poolMinor = lines.reduce((sum, l) => sum + l.unit_minor * l.quantity, 0)
-          if (poolMinor > 0) {
-            const applicableDiscount = Math.min(targetDiscount, poolMinor)
-            for (const l of lines) {
-              const share = Math.round((applicableDiscount * (l.unit_minor * l.quantity)) / poolMinor)
-              const unitReduction = Math.floor(share / l.quantity)
-              l.unit_minor = Math.max(1, l.unit_minor - unitReduction)
-              totalDiscountMinor += unitReduction * l.quantity
+            if (totalDiscountMinor > 0) {
+              promoData = {
+                id: promoRecord.id,
+                code: promoRecord.code,
+                title: promoRecord.metadata?.title || promoRecord.code,
+                discount_percent: val,
+                discount_minor: totalDiscountMinor,
+              }
             }
-            promoData = {
-              id: promoRecord.id,
-              code: promoRecord.code,
-              title: promoRecord.metadata?.title || promoRecord.code,
-              discount_minor: totalDiscountMinor,
+          } else if (method.type === "fixed") {
+            const targetDiscount = Math.round(val * 100)
+            const poolMinor = eligibleLines.reduce((sum, l) => sum + l.unit_minor * l.quantity, 0)
+            if (poolMinor > 0) {
+              const applicableDiscount = Math.min(targetDiscount, poolMinor)
+              for (const l of eligibleLines) {
+                const share = Math.round((applicableDiscount * (l.unit_minor * l.quantity)) / poolMinor)
+                const unitReduction = Math.floor(share / l.quantity)
+                l.unit_minor = Math.max(1, l.unit_minor - unitReduction)
+                totalDiscountMinor += unitReduction * l.quantity
+              }
+              if (totalDiscountMinor > 0) {
+                promoData = {
+                  id: promoRecord.id,
+                  code: promoRecord.code,
+                  title: promoRecord.metadata?.title || promoRecord.code,
+                  discount_minor: totalDiscountMinor,
+                }
+              }
             }
           }
         }

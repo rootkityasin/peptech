@@ -110,6 +110,15 @@ export async function settleReceipt(
           order_number_formatted: orderNumber,
           stripe_receipt_url: stripeReceiptUrl,
           tags: attempt.data.subscription_id ? ["Sub-Order"] : [],
+          auto_savings: q.lines.some((l) => l.recurring)
+            ? {
+                text: "10% auto-savings",
+                amount:
+                  q.lines
+                    .filter((l) => l.recurring)
+                    .reduce((sum, l) => sum + (l.base_minor - l.unit_minor) * l.quantity, 0) / 100,
+              }
+            : undefined,
           promotion: q.promo
             ? {
                 code: q.promo.code,
