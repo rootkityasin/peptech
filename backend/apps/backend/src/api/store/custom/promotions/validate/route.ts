@@ -2,11 +2,32 @@ import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
 import type { ValidatePromoCodeSchema } from "./middlewares"
 
+// Helper to set CORS headers
+function applyCors(req: MedusaRequest, res: MedusaResponse) {
+  const origin = (req.headers.origin as string) || ""
+  if (origin) {
+    res.setHeader("Access-Control-Allow-Origin", origin)
+    res.setHeader("Access-Control-Allow-Credentials", "true")
+  } else {
+    res.setHeader("Access-Control-Allow-Origin", "*")
+  }
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS, GET")
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, x-publishable-api-key, Accept, Cache-Control, X-Requested-With")
+}
+
+// OPTIONS /store/custom/promotions/validate - Handle CORS preflight
+export async function OPTIONS(req: MedusaRequest, res: MedusaResponse) {
+  applyCors(req, res)
+  res.setHeader("Access-Control-Max-Age", "86400")
+  return res.status(204).end()
+}
+
 // POST /store/custom/promotions/validate - Validate a promo code using Medusa Promotion Module
 export async function POST(
   req: MedusaRequest<ValidatePromoCodeSchema>,
   res: MedusaResponse
 ) {
+  applyCors(req, res)
   res.setHeader("Cache-Control", "no-store")
   try {
     const { code, subtotal, currency_code } = req.validatedBody || (req.body as any) || {}

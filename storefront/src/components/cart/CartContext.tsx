@@ -235,21 +235,39 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     if (!code || !code.trim()) {
       return { success: false, message: "Please enter a promotional code." }
     }
-    try {
-      const base = getBackendUrl()
-      const pubKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "pk_556de0f5ea4724394f147569c8b5066ecda7a0d39bd60eb15b2550b2d5c52246"
-      const res = await fetch(`${base}/store/custom/promotions/validate`, {
+    const pubKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "pk_556de0f5ea4724394f147569c8b5066ecda7a0d39bd60eb15b2550b2d5c52246"
+    const payload = JSON.stringify({
+      code: code.trim(),
+      subtotal,
+      currency_code: "gbp",
+    })
+
+    const requestPromo = async (endpoint: string) => {
+      return await fetch(endpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "x-publishable-api-key": pubKey,
         },
-        body: JSON.stringify({
-          code: code.trim(),
-          subtotal,
-          currency_code: "gbp",
-        }),
+        body: payload,
       })
+    }
+
+    try {
+      const base = getBackendUrl()
+      let res: Response
+      try {
+        res = await requestPromo(`${base}/store/custom/promotions/validate`)
+      } catch (directErr) {
+        // If direct cross-origin fetch encountered a network or CORS issue, fall back to same-origin proxy
+        if (base) {
+          console.warn("[PEPTECH PROMO] Direct fetch failed, trying same-origin proxy:", directErr)
+          res = await requestPromo("/store/custom/promotions/validate")
+        } else {
+          throw directErr
+        }
+      }
+
       const data = await res.json()
       if (!res.ok || !data.valid) {
         return { success: false, message: data.message || "Invalid promotional code." }
