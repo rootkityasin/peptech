@@ -2,6 +2,27 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
+// Auto-load root .env into process.env before build
+const rootEnvPath = path.resolve(__dirname, '.env');
+if (fs.existsSync(rootEnvPath)) {
+  const envContent = fs.readFileSync(rootEnvPath, 'utf8');
+  for (const line of envContent.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const idx = trimmed.indexOf('=');
+    if (idx !== -1) {
+      const key = trimmed.slice(0, idx).trim();
+      let val = trimmed.slice(idx + 1).trim();
+      if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+        val = val.slice(1, -1);
+      }
+      if (process.env[key] === undefined || process.env[key] === '') {
+        process.env[key] = val;
+      }
+    }
+  }
+}
+
 console.log('[PEPTECH] Starting Medusa production build...');
 
 const backendDir = path.resolve(__dirname, 'backend/apps/backend');

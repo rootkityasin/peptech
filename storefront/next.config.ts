@@ -1,5 +1,9 @@
 import type { NextConfig } from "next";
 import path from "path";
+import { loadEnvConfig } from "@next/env";
+
+// Automatically load the single unified root .env into Next.js
+loadEnvConfig(path.resolve(__dirname, ".."));
 
 const isProd = process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
 const medusaBackendUrl =

@@ -54,7 +54,11 @@ export default function CheckoutSuccessPage() {
         setMessage("Payment confirmation is processing. You can safely leave this page and check your account later.")
         if (++count < 30) timer = setTimeout(poll, 3000)
       } catch (error) {
-        if (active) setMessage(error instanceof Error ? error.message : "Confirmation is pending.")
+        if (active) {
+          setMessage("Confirming your payment with the banking network… Please wait.")
+          if (++count < 30) timer = setTimeout(poll, 3000)
+          else setMessage(error instanceof Error ? error.message : "Confirmation is pending. Please check your account.")
+        }
       }
     }
     void poll()

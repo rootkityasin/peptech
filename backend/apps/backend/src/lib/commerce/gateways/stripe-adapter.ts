@@ -178,9 +178,10 @@ export class StripeGatewayAdapter implements PaymentGatewayAdapter {
     const sessionParams: any = {
       ui_mode: isEmbedded ? "embedded" : "hosted",
       billing_address_collection: "auto",
-      customer_update: { address: "auto", name: "auto" },
+      ...(stripeCustomerId
+        ? { customer: stripeCustomerId, customer_update: { address: "auto", name: "auto" } }
+        : { customer_email: quote.email }),
       mode: recurring ? "subscription" : "payment",
-      customer: stripeCustomerId,
       saved_payment_method_options: {
         payment_method_save: "enabled",
         allow_redisplay_filters: ["always", "limited", "unspecified"],

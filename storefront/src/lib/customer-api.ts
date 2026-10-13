@@ -12,7 +12,7 @@ if (!PUBLISHABLE_KEY && process.env.NODE_ENV === "production" && typeof window !
  */
 export function getBackendUrl(): string {
   const envUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL
-  if (envUrl && !envUrl.includes("localhost") && !envUrl.includes("127.0.0.1")) {
+  if (envUrl) {
     return envUrl.replace(/\/$/, "")
   }
 
@@ -22,23 +22,16 @@ export function getBackendUrl(): string {
     if (!origin.includes("localhost") && !origin.includes("127.0.0.1")) {
       return "https://admin.peptech.bio"
     }
-    // In local development browser, use relative paths to route through Next.js proxy
-    return ""
+    return "http://localhost:9000"
   }
 
-  // Explicit environment configuration also applies to local production previews.
-  if (process.env.MEDUSA_BACKEND_URL || envUrl) return (process.env.MEDUSA_BACKEND_URL || envUrl)!.replace(/\/$/, "")
+  if (process.env.MEDUSA_BACKEND_URL) return process.env.MEDUSA_BACKEND_URL.replace(/\/$/, "")
 
-  // Server-side (Node.js / SSR) resolution
   if (process.env.NODE_ENV === "production") {
     return "https://admin.peptech.bio"
   }
 
-  return (
-    process.env.MEDUSA_BACKEND_URL ||
-    envUrl ||
-    "http://localhost:9000"
-  )
+  return "http://localhost:9000"
 }
 
 /**

@@ -63,9 +63,20 @@ export async function commerceRequest(path: string, token?: string | null, body?
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     cache: "no-store",
   })
-  const data = await response.json()
+
+  let data: any = null
+  const text = await response.text()
+  try {
+    data = text ? JSON.parse(text) : {}
+  } catch {
+    if (!response.ok) {
+      throw new Error(text.length < 120 && text ? text : `Server error (${response.status})`)
+    }
+    throw new Error("Invalid response format received from server.")
+  }
+
   if (!response.ok) {
-    throw new Error(data.message || "The operation could not finish. Retry the same request.")
+    throw new Error(data?.message || "The operation could not finish. Retry the same request.")
   }
   return data
 }
