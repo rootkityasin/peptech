@@ -150,6 +150,7 @@ export async function prepareStripeCheckout(input: {
     ...(input.shippingOptionId ? { shipping_option_id: input.shippingOptionId } : {}),
     ...(input.promoCode ? { promo_code: input.promoCode } : {}),
     ui_mode: input.uiMode || "embedded",
+    ...(input.promoCode ? { promo_code: input.promoCode } : {}),
   }
 
   const fingerprint = JSON.stringify({ body, email: input.email })

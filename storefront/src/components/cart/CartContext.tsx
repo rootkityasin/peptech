@@ -1,13 +1,143 @@
 "use client"
 
-import React, { createContext, useContext, useState, useEffect } from "react"
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react"
 import { getCountryByName } from "@/lib/countries"
 import { getShippingOptions, type ShippingOption } from "@/lib/shipping-options"
+import { getBackendUrl } from "@/lib/customer-api"
 
 export interface CartItemOption {
   label: string
   value: string
 }
+
+export interface AppliedPromotion {
+  id: string
+  code: string
+  title: string
+  discountType: "percentage" | "fixed"
+  discountValue: number
+  discountAmount: number
+  currencyCode: string
+}
+
+export interface AutoSavingsConfig {
+  id: string
+  code: string
+  isAutomatic: boolean
+  discountType: "percentage" | "fixed"
+  discountValue: number
+  currencyCode: string
+  text: string
+  fullText: string
+  badgeText: string
+  saveText: string
+}
+
+export const DEFAULT_AUTO_SAVINGS: AutoSavingsConfig = {
+  id: "promo_01AUTODISAUTOPEPT",
+  code: "AUTODIS",
+  isAutomatic: true,
+  discountType: "percentage",
+  discountValue: 10,
+  currencyCode: "gbp",
+  text: "10% auto-savings",
+  fullText: "Every 28 days · 10% auto-savings",
+  badgeText: "10% Off",
+  saveText: "Save 10%",
+}
+
+export interface FeaturedPromoConfig {
+  id: string
+  code: string
+  title: string
+  isAutomatic: boolean
+  discountType: "percentage" | "fixed"
+  discountValue: number
+  currencyCode: string
+  badgeText: string
+  saveText: string
+  announcement: string
+}
+
+export interface FreeShippingConfig {
+  enabled: boolean
+  threshold: number
+  title: string
+  code: string
+  delivery_method?: string
+  has_target_rules?: boolean
+  eligible_types?: string[]
+  eligible_type_ids?: string[]
+  eligible_option_ids?: string[]
+}
+
+export const DEFAULT_FREE_SHIPPING: FreeShippingConfig = {
+  enabled: true,
+  threshold: 150,
+  title: "Free Tracked 24 Shipping over £150",
+  code: "FREESHIP150",
+  delivery_method: "Royal Mail Tracked 24",
+  has_target_rules: true,
+  eligible_types: ["standard"],
+  eligible_type_ids: ["sotype_01M2AQBJF36KA7QFAXD9C4VYWQ"],
+  eligible_option_ids: [],
+}
+
+/**
+ * Checks whether a shipping option is eligible for free delivery based on
+ * the Medusa promotion configuration.
+ *
+ * Rules:
+ * 1. Subtotal must meet the promotion threshold.
+ * 2. If the promotion in Medusa Admin has NO target rules configured, free shipping
+ *    applies to all shipping methods as a fallback.
+ * 3. If target rules ARE configured, only matching shipping options are eligible
+ *    (matched by shipping option ID, shipping option type ID, or shipping type code).
+ */
+export function isShippingOptionEligibleForFree(
+  option: ShippingOption | null | undefined,
+  freeShipping: FreeShippingConfig | null | undefined,
+  finalSubtotal: number
+): boolean {
+  if (!option || !freeShipping || !freeShipping.enabled) return false
+  if (finalSubtotal < (freeShipping.threshold || 150)) return false
+
+  const hasSpecificRules =
+    Boolean(freeShipping.has_target_rules) ||
+    Boolean(freeShipping.eligible_types?.length) ||
+    Boolean(freeShipping.eligible_type_ids?.length) ||
+    Boolean(freeShipping.eligible_option_ids?.length)
+
+  // Fallback: If no target rules are specified, apply free shipping to all methods
+  if (!hasSpecificRules) {
+    return true
+  }
+
+  // 1. Direct match on shipping option ID
+  if (freeShipping.eligible_option_ids?.length && freeShipping.eligible_option_ids.includes(option.id)) {
+    return true
+  }
+
+  // 2. Match on shipping option type ID
+  const optTypeId = option.type_id || option.shipping_option_type_id
+  if (optTypeId && freeShipping.eligible_type_ids?.length && freeShipping.eligible_type_ids.includes(optTypeId)) {
+    return true
+  }
+
+  // 3. Match on shipping option type code (e.g. 'standard')
+  const optCode = (option.code || "").toLowerCase()
+  if (optCode && freeShipping.eligible_types?.length && freeShipping.eligible_types.map((t) => t.toLowerCase()).includes(optCode)) {
+    return true
+  }
+
+  // 4. Safe fallback for Standard Royal Mail if configured
+  if (freeShipping.eligible_types?.includes("standard") && /royal\s*mail/i.test(option.name)) {
+    return true
+  }
+
+  return false
+}
+
 
 export interface CartItem {
   variantId?: string
@@ -27,7 +157,34 @@ export interface CartItem {
   options?: CartItemOption[]
 }
 
+/**
+ * Resolves the dynamic subtitle and included package specifications for any cart item.
+ * Unified across Side Panel Cart, Main Cart Page, and Checkout.
+ */
+export function getItemSubtitle(item: CartItem): string {
+  const cartridgeOpt = item.options?.find((o) =>
+    o.label.toLowerCase().includes("cartridge")
+  )
+
+  if (item.format === "pen-set") {
+    return cartridgeOpt?.value
+      ? `Included: ${cartridgeOpt.value} • Reusable Pen Kit`
+      : "Reusable Precision Pen System • Laboratory Kit"
+  }
+
+  if (item.format === "refill") {
+    return item.strength
+      ? `${item.strength} • Borosilicate Glass Cartridge`
+      : "Pre-filled 1.5 mL Borosilicate Glass Cartridge"
+  }
+
+  return item.strength
+    ? `${item.strength} • 99%+ HPLC Certified Lyophilised Vial`
+    : "99.8% HPLC Certified • Sterile Lyophilised Cake"
+}
+
 interface CartContextType {
+
   items: CartItem[]
   addItem: (item: Omit<CartItem, "quantity">, quantity?: number) => void
   removeItem: (id: string, isSubscription: boolean) => void
@@ -38,6 +195,20 @@ interface CartContextType {
   setIsDrawerOpen: (open: boolean) => void
   itemCount: number
   subtotal: number
+  oneTimeSubtotal: number
+  subscriptionSubtotal: number
+  subscriptionSavings: number
+  promoDiscount: number
+  totalSavings: number
+  finalSubtotal: number
+  appliedPromo: AppliedPromotion | null
+  applyPromoCode: (code: string) => Promise<{ success: boolean; message?: string }>
+  removePromoCode: () => void
+  autoSavings: AutoSavingsConfig
+  featuredPromo: FeaturedPromoConfig | null
+  freeShipping: FreeShippingConfig
+  isFreeShippingUnlocked: boolean
+  isOptionEligibleForFree: (option: ShippingOption | null | undefined) => boolean
   shippingCost: number
   total: number
   destination: "UK" | "INTL"
@@ -53,6 +224,7 @@ interface CartContextType {
   shippingReady: boolean
 }
 
+
 const CartContext = createContext<CartContextType | undefined>(undefined)
 
 export const DEFAULT_CART_ITEMS: CartItem[] = []
@@ -66,6 +238,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>([])
   const [shippingOptionId, setShippingOptionIdState] = useState<string | null>(null)
   const [shippingLoaded, setShippingLoaded] = useState(false)
+  const [appliedPromo, setAppliedPromo] = useState<AppliedPromotion | null>(null)
+  const [autoSavings, setAutoSavings] = useState<AutoSavingsConfig>(DEFAULT_AUTO_SAVINGS)
+  const [featuredPromo, setFeaturedPromo] = useState<FeaturedPromoConfig | null>(null)
+  const [freeShipping, setFreeShipping] = useState<FreeShippingConfig>(DEFAULT_FREE_SHIPPING)
 
   const setDestination = (dest: "UK" | "INTL") => {
     setDestinationState(dest)
@@ -73,10 +249,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     else if (country === "United Kingdom") setCountry("United States")
   }
 
-  const handleSetCountry = (newCountry: string) => {
+  const handleSetCountry = useCallback((newCountry: string) => {
     setCountry(newCountry)
     setDestinationState(newCountry === "United Kingdom" ? "UK" : "INTL")
-  }
+  }, [])
 
   // Load from local storage
   useEffect(() => {
@@ -88,10 +264,136 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           setItems(parsed)
         }
       }
+      const savedPromo = localStorage.getItem("peptech_applied_promo")
+      if (savedPromo) {
+        setAppliedPromo(JSON.parse(savedPromo))
+      }
+      const savedAutoSavings = localStorage.getItem("peptech_auto_savings")
+      if (savedAutoSavings) {
+        const parsedAuto = JSON.parse(savedAutoSavings)
+        if (parsedAuto && parsedAuto.text) {
+          setAutoSavings(parsedAuto)
+        }
+      }
+      const savedFeatured = localStorage.getItem("peptech_featured_promo")
+      if (savedFeatured) {
+        const parsedFeatured = JSON.parse(savedFeatured)
+        if (parsedFeatured && parsedFeatured.code) {
+          setFeaturedPromo(parsedFeatured)
+        }
+      }
+      const savedFreeShipping = localStorage.getItem("peptech_free_shipping")
+      if (savedFreeShipping) {
+        const parsedFree = JSON.parse(savedFreeShipping)
+        if (parsedFree && parsedFree.threshold !== undefined) {
+          setFreeShipping(parsedFree)
+        }
+      }
     } catch {
       // ignore
     }
     setLoaded(true)
+  }, [])
+
+  // Fetch dynamic automatic and manual promotions from backend
+  useEffect(() => {
+    let cancelled = false
+    const fetchPromotions = async () => {
+      try {
+        const base = getBackendUrl()
+        const pubKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "pk_556de0f5ea4724394f147569c8b5066ecda7a0d39bd60eb15b2550b2d5c52246"
+        const headers = {
+          "x-publishable-api-key": pubKey,
+        }
+
+        let res: Response | null = null
+        try {
+          res = await fetch(`${base}/store/custom/promotions/active`, { headers })
+        } catch (directErr) {
+          if (base) {
+            try {
+              res = await fetch("/store/custom/promotions/active", { headers })
+            } catch {
+              try {
+                res = await fetch(`${base}/store/custom/promotions/auto-savings`, { headers })
+              } catch {}
+            }
+          }
+        }
+
+        if (res && res.ok && !cancelled) {
+          const data = await res.json()
+          if (data?.success && data?.auto_savings) {
+            const freshAuto: AutoSavingsConfig = {
+              id: data.auto_savings.id || "promo_default",
+              code: data.auto_savings.code || "AUTODIS",
+              isAutomatic: Boolean(data.auto_savings.is_automatic),
+              discountType: data.auto_savings.discount_type || "percentage",
+              discountValue: Number(data.auto_savings.discount_value || 10),
+              currencyCode: data.auto_savings.currency_code || "gbp",
+              text: data.auto_savings.text || "10% auto-savings",
+              fullText: data.auto_savings.full_text || "Every 28 days · 10% auto-savings",
+              badgeText: data.auto_savings.badge_text || "10% Off",
+              saveText: data.auto_savings.save_text || "Save 10%",
+            }
+            setAutoSavings(freshAuto)
+            try {
+              localStorage.setItem("peptech_auto_savings", JSON.stringify(freshAuto))
+            } catch {}
+          }
+
+          if (data?.success && data?.featured_promo) {
+            const freshFeatured: FeaturedPromoConfig = {
+              id: data.featured_promo.id,
+              code: data.featured_promo.code,
+              title: data.featured_promo.title,
+              isAutomatic: false,
+              discountType: data.featured_promo.discount_type || "percentage",
+              discountValue: Number(data.featured_promo.discount_value || 10),
+              currencyCode: data.featured_promo.currency_code || "gbp",
+              badgeText: data.featured_promo.badge_text || "10% Off",
+              saveText: data.featured_promo.save_text || "Save 10%",
+              announcement: data.featured_promo.announcement || `Use code ${data.featured_promo.code} for discount on one-time orders`,
+            }
+            setFeaturedPromo(freshFeatured)
+            try {
+              localStorage.setItem("peptech_featured_promo", JSON.stringify(freshFeatured))
+            } catch {}
+          } else if (data?.success && data?.featured_promo === null) {
+            setFeaturedPromo(null)
+            try {
+              localStorage.removeItem("peptech_featured_promo")
+            } catch {}
+          }
+
+          if (data?.success && data?.free_shipping) {
+            const freshFreeShipping: FreeShippingConfig = {
+              enabled: Boolean(data.free_shipping.enabled),
+              threshold: Number(data.free_shipping.threshold || 150),
+              title: data.free_shipping.title || "Free Tracked 24 Shipping",
+              code: data.free_shipping.code || "FREESHIP150",
+              delivery_method: data.free_shipping.delivery_method || "Royal Mail Tracked 24",
+              has_target_rules: data.free_shipping.has_target_rules,
+              eligible_types: data.free_shipping.eligible_types || [],
+              eligible_type_ids: data.free_shipping.eligible_type_ids || [],
+              eligible_option_ids: data.free_shipping.eligible_option_ids || [],
+            }
+            setFreeShipping(freshFreeShipping)
+            try {
+              localStorage.setItem("peptech_free_shipping", JSON.stringify(freshFreeShipping))
+            } catch {}
+          }
+
+        }
+      } catch {
+        // Keep existing configurations on fetch failure
+      }
+    }
+
+    fetchPromotions()
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   // Save to local storage
@@ -104,10 +406,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }, [items, loaded])
 
+  // Clear any applied promo if user clears the cart (handled in clearCart)
+  // Preserving appliedPromo across empty carts allows visitors to click 'Apply Code' in the announcement bar before adding items
+
   // Resolve the shipping options Medusa serves for the chosen destination.
   useEffect(() => {
     if (!loaded) return
     let cancelled = false
+    setShippingLoaded(false)
     const countryCode = getCountryByName(country).code.toLowerCase()
     getShippingOptions(countryCode).then((options) => {
       if (cancelled) return
@@ -163,32 +469,147 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const clearCart = () => {
     setItems([])
+    setAppliedPromo(null)
     try {
       localStorage.removeItem("peptech_cart")
+      localStorage.removeItem("peptech_applied_promo")
     } catch {}
   }
 
   const clearCartIfUnchanged = (snapshot: string) => {
-    setItems(current => {
+    setItems((current) => {
       // Preserve additions/changes from another tab or a later basket revision.
       if (JSON.stringify(current) !== snapshot || localStorage.getItem("peptech_cart") !== snapshot) return current
       localStorage.removeItem("peptech_cart")
+      localStorage.removeItem("peptech_applied_promo")
+      setAppliedPromo(null)
       return []
     })
   }
 
   const itemCount = items.reduce((acc, i) => acc + i.quantity, 0)
-  const subtotal = items.reduce((acc, i) => {
-    const itemPrice = i.isSubscription && i.discountPercent ? i.price * (1 - i.discountPercent / 100) : i.price
-    return acc + itemPrice * i.quantity
-  }, 0)
+  const subtotal = items.reduce((acc, i) => acc + i.price * i.quantity, 0)
+
+  // Explicit separation: One-time items vs Subscription items
+  const oneTimeSubtotal = items
+    .filter((i) => !i.isSubscription)
+    .reduce((acc, i) => acc + i.price * i.quantity, 0)
+
+  const subscriptionSubtotal = items
+    .filter((i) => i.isSubscription)
+    .reduce((acc, i) => acc + i.price * i.quantity, 0)
+
+  // Compute exact Subscribe & Save automatic discount amount from base catalog price
+  const subscriptionSavings = items
+    .filter((i) => i.isSubscription)
+    .reduce((acc, i) => {
+      const discountPct = i.discountPercent || (autoSavings.discountType === "percentage" ? autoSavings.discountValue : 10)
+      if (discountPct > 0 && discountPct < 100) {
+        const fullPrice = i.price / (1 - discountPct / 100)
+        return acc + (fullPrice - i.price) * i.quantity
+      }
+      return acc
+    }, 0)
+
+  // Calculate promotional discount strictly applied to one-time purchase items
+  const promoDiscount = React.useMemo(() => {
+    if (!appliedPromo) return 0
+    if (oneTimeSubtotal <= 0) return 0
+
+    if (appliedPromo.discountType === "percentage") {
+      return Number(((oneTimeSubtotal * appliedPromo.discountValue) / 100).toFixed(2))
+    }
+    if (appliedPromo.discountType === "fixed") {
+      return Math.min(appliedPromo.discountValue, oneTimeSubtotal)
+    }
+    return 0
+  }, [oneTimeSubtotal, appliedPromo])
+
+  const totalSavings = Number((subscriptionSavings + promoDiscount).toFixed(2))
+  const finalSubtotal = Math.max(0, subtotal - promoDiscount)
+
+  const applyPromoCode = async (code: string): Promise<{ success: boolean; message?: string }> => {
+    if (!code || !code.trim()) {
+      return { success: false, message: "Please enter a promotional code." }
+    }
+    const pubKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "pk_556de0f5ea4724394f147569c8b5066ecda7a0d39bd60eb15b2550b2d5c52246"
+    const payload = JSON.stringify({
+      code: code.trim(),
+      subtotal,
+      one_time_subtotal: oneTimeSubtotal,
+      has_subscription_items: items.some((i) => i.isSubscription),
+      currency_code: "gbp",
+    })
+
+    const requestPromo = async (endpoint: string) => {
+      return await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-publishable-api-key": pubKey,
+        },
+        body: payload,
+      })
+    }
+
+    try {
+      const base = getBackendUrl()
+      let res: Response
+      try {
+        res = await requestPromo(`${base}/store/custom/promotions/validate`)
+      } catch (directErr) {
+        // If direct cross-origin fetch encountered a network or CORS issue, fall back to same-origin proxy
+        if (base) {
+          console.warn("[PEPTECH PROMO] Direct fetch failed, trying same-origin proxy:", directErr)
+          res = await requestPromo("/store/custom/promotions/validate")
+        } else {
+          throw directErr
+        }
+      }
+
+      const data = await res.json()
+      if (!res.ok || !data.valid) {
+        return { success: false, message: data.message || "Invalid promotional code." }
+      }
+      const promo: AppliedPromotion = {
+        id: data.promotion.id,
+        code: data.promotion.code,
+        title: data.promotion.title,
+        discountType: data.promotion.discount_type,
+        discountValue: data.promotion.discount_value,
+        discountAmount: data.promotion.discount_amount,
+        currencyCode: data.promotion.currency_code,
+      }
+      setAppliedPromo(promo)
+      try {
+        localStorage.setItem("peptech_applied_promo", JSON.stringify(promo))
+      } catch {}
+      return { success: true }
+    } catch (err: any) {
+      return { success: false, message: err.message || "Failed to connect to promo verification service." }
+    }
+  }
+
+  const removePromoCode = () => {
+    setAppliedPromo(null)
+    try {
+      localStorage.removeItem("peptech_applied_promo")
+    } catch {}
+  }
 
   // Authoritative rates come from Medusa; an empty list means no option is
   // configured for this destination and checkout will refuse to price it.
   const selectedShippingOption = shippingOptions.find((option) => option.id === shippingOptionId) || null
   const shippingAvailable = shippingLoaded && shippingOptions.length > 0
-  const shippingCost = items.length > 0 && selectedShippingOption ? selectedShippingOption.amount : 0
-  const total = subtotal + shippingCost
+  const isFreeShippingUnlocked = freeShipping?.enabled && finalSubtotal >= (freeShipping?.threshold || 150)
+  const isOptionEligibleForFree = (opt: ShippingOption | null | undefined) =>
+    isShippingOptionEligibleForFree(opt, freeShipping, finalSubtotal)
+
+  const selectedIsFree = isOptionEligibleForFree(selectedShippingOption)
+  const shippingCost = items.length > 0 && selectedShippingOption
+    ? (selectedIsFree ? 0 : selectedShippingOption.amount)
+    : 0
+  const total = finalSubtotal + shippingCost
 
   const currency = country === "United Kingdom" ? "GBP" : (["Germany", "France", "Italy", "Spain", "Netherlands", "Ireland", "Sweden", "Denmark", "Belgium", "Austria", "Finland", "Portugal", "Poland", "Czech Republic"].includes(country) ? "EUR" : "USD")
 
@@ -200,11 +621,25 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         removeItem,
         updateQuantity,
         clearCart,
-      clearCartIfUnchanged,
+        clearCartIfUnchanged,
         isDrawerOpen,
         setIsDrawerOpen,
         itemCount,
         subtotal,
+        oneTimeSubtotal,
+        subscriptionSubtotal,
+        subscriptionSavings,
+        promoDiscount,
+        totalSavings,
+        finalSubtotal,
+        appliedPromo,
+        applyPromoCode,
+        removePromoCode,
+        autoSavings,
+        featuredPromo,
+        freeShipping,
+        isFreeShippingUnlocked,
+        isOptionEligibleForFree,
         shippingCost,
         total,
         destination,
@@ -223,6 +658,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       {children}
     </CartContext.Provider>
   )
+
 }
 
 export function useCart() {

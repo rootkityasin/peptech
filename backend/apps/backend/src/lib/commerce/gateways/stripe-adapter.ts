@@ -189,29 +189,11 @@ export class StripeGatewayAdapter implements PaymentGatewayAdapter {
       line_items: lineItems,
       automatic_tax: { enabled: quote.stripe_tax_enabled === true },
       client_reference_id: attemptId,
-      metadata: { peptech_attempt: attemptId, peptech_profile: context.profile, peptech_promo: quote.promo_code || "" },
+      metadata: { peptech_attempt: attemptId, peptech_profile: context.profile, peptech_promo: quote.promo?.code || "" },
       ...(recurring
         ? { subscription_data: { metadata: { peptech_attempt: attemptId, peptech_profile: context.profile } } }
         : { payment_intent_data: { setup_future_usage: "off_session", metadata: { peptech_attempt: attemptId, peptech_profile: context.profile } } }),
       expires_at: Math.floor(Date.now() / 1000) + 3600,
-    }
-
-    if (quote.promo_discount_minor && quote.promo_discount_minor > 0) {
-      try {
-        const promoCoupon = await context.stripe.coupons.create(
-          {
-            amount_off: quote.promo_discount_minor,
-            currency: "gbp",
-            duration: "once",
-            name: quote.promo_name || `Promo: ${quote.promo_code}`,
-            metadata: { peptech_attempt: attemptId, peptech_promo: quote.promo_code || "" },
-          },
-          { idempotencyKey: operationKey("promo-coupon-v1", attemptId, String(quote.promo_discount_minor)) }
-        )
-        sessionParams.discounts = [{ coupon: promoCoupon.id }]
-      } catch (e: any) {
-        console.warn("[PEPTECH] Could not create ephemeral Stripe coupon for checkout session:", e?.message || e)
-      }
     }
 
     if (isEmbedded) {

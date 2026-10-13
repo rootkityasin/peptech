@@ -1,67 +1,56 @@
-import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http";
-import { createClient } from "@supabase/supabase-js";
-
-const SUPABASE_URL = process.env.SUPABASE_URL || "https://ubzoovlhbnztjwemvrwo.supabase.co";
-const SUPABASE_KEY = process.env.SUPABASE_API_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || "";
-
-function getSupabase() {
-  if (!SUPABASE_KEY) {
-    throw new Error("SUPABASE_API_KEY environment variable is not defined");
-  }
-  return createClient(SUPABASE_URL, SUPABASE_KEY);
-}
+import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
+import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
 
 // GET /admin/custom/promotions - List all promotions with linked order usage tracking
 export async function GET(req: MedusaRequest, res: MedusaResponse) {
   try {
-    const sb = getSupabase();
+    const query = req.scope.resolve(ContainerRegistrationKeys.QUERY) || req.scope.resolve("query")
 
-    // 1. Fetch promotions
-    const { data: promotions, error: promoErr } = await sb
-      .from("promotion")
-      .select("id, code, type, is_automatic, status, limit, used, metadata, created_at, updated_at")
-      .is("deleted_at", null)
-      .order("created_at", { ascending: false });
+    // 1. Fetch promotions with application methods via Medusa 2.0 query graph
+    const { data: promotions = [] } = await query.graph({
+      entity: "promotion",
+      fields: [
+        "id",
+        "code",
+        "type",
+        "is_automatic",
+        "status",
+        "limit",
+        "used",
+        "metadata",
+        "created_at",
+        "updated_at",
+        "application_method.*",
+      ],
+      pagination: {
+        order: { created_at: "DESC" },
+      },
+    })
 
-    if (promoErr) {
-      throw new Error(`Failed to fetch promotions: ${promoErr.message}`);
+    // 2. Fetch order promotions link
+    let orderPromos: any[] = []
+    try {
+      const { data = [] } = await query.graph({
+        entity: "order_promotion",
+        fields: ["order_id", "promotion_id", "created_at"],
+      })
+      orderPromos = data
+    } catch {
+      // Graceful fallback if link table is queried through custom table
     }
 
-    // 2. Fetch application methods
-    const { data: methods } = await sb
-      .from("promotion_application_method")
-      .select("id, promotion_id, type, target_type, value, allocation, currency_code")
-      .is("deleted_at", null);
-
-    const methodMap = new Map<string, any>((methods || []).map((m: any) => [m.promotion_id, m]));
-
-    // 3. Fetch all order_promotion links
-    const { data: orderPromos } = await sb
-      .from("order_promotion")
-      .select("order_id, promotion_id, created_at")
-      .is("deleted_at", null);
-
-    // 4. Fetch orders details for linked promotions
-    const orderIds = Array.from(new Set((orderPromos || []).map((op: any) => op.order_id)));
-    let orderMap = new Map<string, any>();
+    const orderIds = Array.from(new Set((orderPromos || []).map((op: any) => op.order_id))).filter(Boolean)
+    let orderMap = new Map<string, any>()
 
     if (orderIds.length > 0) {
-      const { data: orders } = await sb
-        .from("order")
-        .select("id, display_id, email, currency_code, status, metadata, created_at")
-        .in("id", orderIds);
-
-      const { data: summaries } = await sb
-        .from("order_summary")
-        .select("order_id, totals")
-        .in("order_id", orderIds);
-
-      const summaryMap = new Map<string, any>((summaries || []).map((s: any) => [s.order_id, s.totals]));
-
-      orderMap = new Map<string, any>(
-        (orders || []).map((o: any) => {
-          const totals = summaryMap.get(o.id) || {};
-          return [
+      try {
+        const { data: orders = [] } = await query.graph({
+          entity: "order",
+          fields: ["id", "display_id", "email", "currency_code", "status", "metadata", "total", "subtotal", "created_at"],
+          filters: { id: orderIds },
+        })
+        orderMap = new Map(
+          orders.map((o: any) => [
             o.id,
             {
               id: o.id,
@@ -70,29 +59,30 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
               email: o.email,
               currency_code: o.currency_code,
               status: o.status,
-              total: totals.total || o.metadata?.total || 0,
-              subtotal: totals.subtotal || o.metadata?.subtotal || 0,
+              total: o.total || o.metadata?.total || 0,
+              subtotal: o.subtotal || o.metadata?.subtotal || 0,
               placed_at: o.metadata?.placed_at || o.created_at,
               metadata: o.metadata || {},
             },
-          ];
-        })
-      );
+          ])
+        )
+      } catch {}
     }
 
-    // 5. Build enriched promotion list with order tracking
-    let totalDiscountedOrders = 0;
+    // 3. Build enriched promotion list with order tracking
+    let totalDiscountedOrders = 0
 
-    const enrichedPromotions = (promotions || []).map((p: any) => {
-      const method = methodMap.get(p.id) || {};
-      const linkedOrderRecords = (orderPromos || []).filter((op: any) => op.promotion_id === p.id);
-      
+    const enrichedPromotions = promotions.map((p: any) => {
+      const method = p.application_method || {}
+      const linkedOrderRecords = (orderPromos || []).filter((op: any) => op.promotion_id === p.id)
+
       const orders = linkedOrderRecords
         .map((op: any) => orderMap.get(op.order_id))
-        .filter(Boolean);
+        .filter(Boolean)
 
-      totalDiscountedOrders += orders.length;
+      totalDiscountedOrders += orders.length
 
+      const isShipping = method.target_type === "shipping_methods" || p.code === "FREESHIP150"
       return {
         id: p.id,
         code: p.code,
@@ -101,15 +91,19 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
         is_automatic: Boolean(p.is_automatic),
         status: p.status,
         discount_value: Number(method.value || 10),
-        discount_type: method.type || "percentage",
+        discount_type: isShipping ? "shipping" : (method.type || "percentage"),
+        target_type: method.target_type || "items",
         allocation: method.allocation || "across",
         currency_code: method.currency_code || "gbp",
         used_count: orders.length || p.used || 0,
+        metadata: p.metadata || {},
         orders,
         created_at: p.created_at,
         updated_at: p.updated_at,
-      };
-    });
+      }
+    })
+
+    const freeShipRecord = enrichedPromotions.find((p: any) => p.code === "FREESHIP150" || p.discount_type === "shipping")
 
     return res.status(200).json({
       success: true,
@@ -117,56 +111,128 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
         total_promotions: enrichedPromotions.length,
         active_promotions: enrichedPromotions.filter((p: any) => p.status === "active").length,
         total_orders_discounted: totalDiscountedOrders,
+        free_shipping: {
+          id: freeShipRecord?.id || "promo_01M4N0Z5NDS97Y18JSA5T7YBZ3",
+          code: "FREESHIP150",
+          enabled: freeShipRecord ? freeShipRecord.status === "active" : true,
+          threshold: Number(freeShipRecord?.metadata?.threshold || 150),
+          title: freeShipRecord?.metadata?.title || "Free Tracked 24 Shipping over £150",
+          delivery_method: freeShipRecord?.metadata?.delivery_method || "Royal Mail Tracked 24",
+          storefront_message: freeShipRecord?.metadata?.storefront_message || "Add {remaining} more for Free Tracked 24 Shipping",
+          rule_operator: freeShipRecord?.metadata?.rule_operator || "gte",
+        },
       },
       promotions: enrichedPromotions,
-    });
+    })
   } catch (err: any) {
-    console.error("[PEPTECH PROMOTIONS API ERROR]:", err);
-    return res.status(500).json({ message: err.message || "Failed to retrieve promotions" });
+    console.error("[PEPTECH PROMOTIONS API ERROR]:", err)
+    return res.status(500).json({ message: err.message || "Failed to retrieve promotions" })
   }
 }
 
-// POST /admin/custom/promotions - Manually link an order to a promotion or toggle promotion status
+// POST /admin/custom/promotions - Manually link an order to a promotion, update free shipping, or toggle promotion status
 export async function POST(req: MedusaRequest, res: MedusaResponse) {
   try {
-    const sb = getSupabase();
-    const { action, promotion_id, order_id, status } = req.body as any;
+    const {
+      action,
+      promotion_id,
+      order_id,
+      status,
+      threshold,
+      enabled,
+      title,
+      delivery_method,
+      storefront_message,
+      rule_operator,
+    } = req.body as any
+
+    if (action === "update_free_shipping") {
+      const promotionModule = req.scope.resolve(Modules.PROMOTION)
+      const query = req.scope.resolve(ContainerRegistrationKeys.QUERY) || req.scope.resolve("query")
+
+      const filter = promotion_id ? { id: promotion_id } : { code: "FREESHIP150" }
+      const { data: promos = [] } = await query.graph({
+        entity: "promotion",
+        fields: ["id", "code", "status", "metadata", "application_method.*", "rules.*"],
+        filters: filter,
+      })
+
+      const promoId = promos[0]?.id || promotion_id || "promo_01M4N0Z5NDS97Y18JSA5T7YBZ3"
+      const numThreshold = Number(threshold || 150)
+      const isEnabled = enabled !== undefined ? Boolean(enabled) : true
+      const displayTitle = title || `Free Tracked 24 Shipping over £${numThreshold}`
+      const deliveryMethod = delivery_method || promos[0]?.metadata?.delivery_method || "Royal Mail Tracked 24"
+      const storefrontMessage = storefront_message || promos[0]?.metadata?.storefront_message || "Add {remaining} more for Free Tracked 24 Shipping"
+      const ruleOperator = rule_operator || promos[0]?.metadata?.rule_operator || "gte"
+
+      await (promotionModule as any).updatePromotions({
+        id: promoId,
+        status: isEnabled ? "active" : "disabled",
+        metadata: {
+          ...(promos[0]?.metadata || {}),
+          title: displayTitle,
+          threshold: numThreshold,
+          delivery_method: deliveryMethod,
+          storefront_message: storefrontMessage,
+          rule_operator: ruleOperator,
+        },
+      })
+
+      if (promos[0]?.rules?.[0]?.id) {
+        try {
+          await (promotionModule as any).updatePromotionRules([
+            {
+              id: promos[0].rules[0].id,
+              values: [String(numThreshold)],
+              operator: ruleOperator,
+            },
+          ])
+        } catch {}
+      }
+
+      return res.status(200).json({
+        success: true,
+        free_shipping: {
+          id: promoId,
+          code: promos[0]?.code || "FREESHIP150",
+          enabled: isEnabled,
+          threshold: numThreshold,
+          title: displayTitle,
+          delivery_method: deliveryMethod,
+          storefront_message: storefrontMessage,
+          rule_operator: ruleOperator,
+        },
+      })
+    }
 
     if (action === "toggle_status" && promotion_id) {
-      const { data, error } = await sb
-        .from("promotion")
-        .update({ status: status || "active", updated_at: new Date().toISOString() })
-        .eq("id", promotion_id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return res.status(200).json({ success: true, promotion: data });
+      const promotionModule = req.scope.resolve(Modules.PROMOTION)
+      const updated = await promotionModule.updatePromotions({
+        id: promotion_id,
+        status: status || "active",
+      })
+      return res.status(200).json({ success: true, promotion: updated })
     }
 
     if (action === "link_order" && promotion_id && order_id) {
-      const opId = `ordpromo_${Math.random().toString(36).substring(2, 9)}${Date.now().toString(36)}`;
-      await sb
-        .from("order_promotion")
-        .insert({
-          id: opId,
-          order_id,
-          promotion_id,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        });
+      const link = req.scope.resolve(ContainerRegistrationKeys.LINK) || req.scope.resolve("link")
+      if (link) {
+        await link.create({
+          [Modules.ORDER]: { order_id },
+          [Modules.PROMOTION]: { promotion_id },
+        })
+      }
+      const promotionModule = req.scope.resolve(Modules.PROMOTION)
+      const promo = await promotionModule.retrievePromotion(promotion_id)
+      const newUsed = Number(promo?.used || 0) + 1
+      await (promotionModule as any).updatePromotions({ id: promotion_id, used: newUsed } as any)
 
-      // Increment promotion.used
-      const { data: curPromo } = await sb.from("promotion").select("used").eq("id", promotion_id).single();
-      const newUsed = Number(curPromo?.used || 0) + 1;
-      await sb.from("promotion").update({ used: newUsed, updated_at: new Date().toISOString() }).eq("id", promotion_id);
-
-      return res.status(200).json({ success: true, message: `Linked order ${order_id} to promotion ${promotion_id}` });
+      return res.status(200).json({ success: true, message: `Linked order ${order_id} to promotion ${promotion_id}` })
     }
 
-    return res.status(400).json({ message: "Invalid action or missing parameters" });
+    return res.status(400).json({ message: "Invalid action or missing parameters" })
   } catch (err: any) {
-    console.error("[PEPTECH PROMOTIONS UPDATE ERROR]:", err);
-    return res.status(500).json({ message: err.message });
+    console.error("[PEPTECH PROMOTIONS UPDATE ERROR]:", err)
+    return res.status(500).json({ message: err.message })
   }
 }

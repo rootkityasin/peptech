@@ -10,12 +10,14 @@ interface VialBuyBoxProps {
 }
 
 export function VialBuyBox({ product }: VialBuyBoxProps) {
-  const { addItem, setIsDrawerOpen } = useCart()
+  const { addItem, setIsDrawerOpen, autoSavings } = useCart()
   const [purchaseType, setPurchaseType] = useState<"one-time" | "subscription">("one-time")
   const [quantity, setQuantity] = useState(1)
 
   const oneTimePrice = product.price
-  const subscribePrice = product.subscribePrice || Number((product.price * 0.9).toFixed(2))
+  const subscribePrice = autoSavings.discountType === "percentage"
+    ? Number((oneTimePrice * (1 - autoSavings.discountValue / 100)).toFixed(2))
+    : Math.max(0, Number((oneTimePrice - autoSavings.discountValue).toFixed(2)))
   const activePrice = purchaseType === "subscription" ? subscribePrice : oneTimePrice
   const totalPrice = activePrice * quantity
 
@@ -31,15 +33,15 @@ export function VialBuyBox({ product }: VialBuyBoxProps) {
         productHandle: product.handle,
         format: "vial",
         strength: product.categoryLabel,
-        price: product.price,
+        price: purchaseType === "subscription" ? subscribePrice : product.price,
         isSubscription: purchaseType === "subscription",
         subscriptionIntervalDays: purchaseType === "subscription" ? 28 : undefined,
-        discountPercent: purchaseType === "subscription" ? 10 : undefined,
+        discountPercent: autoSavings.discountType === "percentage" ? autoSavings.discountValue : undefined,
         sku: product.sku||"",
 
         image: product.image,
         options: [
-          { label: "Purchase Type", value: purchaseType === "subscription" ? "28-Day Subscription (10% off)" : "One-Time Order" },
+          { label: "Purchase Type", value: purchaseType === "subscription" ? "28-Day Automated Protocol" : "One-Time Order" },
           { label: "Format", value: "Lyophilised Research Vial" },
           { label: "Reconstitution", value: "Compatible with Bacteriostatic Water USP" },
         ],
@@ -108,7 +110,7 @@ export function VialBuyBox({ product }: VialBuyBoxProps) {
         </span>
         {purchaseType === "subscription" && (
           <span className="text-[#64748b] text-[13px] font-medium">
-            every 28 days (save 10%)
+            every 28 days ({autoSavings.saveText.toLowerCase()})
           </span>
         )}
       </div>
@@ -166,10 +168,10 @@ export function VialBuyBox({ product }: VialBuyBoxProps) {
             <div className="flex flex-col gap-[2px] items-start">
               <div className="flex gap-[8px] items-center">
                 <span className="font-semibold text-[#0b1f3a] text-[14px]">
-                  Subscribe &amp; Save
+                  Subscribe &amp; Deliver
                 </span>
-                <span className="bg-[#dcfce7] text-[#15803d] text-[11px] font-bold px-[6px] py-[2px] rounded-[4px]">
-                  10% OFF
+                <span className="bg-[#e0f2fe] text-[#0369a1] text-[11px] font-bold px-[6px] py-[2px] rounded-[4px]">
+                  28-Day Protocol
                 </span>
               </div>
               <span className="text-[#64748b] text-[12px]">
@@ -177,9 +179,14 @@ export function VialBuyBox({ product }: VialBuyBoxProps) {
               </span>
             </div>
           </div>
-          <span className="font-bold text-[#0b1f3a] text-[14px]">
-            £{subscribePrice.toFixed(2)}
-          </span>
+          <div className="flex flex-col items-end shrink-0 ml-2">
+            <span className="font-bold text-[#0b1f3a] text-[14px]">
+              £{subscribePrice.toFixed(2)}
+            </span>
+            <span className="text-[11px] font-semibold text-emerald-600">
+              {autoSavings.saveText}
+            </span>
+          </div>
         </div>
 
       </div>

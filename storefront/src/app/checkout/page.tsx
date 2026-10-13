@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect } from "react"
 import Link from "next/link"
-import { useCart } from "@/components/cart/CartContext"
+import { useCart, getItemSubtitle } from "@/components/cart/CartContext"
 import { useCustomer } from "@/context/CustomerContext"
-import { prepareStripeCheckout, validatePromoCode, type CheckoutSession, type PromoValidationResult } from "@/lib/stripe-checkout"
+import { prepareStripeCheckout, type CheckoutSession } from "@/lib/stripe-checkout"
 import { COUNTRIES, getCountryByName } from "@/lib/countries"
 import { EmbeddedStripeCheckout } from "@/components/checkout/EmbeddedStripeCheckout"
 import { getCustomerOrders, getCustomerAddresses } from "@/lib/customer-api"
@@ -13,6 +13,15 @@ export default function CheckoutPage() {
   const {
     items,
     subtotal,
+    subscriptionSavings,
+    promoDiscount,
+    totalSavings,
+    finalSubtotal,
+    appliedPromo,
+    applyPromoCode,
+    removePromoCode,
+    autoSavings,
+    featuredPromo,
     shippingCost,
     country,
     setCountry,
@@ -23,7 +32,9 @@ export default function CheckoutPage() {
     selectedShippingOption,
     shippingAvailable,
     shippingReady,
+    isOptionEligibleForFree,
   } = useCart()
+
   const {
     customer,
     token,
@@ -41,9 +52,15 @@ export default function CheckoutPage() {
   const [error, setError] = useState("")
   const [embeddedSession, setEmbeddedSession] = useState<CheckoutSession | null>(null)
   const [couponCode, setCouponCode] = useState("")
-  const [appliedPromo, setAppliedPromo] = useState<PromoValidationResult | null>(null)
-  const [validatingPromo, setValidatingPromo] = useState(false)
-  const [promoMessage, setPromoMessage] = useState<{ text: string; isError: boolean } | null>(null)
+  const [couponError, setCouponError] = useState("")
+  const [couponLoading, setCouponLoading] = useState(false)
+
+  // Keep coupon input in sync with applied promo code
+  useEffect(() => {
+    if (appliedPromo?.code && !couponCode) {
+      setCouponCode(appliedPromo.code)
+    }
+  }, [appliedPromo?.code])
 
   // Auth Portal States (Inline Sign In / Register)
   const [authMode, setAuthMode] = useState<"signin" | "register">("signin")
@@ -81,6 +98,28 @@ export default function CheckoutPage() {
     phone: "",
   })
   const [useCustomAddress, setUseCustomAddress] = useState(false)
+  const isUserManualCountryChangeRef = React.useRef(false)
+
+  const handleCountryChange = (newCountryName: string) => {
+    isUserManualCountryChangeRef.current = true
+    setCountry(newCountryName)
+
+    const newCountryCode = getCountryByName(newCountryName).code.toLowerCase()
+
+    // Check if researcher has a saved address in this selected country
+    const matchingSavedIndex = availableAddresses.findIndex(
+      (addr) => addr.country_code && addr.country_code.toLowerCase() === newCountryCode
+    )
+
+    if (matchingSavedIndex !== -1) {
+      setSelectedAddressIndex(matchingSavedIndex)
+      setUseCustomAddress(false)
+    } else {
+      // Switching to a destination country without a saved profile address:
+      // Enable custom address entry so researcher can provide the destination address
+      setUseCustomAddress(true)
+    }
+  }
 
   // Fetch remote orders and addresses when customer or token is active
   useEffect(() => {
@@ -180,7 +219,15 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (customer) {
       if (availableAddresses.length > 0) {
-        const defaultAddr = availableAddresses[selectedAddressIndex] || availableAddresses[0]
+        const defaultShippingIdx = availableAddresses.findIndex((a) => a.is_default_shipping)
+        const activeIdx =
+          selectedAddressIndex >= 0 && selectedAddressIndex < availableAddresses.length
+            ? selectedAddressIndex
+            : defaultShippingIdx !== -1
+            ? defaultShippingIdx
+            : 0
+
+        const defaultAddr = availableAddresses[activeIdx] || availableAddresses[0]
         setCustomAddress({
           first_name: defaultAddr.first_name || customer.first_name || "",
           last_name: defaultAddr.last_name || customer.last_name || "",
@@ -191,9 +238,9 @@ export default function CheckoutPage() {
           province: defaultAddr.province || "",
           phone: defaultAddr.phone || customer.phone || "",
         })
-        if (defaultAddr.country_code) {
+        if (!isUserManualCountryChangeRef.current && defaultAddr.country_code) {
           const matched = COUNTRIES.find((c) => c.code.toLowerCase() === defaultAddr.country_code.toLowerCase())
-          if (matched) setCountry(matched.name)
+          if (matched && country !== matched.name) setCountry(matched.name)
         }
       } else {
         setCustomAddress((prev) => ({
@@ -204,7 +251,7 @@ export default function CheckoutPage() {
         }))
       }
     }
-  }, [customer, availableAddresses, selectedAddressIndex, setCountry])
+  }, [customer, availableAddresses, selectedAddressIndex])
 
   // Rate Limiting Security Cooldown
   useEffect(() => {
@@ -225,57 +272,6 @@ export default function CheckoutPage() {
   const hasSubscription = items.some((i) => i.isSubscription)
   const money = (n: number) =>
     new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(n)
-
-  const promoDiscountPounds = appliedPromo?.discount_gbp
-    ? parseFloat(appliedPromo.discount_gbp)
-    : appliedPromo?.discount_minor
-    ? appliedPromo.discount_minor / 100
-    : 0
-  const finalTotalDue = Math.max(0, subtotal - promoDiscountPounds + (shippingAvailable ? shippingCost : 0))
-
-  const handleApplyPromo = async () => {
-    if (!couponCode.trim()) {
-      setPromoMessage({ text: "Please enter a promo code.", isError: true })
-      return
-    }
-    setValidatingPromo(true)
-    setPromoMessage(null)
-    try {
-      const res = await validatePromoCode(couponCode, items, token)
-      if (res.valid && res.code) {
-        setAppliedPromo(res)
-        setPromoMessage({ text: res.message || `Promo code "${res.code}" applied.`, isError: false })
-      } else {
-        setAppliedPromo(null)
-        setPromoMessage({ text: res.message || "Invalid or inactive promo code.", isError: true })
-      }
-    } catch (err: any) {
-      setAppliedPromo(null)
-      setPromoMessage({ text: err.message || "Unable to validate promo code.", isError: true })
-    } finally {
-      setValidatingPromo(false)
-    }
-  }
-
-  const handleRemovePromo = () => {
-    setAppliedPromo(null)
-    setCouponCode("")
-    setPromoMessage(null)
-  }
-
-  // Re-verify promo when items change in the basket
-  useEffect(() => {
-    if (appliedPromo?.code) {
-      validatePromoCode(appliedPromo.code, items, token).then((res) => {
-        if (res.valid && res.code) {
-          setAppliedPromo(res)
-        } else {
-          setAppliedPromo(null)
-          setPromoMessage({ text: "Promo code removed: items no longer meet discount criteria.", isError: true })
-        }
-      }).catch(() => {})
-    }
-  }, [items])
 
   // Inline Sign-In Handler
   async function handleInlineLogin(e: React.FormEvent) {
@@ -377,11 +373,13 @@ export default function CheckoutPage() {
 
       const currentCountryCode = getCountryByName(country).code.toLowerCase()
       const selectedAddr = availableAddresses[selectedAddressIndex]
-      const addrCountryCode = (selectedAddr?.country_code || currentCountryCode).toLowerCase()
-      const countryCode = availableAddresses.length > 0 && !useCustomAddress ? addrCountryCode : currentCountryCode
+      const isSavedAddrCountryMatching =
+        selectedAddr?.country_code && selectedAddr.country_code.toLowerCase() === currentCountryCode
+      const useSaved = availableAddresses.length > 0 && !useCustomAddress && isSavedAddrCountryMatching
+      const countryCode = currentCountryCode
 
       const resolvedAddress =
-        availableAddresses.length > 0 && !useCustomAddress
+        useSaved
           ? {
               id: selectedAddr?.id,
               first_name: selectedAddr?.first_name || customer.first_name || "",
@@ -419,7 +417,7 @@ export default function CheckoutPage() {
         paymentMethod: "stripe",
         uiMode: "embedded",
         shippingOptionId,
-        promoCode: appliedPromo?.code,
+        promoCode: appliedPromo?.code || undefined,
       })
 
       if (session.clientSecret) {
@@ -463,7 +461,7 @@ export default function CheckoutPage() {
           <div className="pt-2">
             <p className="text-sm font-medium text-slate-400">Total due today</p>
             <h2 className="text-4xl sm:text-5xl font-extrabold text-white tracking-tight mt-1">
-              {money(finalTotalDue)}
+              {money(finalSubtotal + (shippingAvailable ? shippingCost : 0))}
             </h2>
           </div>
 
@@ -494,10 +492,19 @@ export default function CheckoutPage() {
                       </p>
                     </div>
                     <p className="text-xs text-slate-400 mt-0.5">
-                      {item.isSubscription
-                        ? "Every 28 days · 10% auto-savings"
-                        : "Medical Applicator + Cartridge + Sterile Needles"}
+                      {getItemSubtitle(item)}
                     </p>
+                    {item.isSubscription && (
+                      <p className="text-[11px] text-[#00C5A0] mt-0.5 font-medium">
+                        Every 28 days · {item.discountPercent ? `${item.discountPercent}% auto-savings` : autoSavings.text}
+                      </p>
+                    )}
+                    {item.options?.filter((o) => !o.label.toLowerCase().includes("cartridge")).map((opt, idx) => (
+                      <p key={idx} className="text-[11px] text-slate-400 mt-0.5">
+                        <span className="text-slate-300 font-medium">{opt.label}:</span> <span className="text-[#00C5A0]">{opt.value}</span>
+                      </p>
+                    ))}
+
                     <div className="flex items-center gap-3 mt-1.5 text-xs text-slate-400">
                       <span>Qty: {item.quantity}</span>
                       <button
@@ -516,37 +523,90 @@ export default function CheckoutPage() {
 
           {/* Promo / Coupon Box */}
           <div className="space-y-2">
+            {featuredPromo && !appliedPromo && (
+              <div className="rounded-xl bg-slate-900/60 border border-slate-700/60 p-2.5 flex items-center justify-between">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="bg-[#16A6A3] text-white text-[10px] font-bold px-1.5 py-0.5 rounded">CODE</span>
+                  <span className="text-xs text-slate-300 truncate">
+                    Active promo: <strong className="text-white">{featuredPromo.code}</strong> ({featuredPromo.badgeText})
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setCouponLoading(true)
+                    setCouponError("")
+                    const res = await applyPromoCode(featuredPromo.code)
+                    setCouponLoading(false)
+                    if (!res.success) {
+                      setCouponError(res.message || "Failed to apply code.")
+                    } else {
+                      setCouponCode(featuredPromo.code)
+                    }
+                  }}
+                  className="text-xs text-[#00C5A0] hover:underline font-semibold shrink-0 ml-2 cursor-pointer"
+                >
+                  Apply →
+                </button>
+              </div>
+            )}
             <div className="flex gap-2">
               <input
                 type="text"
                 value={couponCode}
                 onChange={(e) => {
                   setCouponCode(e.target.value)
-                  if (promoMessage) setPromoMessage(null)
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault()
-                    handleApplyPromo()
-                  }
+                  if (couponError) setCouponError("")
                 }}
                 placeholder="Add promo or coupon code"
-                disabled={validatingPromo}
-                className="flex-1 rounded-xl bg-slate-900/60 border border-slate-700/80 px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#16A6A3] uppercase"
+                className="flex-1 rounded-xl bg-slate-900/60 border border-slate-700/80 px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#16A6A3]"
               />
-              <button
-                type="button"
-                onClick={handleApplyPromo}
-                disabled={validatingPromo || !couponCode.trim()}
-                className="rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-white px-5 py-2.5 text-xs font-semibold tracking-wide border border-slate-700 transition-colors cursor-pointer"
-              >
-                {validatingPromo ? "Verifying..." : "Apply"}
-              </button>
+              {appliedPromo && (!couponCode.trim() || couponCode.trim().toUpperCase() === appliedPromo.code.toUpperCase()) ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    removePromoCode()
+                    setCouponCode("")
+                    setCouponError("")
+                  }}
+                  className="rounded-xl bg-slate-800 hover:bg-slate-700 hover:text-rose-300 text-slate-300 px-5 py-2.5 text-xs font-semibold tracking-wide border border-slate-700 transition-colors cursor-pointer"
+                >
+                  Remove
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled={couponLoading || !couponCode.trim()}
+                  onClick={async () => {
+                    if (!couponCode.trim()) return
+                    setCouponLoading(true)
+                    setCouponError("")
+                    const res = await applyPromoCode(couponCode)
+                    setCouponLoading(false)
+                    if (!res.success) {
+                      setCouponError(res.message || "Invalid promotional code.")
+                    } else {
+                      setCouponCode(couponCode.trim().toUpperCase())
+                    }
+                  }}
+                  className="rounded-xl bg-slate-800 hover:bg-slate-700 text-white px-5 py-2.5 text-xs font-semibold tracking-wide border border-slate-700 transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  {couponLoading ? "Applying..." : "Apply"}
+                </button>
+              )}
             </div>
-            {promoMessage && (
-              <p className={`text-xs ${promoMessage.isError ? "text-rose-400" : "text-[#00C5A0]"}`}>
-                {promoMessage.text}
+
+            {appliedPromo && (
+              <p className="text-xs text-[#00C5A0] font-medium flex items-center gap-1.5 pt-0.5">
+                <span>✓</span>
+                <span>
+                  {appliedPromo.code} applied ({appliedPromo.discountType === "percentage" ? `${appliedPromo.discountValue}% Off` : money(appliedPromo.discountValue)})
+                </span>
               </p>
+            )}
+
+            {couponError && (
+              <p className="text-xs text-rose-400">{couponError}</p>
             )}
           </div>
 
@@ -556,21 +616,24 @@ export default function CheckoutPage() {
               <span>Subtotal</span>
               <span className="font-semibold text-white">{money(subtotal)}</span>
             </div>
-            {appliedPromo && promoDiscountPounds > 0 && (
+
+            {/* Automatic Subscribe & Save Auto-Savings */}
+            {subscriptionSavings > 0 && (
               <div className="flex justify-between text-[#00C5A0]">
-                <span className="flex items-center gap-1.5">
-                  <span>Discount ({appliedPromo.code})</span>
-                  <button
-                    type="button"
-                    onClick={handleRemovePromo}
-                    className="text-slate-400 hover:text-rose-400 text-xs ml-1 underline cursor-pointer"
-                  >
-                    (remove)
-                  </button>
-                </span>
-                <span className="font-semibold">-{money(promoDiscountPounds)}</span>
+                <span>Subscribe &amp; Save ({autoSavings.text})</span>
+                <span className="font-semibold">-{money(subscriptionSavings)}</span>
               </div>
             )}
+
+            {/* Manual Promotional Code Discount */}
+            {appliedPromo && promoDiscount > 0 && (
+              <div className="flex justify-between text-[#00C5A0]">
+                <span>Promo Code ({appliedPromo.code})</span>
+                <span className="font-semibold">-{money(promoDiscount)}</span>
+              </div>
+            )}
+
+
             <div className="flex justify-between text-slate-300">
               <span>
                 {shippingAvailable
@@ -587,7 +650,9 @@ export default function CheckoutPage() {
             </div>
             <div className="flex justify-between text-base font-bold text-white pt-3 border-t border-slate-800/80">
               <span>Total due today</span>
-              <span className="text-xl text-[#00C5A0]">{money(finalTotalDue)}</span>
+              <span className="text-xl text-[#00C5A0]">
+                {money(finalSubtotal + (shippingAvailable ? shippingCost : 0))}
+              </span>
             </div>
           </div>
         </div>
@@ -898,7 +963,7 @@ export default function CheckoutPage() {
                 Delivery Destination Country
                 <select
                   value={country}
-                  onChange={(e) => setCountry(e.target.value)}
+                  onChange={(e) => handleCountryChange(e.target.value)}
                   disabled={busy}
                   className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-sm text-[#0B1F3A] bg-white outline-none focus:border-[#16A6A3]"
                 >
@@ -950,10 +1015,26 @@ export default function CheckoutPage() {
                               ) : null}
                             </span>
                           </span>
-                          <span className="text-sm font-bold text-[#0B1F3A] shrink-0">
-                            {option.amount === 0 ? "FREE" : money(option.amount)}
-                          </span>
+                          {(() => {
+                            const isFree = isOptionEligibleForFree(option)
+                            if (isFree) {
+                              return (
+                                <span className="text-sm font-bold text-[#00C5A0] shrink-0 flex items-center gap-1.5">
+                                  <span>FREE</span>
+                                  {option.amount > 0 && (
+                                    <span className="text-xs line-through text-slate-400 font-normal">{money(option.amount)}</span>
+                                  )}
+                                </span>
+                              )
+                            }
+                            return (
+                              <span className="text-sm font-bold text-[#0B1F3A] shrink-0">
+                                {option.amount === 0 ? "FREE" : money(option.amount)}
+                              </span>
+                            )
+                          })()}
                         </button>
+
                       )
                     })}
                   </div>
@@ -982,6 +1063,8 @@ export default function CheckoutPage() {
                         type="button"
                         onClick={() => {
                           setSelectedAddressIndex(idx)
+                          isUserManualCountryChangeRef.current = false
+                          setUseCustomAddress(false)
                           if (addr.country_code) {
                             const matched = COUNTRIES.find((c) => c.code.toLowerCase() === addr.country_code.toLowerCase())
                             if (matched) setCountry(matched.name)
@@ -1017,6 +1100,11 @@ export default function CheckoutPage() {
                     <p className="text-slate-600">
                       {availableAddresses[selectedAddressIndex]?.city}{availableAddresses[selectedAddressIndex]?.city ? ", " : ""}
                       {availableAddresses[selectedAddressIndex]?.postal_code}
+                      {(() => {
+                        const cCode = availableAddresses[selectedAddressIndex]?.country_code
+                        const cName = cCode ? (COUNTRIES.find((c) => c.code.toLowerCase() === cCode.toLowerCase())?.name || cCode.toUpperCase()) : ""
+                        return cName ? ` · ${cName}` : ""
+                      })()}
                     </p>
                     <div className="pt-1.5 border-t border-slate-200/60 flex items-center justify-between">
                       <button
@@ -1090,7 +1178,7 @@ export default function CheckoutPage() {
                     className="mt-0.5 rounded border-slate-300 text-[#16A6A3] focus:ring-[#16A6A3]"
                   />
                   <span className="leading-snug">
-                    I authorise payment today and every 28 days for recurring items, with 10% off product prices plus
+                    I authorise payment today and every 28 days for recurring items, with {autoSavings.badgeText} product prices plus
                     delivery and applicable tax. I can pause, skip or cancel future renewals at any time in my account.
                   </span>
                 </label>

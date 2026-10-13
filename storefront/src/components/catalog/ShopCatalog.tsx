@@ -184,9 +184,7 @@ export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
       price: product.price,
       isSubscription: product.isSubscriptionEligible,
       subscriptionIntervalDays: product.isSubscriptionEligible ? 28 : undefined,
-      discountPercent: product.isSubscriptionEligible ? 10 : undefined,
       sku: product.sku || "",
-
     })
     setIsDrawerOpen(true)
   }
@@ -621,7 +619,7 @@ export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
                       onChange={() => setSelectedPurchaseType("sub")}
                       className="accent-[#0b1f3a] size-[15px]"
                     />
-                    <span className="font-semibold text-[#0b1f3a] text-[12px]">Subscribe &amp; Save (10% off)</span>
+                    <span className="font-semibold text-[#0b1f3a] text-[12px]">Subscribe &amp; Deliver (28-day)</span>
                   </div>
                   <span className="font-normal text-[#64748b] text-[11px] bg-white px-2 py-0.5 rounded border border-[#e2e8f0]">({subCount})</span>
                 </label>
@@ -819,7 +817,7 @@ export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
                   onChange={() => setSelectedPurchaseType("sub")}
                   className="accent-[#0b1f3a] size-[15px]"
                 />
-                <span className="font-semibold text-[#0b1f3a] text-[12px]">Subscribe &amp; Save (10% off)</span>
+                <span className="font-semibold text-[#0b1f3a] text-[12px]">Subscribe &amp; Deliver (28-day)</span>
               </div>
               <span className="font-normal text-[#94a3b8] text-[11px]">({subCount})</span>
             </label>
@@ -934,84 +932,26 @@ export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
 
                       {/* Price Row */}
                       <div className="flex gap-[6px] items-center justify-center pt-1.5 whitespace-nowrap">
-                        {product.isSubscriptionEligible && product.subscribePrice ? (
-                          <>
-                            <span className="font-bold text-[#0b1f3a] text-[15px]">
-                              £{product.subscribePrice.toFixed(2)}
-                            </span>
-                            <span className="font-normal text-[#64748b] text-[11px]">
-                              / 28 days
-                            </span>
-                            <div className="bg-[#e6fffa] border border-[#99f6e4] px-[5px] py-[2px] rounded-[4px]">
-                              <span className="font-bold text-[#0d7b78] text-[9px]">
-                                Save 10%
-                              </span>
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <span className="font-bold text-[#0b1f3a] text-[15px]">
-                              £{product.price.toFixed(2)}
-                            </span>
-                            <span className="font-normal text-[#64748b] text-[11px]">
-                              One-Time Purchase
-                            </span>
-                          </>
+                        <span className="font-bold text-[#0b1f3a] text-[15px]">
+                          £{product.price.toFixed(2)}
+                        </span>
+                        {product.isSubscriptionEligible && (
+                          <span className="font-normal text-[#64748b] text-[11px]">
+                            • 28-day available
+                          </span>
                         )}
                       </div>
                     </div>
                   </Link>
 
                   {/* Action Buttons Row */}
-                  <div className="flex items-center gap-2 w-full mt-3 pt-1">
+                  <div className="w-full mt-3 pt-1">
                     <Link
                       href={`/products/${product.handle}`}
-                      className="btn-shimmer btn-press flex-1 bg-[#0b1f3a] hover:bg-[#16a6a3] text-white flex items-center justify-center py-[9px] rounded-xl text-[12px] font-semibold transition-all shadow-xs hover:shadow-md cursor-pointer"
+                      className="btn-shimmer btn-press w-full bg-[#0b1f3a] hover:bg-[#16a6a3] text-white flex items-center justify-center py-[9px] rounded-xl text-[12px] font-semibold transition-all shadow-xs hover:shadow-md cursor-pointer"
                     >
                       <span>Details</span>
                     </Link>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault()
-                        e.stopPropagation()
-                        handleAddToCart(product)
-                      }}
-                      title="Quick Add to Cart"
-                      aria-label={`Add ${product.name} to Cart`}
-                      disabled={!product.variantId || !product.inStock}
-                      className="group size-[36px] rounded-xl border border-[#cbd5e1] hover:border-[#0b1f3a] hover:bg-slate-50 flex items-center justify-center shrink-0 transition-colors cursor-pointer text-[#0b1f3a]"
-                    >
-                      <svg
-                        className="size-[15px] text-[#0b1f3a] group-hover:text-[#16a6a3] group-hover:scale-110 transition-all"
-                        viewBox="0 0 16 16"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                        aria-hidden="true"
-                      >
-                        <path
-                          d="M6 14.6667C6.36819 14.6667 6.66667 14.3682 6.66667 14C6.66667 13.6318 6.36819 13.3333 6 13.3333C5.63181 13.3333 5.33333 13.6318 5.33333 14C5.33333 14.3682 5.63181 14.6667 6 14.6667Z"
-                          stroke="currentColor"
-                          strokeWidth="1.33333"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                        <path
-                          d="M13.3333 14.6667C13.7015 14.6667 14 14.3682 14 14C14 13.6318 13.7015 13.3333 13.3333 13.3333C12.9651 13.3333 12.6667 13.6318 12.6667 14C12.6667 14.3682 12.9651 14.6667 13.3333 14.6667Z"
-                          stroke="currentColor"
-                          strokeWidth="1.33333"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                        <path
-                          d="M0.666666 0.666666H3.33333L5.12 9.59333C5.18096 9.90026 5.34794 10.176 5.5917 10.3722C5.83546 10.5684 6.14047 10.6727 6.45333 10.6667H12.9333C13.2462 10.6727 13.5512 10.5684 13.795 10.3722C14.0387 10.176 14.2057 9.90026 14.2667 9.59333L15.3333 4H4"
-                          stroke="currentColor"
-                          strokeWidth="1.33333"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    </button>
                   </div>
                 </div>
               ))}
@@ -1040,63 +980,16 @@ export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
                   <div className="flex items-center gap-4 shrink-0">
                     <div className="text-right">
                       <div className="text-[16px] font-bold text-[#0b1f3a]">
-                        £{(product.subscribePrice || product.price).toFixed(2)}
+                        £{product.price.toFixed(2)}
                       </div>
-                      {product.isSubscriptionEligible && (
-                        <span className="text-[10px] font-bold text-[#0d7b78] bg-[#e6fffa] px-1.5 py-0.5 rounded border border-[#99f6e4]">
-                          Save 10%
-                        </span>
-                      )}
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center">
                       <Link
                         href={`/products/${product.handle}`}
-                        className="btn-shimmer btn-press bg-[#0b1f3a] hover:bg-[#16a6a3] text-white px-3.5 py-2.5 rounded-xl text-[12px] font-semibold transition-all shadow-xs hover:shadow-md cursor-pointer"
+                        className="btn-shimmer btn-press bg-[#0b1f3a] hover:bg-[#16a6a3] text-white px-5 py-2.5 rounded-xl text-[12px] font-semibold transition-all shadow-xs hover:shadow-md cursor-pointer"
                       >
                         <span>Details</span>
                       </Link>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault()
-                          e.stopPropagation()
-                          handleAddToCart(product)
-                        }}
-                        className="group size-[38px] rounded-xl border border-[#cbd5e1] hover:border-[#0b1f3a] hover:bg-slate-50 flex items-center justify-center transition-colors cursor-pointer text-[#0b1f3a]"
-                        title="Add to Cart"
-                        aria-label={`Add ${product.name} to Cart`}
-                      disabled={!product.variantId || !product.inStock}
-                      >
-                        <svg
-                          className="size-[15px] text-[#0b1f3a] group-hover:text-[#16a6a3] group-hover:scale-110 transition-all"
-                          viewBox="0 0 16 16"
-                          fill="none"
-                          xmlns="http://www.w3.org/2000/svg"
-                          aria-hidden="true"
-                        >
-                          <path
-                            d="M6 14.6667C6.36819 14.6667 6.66667 14.3682 6.66667 14C6.66667 13.6318 6.36819 13.3333 6 13.3333C5.63181 13.3333 5.33333 13.6318 5.33333 14C5.33333 14.3682 5.63181 14.6667 6 14.6667Z"
-                            stroke="currentColor"
-                            strokeWidth="1.33333"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                          <path
-                            d="M13.3333 14.6667C13.7015 14.6667 14 14.3682 14 14C14 13.6318 13.7015 13.3333 13.3333 13.3333C12.9651 13.3333 12.6667 13.6318 12.6667 14C12.6667 14.3682 12.9651 14.6667 13.3333 14.6667Z"
-                            stroke="currentColor"
-                            strokeWidth="1.33333"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                          <path
-                            d="M0.666666 0.666666H3.33333L5.12 9.59333C5.18096 9.90026 5.34794 10.176 5.5917 10.3722C5.83546 10.5684 6.14047 10.6727 6.45333 10.6667H12.9333C13.2462 10.6727 13.5512 10.5684 13.795 10.3722C14.0387 10.176 14.2057 9.90026 14.2667 9.59333L15.3333 4H4"
-                            stroke="currentColor"
-                            strokeWidth="1.33333"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                      </button>
                     </div>
                   </div>
                 </div>

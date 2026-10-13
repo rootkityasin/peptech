@@ -3,7 +3,7 @@
 import React, { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { useCart } from "@/components/cart/CartContext"
+import { useCart, getItemSubtitle } from "@/components/cart/CartContext"
 
 export default function CartPage() {
   const {
@@ -11,33 +11,41 @@ export default function CartPage() {
     removeItem,
     updateQuantity,
     subtotal,
-    destination,
-    setDestination,
+    subscriptionSavings,
+    promoDiscount,
+    totalSavings,
+    finalSubtotal,
+    appliedPromo,
+    applyPromoCode,
+    removePromoCode,
+    autoSavings,
+    featuredPromo,
+    isFreeShippingUnlocked,
     shippingCost,
     selectedShippingOption,
     shippingAvailable,
+    total,
   } = useCart()
-  const [promoCode, setPromoCode] = useState("")
-  const [promoApplied, setPromoApplied] = useState(false)
+
+  const [promoInput, setPromoInput] = useState("")
   const [promoError, setPromoError] = useState("")
+  const [promoLoading, setPromoLoading] = useState(false)
 
-  const handleApplyPromo = (e: React.FormEvent) => {
+  const handleApplyPromo = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!promoCode.trim()) return
-
-    if (promoCode.trim().toUpperCase() === "RESEARCH10") {
-      setPromoApplied(true)
-      setPromoError("")
+    if (!promoInput.trim()) return
+    setPromoLoading(true)
+    setPromoError("")
+    const res = await applyPromoCode(promoInput)
+    setPromoLoading(false)
+    if (!res.success) {
+      setPromoError(res.message || "Invalid promotional code.")
     } else {
-      setPromoError("Invalid promo code. Use RESEARCH10 for 10% off.")
-      setPromoApplied(false)
+      setPromoInput("")
     }
   }
 
-  const discountAmount = promoApplied ? subtotal * 0.1 : 0
-  const finalSubtotal = subtotal - discountAmount
   const shippingDisplay = items.length === 0 ? 0 : shippingCost
-  const total = finalSubtotal + shippingDisplay
 
   return (
     <main className="min-h-screen bg-[#f8fafc]">
@@ -149,21 +157,28 @@ export default function CartPage() {
                         {item.title}
                       </h3>
                       <div className="text-xs text-[#64748b]">
-                        Strength: {item.strength} • SKU: {item.sku}
+                        {getItemSubtitle(item)}
                       </div>
-                      {item.options && item.options.length > 0 && (
-                        <div className="flex flex-col gap-0.5 pt-0.5">
-                          {item.options.map((opt, idx) => (
-                            <div key={idx} className="text-xs flex items-center gap-1.5 text-[#475569]">
-                              <span className="font-semibold text-[#0b1f3a]">{opt.label}:</span>
-                              <span className="text-[#16a6a3] font-medium">{opt.value}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                      {(() => {
+                        const otherOptions = item.options?.filter(
+                          (o) => !o.label.toLowerCase().includes("cartridge")
+                        )
+                        if (!otherOptions || otherOptions.length === 0) return null
+                        return (
+                          <div className="flex flex-col gap-0.5 pt-0.5">
+                            {otherOptions.map((opt, idx) => (
+                              <div key={idx} className="text-xs flex items-center gap-1.5 text-[#475569]">
+                                <span className="font-semibold text-[#0b1f3a]">{opt.label}:</span>
+                                <span className="text-[#16a6a3] font-medium">{opt.value}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )
+                      })()}
+
                       {item.isSubscription ? (
                         <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#16a6a3]/10 text-[#16a6a3]">
-                          🔄 28-Day Subscribe &amp; Save (10% Off)
+                          🔄 28-Day Subscribe &amp; Save ({autoSavings.badgeText})
                         </span>
                       ) : (
                         <span className="inline-flex items-center text-[10px] font-medium text-[#64748b]">
@@ -230,34 +245,85 @@ export default function CartPage() {
                   Order Financial Summary
                 </h3>
 
-                {/* Promo Code Form */}
-                <form onSubmit={handleApplyPromo} className="space-y-2">
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="Promo code (try RESEARCH10)"
-                      value={promoCode}
-                      onChange={(e) => setPromoCode(e.target.value)}
-                      className="w-full px-3.5 py-2 rounded-xl border border-[#e2e8f0] text-xs focus:outline-hidden focus:border-[#16a6a3]"
-                    />
-                    <button
-                      type="submit"
-                      className="px-4 py-2 rounded-xl bg-[#0b1f3a] hover:bg-[#16a6a3] text-white text-xs font-bold transition-colors shrink-0"
-                    >
-                      Apply
-                    </button>
-                  </div>
-                  {promoApplied && (
-                    <p className="text-[11px] text-emerald-600 font-semibold">
-                      ✓ Promo RESEARCH10 applied: 10% discount!
-                    </p>
+                {/* Promo Code Section */}
+                <div className="space-y-2">
+                  {featuredPromo && !appliedPromo && (
+                    <div className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-[#0b1f3a]">
+                      <div className="flex items-center gap-2 truncate">
+                        <span className="bg-[#16a6a3] text-white text-[10px] font-bold px-1.5 py-0.5 rounded">CODE</span>
+                        <span className="truncate">Active promo: <strong>{featuredPromo.code}</strong> ({featuredPromo.badgeText})</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          setPromoLoading(true)
+                          setPromoError("")
+                          const res = await applyPromoCode(featuredPromo.code)
+                          setPromoLoading(false)
+                          if (!res.success) {
+                            setPromoError(res.message || "Failed to apply promo.")
+                          } else {
+                            setPromoInput(featuredPromo.code)
+                          }
+                        }}
+                        className="text-[#16a6a3] hover:underline font-bold shrink-0 ml-2 cursor-pointer"
+                      >
+                        Apply →
+                      </button>
+                    </div>
                   )}
-                  {promoError && (
-                    <p className="text-[11px] text-red-500 font-semibold">
-                      {promoError}
-                    </p>
-                  )}
-                </form>
+                  <form onSubmit={handleApplyPromo} className="space-y-2">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Enter promo code"
+                        value={promoInput || (appliedPromo ? appliedPromo.code : "")}
+                        onChange={(e) => {
+                          setPromoInput(e.target.value)
+                          if (promoError) setPromoError("")
+                        }}
+                        className="w-full px-3.5 py-2 rounded-xl border border-[#e2e8f0] text-xs focus:outline-hidden focus:border-[#16a6a3]"
+                      />
+                      {appliedPromo && (!promoInput.trim() || promoInput.trim().toUpperCase() === appliedPromo.code.toUpperCase()) ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            removePromoCode()
+                            setPromoInput("")
+                            setPromoError("")
+                          }}
+                          className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold transition-colors shrink-0 cursor-pointer"
+                        >
+                          Remove
+                        </button>
+                      ) : (
+                        <button
+                          type="submit"
+                          disabled={promoLoading || !promoInput.trim()}
+                          className="px-4 py-2 rounded-xl bg-[#0b1f3a] hover:bg-[#16a6a3] text-white text-xs font-bold transition-colors shrink-0 disabled:opacity-50 cursor-pointer"
+                        >
+                          {promoLoading ? "Applying..." : "Apply"}
+                        </button>
+                      )}
+                    </div>
+
+                    {appliedPromo && (
+                      <p className="text-[11px] text-[#00C5A0] font-medium flex items-center gap-1 pt-0.5">
+                        <span>✓</span>
+                        <span>
+                          {appliedPromo.code} applied ({appliedPromo.discountType === "percentage" ? `${appliedPromo.discountValue}% Off` : `£${appliedPromo.discountValue} Off`})
+                        </span>
+                      </p>
+                    )}
+
+                    {promoError && (
+                      <p className="text-[11px] text-red-500 font-semibold">
+                        {promoError}
+                      </p>
+                    )}
+                  </form>
+                </div>
+
 
                 {/* Pricing Calculation Rows */}
                 <div className="space-y-2.5 text-xs text-[#64748b] border-t border-[#e2e8f0] pt-4">
@@ -266,57 +332,43 @@ export default function CartPage() {
                     <span className="text-[#0b1f3a] font-semibold">£{subtotal.toFixed(2)}</span>
                   </div>
 
-                  {promoApplied && (
-                    <div className="flex justify-between text-emerald-600 font-semibold">
-                      <span>Promotional Discount (10%)</span>
-                      <span>-£{discountAmount.toFixed(2)}</span>
+                  {/* Automatic Subscribe & Save Auto-Savings */}
+                  {subscriptionSavings > 0 && (
+                    <div className="flex justify-between text-[#00C5A0] font-semibold">
+                      <span>Subscribe &amp; Save ({autoSavings.text})</span>
+                      <span>-£{subscriptionSavings.toFixed(2)}</span>
                     </div>
                   )}
+
+                  {/* Manual Promotional Code Discount */}
+                  {appliedPromo && promoDiscount > 0 && (
+                    <div className="flex justify-between text-[#00C5A0] font-semibold">
+                      <span>Promo Code ({appliedPromo.code})</span>
+                      <span>-£{promoDiscount.toFixed(2)}</span>
+                    </div>
+                  )}
+
 
                   <div className="flex justify-between items-center">
                     <div>
-                      <span>
-                        {items.length === 0
-                          ? "Shipping"
-                          : shippingAvailable
-                            ? selectedShippingOption?.name || "Shipping"
-                            : "Shipping unavailable"}
-                      </span>
-                      <div className="flex gap-2 text-[10px] text-slate-500 mt-0.5">
-                        <button
-                          type="button"
-                          onClick={() => setDestination("UK")}
-                          className={`hover:underline cursor-pointer ${destination === "UK" ? "font-bold text-[#0b1f3a]" : "text-slate-400"}`}
-                        >
-                          United Kingdom
-                        </button>
-                        <span>•</span>
-                        <button
-                          type="button"
-                          onClick={() => setDestination("INTL")}
-                          className={`hover:underline cursor-pointer ${destination === "INTL" ? "font-bold text-[#0b1f3a]" : "text-slate-400"}`}
-                        >
-                          International
-                        </button>
-                      </div>
+                      <span className="text-[#0b1f3a] font-semibold text-xs">Shipping</span>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        {isFreeShippingUnlocked
+                          ? "Free Royal Mail delivery unlocked"
+                          : "Calculated at checkout"}
+                      </p>
                     </div>
-                    <span className="text-[#0b1f3a] font-medium">
-                      {items.length === 0 || !shippingAvailable ? (
+                    <div>
+                      {items.length === 0 ? (
                         <span className="text-slate-400">—</span>
-                      ) : shippingDisplay === 0 ? (
-                        <span className="text-emerald-600 font-bold uppercase">Free</span>
+                      ) : isFreeShippingUnlocked ? (
+                        <span className="text-[#00C5A0] font-bold text-xs uppercase">FREE</span>
                       ) : (
-                        `£${shippingDisplay.toFixed(2)}`
+                        <span className="text-slate-400 text-xs font-medium">Calculated at checkout</span>
                       )}
-                    </span>
+                    </div>
                   </div>
 
-                  {items.length > 0 && !shippingAvailable && (
-                    <p className="text-[11px] text-amber-600 font-semibold leading-relaxed">
-                      No shipping method is configured for this destination yet. Choose another destination, or try
-                      again shortly.
-                    </p>
-                  )}
 
                   <div className="border-t border-[#e2e8f0] pt-3 flex justify-between items-baseline">
                     <span className="font-bold text-sm text-[#0b1f3a]">Estimated Total</span>

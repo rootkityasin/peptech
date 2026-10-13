@@ -22,10 +22,10 @@ export function ProductBuyBox({
   subtitle = "One system. Multiple possibilities.",
   description = "Get started with the complete PEPTECH® system. Includes reusable pen, a compatible prefilled cartridge, 14 instructions and all accessories you need for accurate, reliable testing.",
   price = 249.00,
-  subscribePrice = 224.10,
+  subscribePrice,
   tag = "PEN SYSTEM",
 }: ProductBuyBoxProps) {
-  const { addItem, setIsDrawerOpen } = useCart()
+  const { addItem, setIsDrawerOpen, autoSavings } = useCart()
   const [purchaseType, setPurchaseType] = useState<"one-time" | "subscription">("one-time")
   
   const isRefill =
@@ -114,8 +114,11 @@ export function ProductBuyBox({
   }, [isDropdownOpen])
 
   const currentOneTimePrice = product?.price ?? price
-  const currentSubscribePrice = product?.subscribePrice ?? Number((currentOneTimePrice * 0.9).toFixed(2))
-  const totalPrice = isRefill && purchaseType === "subscription" ? currentSubscribePrice : currentOneTimePrice
+  const dynamicSubPrice = autoSavings.discountType === "percentage"
+    ? Number((currentOneTimePrice * (1 - autoSavings.discountValue / 100)).toFixed(2))
+    : Math.max(0, Number((currentOneTimePrice - autoSavings.discountValue).toFixed(2)))
+  const currentSubscribePrice = dynamicSubPrice
+  const totalPrice = purchaseType === "subscription" ? currentSubscribePrice : currentOneTimePrice
 
   // Determine title with balanced line break matching "Complete PEPTECH®\nPen Set"
   const rawTitle = title || (isRefill ? (product?.name || "Refill Cartridge") : "Complete PEPTECH®\nPen Set")
@@ -146,10 +149,10 @@ export function ProductBuyBox({
       title: product?.name || title.replace("\n", " "),
       format: isRefill ? "refill" : "pen-set",
       strength: product?.categoryLabel || "Precision Research",
-      price: product?.price ?? price,
+      price: recurring ? currentSubscribePrice : currentOneTimePrice,
       isSubscription: recurring,
       subscriptionIntervalDays: recurring ? 28 : undefined,
-      discountPercent: recurring ? 10 : undefined,
+      discountPercent: autoSavings.discountType === "percentage" ? autoSavings.discountValue : undefined,
       sku: product?.sku || "",
       image: product?.image || "/images/peptech/mockup1.webp",
       options,
@@ -203,8 +206,15 @@ export function ProductBuyBox({
       </p>
 
       {/* Primary Price */}
-      <div className="font-bold text-[#0b1f3a] text-[28px] tracking-tight">
-        £{totalPrice.toFixed(2)}
+      <div className="flex items-baseline gap-3">
+        <span className="font-bold text-[#0b1f3a] text-[28px] tracking-tight">
+          £{totalPrice.toFixed(2)}
+        </span>
+        {purchaseType === "subscription" && (
+          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+            {autoSavings.discountType === "percentage" ? `${autoSavings.discountValue}% Subscribe & Save` : `${autoSavings.badgeText} Subscribe & Save`}
+          </span>
+        )}
       </div>
 
       {/* Complete Pen Set Cartridge Selector Dropdown */}
@@ -354,14 +364,14 @@ export function ProductBuyBox({
         {isRefill && (
           <div
             onClick={() => setPurchaseType("subscription")}
-            className={`h-[60px] rounded-[8px] px-[18px] flex items-center justify-between w-full cursor-pointer transition-all ${
+            className={`min-h-[60px] py-2.5 rounded-[8px] px-[18px] flex items-center justify-between w-full cursor-pointer transition-all ${
               purchaseType === "subscription"
                 ? "bg-[#f8fafc] border-[1.5px] border-[#0b1f3a]"
                 : "bg-white border border-[#e2e8f0] hover:border-slate-300"
             }`}
           >
             <div className="flex gap-[12px] items-center">
-              <div className={`size-[18px] rounded-full border flex items-center justify-center ${
+              <div className={`size-[18px] rounded-full border flex items-center justify-center shrink-0 ${
                 purchaseType === "subscription"
                   ? "border-[#0b1f3a] bg-white border-2"
                   : "border-[#94a3b8] border-[1.5px]"
@@ -373,20 +383,25 @@ export function ProductBuyBox({
               <div className="flex flex-col gap-[2px] items-start">
                 <div className="flex gap-[8px] items-center">
                   <span className="font-semibold text-[#0b1f3a] text-[14px]">
-                    Subscribe &amp; Save
+                    Subscribe &amp; Deliver
                   </span>
-                  <span className="bg-[#dcfce7] text-[#15803d] text-[11px] font-bold px-[6px] py-[2px] rounded-[4px]">
-                    10%
+                  <span className="bg-[#e0f2fe] text-[#0369a1] text-[11px] font-bold px-[6px] py-[2px] rounded-[4px]">
+                    28-Day Protocol
                   </span>
                 </div>
                 <span className="text-[#64748b] text-[12px]">
-                  Every 28 days • Delivery charged separately
+                  Every 28 days automated delivery • Pause or cancel anytime
                 </span>
               </div>
             </div>
-            <span className="font-bold text-[#0b1f3a] text-[14px]">
-              £{currentSubscribePrice.toFixed(2)}
-            </span>
+            <div className="flex flex-col items-end shrink-0 ml-2">
+              <span className="font-bold text-[#0b1f3a] text-[14px]">
+                £{currentSubscribePrice.toFixed(2)}
+              </span>
+              <span className="text-[11px] font-semibold text-emerald-600">
+                {autoSavings.saveText}
+              </span>
+            </div>
           </div>
         )}
 

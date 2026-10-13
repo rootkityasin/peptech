@@ -14,7 +14,7 @@
     "medusa"
   ],
   "scripts": {
-    "build": "NODE_ENV=production medusa build",
+    "build": "medusa build",
     "start": "node server.js",
     "dev": "NODE_ENV=development medusa develop",
     "lint": "medusa lint",

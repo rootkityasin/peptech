@@ -11,6 +11,7 @@ import { VisaBadge, MastercardBadge, AmexBadge, JcbBadge } from "@/components/ui
 import { useCustomer } from "@/context/CustomerContext"
 import { getCustomerOrders } from "@/lib/customer-api"
 import { formatFullReceiptDateTime, getItemDisplayDetails } from "@/components/receipt/UnifiedReceipt"
+import { COUNTRIES } from "@/lib/countries"
 
 function formatOrderDate(rawDate?: string | Date | null): string {
   if (!rawDate) return new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
@@ -2099,7 +2100,9 @@ function AccountContent() {
                       </p>
                       {addr.company && <p className="text-[#64748b]">{addr.company}</p>}
                       <p className="text-[#64748b]">{addr.address_1}{addr.address_2 ? `, ${addr.address_2}` : ""}</p>
-                      <p className="text-[#64748b]">{addr.city}, {addr.postal_code}, {addr.country_code?.toUpperCase() === "GB" ? "United Kingdom" : addr.country_code?.toUpperCase()}</p>
+                      <p className="text-[#64748b]">
+                        {addr.city}, {addr.postal_code}, {COUNTRIES.find((c) => c.code.toLowerCase() === addr.country_code?.toLowerCase())?.name || addr.country_code?.toUpperCase()}
+                      </p>
                       {addr.phone && <p className="text-[#64748b]">{addr.phone}</p>}
                     </div>
 
@@ -2449,10 +2452,11 @@ function AccountContent() {
                     defaultValue="GB"
                     className="border border-[#cbd5e1] rounded-[8px] px-2.5 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden bg-white"
                   >
-                    <option value="GB">United Kingdom (GB)</option>
-                    <option value="US">United States (US)</option>
-                    <option value="IE">Ireland (IE)</option>
-                    <option value="DE">Germany (DE)</option>
+                    {COUNTRIES.map((c) => (
+                      <option key={c.code} value={c.code}>
+                        {c.name} ({c.code})
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div className="flex flex-col gap-1">

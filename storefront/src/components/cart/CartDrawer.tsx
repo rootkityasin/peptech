@@ -2,7 +2,7 @@
 
 import React, { useEffect } from "react"
 import Link from "next/link"
-import { useCart } from "./CartContext"
+import { useCart, getItemSubtitle } from "./CartContext"
 
 export function CartDrawer() {
   const {
@@ -11,16 +11,17 @@ export function CartDrawer() {
     updateQuantity,
     isDrawerOpen,
     setIsDrawerOpen,
+    subtotal,
+    subscriptionSavings,
+    promoDiscount,
+    totalSavings,
+    finalSubtotal,
+    autoSavings,
+    appliedPromo,
+    freeShipping,
   } = useCart()
 
-  // Calculate items total
-  const itemsTotal = items.reduce((acc, item) => {
-    const unitPrice =
-      item.isSubscription && item.discountPercent
-        ? item.price * (1 - item.discountPercent / 100)
-        : item.price
-    return acc + unitPrice * item.quantity
-  }, 0)
+  const itemsTotal = subtotal
 
   // Prevent background scrolling when drawer is open
   useEffect(() => {
@@ -103,35 +104,43 @@ export function CartDrawer() {
         </div>
 
         {/* Free Shipping Dynamic Progress Indicator */}
-        {items.length > 0 && (
-          <div className="w-full px-6 py-3 bg-[#f8fafc] border-b border-[#e2e8f0] space-y-1.5 shrink-0">
-            <div className="flex items-center justify-between text-[11.5px]">
-              <span className="font-medium text-[#0b1f3a]">
-                {itemsTotal >= 150 ? (
-                  <span className="text-emerald-700 font-semibold flex items-center gap-1.5">
-                    <span className="text-emerald-600 font-bold">✓</span>
-                    <span>Free Royal Mail Tracked 24 Unlocked!</span>
-                  </span>
-                ) : (
-                  <span>
-                    Add <strong className="text-[#16a6a3]">£{(150 - itemsTotal).toFixed(2)}</strong> more for Free Tracked 24 Shipping
-                  </span>
-                )}
-              </span>
-              <span className="text-[11px] font-semibold text-[#94a3b8]">
-                {Math.min(100, Math.round((itemsTotal / 150) * 100))}%
-              </span>
+        {freeShipping?.enabled && items.length > 0 && (() => {
+          const threshold = freeShipping?.threshold || 150
+          const isFreeUnlocked = itemsTotal >= threshold
+          const remaining = Math.max(0, threshold - itemsTotal)
+          const progressPercent = Math.min(100, Math.round((itemsTotal / threshold) * 100))
+          const progressWidth = Math.min(100, Math.max(6, (itemsTotal / threshold) * 100))
+
+          return (
+            <div className="w-full px-6 py-3 bg-[#f8fafc] border-b border-[#e2e8f0] space-y-1.5 shrink-0">
+              <div className="flex items-center justify-between text-[11.5px]">
+                <span className="font-medium text-[#0b1f3a]">
+                  {isFreeUnlocked ? (
+                    <span className="text-emerald-700 font-semibold flex items-center gap-1.5">
+                      <span className="text-emerald-600 font-bold">✓</span>
+                      <span>Free delivery Unlocked</span>
+                    </span>
+                  ) : (
+                    <span>
+                      Add <strong className="text-[#16a6a3]">£{remaining.toFixed(2)}</strong> more for Free Tracked 24 Shipping
+                    </span>
+                  )}
+                </span>
+                <span className="text-[11px] font-semibold text-[#94a3b8]">
+                  {progressPercent}%
+                </span>
+              </div>
+              <div className="w-full h-1.5 bg-[#e2e8f0] rounded-full overflow-hidden">
+                <div
+                  className={`h-full transition-all duration-500 ease-out rounded-full ${
+                    isFreeUnlocked ? "bg-emerald-500" : "bg-[#16a6a3]"
+                  }`}
+                  style={{ width: `${progressWidth}%` }}
+                />
+              </div>
             </div>
-            <div className="w-full h-1.5 bg-[#e2e8f0] rounded-full overflow-hidden">
-              <div
-                className={`h-full transition-all duration-500 ease-out rounded-full ${
-                  itemsTotal >= 150 ? "bg-emerald-500" : "bg-[#16a6a3]"
-                }`}
-                style={{ width: `${Math.min(100, Math.max(6, (itemsTotal / 150) * 100))}%` }}
-              />
-            </div>
-          </div>
-        )}
+          )
+        })()}
 
         {/* 02 Drawer Body - Items List */}
         <div
@@ -187,19 +196,13 @@ export function CartDrawer() {
             </div>
           ) : (
             items.map((item) => {
-              const unitPrice =
-                item.isSubscription && item.discountPercent
-                  ? item.price * (1 - item.discountPercent / 100)
-                  : item.price
+              const unitPrice = item.price
               const itemTotal = unitPrice * item.quantity
-              const originalItemTotal = item.price * item.quantity
 
-              const subtitle =
-                item.format === "pen-set"
-                  ? "Medical Applicator + Cartridge + 4x Needles"
-                  : item.format === "refill"
-                  ? "Pre-filled 3mL Borosilicate Glass Cartridge"
-                  : "99.8% HPLC Certified • Sterile Lyophilised Cake"
+              const subtitle = getItemSubtitle(item)
+              const otherOptions = item.options?.filter(
+                (o) => !o.label.toLowerCase().includes("cartridge")
+              )
 
               return (
                 <div
@@ -229,10 +232,10 @@ export function CartDrawer() {
                         {subtitle}
                       </p>
 
-                      {/* Dynamic Chosen Options (Cartridge & Diluent/Vial) */}
-                      {item.options && item.options.length > 0 && (
+                      {/* Dynamic Chosen Options */}
+                      {otherOptions && otherOptions.length > 0 && (
                         <div className="flex flex-col gap-1 w-full my-0.5">
-                          {item.options.map((opt, idx) => (
+                          {otherOptions.map((opt, idx) => (
                             <div
                               key={idx}
                               className="text-[11px] leading-snug flex items-baseline gap-1.5 w-full"
@@ -257,11 +260,6 @@ export function CartDrawer() {
                           <p className="font-bold text-[#0b1f3a] text-[14px] leading-none">
                             £{itemTotal.toFixed(2)}
                           </p>
-                          {item.isSubscription && item.discountPercent && (
-                            <p className="font-normal line-through text-[#94a3b8] text-[11px] leading-none">
-                              £{originalItemTotal.toFixed(2)}
-                            </p>
-                          )}
                         </div>
 
                         {/* Qty Stepper with Click Animation */}
@@ -326,28 +324,38 @@ export function CartDrawer() {
             data-node-id="47:7519"
             data-name="03 Drawer Footer - Checkout Actions"
           >
-            <div
-              className="flex items-center justify-between w-full"
-              data-node-id="47:7743"
-              data-name="Total Row"
-            >
-              <div className="flex flex-col">
-                <p
-                  className="font-medium text-[#64748b] text-[14px]"
-                  data-node-id="47:7744"
-                >
-                  Subtotal
-                </p>
-                <p className="text-[11px] text-[#94a3b8]">
-                  Taxes &amp; shipping calculated at checkout
+            <div className="flex flex-col gap-2 w-full text-xs">
+              <div className="flex items-center justify-between text-[#64748b]">
+                <span>Subtotal</span>
+                <span className="font-semibold text-[#0b1f3a]">£{subtotal.toFixed(2)}</span>
+              </div>
+
+              {/* Automatic Subscribe & Save Auto-Savings */}
+              {subscriptionSavings > 0 && (
+                <div className="flex items-center justify-between text-[#00c5a0] font-semibold">
+                  <span>Subscribe &amp; Save ({autoSavings.text})</span>
+                  <span>-£{subscriptionSavings.toFixed(2)}</span>
+                </div>
+              )}
+
+              {/* Manual Promotional Code Discount */}
+              {appliedPromo && promoDiscount > 0 && (
+                <div className="flex items-center justify-between text-[#00c5a0] font-semibold">
+                  <span>Promo Code ({appliedPromo.code})</span>
+                  <span>-£{promoDiscount.toFixed(2)}</span>
+                </div>
+              )}
+
+
+              <div className="flex items-baseline justify-between pt-1 border-t border-[#e2e8f0]">
+                <div>
+                  <p className="font-bold text-[#0b1f3a] text-[15px]">Total due today</p>
+                  <p className="text-[11px] text-[#94a3b8]">Taxes &amp; shipping calculated at checkout</p>
+                </div>
+                <p className="font-bold text-[#0b1f3a] text-[22px]">
+                  £{finalSubtotal.toFixed(2)}
                 </p>
               </div>
-              <p
-                className="font-bold text-[#0b1f3a] text-[22px]"
-                data-node-id="47:7745"
-              >
-                £{itemsTotal.toFixed(2)}
-              </p>
             </div>
             <Link
               href="/checkout"

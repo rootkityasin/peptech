@@ -9,7 +9,8 @@ import {
 const CLICK_AND_DROP_BASE_URL =
   process.env.ROYAL_MAIL_CLICK_AND_DROP_URL ||
   "https://api.parcel.royalmail.com/api/v1";
-const CLICK_AND_DROP_TOKEN = process.env.CLICKANDDROP_AUTH_KEY;
+const CLICK_AND_DROP_TOKEN =
+  process.env.CLICKANDDROP_AUTH_KEY || process.env.CLICKANDDROP_AUTH_KYE;
 
 /**
  * Service name mapping for display and order tracking
@@ -728,8 +729,8 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
       order.shipping_methods?.[0]?.shipping_option_id;
     if (!shippingOptionId) {
       try {
-        const settings = await req.scope
-          .resolve("peptechCommerce")
+        const settings = await (req.scope
+          .resolve("peptechCommerce") as any)
           .get("commerce_settings");
         shippingOptionId = settings?.data?.shipping_option_id || null;
       } catch {

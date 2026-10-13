@@ -1,5 +1,5 @@
 import { defineWidgetConfig } from "@medusajs/admin-sdk";
-import { adminFetch as fetch } from "../lib/sdk";
+import { adminFetch, adminFetch as fetch } from "../lib/sdk";
 import { Container, Heading, Text, Button, Badge, Input, Label, toast, Toaster } from "@medusajs/ui";
 import { useState, useMemo, useEffect } from "react";
 import "../styles/custom.css";
