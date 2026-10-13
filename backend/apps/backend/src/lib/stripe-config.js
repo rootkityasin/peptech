@@ -46,15 +46,15 @@ function getStripeConfig(env = process.env) {
   const match = /^(?:sk|rk)_(test|live)_[A-Za-z0-9]+$/.exec(apiKey);
   if (!match) throw new Error("STRIPE_API_KEY must be a Stripe test/live restricted or secret key");
   const mode = match[1];
-  const publishableKey = (env.STRIPE_PUBLISHABLE_KEY || env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "").trim();
+  const publishableKey = (env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || env.STRIPE_PUBLISHABLE_KEY || "").trim();
   if (!new RegExp(`^pk_${mode}_[A-Za-z0-9]+$`).test(publishableKey)) {
-    throw new Error(`STRIPE_PUBLISHABLE_KEY must match the API key's test/live mode (expected pk_${mode}_...)`);
+    throw new Error(`NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY must match the API key's test/live mode (expected pk_${mode}_...)`);
   }
   const accountId = (env.STRIPE_ACCOUNT_ID || "").trim();
   if (!/^acct_[A-Za-z0-9]+$/.test(accountId)) {
     throw new Error("STRIPE_ACCOUNT_ID is required to isolate payment sessions between accounts");
   }
-  const webhookSecret = (env.STRIPE_WEBHOOK_SECRET || "").trim();
+  const webhookSecret = (env.STRIPE_WEBHOOK_SECRET || env.STRIPE_CHECKOUT_WEBHOOK_SECRET || "").trim();
   if (!/^whsec_[A-Za-z0-9]+$/.test(webhookSecret)) {
     throw new Error("STRIPE_WEBHOOK_SECRET is required");
   }

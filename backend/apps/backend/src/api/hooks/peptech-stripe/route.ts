@@ -7,7 +7,7 @@ export async function POST(req:MedusaRequest,res:MedusaResponse) {
   let event:any;let context:ReturnType<typeof stripeContext>
   try {
     context=stripeContext()
-    const secret=process.env.STRIPE_CHECKOUT_WEBHOOK_SECRET
+    const secret = process.env.STRIPE_WEBHOOK_SECRET || process.env.STRIPE_CHECKOUT_WEBHOOK_SECRET
     if(!secret) return res.status(503).json({message:"Webhook destination is not configured"})
     if(!req.rawBody || typeof req.headers["stripe-signature"]!=="string") return res.status(400).json({message:"Signature required"})
     event=context.stripe.webhooks.constructEvent(req.rawBody,req.headers["stripe-signature"],secret)

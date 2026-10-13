@@ -9,8 +9,11 @@ export default async function verify({container}:ExecArgs){
  if(context.mode!=="test"||url.hostname!=="127.0.0.1"||!url.pathname.endsWith("_test"))throw new Error("Isolated sandbox required")
  const fixture=JSON.parse(fs.readFileSync("/tmp/peptech-sandbox-fixture.json","utf8"))
  const ledger:any=container.resolve("peptechCommerce"),attempt=await ledger.get(fixture.session.attemptId)
- const secret="whsec_isolatedsignaturefixture",prior=process.env.STRIPE_CHECKOUT_WEBHOOK_SECRET
- process.env.STRIPE_CHECKOUT_WEBHOOK_SECRET=secret
+ const secret = "whsec_isolatedsignaturefixture"
+ const priorWebhook = process.env.STRIPE_WEBHOOK_SECRET
+ const priorCheckout = process.env.STRIPE_CHECKOUT_WEBHOOK_SECRET
+ process.env.STRIPE_WEBHOOK_SECRET = secret
+ process.env.STRIPE_CHECKOUT_WEBHOOK_SECRET = secret
  const event={id:`evt_fixture_${randomUUID()}`,object:"event",type:"checkout.session.completed",livemode:false,created:Math.floor(Date.now()/1000),data:{object:{id:attempt.data.session_id}}}
  async function send(value:any,invalid=false,unavailable=false){
   const payload=JSON.stringify(value),headers={"stripe-signature":invalid?"invalid":context.stripe.webhooks.generateTestHeaderString({payload,secret})}
@@ -31,5 +34,8 @@ export default async function verify({container}:ExecArgs){
   if(rows.length!==1)throw new Error("Duplicate event persisted")
   await ledger.patch(stored.id,{fixture:true},"done")
   console.log(JSON.stringify({signature:"verified",wrong_mode:"rejected",wrong_account:"rejected",storage_failure:503,replay:"one-durable-event"}))
- } finally {if(prior===undefined)delete process.env.STRIPE_CHECKOUT_WEBHOOK_SECRET;else process.env.STRIPE_CHECKOUT_WEBHOOK_SECRET=prior}
+ } finally {
+  if (priorWebhook === undefined) delete process.env.STRIPE_WEBHOOK_SECRET; else process.env.STRIPE_WEBHOOK_SECRET = priorWebhook
+  if (priorCheckout === undefined) delete process.env.STRIPE_CHECKOUT_WEBHOOK_SECRET; else process.env.STRIPE_CHECKOUT_WEBHOOK_SECRET = priorCheckout
+ }
 }

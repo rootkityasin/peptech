@@ -18,7 +18,7 @@ export async function prepareCheckout(scope: any, ledger: CommerceService, custo
       !process.env.STRIPE_EMAIL_HOST ||
       !process.env.STRIPE_EMAIL_FROM ||
       (process.env.STRIPE_COMMERCE_SIGNING_SECRET || "").length < 32 ||
-      !process.env.STRIPE_CHECKOUT_WEBHOOK_SECRET ||
+      !(process.env.STRIPE_WEBHOOK_SECRET || process.env.STRIPE_CHECKOUT_WEBHOOK_SECRET) ||
       !process.env.JWT_SECRET ||
       process.env.JWT_SECRET === "supersecret" ||
       !process.env.COOKIE_SECRET ||
