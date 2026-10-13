@@ -8,6 +8,8 @@ export type ShippingOptionQuote = {
   amount_minor: number
   description?: string | null
   code?: string | null
+  type_id?: string | null
+  shipping_option_type_id?: string | null
   countries?: string[]
 }
 
@@ -123,6 +125,8 @@ async function withAmounts(scope: any, policy: CommercePolicy, options: any[]): 
       amount_minor: amount,
       description: option.type?.description ?? null,
       code: option.type?.code ?? null,
+      type_id: option.type?.id ?? option.shipping_option_type_id ?? null,
+      shipping_option_type_id: option.shipping_option_type_id ?? option.type?.id ?? null,
       countries: Array.from(
         new Set(
           (option.service_zone?.geo_zones || [])

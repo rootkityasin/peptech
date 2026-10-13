@@ -1,5 +1,5 @@
 import { defineWidgetConfig } from "@medusajs/admin-sdk"
-import { FlyingBox, PencilSquare, ArrowPath, InformationCircle } from "@medusajs/icons"
+import { EllipsisHorizontal, PencilSquare } from "@medusajs/icons"
 import {
   Container,
   Heading,
@@ -8,13 +8,15 @@ import {
   Button,
   Input,
   Label,
+  Select,
   Drawer,
+  DropdownMenu,
+  IconButton,
   Toaster,
   toast,
 } from "@medusajs/ui"
 import { useEffect, useState } from "react"
 import { adminFetch } from "../lib/sdk"
-import "../styles/custom.css"
 
 interface PromotionWidgetProps {
   data?: {
@@ -55,14 +57,35 @@ const FreeShippingDetailWidget = ({ data: promotion }: PromotionWidgetProps) => 
     150
   )
 
+  const initialDeliveryMethod = String(
+    promotion?.metadata?.delivery_method || "Royal Mail Tracked 24"
+  )
+
+  const initialStorefrontMessage = String(
+    promotion?.metadata?.storefront_message || "Add {remaining} more for Free Tracked 24 Shipping"
+  )
+
+  const initialRuleOperator = String(
+    promotion?.metadata?.rule_operator ||
+    promotion?.rules?.find((r) => r.attribute === "subtotal")?.operator ||
+    "gte"
+  )
+
   const [threshold, setThreshold] = useState<number>(initialThreshold)
+  const [deliveryMethod, setDeliveryMethod] = useState<string>(initialDeliveryMethod)
+  const [storefrontMessage, setStorefrontMessage] = useState<string>(initialStorefrontMessage)
+  const [ruleOperator, setRuleOperator] = useState<string>(initialRuleOperator)
   const [enabled, setEnabled] = useState<boolean>(promotion?.status === "active")
+
+  // Drawer Edit Form States
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
-  const [editValue, setEditValue] = useState<string>(String(initialThreshold))
+  const [editThreshold, setEditThreshold] = useState<string>(String(initialThreshold))
+  const [editStorefrontMessage, setEditStorefrontMessage] = useState<string>(initialStorefrontMessage)
+  const [editRuleOperator, setEditRuleOperator] = useState<string>(initialRuleOperator)
   const [editEnabled, setEditEnabled] = useState<boolean>(promotion?.status === "active")
   const [isSaving, setIsSaving] = useState(false)
 
-  // Keep state in sync if promotion prop updates
+  // Sync state if promotion prop updates
   useEffect(() => {
     if (promotion) {
       const val = Number(
@@ -70,10 +93,25 @@ const FreeShippingDetailWidget = ({ data: promotion }: PromotionWidgetProps) => 
         promotion.rules?.find((r) => r.attribute === "subtotal")?.values?.[0]?.value ||
         150
       )
+      const dMethod = String(promotion.metadata?.delivery_method || "Royal Mail Tracked 24")
+      const sMsg = String(promotion.metadata?.storefront_message || "Add {remaining} more for Free Tracked 24 Shipping")
+      const rOp = String(
+        promotion.metadata?.rule_operator ||
+        promotion.rules?.find((r) => r.attribute === "subtotal")?.operator ||
+        "gte"
+      )
+      const isAct = promotion.status === "active"
+
       setThreshold(val)
-      setEditValue(String(val))
-      setEnabled(promotion.status === "active")
-      setEditEnabled(promotion.status === "active")
+      setDeliveryMethod(dMethod)
+      setStorefrontMessage(sMsg)
+      setRuleOperator(rOp)
+      setEnabled(isAct)
+
+      setEditThreshold(String(val))
+      setEditStorefrontMessage(sMsg)
+      setEditRuleOperator(rOp)
+      setEditEnabled(isAct)
     }
   }, [promotion])
 
@@ -82,8 +120,16 @@ const FreeShippingDetailWidget = ({ data: promotion }: PromotionWidgetProps) => 
     return null
   }
 
+  const handleOpenDrawer = () => {
+    setEditThreshold(String(threshold))
+    setEditStorefrontMessage(storefrontMessage)
+    setEditRuleOperator(ruleOperator)
+    setEditEnabled(enabled)
+    setIsDrawerOpen(true)
+  }
+
   const handleSave = async () => {
-    const num = Number(editValue)
+    const num = Number(editThreshold)
     if (isNaN(num) || num < 0) {
       toast.error("Please enter a valid minimum spend threshold amount.")
       return
@@ -98,6 +144,9 @@ const FreeShippingDetailWidget = ({ data: promotion }: PromotionWidgetProps) => 
           action: "update_free_shipping",
           promotion_id: promotion.id,
           threshold: num,
+          delivery_method: deliveryMethod || "Royal Mail Tracked 24",
+          storefront_message: editStorefrontMessage.trim() || "Add {remaining} more for Free Tracked 24 Shipping",
+          rule_operator: editRuleOperator || "gte",
           enabled: editEnabled,
           title: `Free Tracked 24 Shipping over £${num}`,
         }),
@@ -105,160 +154,184 @@ const FreeShippingDetailWidget = ({ data: promotion }: PromotionWidgetProps) => 
 
       if (res.ok) {
         setThreshold(num)
+        setStorefrontMessage(editStorefrontMessage.trim() || "Add {remaining} more for Free Tracked 24 Shipping")
+        setRuleOperator(editRuleOperator || "gte")
         setEnabled(editEnabled)
-        toast.success(`Free Shipping spend threshold updated to £${num.toFixed(2)} (${editEnabled ? "Active" : "Disabled"})`)
+        toast.success(`Free Shipping settings updated successfully (${editEnabled ? "Active" : "Disabled"})`)
         setIsDrawerOpen(false)
       } else {
         const data = await res.json()
-        toast.error(data.message || "Failed to update Free Shipping threshold")
+        toast.error(data.message || "Failed to update Free Shipping settings")
       }
     } catch (err: any) {
-      toast.error(err.message || "Network error updating Free Shipping threshold")
+      toast.error(err.message || "Network error updating Free Shipping settings")
     } finally {
       setIsSaving(false)
     }
   }
 
+  // Operator display label
+  const operatorSymbol = ruleOperator === "gt" ? ">" : "≥"
+
+  // Dynamic preview text for storefront progress bar
+  const sampleRemaining = `£${(Math.max(0, threshold - 25.2)).toFixed(2)}`
+  const previewProgressMsg = storefrontMessage.includes("{remaining}")
+    ? storefrontMessage.replace("{remaining}", sampleRemaining)
+    : storefrontMessage
+
   return (
-    <Container className="p-0 overflow-hidden divide-y divide-ui-border-base bg-ui-bg-base border border-ui-border-base rounded-xl shadow-xs mb-6">
+    <Container className="divide-y p-0 mb-6">
       <Toaster />
 
-      {/* Header following Medusa Design System guidelines */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-6 py-4 bg-ui-bg-base">
-        <div className="flex items-center gap-x-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-ui-bg-subtle text-ui-fg-subtle border border-ui-border-base shrink-0">
-            <FlyingBox className="h-5 w-5" />
-          </div>
-          <div>
-            <div className="flex items-center gap-x-2">
-              <Text size="small" leading="compact" weight="plus" className="text-ui-fg-base font-semibold">
-                Free Shipping Spend Threshold
-              </Text>
-              <StatusBadge color={enabled ? "green" : "red"}>
-                {enabled ? "Active" : "Disabled"}
-              </StatusBadge>
-            </div>
-            <Text size="small" leading="compact" className="text-ui-fg-subtle text-xs mt-0.5">
-              Customers receive free Royal Mail Tracked 24 shipping when their order subtotal meets or exceeds this amount.
-            </Text>
-          </div>
-        </div>
-
+      {/* Header - Standard Medusa Admin Card Header */}
+      <div className="flex items-center justify-between px-6 py-4">
+        <Heading level="h2">Free Shipping Spend Threshold</Heading>
         <div className="flex items-center gap-x-2">
-          <Button
-            size="small"
-            variant="secondary"
-            onClick={() => {
-              setEditValue(String(threshold))
-              setEditEnabled(enabled)
-              setIsDrawerOpen(true)
-            }}
-            className="flex items-center gap-x-1.5"
-          >
-            <PencilSquare className="h-3.5 w-3.5" />
-            <span>Edit Threshold</span>
-          </Button>
+          <StatusBadge color={enabled ? "green" : "grey"}>
+            {enabled ? "Active" : "Disabled"}
+          </StatusBadge>
+          <DropdownMenu>
+            <DropdownMenu.Trigger asChild>
+              <IconButton size="small" variant="transparent" title="Actions" aria-label="Actions">
+                <EllipsisHorizontal />
+              </IconButton>
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Content>
+              <DropdownMenu.Item className="gap-x-2" onClick={handleOpenDrawer}>
+                <PencilSquare className="text-ui-fg-subtle" />
+                Edit
+              </DropdownMenu.Item>
+            </DropdownMenu.Content>
+          </DropdownMenu>
         </div>
       </div>
 
-      {/* Field display section */}
-      <div className="px-6 py-4 grid grid-cols-1 md:grid-cols-3 gap-6 bg-ui-bg-base">
-        <div className="space-y-1">
-          <Text size="small" leading="compact" weight="plus" className="text-ui-fg-subtle text-xs uppercase tracking-wider">
-            Spend Threshold
-          </Text>
-          <div className="flex items-baseline gap-x-1.5">
-            <Text size="large" leading="compact" weight="plus" className="text-ui-fg-base text-2xl font-bold">
-              £{threshold.toFixed(2)}
-            </Text>
-            <Text size="xsmall" leading="compact" className="text-ui-fg-muted font-mono font-medium">
-              GBP
-            </Text>
-          </div>
-          <Text size="xsmall" leading="compact" className="text-ui-fg-subtle text-[11px]">
-            Waiver applies automatically to eligible carts
-          </Text>
-        </div>
-
-        <div className="space-y-1">
-          <Text size="small" leading="compact" weight="plus" className="text-ui-fg-subtle text-xs uppercase tracking-wider">
-            Qualification Rule
-          </Text>
-          <div className="pt-1">
-            <code className="text-xs bg-ui-bg-subtle border border-ui-border-base px-2.5 py-1 rounded text-ui-fg-base font-mono inline-block font-semibold">
-              Cart Subtotal &ge; £{threshold.toFixed(2)}
-            </code>
-          </div>
-          <Text size="xsmall" leading="compact" className="text-ui-fg-subtle text-[11px]">
-            Royal Mail Tracked 24 waived to £0.00
-          </Text>
-        </div>
-
-        <div className="space-y-1">
-          <Text size="small" leading="compact" weight="plus" className="text-ui-fg-subtle text-xs uppercase tracking-wider">
-            Storefront Cart Drawer
-          </Text>
-          <div className="pt-1">
-            <Text size="small" leading="compact" className="text-ui-fg-base font-medium">
-              &quot;Add £{(Math.max(0, threshold - 25.2)).toFixed(2)} more for Free Tracked 24 Shipping&quot;
-            </Text>
-          </div>
-          <Text size="xsmall" leading="compact" className="text-ui-fg-subtle text-[11px]">
-            Dynamic progress bar automatically synced
-          </Text>
-        </div>
+      {/* Row 1: Spend Threshold */}
+      <div className="text-ui-fg-subtle grid grid-cols-2 items-center px-6 py-4 text-small">
+        <Text size="small" weight="plus" leading="compact">
+          Spend Threshold
+        </Text>
+        <Text size="small" leading="compact" className="text-ui-fg-base">
+          £{threshold.toFixed(2)} GBP
+        </Text>
       </div>
 
-      {/* Drawer for editing (Medusa Form Pattern for existing entities) */}
+      {/* Row 2: Qualification Rule */}
+      <div className="text-ui-fg-subtle grid grid-cols-2 items-center px-6 py-4 text-small">
+        <Text size="small" weight="plus" leading="compact">
+          Qualification Rule
+        </Text>
+        <Text size="small" leading="compact" className="text-ui-fg-base font-mono">
+          Cart Subtotal {operatorSymbol} £{threshold.toFixed(2)}
+        </Text>
+      </div>
+
+      {/* Row 3: Storefront Progress Bar Message */}
+      <div className="text-ui-fg-subtle grid grid-cols-2 items-center px-6 py-4 text-small">
+        <Text size="small" weight="plus" leading="compact">
+          Storefront Progress Bar
+        </Text>
+        <Text size="small" leading="compact" className="text-ui-fg-base">
+          &ldquo;{previewProgressMsg}&rdquo;
+        </Text>
+      </div>
+
+      {/* Row 4: Eligible Delivery Method */}
+      <div className="text-ui-fg-subtle grid grid-cols-2 items-center px-6 py-4 text-small">
+        <Text size="small" weight="plus" leading="compact">
+          Delivery Method
+        </Text>
+        <Text size="small" leading="compact" className="text-ui-fg-base">
+          {deliveryMethod} (Waived to £0.00)
+        </Text>
+      </div>
+
+      {/* Drawer for editing - Native Medusa Admin Drawer with full information control */}
       <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
-        <Drawer.Content className="z-50 bg-ui-bg-base">
-          <Drawer.Header className="border-b border-ui-border-base px-6 py-4">
-            <Drawer.Title className="text-base font-semibold text-ui-fg-base">
-              Edit Free Shipping Threshold
-            </Drawer.Title>
-            <Drawer.Description className="text-xs text-ui-fg-subtle mt-1">
-              Configure the minimum order subtotal required to qualify for 100% free Royal Mail Tracked 24 shipping.
+        <Drawer.Content>
+          <Drawer.Header>
+            <Drawer.Title>Edit Free Shipping Spend Threshold</Drawer.Title>
+            <Drawer.Description>
+              Configure the minimum order subtotal, qualification rule condition, and storefront cart message.
             </Drawer.Description>
           </Drawer.Header>
 
-          <Drawer.Body className="p-6 space-y-6 flex-1 overflow-auto">
-            <div className="space-y-2">
-              <Label htmlFor="threshold-input" className="text-xs font-semibold text-ui-fg-base">
+          <Drawer.Body className="flex flex-col gap-y-5 p-6 overflow-y-auto">
+            {/* Field 1: Minimum Spend Threshold */}
+            <div className="flex flex-col gap-y-2">
+              <Label size="small" weight="plus">
                 Minimum Spend Threshold (GBP £)
               </Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-ui-fg-muted">
-                  £
-                </span>
-                <Input
-                  id="threshold-input"
-                  type="number"
-                  step="1"
-                  min="0"
-                  value={editValue}
-                  onChange={(e) => setEditValue(e.target.value)}
-                  className="pl-7 text-sm font-bold text-ui-fg-base"
-                  placeholder="150"
-                  autoFocus
-                />
-              </div>
-              <Text size="xsmall" leading="compact" className="text-ui-fg-subtle">
-                Example: enter <strong>100</strong>, <strong>120</strong>, <strong>150</strong>, or <strong>200</strong>.
+              <Input
+                size="small"
+                type="number"
+                step="1"
+                min="0"
+                value={editThreshold}
+                onChange={(e) => setEditThreshold(e.target.value)}
+                placeholder="150"
+              />
+              <Text size="small" leading="compact" className="text-ui-fg-subtle text-xs">
+                Carts meeting or exceeding this subtotal qualify for free delivery.
               </Text>
             </div>
 
-            <div className="space-y-2 pt-2 border-t border-ui-border-base">
-              <Label className="text-xs font-semibold text-ui-fg-base">
+            {/* Field 2: Qualification Rule Operator */}
+            <div className="flex flex-col gap-y-2">
+              <Label size="small" weight="plus">
+                Qualification Rule Condition
+              </Label>
+              <Select
+                size="small"
+                value={editRuleOperator}
+                onValueChange={(val) => setEditRuleOperator(val)}
+              >
+                <Select.Trigger>
+                  <Select.Value placeholder="Select operator" />
+                </Select.Trigger>
+                <Select.Content>
+                  <Select.Item value="gte">
+                    Cart Subtotal &ge; (Greater than or equal to)
+                  </Select.Item>
+                  <Select.Item value="gt">
+                    Cart Subtotal &gt; (Strictly greater than)
+                  </Select.Item>
+                </Select.Content>
+              </Select>
+              <Text size="small" leading="compact" className="text-ui-fg-subtle text-xs">
+                Operator applied when checking qualifying cart value.
+              </Text>
+            </div>
+
+            {/* Field 4: Storefront Progress Bar Message */}
+            <div className="flex flex-col gap-y-2">
+              <Label size="small" weight="plus">
+                Storefront Cart Drawer Message
+              </Label>
+              <Input
+                size="small"
+                value={editStorefrontMessage}
+                onChange={(e) => setEditStorefrontMessage(e.target.value)}
+                placeholder="Add {remaining} more for Free Tracked 24 Shipping"
+              />
+              <Text size="small" leading="compact" className="text-ui-fg-subtle text-xs">
+                Use <code className="bg-ui-bg-subtle px-1 rounded font-mono">&#123;remaining&#125;</code> as the placeholder for the remaining spend amount.
+              </Text>
+            </div>
+
+            {/* Field 5: Auto-Waiver Status */}
+            <div className="flex flex-col gap-y-2 pt-2 border-t border-ui-border-base">
+              <Label size="small" weight="plus">
                 Auto-Waiver Status
               </Label>
-              <div className="flex items-center gap-x-3">
+              <div className="flex items-center gap-x-2">
                 <Button
                   size="small"
                   variant={editEnabled ? "primary" : "secondary"}
                   onClick={() => setEditEnabled(true)}
                   type="button"
                 >
-                  Active (Auto-Waive)
+                  Active
                 </Button>
                 <Button
                   size="small"
@@ -269,49 +342,29 @@ const FreeShippingDetailWidget = ({ data: promotion }: PromotionWidgetProps) => 
                   Disabled
                 </Button>
               </div>
-              <Text size="xsmall" leading="compact" className="text-ui-fg-subtle">
-                When active, carts meeting this threshold will automatically get free shipping during checkout.
+              <Text size="small" leading="compact" className="text-ui-fg-subtle text-xs">
+                Enable or disable automated shipping fee waiver across the store.
               </Text>
-            </div>
-
-            <div className="p-4 rounded-lg bg-ui-bg-subtle border border-ui-border-base text-xs space-y-2 text-ui-fg-subtle">
-              <div className="flex items-center gap-x-2 text-ui-fg-base font-medium">
-                <InformationCircle className="h-4 w-4 text-ui-fg-muted" />
-                <span>Immediate Live Sync</span>
-              </div>
-              <Text size="xsmall" leading="compact" className="text-ui-fg-subtle">
-                Updating this threshold immediately synchronizes:
-              </Text>
-              <ul className="list-disc list-inside space-y-1 text-ui-fg-muted text-[11px]">
-                <li>The Storefront Cart Drawer progress bar</li>
-                <li>The Medusa checkout quotation engine</li>
-                <li>The promotion qualification rules in database</li>
-              </ul>
             </div>
           </Drawer.Body>
 
-          <Drawer.Footer className="border-t border-ui-border-base px-6 py-4 flex items-center justify-end gap-x-2">
-            <Drawer.Close asChild>
-              <Button size="small" variant="secondary" disabled={isSaving}>
-                Cancel
+          <Drawer.Footer>
+            <div className="flex items-center justify-end gap-x-2">
+              <Drawer.Close asChild>
+                <Button size="small" variant="secondary" disabled={isSaving}>
+                  Cancel
+                </Button>
+              </Drawer.Close>
+              <Button
+                size="small"
+                variant="primary"
+                disabled={isSaving || !editThreshold}
+                onClick={handleSave}
+                isLoading={isSaving}
+              >
+                Save
               </Button>
-            </Drawer.Close>
-            <Button
-              size="small"
-              variant="primary"
-              disabled={isSaving || !editValue}
-              onClick={handleSave}
-              className="flex items-center gap-x-1.5"
-            >
-              {isSaving ? (
-                <>
-                  <ArrowPath className="h-3.5 w-3.5 animate-spin" />
-                  <span>Saving...</span>
-                </>
-              ) : (
-                <span>Save Changes</span>
-              )}
-            </Button>
+            </div>
           </Drawer.Footer>
         </Drawer.Content>
       </Drawer>

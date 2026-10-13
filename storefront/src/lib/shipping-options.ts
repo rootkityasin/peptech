@@ -5,6 +5,8 @@ export type ShippingOption = {
   name: string
   amount: number
   code?: string | null
+  type_id?: string | null
+  shipping_option_type_id?: string | null
   description?: string | null
 }
 
@@ -13,6 +15,8 @@ type RawShippingOption = {
   name?: string
   amount_minor?: number | string
   code?: string | null
+  type_id?: string | null
+  shipping_option_type_id?: string | null
   description?: string | null
 }
 
@@ -34,9 +38,12 @@ export async function getShippingOptions(countryCode: string): Promise<ShippingO
         name: String(option.name || "Shipping"),
         amount: Number(option.amount_minor ?? 0) / 100,
         code: option.code || null,
+        type_id: option.type_id || option.shipping_option_type_id || null,
+        shipping_option_type_id: option.shipping_option_type_id || option.type_id || null,
         description: option.description || null,
       }))
   } catch {
     return []
   }
 }
+

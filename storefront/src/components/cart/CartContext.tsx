@@ -1,6 +1,6 @@
 "use client"
 
-import React, { createContext, useContext, useState, useEffect } from "react"
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react"
 import { getCountryByName } from "@/lib/countries"
 import { getShippingOptions, type ShippingOption } from "@/lib/shipping-options"
 import { getBackendUrl } from "@/lib/customer-api"
@@ -64,6 +64,11 @@ export interface FreeShippingConfig {
   threshold: number
   title: string
   code: string
+  delivery_method?: string
+  has_target_rules?: boolean
+  eligible_types?: string[]
+  eligible_type_ids?: string[]
+  eligible_option_ids?: string[]
 }
 
 export const DEFAULT_FREE_SHIPPING: FreeShippingConfig = {
@@ -71,7 +76,68 @@ export const DEFAULT_FREE_SHIPPING: FreeShippingConfig = {
   threshold: 150,
   title: "Free Tracked 24 Shipping over £150",
   code: "FREESHIP150",
+  delivery_method: "Royal Mail Tracked 24",
+  has_target_rules: true,
+  eligible_types: ["standard"],
+  eligible_type_ids: ["sotype_01M2AQBJF36KA7QFAXD9C4VYWQ"],
+  eligible_option_ids: [],
 }
+
+/**
+ * Checks whether a shipping option is eligible for free delivery based on
+ * the Medusa promotion configuration.
+ *
+ * Rules:
+ * 1. Subtotal must meet the promotion threshold.
+ * 2. If the promotion in Medusa Admin has NO target rules configured, free shipping
+ *    applies to all shipping methods as a fallback.
+ * 3. If target rules ARE configured, only matching shipping options are eligible
+ *    (matched by shipping option ID, shipping option type ID, or shipping type code).
+ */
+export function isShippingOptionEligibleForFree(
+  option: ShippingOption | null | undefined,
+  freeShipping: FreeShippingConfig | null | undefined,
+  finalSubtotal: number
+): boolean {
+  if (!option || !freeShipping || !freeShipping.enabled) return false
+  if (finalSubtotal < (freeShipping.threshold || 150)) return false
+
+  const hasSpecificRules =
+    Boolean(freeShipping.has_target_rules) ||
+    Boolean(freeShipping.eligible_types?.length) ||
+    Boolean(freeShipping.eligible_type_ids?.length) ||
+    Boolean(freeShipping.eligible_option_ids?.length)
+
+  // Fallback: If no target rules are specified, apply free shipping to all methods
+  if (!hasSpecificRules) {
+    return true
+  }
+
+  // 1. Direct match on shipping option ID
+  if (freeShipping.eligible_option_ids?.length && freeShipping.eligible_option_ids.includes(option.id)) {
+    return true
+  }
+
+  // 2. Match on shipping option type ID
+  const optTypeId = option.type_id || option.shipping_option_type_id
+  if (optTypeId && freeShipping.eligible_type_ids?.length && freeShipping.eligible_type_ids.includes(optTypeId)) {
+    return true
+  }
+
+  // 3. Match on shipping option type code (e.g. 'standard')
+  const optCode = (option.code || "").toLowerCase()
+  if (optCode && freeShipping.eligible_types?.length && freeShipping.eligible_types.map((t) => t.toLowerCase()).includes(optCode)) {
+    return true
+  }
+
+  // 4. Safe fallback for Standard Royal Mail if configured
+  if (freeShipping.eligible_types?.includes("standard") && /royal\s*mail/i.test(option.name)) {
+    return true
+  }
+
+  return false
+}
+
 
 export interface CartItem {
   variantId?: string
@@ -91,7 +157,34 @@ export interface CartItem {
   options?: CartItemOption[]
 }
 
+/**
+ * Resolves the dynamic subtitle and included package specifications for any cart item.
+ * Unified across Side Panel Cart, Main Cart Page, and Checkout.
+ */
+export function getItemSubtitle(item: CartItem): string {
+  const cartridgeOpt = item.options?.find((o) =>
+    o.label.toLowerCase().includes("cartridge")
+  )
+
+  if (item.format === "pen-set") {
+    return cartridgeOpt?.value
+      ? `Included: ${cartridgeOpt.value} • Reusable Pen Kit`
+      : "Reusable Precision Pen System • Laboratory Kit"
+  }
+
+  if (item.format === "refill") {
+    return item.strength
+      ? `${item.strength} • Borosilicate Glass Cartridge`
+      : "Pre-filled 1.5 mL Borosilicate Glass Cartridge"
+  }
+
+  return item.strength
+    ? `${item.strength} • 99%+ HPLC Certified Lyophilised Vial`
+    : "99.8% HPLC Certified • Sterile Lyophilised Cake"
+}
+
 interface CartContextType {
+
   items: CartItem[]
   addItem: (item: Omit<CartItem, "quantity">, quantity?: number) => void
   removeItem: (id: string, isSubscription: boolean) => void
@@ -114,6 +207,8 @@ interface CartContextType {
   autoSavings: AutoSavingsConfig
   featuredPromo: FeaturedPromoConfig | null
   freeShipping: FreeShippingConfig
+  isFreeShippingUnlocked: boolean
+  isOptionEligibleForFree: (option: ShippingOption | null | undefined) => boolean
   shippingCost: number
   total: number
   destination: "UK" | "INTL"
@@ -128,6 +223,7 @@ interface CartContextType {
   shippingAvailable: boolean
   shippingReady: boolean
 }
+
 
 const CartContext = createContext<CartContextType | undefined>(undefined)
 
@@ -153,10 +249,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     else if (country === "United Kingdom") setCountry("United States")
   }
 
-  const handleSetCountry = (newCountry: string) => {
+  const handleSetCountry = useCallback((newCountry: string) => {
     setCountry(newCountry)
     setDestinationState(newCountry === "United Kingdom" ? "UK" : "INTL")
-  }
+  }, [])
 
   // Load from local storage
   useEffect(() => {
@@ -276,12 +372,18 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
               threshold: Number(data.free_shipping.threshold || 150),
               title: data.free_shipping.title || "Free Tracked 24 Shipping",
               code: data.free_shipping.code || "FREESHIP150",
+              delivery_method: data.free_shipping.delivery_method || "Royal Mail Tracked 24",
+              has_target_rules: data.free_shipping.has_target_rules,
+              eligible_types: data.free_shipping.eligible_types || [],
+              eligible_type_ids: data.free_shipping.eligible_type_ids || [],
+              eligible_option_ids: data.free_shipping.eligible_option_ids || [],
             }
             setFreeShipping(freshFreeShipping)
             try {
               localStorage.setItem("peptech_free_shipping", JSON.stringify(freshFreeShipping))
             } catch {}
           }
+
         }
       } catch {
         // Keep existing configurations on fetch failure
@@ -311,6 +413,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!loaded) return
     let cancelled = false
+    setShippingLoaded(false)
     const countryCode = getCountryByName(country).code.toLowerCase()
     getShippingOptions(countryCode).then((options) => {
       if (cancelled) return
@@ -499,8 +602,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const selectedShippingOption = shippingOptions.find((option) => option.id === shippingOptionId) || null
   const shippingAvailable = shippingLoaded && shippingOptions.length > 0
   const isFreeShippingUnlocked = freeShipping?.enabled && finalSubtotal >= (freeShipping?.threshold || 150)
+  const isOptionEligibleForFree = (opt: ShippingOption | null | undefined) =>
+    isShippingOptionEligibleForFree(opt, freeShipping, finalSubtotal)
+
+  const selectedIsFree = isOptionEligibleForFree(selectedShippingOption)
   const shippingCost = items.length > 0 && selectedShippingOption
-    ? (isFreeShippingUnlocked ? 0 : selectedShippingOption.amount)
+    ? (selectedIsFree ? 0 : selectedShippingOption.amount)
     : 0
   const total = finalSubtotal + shippingCost
 
@@ -531,6 +638,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         autoSavings,
         featuredPromo,
         freeShipping,
+        isFreeShippingUnlocked,
+        isOptionEligibleForFree,
         shippingCost,
         total,
         destination,
@@ -549,6 +658,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       {children}
     </CartContext.Provider>
   )
+
 }
 
 export function useCart() {

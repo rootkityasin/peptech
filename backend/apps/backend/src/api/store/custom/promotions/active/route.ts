@@ -1,5 +1,5 @@
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
-import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
+import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
 
 // Helper to set CORS headers
 function applyCors(req: MedusaRequest, res: MedusaResponse) {
@@ -114,30 +114,138 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
     const autoFullText = `Every 28 days · ${autoText}`
 
     // Free Shipping Promotion (target_type: "shipping_methods" or code: "FREESHIP150")
-    let freeShippingPromo = autoPromos.find(
-      (p: any) => p.application_method?.target_type === "shipping_methods" || p.code === "FREESHIP150"
-    )
+    let freeShippingPromo: any = null
+
+    try {
+      const { data: fsPromos = [] } = await query.graph({
+        entity: "promotion",
+        fields: [
+          "id",
+          "code",
+          "type",
+          "status",
+          "is_automatic",
+          "metadata",
+          "application_method.*",
+          "application_method.target_rules.*",
+          "application_method.target_rules.values.*",
+          "rules.*",
+          "rules.values.*",
+        ],
+        filters: {
+          code: "FREESHIP150",
+        },
+      })
+      freeShippingPromo = fsPromos[0]
+    } catch {
+      freeShippingPromo = autoPromos.find(
+        (p: any) => p.application_method?.target_type === "shipping_methods" || p.code === "FREESHIP150"
+      )
+    }
 
     if (!freeShippingPromo) {
-      try {
-        const { data: fsPromos = [] } = await query.graph({
-          entity: "promotion",
-          fields: [
-            "id",
-            "code",
-            "type",
-            "status",
-            "is_automatic",
-            "metadata",
-            "application_method.*",
-          ],
-          filters: {
-            code: "FREESHIP150",
-          },
-        })
-        freeShippingPromo = fsPromos[0]
-      } catch {}
+      freeShippingPromo = autoPromos.find(
+        (p: any) => p.application_method?.target_type === "shipping_methods" || p.code === "FREESHIP150"
+      )
     }
+
+    // Attempt to load target rules via Promotion Module if not present on application_method
+    if (freeShippingPromo && (!freeShippingPromo.application_method?.target_rules || freeShippingPromo.application_method.target_rules.length === 0)) {
+      try {
+        const promotionModule = req.scope.resolve(Modules.PROMOTION)
+        if (promotionModule && freeShippingPromo.id) {
+          const fullPromo = await promotionModule.retrievePromotion(freeShippingPromo.id, {
+            relations: ["application_method.target_rules.values", "rules.values"],
+          })
+          if (fullPromo?.application_method?.target_rules?.length) {
+            if (!freeShippingPromo.application_method) freeShippingPromo.application_method = {}
+            freeShippingPromo.application_method.target_rules = fullPromo.application_method.target_rules
+          }
+        }
+      } catch (modErr) {
+        // Fallback: Query pg directly if available
+        try {
+          const appMethodId = freeShippingPromo.application_method?.id
+          if (appMethodId) {
+            const { Client } = require("pg")
+            const client = new Client({ connectionString: process.env.DATABASE_URL })
+            await client.connect()
+            const trRows = await client.query(
+              `SELECT pr.id, pr.attribute, pr.operator, array_agg(prv.value) as values
+               FROM application_method_target_rules amtr
+               JOIN promotion_rule pr ON amtr.promotion_rule_id = pr.id
+               LEFT JOIN promotion_rule_value prv ON prv.promotion_rule_id = pr.id
+               WHERE amtr.application_method_id = $1
+               GROUP BY pr.id, pr.attribute, pr.operator`,
+              [appMethodId]
+            )
+            await client.end()
+            if (trRows.rows?.length) {
+              if (!freeShippingPromo.application_method) freeShippingPromo.application_method = {}
+              freeShippingPromo.application_method.target_rules = trRows.rows.map((r: any) => ({
+                id: r.id,
+                attribute: r.attribute,
+                operator: r.operator,
+                values: (r.values || []).map((v: string) => ({ value: v })),
+              }))
+            }
+          }
+        } catch {}
+      }
+    }
+
+    // Fetch shipping option types to map IDs to type codes (e.g. 'standard', 'express')
+    const typeCodeToIdMap: Record<string, string> = {}
+    const idToTypeCodeMap: Record<string, string> = {}
+    try {
+      const { data: sTypes = [] } = await query.graph({
+        entity: "shipping_option_type",
+        fields: ["id", "code", "label"],
+      })
+      for (const st of sTypes) {
+        if (st.code && st.id) {
+          typeCodeToIdMap[st.code.toLowerCase()] = st.id
+          idToTypeCodeMap[st.id] = st.code.toLowerCase()
+        }
+      }
+    } catch {
+      // Fallback known standard/express mappings
+      idToTypeCodeMap["sotype_01M2AQBJF36KA7QFAXD9C4VYWQ"] = "standard"
+      idToTypeCodeMap["sotype_01M2AQBJF4QM55WST41DD0PP99"] = "express"
+      typeCodeToIdMap["standard"] = "sotype_01M2AQBJF36KA7QFAXD9C4VYWQ"
+      typeCodeToIdMap["express"] = "sotype_01M2AQBJF4QM55WST41DD0PP99"
+    }
+
+    // Extract target rules
+    const targetRules = freeShippingPromo?.application_method?.target_rules || []
+    const eligibleTypeIds: string[] = []
+    const eligibleTypes: string[] = []
+    const eligibleOptionIds: string[] = []
+
+    for (const rule of targetRules) {
+      const attr = String(rule.attribute || "")
+      const rawVals: string[] = Array.isArray(rule.values)
+        ? rule.values.map((v: any) => (typeof v === "object" ? v?.value : v)).filter(Boolean).map(String)
+        : []
+
+      if (attr.includes("shipping_option_type") || attr === "shipping_option_type_id") {
+        for (const val of rawVals) {
+          eligibleTypeIds.push(val)
+          const mappedCode = idToTypeCodeMap[val]
+          if (mappedCode) {
+            eligibleTypes.push(mappedCode)
+          } else {
+            eligibleTypes.push(val.toLowerCase())
+          }
+        }
+      } else if (attr.includes("shipping_option") || attr === "shipping_option_id") {
+        for (const val of rawVals) {
+          eligibleOptionIds.push(val)
+        }
+      }
+    }
+
+    const hasTargetRules = targetRules.length > 0
 
     function extractThreshold(promo: any, fallback = 150): number {
       if (promo?.metadata?.threshold) {
@@ -248,6 +356,13 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
         threshold: freeShippingThreshold,
         title: freeShippingTitle,
         code: freeShippingCode,
+        delivery_method: freeShippingPromo?.metadata?.delivery_method || "Royal Mail Tracked 24",
+        storefront_message: freeShippingPromo?.metadata?.storefront_message || "Add {remaining} more for Free Tracked 24 Shipping",
+        rule_operator: freeShippingPromo?.metadata?.rule_operator || "gte",
+        has_target_rules: hasTargetRules,
+        eligible_types: Array.from(new Set(eligibleTypes)),
+        eligible_type_ids: Array.from(new Set(eligibleTypeIds)),
+        eligible_option_ids: Array.from(new Set(eligibleOptionIds)),
       },
     })
   } catch (err: any) {
@@ -283,7 +398,12 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
         threshold: 150,
         title: "Free Tracked 24 Shipping over £150",
         code: "FREESHIP150",
+        has_target_rules: true,
+        eligible_types: ["standard"],
+        eligible_type_ids: [],
+        eligible_option_ids: [],
       },
     })
   }
 }
+

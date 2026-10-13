@@ -2,7 +2,7 @@
 
 import React, { useEffect } from "react"
 import Link from "next/link"
-import { useCart } from "./CartContext"
+import { useCart, getItemSubtitle } from "./CartContext"
 
 export function CartDrawer() {
   const {
@@ -118,7 +118,7 @@ export function CartDrawer() {
                   {isFreeUnlocked ? (
                     <span className="text-emerald-700 font-semibold flex items-center gap-1.5">
                       <span className="text-emerald-600 font-bold">✓</span>
-                      <span>Free Royal Mail Tracked 24 Unlocked!</span>
+                      <span>Free delivery Unlocked</span>
                     </span>
                   ) : (
                     <span>
@@ -199,12 +199,10 @@ export function CartDrawer() {
               const unitPrice = item.price
               const itemTotal = unitPrice * item.quantity
 
-              const subtitle =
-                item.format === "pen-set"
-                  ? "Medical Applicator + Cartridge + 4x Needles"
-                  : item.format === "refill"
-                  ? "Pre-filled 3mL Borosilicate Glass Cartridge"
-                  : "99.8% HPLC Certified • Sterile Lyophilised Cake"
+              const subtitle = getItemSubtitle(item)
+              const otherOptions = item.options?.filter(
+                (o) => !o.label.toLowerCase().includes("cartridge")
+              )
 
               return (
                 <div
@@ -234,10 +232,10 @@ export function CartDrawer() {
                         {subtitle}
                       </p>
 
-                      {/* Dynamic Chosen Options (Cartridge & Diluent/Vial) */}
-                      {item.options && item.options.length > 0 && (
+                      {/* Dynamic Chosen Options */}
+                      {otherOptions && otherOptions.length > 0 && (
                         <div className="flex flex-col gap-1 w-full my-0.5">
-                          {item.options.map((opt, idx) => (
+                          {otherOptions.map((opt, idx) => (
                             <div
                               key={idx}
                               className="text-[11px] leading-snug flex items-baseline gap-1.5 w-full"
@@ -348,13 +346,6 @@ export function CartDrawer() {
                 </div>
               )}
 
-              {/* Total Savings Indicator */}
-              {totalSavings > 0 && (
-                <div className="bg-emerald-50 border border-emerald-200 rounded-lg px-2.5 py-1.5 flex justify-between items-center text-emerald-800 font-bold text-[11px]">
-                  <span>Total Savings</span>
-                  <span>£{totalSavings.toFixed(2)}</span>
-                </div>
-              )}
 
               <div className="flex items-baseline justify-between pt-1 border-t border-[#e2e8f0]">
                 <div>

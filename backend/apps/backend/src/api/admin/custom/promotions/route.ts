@@ -117,6 +117,9 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
           enabled: freeShipRecord ? freeShipRecord.status === "active" : true,
           threshold: Number(freeShipRecord?.metadata?.threshold || 150),
           title: freeShipRecord?.metadata?.title || "Free Tracked 24 Shipping over £150",
+          delivery_method: freeShipRecord?.metadata?.delivery_method || "Royal Mail Tracked 24",
+          storefront_message: freeShipRecord?.metadata?.storefront_message || "Add {remaining} more for Free Tracked 24 Shipping",
+          rule_operator: freeShipRecord?.metadata?.rule_operator || "gte",
         },
       },
       promotions: enrichedPromotions,
@@ -130,7 +133,18 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
 // POST /admin/custom/promotions - Manually link an order to a promotion, update free shipping, or toggle promotion status
 export async function POST(req: MedusaRequest, res: MedusaResponse) {
   try {
-    const { action, promotion_id, order_id, status, threshold, enabled, title } = req.body as any
+    const {
+      action,
+      promotion_id,
+      order_id,
+      status,
+      threshold,
+      enabled,
+      title,
+      delivery_method,
+      storefront_message,
+      rule_operator,
+    } = req.body as any
 
     if (action === "update_free_shipping") {
       const promotionModule = req.scope.resolve(Modules.PROMOTION)
@@ -147,13 +161,20 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
       const numThreshold = Number(threshold || 150)
       const isEnabled = enabled !== undefined ? Boolean(enabled) : true
       const displayTitle = title || `Free Tracked 24 Shipping over £${numThreshold}`
+      const deliveryMethod = delivery_method || promos[0]?.metadata?.delivery_method || "Royal Mail Tracked 24"
+      const storefrontMessage = storefront_message || promos[0]?.metadata?.storefront_message || "Add {remaining} more for Free Tracked 24 Shipping"
+      const ruleOperator = rule_operator || promos[0]?.metadata?.rule_operator || "gte"
 
       await (promotionModule as any).updatePromotions({
         id: promoId,
         status: isEnabled ? "active" : "disabled",
         metadata: {
+          ...(promos[0]?.metadata || {}),
           title: displayTitle,
           threshold: numThreshold,
+          delivery_method: deliveryMethod,
+          storefront_message: storefrontMessage,
+          rule_operator: ruleOperator,
         },
       })
 
@@ -163,6 +184,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
             {
               id: promos[0].rules[0].id,
               values: [String(numThreshold)],
+              operator: ruleOperator,
             },
           ])
         } catch {}
@@ -172,10 +194,13 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
         success: true,
         free_shipping: {
           id: promoId,
-          code: "FREESHIP150",
+          code: promos[0]?.code || "FREESHIP150",
           enabled: isEnabled,
           threshold: numThreshold,
           title: displayTitle,
+          delivery_method: deliveryMethod,
+          storefront_message: storefrontMessage,
+          rule_operator: ruleOperator,
         },
       })
     }
