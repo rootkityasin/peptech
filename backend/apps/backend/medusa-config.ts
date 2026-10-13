@@ -70,9 +70,9 @@ module.exports = defineConfig({
       ? { connection: { ssl: false } }
       : { ssl: { rejectUnauthorized: false }, connection: { ssl: { rejectUnauthorized: false } } },
     http: {
-      storeCors: process.env.STORE_CORS || 'http://localhost:3000,http://127.0.0.1:3000,http://localhost:8000,http://127.0.0.1:8000,https://peptech.bio,https://www.peptech.bio,https://admin.peptech.bio,https://docs.medusajs.com',
-      adminCors: process.env.ADMIN_CORS || 'http://localhost:5173,http://127.0.0.1:5173,http://localhost:9000,http://127.0.0.1:9000,https://peptech.bio,https://www.peptech.bio,https://admin.peptech.bio,https://docs.medusajs.com',
-      authCors: process.env.AUTH_CORS || 'http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173,http://localhost:9000,http://127.0.0.1:9000,http://localhost:8000,http://127.0.0.1:8000,https://peptech.bio,https://www.peptech.bio,https://admin.peptech.bio,https://docs.medusajs.com',
+      storeCors: process.env.STORE_CORS || '/^https?:\\/\\/(localhost|127\\.0\\.0\\.1)(:\\d+)?$|^https?:\\/\\/(?:[a-zA-Z0-9-]+\\.)*peptech\\.bio$|^https?:\\/\\/docs\\.medusajs\\.com$/',
+      adminCors: process.env.ADMIN_CORS || '/^https?:\\/\\/(localhost|127\\.0\\.0\\.1)(:\\d+)?$|^https?:\\/\\/(?:[a-zA-Z0-9-]+\\.)*peptech\\.bio$|^https?:\\/\\/docs\\.medusajs\\.com$/',
+      authCors: process.env.AUTH_CORS || '/^https?:\\/\\/(localhost|127\\.0\\.0\\.1)(:\\d+)?$|^https?:\\/\\/(?:[a-zA-Z0-9-]+\\.)*peptech\\.bio$|^https?:\\/\\/docs\\.medusajs\\.com$/',
       jwtSecret: process.env.JWT_SECRET || (process.env.NODE_ENV === 'production' ? (() => { throw new Error('JWT_SECRET must be set in production') })() : 'dev_jwt_secret_change_in_prod'),
       jwtExpiresIn: process.env.JWT_EXPIRES_IN || '30d',
       cookieSecret: process.env.COOKIE_SECRET || (process.env.NODE_ENV === 'production' ? (() => { throw new Error('COOKIE_SECRET must be set in production') })() : 'dev_cookie_secret_change_in_prod'),
