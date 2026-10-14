@@ -1,7 +1,7 @@
 import Medusa from "@medusajs/js-sdk"
-import {getBackendUrl} from "./customer-api"
+import { getBackendUrl } from "./customer-api"
 import { useState, useEffect } from "react"
-import { CATALOG_PRODUCTS, type CatalogProduct } from "@/data/catalog"
+import { CATALOG_PRODUCTS, findCatalogProduct, type CatalogProduct } from "@/data/catalog"
 
 export interface StoreProductVariant {
   id: string
@@ -40,7 +40,10 @@ export interface StoreProduct {
 }
 
 const DEFAULT_BACKEND_URL = "http://localhost:9000"
-const publishableKey = (process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "").trim()
+const publishableKey = (
+  process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY ||
+  "pk_556de0f5ea4724394f147569c8b5066ecda7a0d39bd60eb15b2550b2d5c52246"
+).trim()
 if (!publishableKey && process.env.NODE_ENV === "production" && typeof window !== "undefined") {
   console.error("[PEPTECH CRITICAL] Missing NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY environment variable.")
 }
@@ -67,16 +70,19 @@ export const medusa = new Medusa({
 })
 
 /**
- * Ensures the SDK client baseUrl matches the runtime origin in browser
+ * Ensures the SDK client baseUrl and publishableKey match the runtime configuration
  */
 function ensureRuntimeBaseUrl() {
-  if (typeof window !== "undefined") {
-    const client = (medusa as any)?.client
-    if (client?.config) {
+  const client = (medusa as any)?.client
+  if (client?.config) {
+    if (typeof window !== "undefined") {
       const activeUrl = getMedusaBackendUrl()
       if (client.config.baseUrl !== activeUrl) {
         client.config.baseUrl = activeUrl
       }
+    }
+    if (!client.config.publishableKey || client.config.publishableKey === "") {
+      client.config.publishableKey = publishableKey
     }
   }
 }
@@ -126,7 +132,7 @@ export async function getProducts(queryParams: Record<string, unknown> = {}, for
   const fetchPromise = (async () => {
     try {
       const response = await medusa.store.product.list({
-        fields: "*categories,*variants,*variants.prices",
+        fields: "*categories,*variants,*variants.prices,*images",
         limit: 100,
         ...queryParams,
       })
@@ -218,16 +224,25 @@ export async function getProduct(idOrHandle: string, forceRefresh = false): Prom
       let product: StoreProduct | null = null
       if (idOrHandle.startsWith("prod_")) {
         const response = await medusa.store.product.retrieve(idOrHandle, {
-          fields: "*categories,*variants,*variants.prices",
+          fields: "*categories,*variants,*variants.prices,*images",
         })
         product = (response.product as unknown as StoreProduct) || null
       } else {
-        const response = await medusa.store.product.list({
-          handle: idOrHandle,
-          fields: "*categories,*variants,*variants.prices",
+        const cleanHandle = idOrHandle.replace(/^\//, "")
+        let response = await medusa.store.product.list({
+          handle: cleanHandle,
+          fields: "*categories,*variants,*variants.prices,*images",
           limit: 1,
         })
-        const products = (response.products as unknown as StoreProduct[]) || []
+        let products = (response.products as unknown as StoreProduct[]) || []
+        if (products.length === 0) {
+          response = await medusa.store.product.list({
+            handle: `/${cleanHandle}`,
+            fields: "*categories,*variants,*variants.prices,*images",
+            limit: 1,
+          })
+          products = (response.products as unknown as StoreProduct[]) || []
+        }
         product = products[0] || null
       }
 
@@ -279,11 +294,21 @@ export function getProductPrice(variant?: StoreProductVariant, currency = "gbp")
 export function mapMedusaToCatalogProduct(p: StoreProduct): CatalogProduct {
   const metadata = (p.metadata || {}) as Record<string, any>
 
-  // 1. Resolve price
+  // 1. Resolve price from variants
   let rawPrice = 0
-  if (p.variants && p.variants.length > 0 && p.variants[0].prices && p.variants[0].prices.length > 0) {
-    const gbpPrice = p.variants[0].prices.find((pr) => pr.currency_code?.toLowerCase() === "gbp")
-    rawPrice = gbpPrice ? gbpPrice.amount : 0
+  if (p.variants && p.variants.length > 0) {
+    for (const v of p.variants) {
+      if (v.prices && v.prices.length > 0) {
+        const gbpPrice = v.prices.find((pr) => pr.currency_code?.toLowerCase() === "gbp")
+        rawPrice = gbpPrice ? gbpPrice.amount : v.prices[0].amount
+        break
+      }
+    }
+  }
+
+  const staticFallback = findCatalogProduct(p.handle || p.id)
+  if (rawPrice === 0 && staticFallback) {
+    rawPrice = staticFallback.price
   }
 
   // 2. Resolve format
@@ -324,7 +349,7 @@ export function mapMedusaToCatalogProduct(p: StoreProduct): CatalogProduct {
 
   const categoryLabelMap = {
     metabolic: "Metabolic & Glucose",
-    tissue: "Tissue & Recovery",
+    tissue: "Cellular Matrix",
     cellular: "Cellular Longevity",
     neuro: "Neuro & Cognitive",
   }
@@ -338,9 +363,14 @@ export function mapMedusaToCatalogProduct(p: StoreProduct): CatalogProduct {
       : Number((rawPrice * (1 - discountPercent / 100)).toFixed(2))
     : undefined
 
-  // 5. Resolve image thumbnail
-  let image = (p.thumbnail as string) || ((p.images as any[])?.[0]?.url as string)
-  if (!image || image === "null" || image.includes("Screenshot") || image.includes("localhost:9000/static")) {
+  // 5. Resolve image thumbnail & gallery images from Admin Media
+  const rawImages = (p.images as Array<{ url: string } | string>) || []
+  const mappedImages = rawImages
+    .map((img) => (typeof img === "string" ? img : img?.url))
+    .filter((url): url is string => Boolean(url && !url.includes("null") && !url.includes("Screenshot")))
+
+  let image = mappedImages[0] || (p.thumbnail as string)
+  if (!image || image === "null" || image.includes("Screenshot")) {
     image =
       format === "complete-pen-set"
         ? "/images/peptech/mockup1.webp"
@@ -349,25 +379,50 @@ export function mapMedusaToCatalogProduct(p: StoreProduct): CatalogProduct {
         : "/images/peptech/mockup2.webp"
   }
 
+  const contents =
+    (p.subtitle as string) ||
+    (metadata.contents as string) ||
+    (metadata.subtitle as string) ||
+    staticFallback?.contents ||
+    p.title
+  const accentColor = (metadata.accentColor as string) || staticFallback?.accentColor || "#16a6a3"
+  const technicalSpecs = metadata.technicalSpecs || {
+    compoundName: (metadata.compound_name as string) || staticFallback?.technicalSpecs?.compoundName || p.title,
+    contentsOrStrength: (metadata.contents as string) || (p.subtitle as string) || staticFallback?.technicalSpecs?.contentsOrStrength || staticFallback?.contents || "Research Standard",
+    peptideClass: (metadata.peptide_class as string) || staticFallback?.technicalSpecs?.peptideClass || "Research Reagent",
+    compositionOrSequence: (metadata.sequence as string) || (metadata.formula as string) || staticFallback?.technicalSpecs?.compositionOrSequence || "Analytical Reference",
+    molecularWeight: (metadata.molecular_weight as string) || (metadata.mw as string) || staticFallback?.technicalSpecs?.molecularWeight || "Verified MS",
+    casNumber: (metadata.cas_number as string) || (metadata.cas as string) || staticFallback?.technicalSpecs?.casNumber || "Laboratory Standard",
+    form: (metadata.form as string) || staticFallback?.technicalSpecs?.form || (format === "complete-pen-set" ? "1.5 mL Borosilicate Cartridge in Pen System" : format === "refill-cartridge" ? "1.5 mL Pre-filled Glass Cartridge" : "Vacuum Freeze-Dried Lyophilised Cake"),
+    storage: (metadata.storage as string) || staticFallback?.technicalSpecs?.storage || (format === "freeze-dried-vial" ? "-20°C (Up to 24 Months)" : "2°C – 8°C (Refrigerated)"),
+    accentColor,
+    colorName: staticFallback?.technicalSpecs?.colorName || "Teal",
+  }
+
   return {
     id: p.id,
     variantId: p.variants && p.variants.length > 0 ? p.variants[0].id : p.id,
     sku: p.variants && p.variants.length > 0 ? p.variants[0].sku : undefined,
     name: p.title,
-    handle: p.handle || p.id,
+    handle: (p.handle || p.id).replace(/^\//, ""),
     format,
     formatLabel,
     category,
     categoryLabel: metadata.categoryLabel || categoryLabelMap[category],
+    contents,
+    accentColor,
+    technicalSpecs,
     description:
       (p.description as string) ||
       (metadata.description as string) ||
+      staticFallback?.description ||
       "Laboratory Grade Research Peptide • 99%+ Purity Verified",
     price: rawPrice,
     subscribePrice,
     inStock: p.status !== "draft" && p.status !== "proposed",
     isSubscriptionEligible,
     image,
+    images: mappedImages.length > 0 ? mappedImages : undefined,
   }
 }
 

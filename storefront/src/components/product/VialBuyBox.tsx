@@ -53,11 +53,8 @@ export function VialBuyBox({ product }: VialBuyBoxProps) {
   return (
     <div className="flex flex-col gap-[18px] items-start w-full max-w-[600px]">
       
-      {/* Format Pill & Rating */}
+      {/* Review Rating */}
       <div className="flex items-center justify-between w-full">
-        <span className="bg-[#f0f5fa] text-[#0b1f3a] border border-[#cbd5e1] text-[11px] font-bold px-2.5 py-1 rounded-[4px] uppercase tracking-wider">
-          {product.formatLabel}
-        </span>
         <div className="flex gap-[6px] items-center">
           <div className="flex gap-[2px] items-center">
             {[...Array(5)].map((_, i) => (
@@ -80,9 +77,18 @@ export function VialBuyBox({ product }: VialBuyBoxProps) {
         <h1 className="font-extrabold text-[#0b1f3a] text-[28px] sm:text-[34px] leading-[36px] sm:leading-[40px] tracking-tight">
           {product.name}
         </h1>
-        <p className="font-semibold text-[#16a6a3] text-[14px]">
-          {product.categoryLabel} • Analytical Research Powder
-        </p>
+        {product.contents ? (
+          <p
+            className="font-bold text-[15px] sm:text-[16px] tracking-tight"
+            style={{ color: product.accentColor || "#16a6a3" }}
+          >
+            {product.contents}
+          </p>
+        ) : (
+          <p className="font-semibold text-[#16a6a3] text-[14px]">
+            {product.categoryLabel} • Analytical Research Powder
+          </p>
+        )}
       </div>
 
       {/* Description */}

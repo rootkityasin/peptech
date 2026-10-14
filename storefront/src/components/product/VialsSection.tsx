@@ -5,48 +5,12 @@ import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 
-const FIGMA_VIALS = [
-  {
-    id: "vial-retatrutide-10mg",
-    name: "Retatrutide 10mg",
-    handle: "vial-retatrutide-10mg",
-    spec: "Research Grade • 10mg Lyophilised",
-    price: 69.99,
-    subPrice: 62.99,
-    image: "/images/figma/2d7803f97be6d80d5630dfb42abba84289ed1bb5.png",
-  },
-  {
-    id: "vial-tirzepatide-15mg",
-    name: "Tirzepatide 15mg",
-    handle: "vial-tirzepatide-15mg",
-    spec: "Research Grade • 15mg Lyophilised",
-    price: 79.99,
-    subPrice: 71.99,
-    image: "/images/figma/2d7803f97be6d80d5630dfb42abba84289ed1bb5.png",
-  },
-  {
-    id: "vial-semaglutide-10mg",
-    name: "Semaglutide 10mg",
-    handle: "vial-semaglutide-10mg",
-    spec: "Research Grade • 10mg Lyophilised",
-    price: 59.99,
-    subPrice: 53.99,
-    image: "/images/figma/2d7803f97be6d80d5630dfb42abba84289ed1bb5.png",
-  },
-  {
-    id: "vial-bpc157-10mg",
-    name: "BPC-157 10mg",
-    handle: "vial-bpc157-10mg",
-    spec: "Research Grade • 10mg Lyophilised",
-    price: 39.99,
-    subPrice: 35.99,
-    image: "/images/figma/2d7803f97be6d80d5630dfb42abba84289ed1bb5.png",
-  },
-]
+import { CATALOG_PRODUCTS } from "@/data/catalog"
 
 export function VialsSection() {
-  const router=useRouter()
+  const router = useRouter()
   const handleAddVial = (_item?: unknown) => router.push("/vials")
+  const displayVials = CATALOG_PRODUCTS.filter((p) => p.format === "freeze-dried-vial").slice(0, 4)
 
   return (
     <section className="bg-white py-[20px] pb-[60px] flex items-center justify-center border-t border-[#e2e8f0]">
@@ -124,7 +88,7 @@ export function VialsSection() {
 
           {/* Right 4 Vials */}
           <div className="lg:col-span-9 grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {FIGMA_VIALS.map((item) => (
+            {displayVials.map((item) => (
               <div
                 key={item.id}
                 className="bg-white border border-[#e2e8f0] rounded-[12px] p-[16px] flex flex-col justify-between h-[390px] hover:shadow-md transition-shadow text-center group"
@@ -143,18 +107,20 @@ export function VialsSection() {
 
                   {/* Info */}
                   <div className="space-y-0.5">
-                    <h4 className="font-bold text-[#0b1f3a] text-[15px] group-hover:text-[#16a6a3] transition-colors">
+                    <h4 className="font-bold text-[#0b1f3a] text-[15px] group-hover:text-[#16a6a3] transition-colors truncate">
                       {item.name}
                     </h4>
-                    <p className="font-normal text-[#64748b] text-[11px]">
-                      {item.spec}
+                    <p className="font-medium text-[#16a6a3] text-[11px] truncate">
+                      {item.contents || "Lyophilised Research Powder"}
                     </p>
                     <p className="font-bold text-[#0b1f3a] text-[15px] pt-1">
                       £{item.price.toFixed(2)}
                     </p>
                     <div className="flex items-center justify-center gap-1 text-[11px]">
                       <span className="text-[#64748b]">Subscribe &amp; Save</span>
-                      <span className="font-bold text-[#0d7b78] bg-[#e6fffa] px-1 py-0.5 rounded text-[10px]">£{item.subPrice.toFixed(2)}</span>
+                      <span className="font-bold text-[#0d7b78] bg-[#e6fffa] px-1 py-0.5 rounded text-[10px]">
+                        £{(item.subscribePrice || item.price * 0.9).toFixed(2)}
+                      </span>
                     </div>
                   </div>
                 </Link>

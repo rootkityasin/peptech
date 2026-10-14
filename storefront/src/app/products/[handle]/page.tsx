@@ -11,6 +11,7 @@ import { ProductBuyBox } from "@/components/product/ProductBuyBox"
 import { RefillBuyBox } from "@/components/product/RefillBuyBox"
 import { VialBuyBox } from "@/components/product/VialBuyBox"
 import { ProductSpecsGrid } from "@/components/product/ProductSpecsGrid"
+import { ProductFormatSwitcher } from "@/components/product/ProductFormatSwitcher"
 import { ProductTechnicalSpecs } from "@/components/product/ProductTechnicalSpecs"
 import { PeptechJourney } from "@/components/product/PeptechJourney"
 import { CompleteSetsSection } from "@/components/product/CompleteSetsSection"
@@ -59,9 +60,11 @@ function ProductDetailContent({
   const activePrice=catalogProduct.price
   const subscribePrice=catalogProduct.subscribePrice
 
-  // Determine gallery images based on product format
+  // Determine gallery images based on product format (prioritizing images uploaded in Admin)
   const galleryImages =
-    catalogProduct.format === "complete-pen-set"
+    catalogProduct.images && catalogProduct.images.length > 0
+      ? catalogProduct.images
+      : catalogProduct.format === "complete-pen-set"
       ? COMPLETE_PEN_SET.images
       : catalogProduct.format === "refill-cartridge"
       ? [
@@ -91,6 +94,24 @@ function ProductDetailContent({
       : catalogProduct.format === "freeze-dried-vial"
       ? "Freeze-Dried Vials"
       : "Complete Pen Sets"
+
+  // Sibling formats for the current compound
+  const currentCompoundSlug = catalogProduct.handle
+    .replace(/-pen-set$/, "")
+    .replace(/-cartridge$/, "")
+    .replace(/-vial$/, "")
+    .replace(/^pen-system-/, "")
+
+  const penSetProduct = findCatalogProduct(`${currentCompoundSlug}-pen-set`)
+  const cartridgeProduct = findCatalogProduct(`${currentCompoundSlug}-cartridge`)
+  const vialProduct = findCatalogProduct(`${currentCompoundSlug}-vial`)
+
+  const handleSelectFormat = (newProduct: CatalogProduct) => {
+    setCatalogProduct(newProduct)
+    if (typeof window !== "undefined") {
+      window.history.replaceState(null, "", `/products/${newProduct.handle}`)
+    }
+  }
 
   return (
     <div className="bg-white min-h-screen text-slate-900">
@@ -129,13 +150,22 @@ function ProductDetailContent({
 
           {/* Right: Buy Box (Render format-specific buy box) */}
           <div className="w-full lg:w-[600px] shrink-0">
+            <ProductFormatSwitcher
+              currentFormat={catalogProduct.format}
+              penSet={penSetProduct}
+              cartridge={cartridgeProduct}
+              vial={vialProduct}
+              onSelectFormat={handleSelectFormat}
+              accentColor={catalogProduct.accentColor}
+            />
+
             {catalogProduct.format === "freeze-dried-vial" ? (
               <VialBuyBox product={catalogProduct} />
             ) : catalogProduct.format === "refill-cartridge" ? (
               <ProductBuyBox
                 product={catalogProduct}
                 title={title}
-                subtitle="Pre-filled 1.5 mL Cartridge • Fits PEPTECH® Precision Pen"
+                subtitle={catalogProduct.contents || "Pre-filled 1.5 mL Cartridge • Fits PEPTECH® Precision Pen"}
                 description={catalogProduct.description || "Precision engineered pre-filled cartridge compatible with the PEPTECH reusable precision pen system."}
                 price={activePrice}
                 subscribePrice={subscribePrice}
@@ -145,11 +175,11 @@ function ProductDetailContent({
               <ProductBuyBox
                 product={catalogProduct}
                 title={title}
-                subtitle="One system. Multiple possibilities."
-                description="Get started with the complete PEPTECH® system. Includes reusable pen, a compatible prefilled cartridge, 14 instructions and all accessories you need for accurate, reliable testing."
+                subtitle={catalogProduct.contents || "One system. Multiple possibilities."}
+                description={catalogProduct.description || "Get started with the complete PEPTECH® system. Includes reusable pen, a compatible prefilled cartridge, 14 instructions and all accessories you need for accurate, reliable testing."}
                 price={activePrice}
                 subscribePrice={subscribePrice}
-                tag="PEN SYSTEM"
+                tag="COMPLETE PEN SET"
               />
             )}
           </div>
@@ -157,18 +187,28 @@ function ProductDetailContent({
         </div>
       </section>
 
-      {/* Format-Specific Specifications & Journey Stack */}
-      {catalogProduct.format === "freeze-dried-vial" ? (
+      {/* Format-Specific Specifications & Cross-Link Sections */}
+      <ProductTechnicalSpecs product={catalogProduct} />
+
+      {catalogProduct.format === "complete-pen-set" && (
         <>
-          <ProductTechnicalSpecs product={catalogProduct} />
-          <VialsSection />
-        </>
-      ) : (
-        <>
-          <ProductSpecsGrid />
           <PeptechJourney />
           <RefillsSection />
           <VialsSection />
+        </>
+      )}
+
+      {catalogProduct.format === "refill-cartridge" && (
+        <>
+          <CompleteSetsSection />
+          <VialsSection />
+        </>
+      )}
+
+      {catalogProduct.format === "freeze-dried-vial" && (
+        <>
+          <RefillsSection />
+          <CompleteSetsSection />
         </>
       )}
 

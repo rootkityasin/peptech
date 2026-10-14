@@ -30,9 +30,11 @@ export function ProductBuyBox({
   
   const isRefill =
     product?.format === "refill-cartridge" ||
-    tag === "REFILL CARTRIDGE" ||
-    product?.handle?.includes("cartridge") ||
-    (typeof title === "string" && title.toLowerCase().includes("cartridge"))
+    (product?.format !== "complete-pen-set" && (
+      tag === "REFILL CARTRIDGE" ||
+      product?.handle?.includes("cartridge") ||
+      (typeof title === "string" && title.toLowerCase().includes("cartridge"))
+    ))
 
   // Fetch live products for dynamic cartridge choices
   const { products: liveProducts } = useLiveProducts()
@@ -70,14 +72,23 @@ export function ProductBuyBox({
       const cHandle = c.handle.toLowerCase()
       const cName = c.name.toLowerCase()
 
-      if (pHandle.includes("cc1236") && (cHandle.includes("cc1236") || cName.includes("c.c-1236") || cName.includes("cc1236"))) return true
-      if (pHandle.includes("rt40") && (cHandle.includes("rt40") || cName.includes("rt40"))) return true
-      if (pHandle.includes("tbs30") && (cHandle.includes("tbs30") || cName.includes("tb-s30") || cName.includes("tbs30"))) return true
-      if (pHandle.includes("ifc137") && (cHandle.includes("ifc137") || cName.includes("ifc-137") || cName.includes("ifc137"))) return true
-      if (pHandle.includes("gvk0050") && (cHandle.includes("gvk0050") || cName.includes("gvk-00") || cName.includes("gvk0050"))) return true
-      if (pHandle.includes("melatonin2") && (cHandle.includes("melatonin2") || cName.includes("melatonin"))) return true
+      // Exact 1:1 handle transformation (e.g. klow-stack-pen-set -> klow-stack-cartridge)
+      if (pHandle.replace(/-pen-set$/, "-cartridge") === cHandle) return true
+      if (pHandle.replace(/^pen-system-/, "").replace(/-pen-set$/, "") === cHandle.replace(/-cartridge$/, "")) return true
 
-      const cleanToken = pHandle.replace(/^pen-system-/, "").replace(/[^a-z0-9]/g, "")
+      // Handle compound tokens
+      if (pHandle.includes("ghk-cu") && cHandle.includes("ghk-cu")) return true
+      if (pHandle.includes("tesamorelin") && cHandle.includes("tesamorelin")) return true
+      if (pHandle.includes("tirzepatide") && cHandle.includes("tirzepatide")) return true
+      if (pHandle.includes("melanotan") && cHandle.includes("melanotan")) return true
+      if (pHandle.includes("pt-141") && cHandle.includes("pt-141")) return true
+      if (pHandle.includes("mots-c") && cHandle.includes("mots-c")) return true
+      if (pHandle.includes("wolverine") && cHandle.includes("wolverine")) return true
+      if (pHandle.includes("klow") && cHandle.includes("klow")) return true
+      if (pHandle.includes("nad") && cHandle.includes("nad")) return true
+      if (pHandle.includes("retatrutide") && cHandle.includes("retatrutide")) return true
+
+      const cleanToken = pHandle.replace(/^pen-system-/, "").replace(/-pen-set$/, "").replace(/[^a-z0-9]/g, "")
       return cleanToken.length > 2 && (cHandle.includes(cleanToken) || cName.replace(/[^a-z0-9]/g, "").includes(cleanToken))
     })
 
@@ -163,7 +174,8 @@ export function ProductBuyBox({
   return (
     <div className="flex flex-col gap-[18px] items-start w-full max-w-[600px]">
       
-      {/* Title & Review Rating Block - Figma Node 8:41097 */}
+
+      {/* Title & Review Rating Block */}
       <div className="flex flex-col gap-[6px] items-start w-full">
         <h1 className="font-extrabold text-[#0b1f3a] text-[28px] sm:text-[34px] leading-[36px] sm:leading-[40px] tracking-tight">
           {displayTitle.includes("\n") ? (
@@ -177,8 +189,18 @@ export function ProductBuyBox({
             displayTitle
           )}
         </h1>
+
+        {/* Product Contents Subtitle */}
+        {product?.contents && (
+          <p
+            className="font-bold text-[15px] sm:text-[16px] tracking-tight"
+            style={{ color: product.accentColor || "#16a6a3" }}
+          >
+            {product.contents}
+          </p>
+        )}
         
-        <div className="flex gap-[8px] items-center pt-1">
+        <div className="flex gap-[8px] items-center pt-0.5">
           <div className="flex gap-[2px] items-center">
             {[...Array(5)].map((_, i) => (
               <img
@@ -194,11 +216,6 @@ export function ProductBuyBox({
           </span>
         </div>
       </div>
-
-      {/* Subtitle */}
-      <p className="font-semibold text-[#0b1f3a] text-[16px]">
-        {displaySubtitle}
-      </p>
 
       {/* Description */}
       <p className="font-normal text-[#475569] text-[13px] leading-[21px] max-w-[580px]">

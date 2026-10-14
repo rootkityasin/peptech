@@ -6,49 +6,13 @@ import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { useCart } from "@/components/cart/CartContext"
 
-const FIGMA_REFILLS = [
-  {
-    id: "cartridge-semaglutide-5mg",
-    name: "Semaglutide 5mg",
-    handle: "semaglutide-5mg-cartridge",
-    type: "1.5ml Refill Cartridge",
-    price: 69.99,
-    subPrice: 62.99,
-    image: "/images/figma/0e71e8560b9bae80ee21a3d08905300075c266b7.png",
-  },
-  {
-    id: "cartridge-tirzepatide-10mg",
-    name: "Tirzepatide 10mg",
-    handle: "tirzepatide-10mg-cartridge",
-    type: "1.5ml Refill Cartridge",
-    price: 89.99,
-    subPrice: 80.99,
-    image: "/images/figma/0e71e8560b9bae80ee21a3d08905300075c266b7.png",
-  },
-  {
-    id: "cartridge-retatrutide-10mg",
-    name: "Retatrutide 10mg",
-    handle: "retatrutide-10mg-cartridge",
-    type: "1.5ml Refill Cartridge",
-    price: 99.99,
-    subPrice: 89.99,
-    image: "/images/figma/0e71e8560b9bae80ee21a3d08905300075c266b7.png",
-  },
-  {
-    id: "cartridge-bpc157-10mg",
-    name: "BPC-157 10mg",
-    handle: "bpc157-10mg-cartridge",
-    type: "1.5ml Refill Cartridge",
-    price: 59.99,
-    subPrice: 53.99,
-    image: "/images/figma/0e71e8560b9bae80ee21a3d08905300075c266b7.png",
-  },
-]
+import { CATALOG_PRODUCTS } from "@/data/catalog"
 
 export function RefillsSection() {
   const router = useRouter()
   const { autoSavings } = useCart()
   const handleAddCartridge = (_item?: unknown) => router.push("/refills")
+  const displayRefills = CATALOG_PRODUCTS.filter((p) => p.format === "refill-cartridge").slice(0, 4)
 
   return (
     <section className="bg-white py-[20px] pb-[60px] flex items-center justify-center border-t border-[#e2e8f0]">
@@ -126,7 +90,7 @@ export function RefillsSection() {
 
           {/* Right 4 Cartridges (lg:col-span-9) */}
           <div className="lg:col-span-9 grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {FIGMA_REFILLS.map((item) => (
+            {displayRefills.map((item) => (
               <div
                 key={item.id}
                 className="bg-white border border-[#e2e8f0] rounded-[12px] p-[16px] flex flex-col justify-between h-[390px] hover:shadow-md transition-shadow text-center group"
@@ -145,11 +109,11 @@ export function RefillsSection() {
 
                   {/* Info */}
                   <div className="space-y-0.5">
-                    <h4 className="font-bold text-[#0b1f3a] text-[15px] group-hover:text-[#16a6a3] transition-colors">
+                    <h4 className="font-bold text-[#0b1f3a] text-[15px] group-hover:text-[#16a6a3] transition-colors truncate">
                       {item.name}
                     </h4>
-                    <p className="font-normal text-[#64748b] text-[11px]">
-                      {item.type}
+                    <p className="font-medium text-[#16a6a3] text-[11px] truncate">
+                      {item.contents || "1.5 mL Refill Cartridge"}
                     </p>
                     <p className="font-bold text-[#0b1f3a] text-[15px] pt-1">
                       £{item.price.toFixed(2)}

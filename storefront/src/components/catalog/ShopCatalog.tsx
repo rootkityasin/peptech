@@ -93,9 +93,10 @@ export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase()
         const matchesName = product.name.toLowerCase().includes(q)
+        const matchesContents = product.contents ? product.contents.toLowerCase().includes(q) : false
         const matchesDesc = product.description.toLowerCase().includes(q)
         const matchesCategory = product.categoryLabel.toLowerCase().includes(q)
-        if (!matchesName && !matchesDesc && !matchesCategory) return false
+        if (!matchesName && !matchesContents && !matchesDesc && !matchesCategory) return false
       }
 
       // Availability filter
@@ -139,7 +140,7 @@ export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
     })
     selectedCategories.forEach((cat) => {
       chips.push({
-        label: cat === "metabolic" ? "Metabolic" : cat === "tissue" ? "Tissue Recovery" : cat === "cellular" ? "Cellular" : "Neuropeptides",
+        label: cat === "metabolic" ? "Metabolic" : cat === "tissue" ? "Cellular Matrix" : cat === "cellular" ? "Cellular" : "Neuropeptides",
         onRemove: () => setSelectedCategories((prev) => prev.filter((c) => c !== cat)),
       })
     })
@@ -156,6 +157,7 @@ export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
     return allProducts.filter((product) => {
       return (
         product.name.toLowerCase().includes(q) ||
+        (product.contents && product.contents.toLowerCase().includes(q)) ||
         product.description.toLowerCase().includes(q) ||
         product.categoryLabel.toLowerCase().includes(q) ||
         product.formatLabel.toLowerCase().includes(q)
@@ -579,7 +581,7 @@ export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
                 </p>
                 {[
                   { id: "metabolic", label: "Metabolic & Glucose", count: metabolicCount },
-                  { id: "tissue", label: "Tissue Recovery", count: tissueCount },
+                  { id: "tissue", label: "Cellular Matrix", count: tissueCount },
                   { id: "cellular", label: "Cellular Longevity", count: cellularCount },
                   { id: "neuro", label: "Neuropeptides", count: neuroCount },
                 ].map((cat) => {
@@ -777,7 +779,7 @@ export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
             </p>
             {[
               { id: "metabolic", label: "Metabolic & Glucose", count: metabolicCount },
-              { id: "tissue", label: "Tissue Recovery", count: tissueCount },
+              { id: "tissue", label: "Cellular Matrix", count: tissueCount },
               { id: "cellular", label: "Cellular Longevity", count: cellularCount },
               { id: "neuro", label: "Neuropeptides", count: neuroCount },
             ].map((cat) => {
@@ -898,8 +900,16 @@ export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
               {filteredProducts.map((product) => (
                 <div
                   key={product.id}
-                  className="bg-white border border-[#e2e8f0] rounded-[10px] p-[12px] flex flex-col justify-between h-[360px] hover:shadow-md transition-shadow text-center group relative"
+                  className="bg-white border border-[#e2e8f0] rounded-[10px] p-[12px] flex flex-col justify-between min-h-[380px] hover:shadow-md transition-shadow text-center group relative overflow-hidden"
                 >
+                  {/* Subtle top accent border if product has accentColor */}
+                  {product.accentColor && (
+                    <div
+                      className="absolute top-0 left-0 right-0 h-[3px]"
+                      style={{ backgroundColor: product.accentColor }}
+                    />
+                  )}
+
                   {/* Clickable Card Body: Image, Title, Specs & Price */}
                   <Link
                     href={`/products/${product.handle}`}
@@ -907,6 +917,20 @@ export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
                   >
                     {/* Image Box */}
                     <div className="bg-[#f8fafc] rounded-[8px] h-[145px] min-h-[145px] w-full flex items-center justify-center relative overflow-hidden mb-2 group-hover:bg-[#f1f5f9] transition-colors">
+                      {/* Format Badge with Accent Dot */}
+                      <div className="absolute top-[8px] left-[8px] z-10 flex items-center gap-1.5">
+                        <span className="bg-white/90 backdrop-blur-xs text-[#0b1f3a] border border-[#e2e8f0] text-[9.5px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">
+                          {product.formatLabel}
+                        </span>
+                        {product.accentColor && (
+                          <span
+                            className="size-2 rounded-full border border-white shrink-0"
+                            style={{ backgroundColor: product.accentColor }}
+                            title={product.categoryLabel}
+                          />
+                        )}
+                      </div>
+
                       <div className="relative w-full h-[130px] min-h-[130px] flex items-center justify-center">
                         <Image
                           src={product.image}
@@ -923,9 +947,21 @@ export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
                       <h3 className="font-bold text-[#0b1f3a] text-[15px] group-hover:text-[#16a6a3] transition-colors line-clamp-1">
                         {product.name}
                       </h3>
-                      <p className="font-semibold text-[#64748b] text-[10px] tracking-wide uppercase">
-                        {product.formatLabel}
-                      </p>
+
+                      {/* Product Contents Subtitle */}
+                      {product.contents ? (
+                        <p
+                          className="font-bold text-[11.5px] truncate max-w-full tracking-tight px-1"
+                          style={{ color: product.accentColor || "#16a6a3" }}
+                        >
+                          {product.contents}
+                        </p>
+                      ) : (
+                        <p className="font-semibold text-[#64748b] text-[10px] tracking-wide uppercase">
+                          {product.formatLabel}
+                        </p>
+                      )}
+
                       <p className="font-normal text-[#475569] text-[11px] line-clamp-1">
                         {product.description}
                       </p>
@@ -962,17 +998,37 @@ export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
               {filteredProducts.map((product) => (
                 <div
                   key={product.id}
-                  className="bg-white border border-[#e2e8f0] rounded-[8px] p-4 flex flex-col sm:flex-row items-center justify-between gap-4 hover:shadow-md transition-shadow group"
+                  className="bg-white border border-[#e2e8f0] rounded-[8px] p-4 flex flex-col sm:flex-row items-center justify-between gap-4 hover:shadow-md transition-shadow group relative overflow-hidden"
                 >
+                  {product.accentColor && (
+                    <div
+                      className="absolute top-0 bottom-0 left-0 w-[3px]"
+                      style={{ backgroundColor: product.accentColor }}
+                    />
+                  )}
+
                   <Link href={`/products/${product.handle}`} className="flex items-center gap-4 flex-1">
                     <div className="bg-[#f8fafc] rounded-[6px] size-[80px] relative shrink-0 p-1 group-hover:bg-slate-100 transition-colors">
                       <Image src={product.image} alt={product.name} fill sizes="80px" className="object-contain" />
                     </div>
                     <div className="text-left">
-                      <span className="text-[10px] font-semibold text-[#64748b] tracking-wide uppercase">
-                        {product.formatLabel}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-semibold text-[#64748b] tracking-wide uppercase">
+                          {product.formatLabel}
+                        </span>
+                        {product.accentColor && (
+                          <span
+                            className="size-2 rounded-full shrink-0"
+                            style={{ backgroundColor: product.accentColor }}
+                          />
+                        )}
+                      </div>
                       <h4 className="text-[15px] font-bold text-[#0b1f3a] group-hover:text-[#16a6a3] transition-colors">{product.name}</h4>
+                      {product.contents && (
+                        <p className="text-[11.5px] font-bold" style={{ color: product.accentColor || "#16a6a3" }}>
+                          {product.contents}
+                        </p>
+                      )}
                       <p className="text-[12px] text-[#475569]">{product.description}</p>
                     </div>
                   </Link>

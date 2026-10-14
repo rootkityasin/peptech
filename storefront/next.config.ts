@@ -12,6 +12,13 @@ const medusaBackendUrl =
   (isProd ? "https://admin.peptech.bio" : "http://localhost:9000");
 
 const nextConfig: NextConfig = {
+  env: {
+    NEXT_PUBLIC_MEDUSA_BACKEND_URL: process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000",
+    NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "",
+    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "",
+    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "",
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_API_KEY || "",
+  },
   turbopack: {
     root: path.resolve(__dirname),
   },
@@ -64,6 +71,10 @@ const nextConfig: NextConfig = {
       {
         source: "/auth/:path*",
         destination: `${medusaBackendUrl}/auth/:path*`,
+      },
+      {
+        source: "/static/:path*",
+        destination: `${medusaBackendUrl}/static/:path*`,
       },
     ];
   },

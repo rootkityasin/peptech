@@ -313,7 +313,7 @@ export function Header() {
                         <h4 className="text-[13px] font-semibold text-[#0b1f3a] group-hover/item:text-[#16a6a3] transition-colors">
                           Complete Pen Sets
                         </h4>
-                        <span className="text-[11.5px] text-[#94a3b8]">From £145</span>
+                        <span className="text-[11.5px] text-[#94a3b8]">From £99.99</span>
                       </div>
                       <p className="text-[11.5px] text-[#64748b] leading-normal mt-0.5">
                         Reusable precision pen body + prefilled cartridge &amp; accessories.
@@ -342,7 +342,7 @@ export function Header() {
                           Refill Cartridges
                         </h4>
                         <span className="text-[11.5px] text-[#16a6a3] font-medium">
-                          From £95 · {autoSavings.discountType === "percentage" ? `${autoSavings.discountValue}%` : autoSavings.badgeText} Sub Discount
+                          From £50.00 · {autoSavings.discountType === "percentage" ? `${autoSavings.discountValue}%` : autoSavings.badgeText} Sub Discount
                         </span>
                       </div>
                       <p className="text-[11.5px] text-[#64748b] leading-normal mt-0.5">
@@ -371,7 +371,7 @@ export function Header() {
                         <h4 className="text-[13px] font-semibold text-[#0b1f3a] group-hover/item:text-[#16a6a3] transition-colors">
                           Freeze-Dried Vials
                         </h4>
-                        <span className="text-[11.5px] text-[#94a3b8]">From £48</span>
+                        <span className="text-[11.5px] text-[#94a3b8]">From £50.00</span>
                       </div>
                       <p className="text-[11.5px] text-[#64748b] leading-normal mt-0.5">
                         Traditional vacuum borosilicate glass vials for laboratory dissolution.
@@ -684,25 +684,25 @@ export function Header() {
             >
               <div className="space-y-1 text-sm font-semibold text-slate-800">
                 <Link
-                  href="/products/complete-pen-set"
+                  href="/pen-sets"
                   onClick={() => setMobileMenuOpen(false)}
                   className="block px-3 py-2 rounded-lg hover:bg-slate-100"
                 >
-                  Complete Pen Sets ($249.00)
+                  Complete Pen Sets (From £99.99)
                 </Link>
                 <Link
                   href="/refills"
                   onClick={() => setMobileMenuOpen(false)}
                   className="block px-3 py-2 rounded-lg hover:bg-slate-100"
                 >
-                  Individual Cartridges ($25 - $39)
+                  Refill Cartridges (From £50.00)
                 </Link>
                 <Link
                   href="/vials"
                   onClick={() => setMobileMenuOpen(false)}
                   className="block px-3 py-2 rounded-lg hover:bg-slate-100"
                 >
-                  Freeze-Dried Vials
+                  Freeze-Dried Vials (From £50.00)
                 </Link>
                 <Link
                   href="/about"

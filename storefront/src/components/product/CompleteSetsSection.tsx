@@ -57,7 +57,7 @@ export function CompleteSetsSection() {
             </p>
           </div>
           <Link
-            href="/products/complete-pen-set"
+            href="/pen-sets"
             className="flex items-center gap-[6px] text-[#0b1f3a] hover:text-[#16a6a3] transition-colors font-bold text-[13px] shrink-0"
           >
             <span>View All Pen Systems</span>
@@ -119,7 +119,7 @@ export function CompleteSetsSection() {
             {/* Price & Add to Cart */}
             <div className="pt-4 space-y-3">
               <div className="font-bold text-[#0b1f3a] text-[18px]">
-                $249.00
+                From £99.99
               </div>
               <button
                 type="button"

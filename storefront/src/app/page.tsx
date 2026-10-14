@@ -7,142 +7,41 @@ import { useCart } from "@/components/cart/CartContext"
 import { Interactive3DPen } from "@/components/home/Interactive3DPen"
 import { TrustedBySection } from "@/components/common/TrustedBySection"
 import { useLiveProducts } from "@/lib/medusa"
-
-// Featured Complete Pen Sets from Figma (Node 2:29339)
-const FIGMA_FEATURED_PEN_SETS = [
-  {
-    id: "pen-set-rt40",
-    name: "RT40",
-    handle: "pen-system-rt40",
-    tag: "PEN SYSTEM",
-    application: "Food Safety Testing",
-    price: 249.00,
-    image: "/images/figma/product-set-rt40.png",
-  },
-  {
-    id: "pen-set-cc1236",
-    name: "C.C-1236",
-    handle: "pen-system-cc1236",
-    tag: "PEN SYSTEM",
-    application: "Environmental Testing",
-    price: 249.00,
-    image: "/images/figma/product-set-cc1236.png",
-  },
-  {
-    id: "pen-set-tbs30",
-    name: "TB-S30",
-    handle: "pen-system-tbs30",
-    tag: "PEN SYSTEM",
-    application: "Healthcare Testing",
-    price: 249.00,
-    image: "/images/figma/product-set-tbs30.png",
-  },
-  {
-    id: "pen-set-ifc137",
-    name: "IFC-137",
-    handle: "pen-system-ifc137",
-    tag: "PEN SYSTEM",
-    application: "Industrial Hygiene",
-    price: 249.00,
-    image: "/images/figma/product-set-ifc137.png",
-  },
-  {
-    id: "pen-set-gvk0050",
-    name: "GVK-00 50",
-    handle: "pen-system-gvk0050",
-    tag: "PEN SYSTEM",
-    application: "Water Quality Testing",
-    price: 249.00,
-    image: "/images/figma/product-set-gvk0050.png",
-  },
-  {
-    id: "pen-set-melatoxin2",
-    name: "Melatoxin II",
-    handle: "pen-system-melatoxin2",
-    tag: "PEN SYSTEM",
-    application: "Mycotoxin Detection",
-    price: 249.00,
-    image: "/images/figma/product-set-melatoxin2.png",
-  },
-]
-
-// Individual Cartridges from Figma (Node 2:29436)
-const FIGMA_CARTRIDGES = [
-  {
-    id: "cartridge-rt40",
-    name: "RT40",
-    handle: "cartridge-rt40",
-    type: "Test Cartridge",
-    price: 39.00,
-    image: "/images/figma/cartridge-clear.png",
-  },
-  {
-    id: "cartridge-cc1236",
-    name: "C.C-1236",
-    handle: "cartridge-cc1236",
-    type: "Test Cartridge",
-    price: 39.00,
-    image: "/images/figma/cartridge-clear.png",
-  },
-  {
-    id: "cartridge-tbs30",
-    name: "TB-S30",
-    handle: "cartridge-tbs30",
-    type: "Test Cartridge",
-    price: 25.00,
-    image: "/images/figma/cartridge-clear.png",
-  },
-  {
-    id: "cartridge-ifc137",
-    name: "IFC-137",
-    handle: "cartridge-ifc137",
-    type: "Test Cartridge",
-    price: 39.00,
-    image: "/images/figma/cartridge-clear.png",
-  },
-  {
-    id: "cartridge-gvk0050",
-    name: "GVK-00 50",
-    handle: "cartridge-gvk0050",
-    type: "Test Cartridge",
-    price: 35.00,
-    image: "/images/figma/cartridge-clear.png",
-  },
-  {
-    id: "cartridge-melatoxin2",
-    name: "Melatoxin II",
-    handle: "cartridge-melatoxin2",
-    type: "Test Cartridge",
-    price: 33.00,
-    image: "/images/figma/cartridge-clear.png",
-  },
-]
+import { CATALOG_PRODUCTS } from "@/data/catalog"
 
 export default function HomePage() {
   const { addItem, setIsDrawerOpen } = useCart()
   const { products } = useLiveProducts()
 
-  // Dynamically resolve featured products from live Medusa API with fallback
-  const livePenSets = products.filter((p) => p.format === "complete-pen-set").slice(0, 6)
-  const displayPenSets = livePenSets.length > 0 ? livePenSets.map((p) => ({
-    id: p.id,
-    name: p.name,
-    handle: p.handle,
-    tag: "PEN SYSTEM",
-    application: p.categoryLabel || "Research Peptide",
-    price: p.price,
-    image: p.image || "/images/figma/hero-presentation-box.png",
-  })) : FIGMA_FEATURED_PEN_SETS
+  // Dynamically resolve featured products from live Medusa API or authoritative CATALOG_PRODUCTS fallback
+  const sourceProducts = products.length > 0 ? products : CATALOG_PRODUCTS
 
-  const liveCartridges = products.filter((p) => p.format === "refill-cartridge").slice(0, 6)
-  const displayCartridges = liveCartridges.length > 0 ? liveCartridges.map((c) => ({
-    id: c.id,
-    name: c.name,
-    handle: c.handle,
-    type: c.categoryLabel || "Test Cartridge",
-    price: c.price,
-    image: c.image || "/images/figma/cartridge-clear.png",
-  })) : FIGMA_CARTRIDGES
+  const displayPenSets = sourceProducts
+    .filter((p) => p.format === "complete-pen-set")
+    .slice(0, 6)
+    .map((p) => ({
+      id: p.id,
+      name: p.name,
+      handle: p.handle,
+      tag: "COMPLETE PEN SET",
+      application: p.contents || p.categoryLabel || "Research Peptide",
+      price: p.price,
+      image: p.image || "/images/figma/hero-presentation-box.png",
+      accentColor: p.accentColor,
+    }))
+
+  const displayCartridges = sourceProducts
+    .filter((p) => p.format === "refill-cartridge")
+    .slice(0, 6)
+    .map((c) => ({
+      id: c.id,
+      name: c.name,
+      handle: c.handle,
+      type: c.contents || c.categoryLabel || "Refill Cartridge",
+      price: c.price,
+      image: c.image || "/images/figma/cartridge-clear.png",
+      accentColor: c.accentColor,
+    }))
 
   return (
     <main className="bg-white text-slate-900 overflow-x-hidden font-sans">
@@ -376,7 +275,7 @@ export default function HomePage() {
                     {p.application}
                   </p>
                   <p className="text-[15px] font-bold text-[#0B1F3A] pt-1">
-                    ${p.price.toFixed(2)}
+                    £{p.price.toFixed(2)}
                   </p>
                 </div>
 
@@ -455,7 +354,7 @@ export default function HomePage() {
                       {c.type}
                     </p>
                     <p className="text-[14px] font-bold text-[#0B1F3A] pt-0.5">
-                      ${c.price.toFixed(2)}
+                      £{c.price.toFixed(2)}
                     </p>
                   </div>
 
