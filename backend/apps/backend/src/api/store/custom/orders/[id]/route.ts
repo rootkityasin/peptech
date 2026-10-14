@@ -31,6 +31,7 @@ export async function GET(req: AuthenticatedMedusaRequest, res: MedusaResponse) 
       "items.*",
       "shipping_address.*",
       "billing_address.*",
+      "shipping_methods.*",
       "metadata",
       "customer.*",
     ]
@@ -122,7 +123,27 @@ export async function GET(req: AuthenticatedMedusaRequest, res: MedusaResponse) 
       const metaMinor = Number(order.metadata?.refunded_amount_minor) || 0
       const summaryPaid = Number(order.summary?.original_order_total) || Number(order.summary?.paid_total) || 0
       const summaryTotal = Number(order.summary?.total) || Number(order.total) || 0
-      const total = summaryPaid > 0 ? summaryPaid : (summaryTotal > 0 ? summaryTotal : (metaMinor > 0 ? metaMinor : (itemsTotalMinor > 0 ? itemsTotalMinor + 495 : 19995)))
+
+      const defaultShippingMinor = itemsTotalMinor >= 15000 ? 0 : 495
+      const actualShippingMinor =
+        typeof order.summary?.shipping_total === "number"
+          ? order.summary.shipping_total
+          : typeof order.shipping_methods?.[0]?.amount === "number"
+          ? (Number(order.shipping_methods[0].amount) >= 100
+              ? Number(order.shipping_methods[0].amount)
+              : Math.round(Number(order.shipping_methods[0].amount) * 100))
+          : defaultShippingMinor
+
+      const total =
+        summaryPaid > 0
+          ? summaryPaid
+          : summaryTotal > 0
+          ? summaryTotal
+          : metaMinor > 0
+          ? metaMinor
+          : itemsTotalMinor > 0
+          ? itemsTotalMinor + actualShippingMinor
+          : 19995
 
       return {
         order: {
@@ -134,7 +155,7 @@ export async function GET(req: AuthenticatedMedusaRequest, res: MedusaResponse) 
             original_order_total: order.summary?.original_order_total || total,
             paid_total: order.summary?.paid_total || total,
             subtotal: order.summary?.subtotal || itemsTotalMinor,
-            shipping_total: order.summary?.shipping_total || 495,
+            shipping_total: actualShippingMinor,
           },
         },
       }

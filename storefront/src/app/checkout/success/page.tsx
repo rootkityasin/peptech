@@ -11,11 +11,13 @@ export default function CheckoutSuccessPage() {
   const [result, setResult] = useState<CheckoutSession | null>(null)
   const [message, setMessage] = useState("Confirming your order…")
   const [retry, setRetry] = useState(0)
+  const [isChecking, setIsChecking] = useState<boolean>(true)
 
   useEffect(() => {
     if (isLoading) return
     if (!token) {
       setMessage("Sign in to view your payment confirmation.")
+      setIsChecking(false)
       return
     }
     const params = new URLSearchParams(window.location.search)
@@ -24,16 +26,23 @@ export default function CheckoutSuccessPage() {
     let active = true
     let timer: ReturnType<typeof setTimeout>
     let count = 0
+    setIsChecking(true)
 
     const poll = async () => {
       try {
         if (!id) {
           if (legacy && /^cart_[A-Za-z0-9]+$/.test(legacy)) {
             await completeStripeCheckout(legacy, token)
-            if (active) setMessage("Your order is confirmed. View it in your account.")
+            if (active) {
+              setMessage("Your order is confirmed. View it in your account.")
+              setIsChecking(false)
+            }
             return
           }
-          if (active) setMessage("No checkout reference was supplied.")
+          if (active) {
+            setMessage("No checkout reference was supplied.")
+            setIsChecking(false)
+          }
           return
         }
         const data = await checkoutStatus(id, token)
@@ -45,19 +54,29 @@ export default function CheckoutSuccessPage() {
           if (snapshot) clearCartIfUnchanged(snapshot)
           sessionStorage.removeItem(`peptech_checkout_cart:${id}`)
           void refreshCustomer()
+          setIsChecking(false)
           return
         }
         if (["expired", "failed"].includes(data.state)) {
           setMessage("This checkout has expired or failed. Check your account before placing another order.")
+          setIsChecking(false)
           return
         }
         setMessage("Payment confirmation is processing. You can safely leave this page and check your account later.")
-        if (++count < 30) timer = setTimeout(poll, 3000)
+        if (++count < 30) {
+          timer = setTimeout(poll, 3000)
+        } else {
+          setIsChecking(false)
+        }
       } catch (error) {
         if (active) {
           setMessage("Confirming your payment with the banking network… Please wait.")
-          if (++count < 30) timer = setTimeout(poll, 3000)
-          else setMessage(error instanceof Error ? error.message : "Confirmation is pending. Please check your account.")
+          if (++count < 30) {
+            timer = setTimeout(poll, 3000)
+          } else {
+            setMessage(error instanceof Error ? error.message : "Confirmation is pending. Please check your account.")
+            setIsChecking(false)
+          }
         }
       }
     }
@@ -70,7 +89,8 @@ export default function CheckoutSuccessPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, isLoading, retry])
 
-  const orderDisplayId = result?.orderNumber || (result?.orderId ? (result.orderId.startsWith("order_") ? `PEP-${result.orderId.replace(/^order_/, "").slice(0, 6).toUpperCase()}` : result.orderId) : null)
+  const orderDisplayId = result?.orderId || result?.orderNumber || null
+  const isConfirming = isChecking || result?.state === "processing" || (!result && !!token)
 
   return (
     <main className="mx-auto flex min-h-[65vh] max-w-xl flex-col justify-center gap-6 px-6 py-16 text-[#0B1F3A]">
@@ -92,11 +112,11 @@ export default function CheckoutSuccessPage() {
         </p>
 
         {orderDisplayId && (
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Official Order Reference:
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex items-center justify-between gap-3">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider shrink-0">
+              Official Order ID:
             </span>
-            <span className="font-mono font-bold text-[#0B1F3A] text-sm">{orderDisplayId}</span>
+            <span className="font-mono font-bold text-[#0B1F3A] text-xs sm:text-sm break-all text-right">{orderDisplayId}</span>
           </div>
         )}
 
@@ -125,23 +145,39 @@ export default function CheckoutSuccessPage() {
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
-              View &amp; Print Receipt ↗
+              View &amp; Print Receipt
             </Link>
             <Link
               href="/account?tab=orders"
               className="flex-1 bg-[#0B1F3A] hover:bg-[#162a45] text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors text-center flex items-center justify-center shadow-xs"
             >
-              Account Orders →
+              Account Orders
             </Link>
           </div>
         )}
 
         {result?.state !== "confirmed" && token && (
           <button
-            onClick={() => setRetry((v) => v + 1)}
-            className="rounded-xl bg-[#0B1F3A] p-3 text-white font-medium hover:bg-opacity-95 transition-colors text-xs"
+            onClick={() => {
+              if (isConfirming) return
+              setIsChecking(true)
+              setRetry((v) => v + 1)
+            }}
+            disabled={isConfirming}
+            className={`w-full rounded-xl py-3 px-4 font-medium text-xs transition-colors text-center flex items-center justify-center gap-2 ${
+              isConfirming
+                ? "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed select-none"
+                : "bg-slate-100 hover:bg-slate-200 text-[#0B1F3A] border border-slate-300 font-semibold cursor-pointer"
+            }`}
           >
-            Check Confirmation Status
+            {isConfirming ? (
+              <>
+                <div className="w-3.5 h-3.5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
+                <span>Checking Confirmation Status…</span>
+              </>
+            ) : (
+              <span>Check Confirmation Status</span>
+            )}
           </button>
         )}
 

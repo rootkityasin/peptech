@@ -30,6 +30,7 @@ export interface ReceiptData {
   refundedAmount?: number
   stripeRefundId?: string
   trackingNumber?: string
+  shippingMethodName?: string
   paymentMethod?: string
   customerName?: string
   customerEmail?: string
@@ -202,11 +203,20 @@ export function UnifiedReceipt({
         .join("\n")
     : null
 
-  const subtotal = receipt.subtotal ?? Math.max(0, receipt.total - (receipt.shippingTotal ?? 4.95))
-  const shipping = receipt.shippingTotal ?? 4.95
+  const shipping =
+    typeof receipt.shippingTotal === "number"
+      ? (receipt.shippingTotal >= 100 ? receipt.shippingTotal / 100 : receipt.shippingTotal)
+      : 4.95
+  const subtotal =
+    typeof receipt.subtotal === "number"
+      ? (receipt.subtotal >= 100 ? receipt.subtotal / 100 : receipt.subtotal)
+      : Math.max(0, receipt.total - shipping)
   const tax = receipt.taxTotal ?? 0
-  const orderDisplayNumber = receipt.displayId || receipt.id
-  const trackingNumber = receipt.trackingNumber || `GB-RM24-${orderDisplayNumber.replace(/[^a-zA-Z0-9]/g, "")}-CLD`
+  const orderDisplayNumber = String(receipt.id || receipt.displayId || "PEPTECH-ORDER")
+  const trackingNumber = receipt.trackingNumber || `GB-RM24-${orderDisplayNumber.replace(/[^a-zA-Z0-9]/g, "").slice(-10).toUpperCase()}-CLD`
+  const shippingTitle =
+    receipt.shippingMethodName ||
+    (shipping === 0 ? "Royal Mail Tracked 24 (Free)" : "Royal Mail Tracked 24")
   const formattedDateTime = receipt.displayDate && receipt.displayDate.includes(":") 
     ? receipt.displayDate 
     : formatFullReceiptDateTime(receipt.date)
@@ -262,10 +272,10 @@ export function UnifiedReceipt({
               />
             </div>
             <div className="mt-3 text-xs text-slate-500 space-y-0.5">
-              <p className="font-semibold text-slate-700">PEPTECH Bio Ltd</p>
-              <p>71-75 Shelton Street, Covent Garden</p>
-              <p>London, WC2H 9JQ, United Kingdom</p>
-              <p>VAT Reg: GB-RUO-49281 | info@peptech.bio</p>
+              <p className="font-semibold text-slate-700">PEPTECH®</p>
+              <p>Operated by Muawiyah Waheed · UK Sole Trader</p>
+              <p>4 The Sidings, Dewsbury, WF12 9QU, UK</p>
+              <p>support@peptech.bio | +44 7547 692956</p>
             </div>
           </div>
 
@@ -276,7 +286,7 @@ export function UnifiedReceipt({
             <div className="mt-2 text-xs space-y-1">
               <div>
                 <span className="text-slate-500">Order ID: </span>
-                <span className="font-mono font-bold text-[#0b1f3a]">{orderDisplayNumber}</span>
+                <span className="font-mono font-bold text-[#0b1f3a] break-all">{orderDisplayNumber}</span>
               </div>
               <div>
                 <span className="text-slate-500">Date &amp; Time: </span>
@@ -326,7 +336,7 @@ export function UnifiedReceipt({
             </p>
             <div>
               <span className="text-slate-500">Shipping Courier: </span>
-              <span className="font-medium text-slate-800">Royal Mail Tracked 24 (Cold-Chain)</span>
+              <span className="font-medium text-slate-800">{shippingTitle} (Cold-Chain)</span>
             </div>
             <div>
               <span className="text-slate-500">Tracking Reference: </span>
@@ -338,14 +348,6 @@ export function UnifiedReceipt({
                 <span className="text-slate-800">{receipt.customerEmail}</span>
               </div>
             )}
-            <div>
-              <span className="text-slate-500">Payment Processor: </span>
-              <span className="text-slate-800">{receipt.paymentMethod || "Stripe 256-Bit SSL Encrypted"}</span>
-            </div>
-            <div>
-              <span className="text-slate-500">Settlement Verification: </span>
-              <span className="text-slate-800">Stripe 3-D Secure SCA Verified</span>
-            </div>
           </div>
         </div>
 
@@ -406,7 +408,7 @@ export function UnifiedReceipt({
             <span className="font-mono">£{subtotal.toFixed(2)}</span>
           </div>
           <div className="flex justify-between w-full max-w-xs text-slate-600">
-            <span>Royal Mail Tracked 24:</span>
+            <span>{shippingTitle}:</span>
             <span className="font-mono">{shipping === 0 ? "FREE" : `£${shipping.toFixed(2)}`}</span>
           </div>
           {tax > 0 && (

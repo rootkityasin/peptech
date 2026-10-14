@@ -50,6 +50,16 @@ function AccountContent() {
   const avatarInputRef = useRef<HTMLInputElement | null>(null)
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
 
+  // Redirect handling if already logged in with redirect parameter
+  useEffect(() => {
+    if (!isLoading && isAuthenticated && token) {
+      const redirectParam = searchParams.get("redirect")
+      if (redirectParam && redirectParam.startsWith("/")) {
+        router.push(redirectParam)
+      }
+    }
+  }, [isLoading, isAuthenticated, token, searchParams, router])
+
   // Lifecycle & Concurrency Refs
   const isMountedRef = useRef<boolean>(true)
   const inFlightFetchRef = useRef<boolean>(false)
@@ -181,7 +191,7 @@ function AccountContent() {
                   : (typeof mo.total === "number" && mo.total > 0
                     ? mo.total
                     : (mo.metadata?.refunded_amount_minor ? mo.metadata.refunded_amount_minor / 100 : 0))))
-            const orderDisplayId = mo.custom_display_id || mo.metadata?.order_number_formatted || (mo.display_id ? `PEP-${mo.display_id}` : `PEP-${mo.id.replace(/^order_/, "").slice(0, 6).toUpperCase()}`)
+            const actualOrderId = mo.id || mo.internalId || (mo.custom_display_id && !/^PEP-\d+$/i.test(mo.custom_display_id) ? mo.custom_display_id : "order_peptech")
             const displayDate = formatFullReceiptDateTime(mo.created_at || mo.date)
             
             const rawItems = (mo.items || []).map((it: any) => {
@@ -198,12 +208,43 @@ function AccountContent() {
               }
             })
             const itemsSum = rawItems.reduce((acc: number, it: any) => acc + ((it.price || 0) * (it.quantity || 1)), 0)
-            const displayTotal = rawTotal > 1000 ? rawTotal / 100 : (rawTotal > 0 ? rawTotal : (itemsSum > 0 ? itemsSum + 4.95 : (mo.metadata?.refunded_amount_minor ? mo.metadata.refunded_amount_minor / 100 : 199.95)))
 
             const rawSubtotal = typeof mo.summary?.subtotal === "number" ? mo.summary.subtotal : 0
-            const subtotal = rawSubtotal > 1000 ? rawSubtotal / 100 : (rawSubtotal > 0 ? rawSubtotal : (itemsSum > 0 ? itemsSum : Math.max(0, displayTotal - 4.95)))
-            const rawShipping = typeof mo.summary?.shipping_total === "number" ? mo.summary.shipping_total : 4.95
-            const shippingTotal = rawShipping > 1000 ? rawShipping / 100 : rawShipping
+            const subtotal =
+              rawSubtotal >= 100
+                ? rawSubtotal / 100
+                : rawSubtotal > 0
+                ? rawSubtotal
+                : itemsSum > 0
+                ? itemsSum
+                : 0
+
+            const rawShipping =
+              typeof mo.summary?.shipping_total === "number"
+                ? mo.summary.shipping_total
+                : typeof mo.shipping_methods?.[0]?.amount === "number"
+                ? mo.shipping_methods[0].amount
+                : undefined
+
+            const shippingTotal =
+              typeof rawShipping === "number"
+                ? (rawShipping >= 100 ? rawShipping / 100 : rawShipping)
+                : (subtotal >= 150 ? 0 : 4.95)
+
+            const shippingMethodName =
+              mo.shipping_methods?.[0]?.name ||
+              (shippingTotal === 0 ? "Royal Mail Tracked 24 (Free)" : "Royal Mail Tracked 24")
+
+            const displayTotal =
+              rawTotal >= 100
+                ? rawTotal / 100
+                : rawTotal > 0
+                ? rawTotal
+                : (subtotal + shippingTotal > 0
+                    ? subtotal + shippingTotal
+                    : mo.metadata?.refunded_amount_minor
+                    ? mo.metadata.refunded_amount_minor / 100
+                    : 199.95)
 
             const isRefunded = 
               mo.metadata?.refund_status === "refunded" || 
@@ -225,14 +266,15 @@ function AccountContent() {
             const refundedDate = mo.metadata?.refunded_at ? formatFullReceiptDateTime(mo.metadata.refunded_at) : null
 
             return {
-              id: orderDisplayId,
+              id: actualOrderId,
               internalId: mo.id,
-              displayId: mo.display_id,
+              displayId: actualOrderId,
               date: mo.created_at || new Date().toISOString(),
               displayDate,
               total: displayTotal,
               subtotal,
               shippingTotal,
+              shippingMethodName,
               status: isRefunded ? "Refunded" : isPartiallyRefunded ? "Partially Refunded" : (mo.fulfillment_status === "delivered" || mo.status === "completed" ? "Delivered" : "Cold-Chain Packing"),
               isRefunded,
               isPartiallyRefunded,
@@ -240,7 +282,7 @@ function AccountContent() {
               refundedAmount,
               refundedDate,
               metadata: mo.metadata,
-              trackingNumber: mo.metadata?.tracking_number || `GB-RM24-${orderDisplayId.replace(/[^a-zA-Z0-9]/g, "")}-CLD`,
+              trackingNumber: mo.metadata?.tracking_number || `GB-RM24-${actualOrderId.replace(/[^a-zA-Z0-9]/g, "").slice(-10).toUpperCase()}-CLD`,
               paymentMethod: mo.metadata?.payment_method || "Stripe 256-Bit SSL Encrypted (Card / Link)",
               stripeReceiptUrl: mo.metadata?.stripe_receipt_url || mo.metadata?.receipt_url || null,
               customerName: customer ? `${customer.first_name || ""} ${customer.last_name || ""}`.trim() || undefined : undefined,
@@ -603,6 +645,11 @@ function AccountContent() {
       await login(cleanEmail, loginPassword)
       setFailedAttempts(0)
       setLockedUntil(null)
+      const redirectParam = searchParams.get("redirect")
+      if (redirectParam && redirectParam.startsWith("/")) {
+        router.push(redirectParam)
+        return
+      }
     } catch (err: any) {
       const nextFailed = failedAttempts + 1
       setFailedAttempts(nextFailed)
@@ -688,6 +735,11 @@ function AccountContent() {
         },
       })
       setAuthSuccessMessage("Account created! Loading research dashboard...")
+      const redirectParam = searchParams.get("redirect")
+      if (redirectParam && redirectParam.startsWith("/")) {
+        router.push(redirectParam)
+        return
+      }
     } catch (err: any) {
       setAuthSuccessMessage(null)
       setAuthError(err.message || "Failed to create account.")
@@ -1236,8 +1288,8 @@ function AccountContent() {
                 <div className="bg-white rounded-[16px] px-6 sm:px-[28px] py-[26px] shadow-xs border border-slate-100 flex flex-col gap-[20px]">
                   <div className="flex items-center justify-between">
                     <div className="flex flex-col gap-[3px]">
-                      <p className="font-bold text-[#0b1f3a] text-[17px]">
-                        Latest Order #{orders[0].id}
+                      <p className="font-bold text-[#0b1f3a] text-[16px] break-all">
+                        Latest Order: <span className="font-mono text-[14.5px]">{orders[0].id}</span>
                       </p>
                       <p className="font-normal text-[#64748b] text-[12.5px]">
                         Placed {orders[0].displayDate} · {orders[0].items?.length || 1} Line Item{(orders[0].items?.length || 1) === 1 ? "" : "s"} · Royal Mail Tracked 24
@@ -1388,7 +1440,7 @@ function AccountContent() {
                           onClick={() => handleTabChange("orders")}
                           className="bg-[#0b1f3a] hover:bg-[#162a45] text-white text-[12.5px] font-semibold px-[16px] py-[8px] rounded-[6px] transition-colors cursor-pointer"
                         >
-                          Live Dispatch Tracker →
+                          Live Dispatch Tracker
                         </button>
                       )}
                       <Link
@@ -1399,7 +1451,7 @@ function AccountContent() {
                         <svg className="w-3.5 h-3.5 text-[#16a6a3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
-                        <span>View &amp; Print Receipt ↗</span>
+                        <span>View &amp; Print Receipt</span>
                       </Link>
                     </div>
                   </div>
@@ -1520,7 +1572,7 @@ function AccountContent() {
                       href="/refills"
                       className="mt-1 text-[12.5px] font-semibold text-[#16a6a3] hover:underline"
                     >
-                      Explore 28-Day Refills →
+                      Explore 28-Day Refills
                     </Link>
                   </div>
                 </div>
@@ -1556,7 +1608,7 @@ function AccountContent() {
                           href="/lab-reports"
                           className="bg-white border border-slate-200 hover:border-slate-300 text-[#0b1f3a] font-semibold text-[11.5px] px-[10px] py-[5px] rounded-[6px] transition-colors"
                         >
-                          View COA →
+                          View COA
                         </Link>
                       </div>
                     ))}
@@ -1569,7 +1621,7 @@ function AccountContent() {
                       href="/lab-reports"
                       className="text-[12.5px] font-semibold text-[#16a6a3] hover:underline pt-1"
                     >
-                      Search Central COA Library →
+                      Search Central COA Library
                     </Link>
                   </div>
                 )}
@@ -1612,7 +1664,7 @@ function AccountContent() {
                   onClick={() => handleTabChange("addresses")}
                   className="font-semibold text-[#0b1f3a] hover:text-[#16a6a3] text-[12.5px] text-left transition-colors cursor-pointer"
                 >
-                  Manage Delivery Addresses →
+                  Manage Delivery Addresses
                 </button>
               </div>
 
@@ -1660,7 +1712,7 @@ function AccountContent() {
                   onClick={() => handleTabChange("payment")}
                   className="font-semibold text-[#0b1f3a] hover:text-[#16a6a3] text-[12.5px] text-left transition-colors cursor-pointer"
                 >
-                  Manage Payment Methods →
+                  Manage Payment Methods
                 </button>
               </div>
             </div>
@@ -1723,7 +1775,7 @@ function AccountContent() {
                       type="text"
                       value={orderSearchQuery}
                       onChange={(e) => setOrderSearchQuery(e.target.value)}
-                      placeholder="Search by Order # or Peptide..."
+                      placeholder="Search by Order ID or Peptide..."
                       className="w-full bg-transparent border-none outline-hidden text-xs text-slate-800 placeholder-[#94a3b8]"
                     />
                   </div>
@@ -1777,8 +1829,8 @@ function AccountContent() {
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex flex-col gap-[3px]">
-                          <p className="font-bold text-[#0b1f3a] text-[17px]">
-                            Order #{order.id}
+                          <p className="font-bold text-[#0b1f3a] text-[16px] break-all">
+                            Order ID: <span className="font-mono text-[14px]">{order.id}</span>
                           </p>
                           <p className="font-normal text-[#64748b] text-[12.5px]">
                             Placed {order.displayDate} · Tracking: {order.trackingNumber || "GB-RM24-PENDING"}
@@ -1917,7 +1969,7 @@ function AccountContent() {
                               onClick={() => alert(`Tracking ${order.trackingNumber || order.id}: Cold-chain shipment verified.`)}
                               className="bg-[#0b1f3a] hover:bg-[#162a45] text-white text-[12px] font-semibold px-[14px] py-[8px] rounded-[6px] transition-colors cursor-pointer"
                             >
-                              Track Live Dispatch →
+                              Track Live Dispatch
                             </button>
                           )}
                           <Link
@@ -1928,7 +1980,7 @@ function AccountContent() {
                             <svg className="w-3.5 h-3.5 text-[#16a6a3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
-                            <span>View &amp; Print Receipt ↗</span>
+                            <span>View &amp; Print Receipt</span>
                           </Link>
                         </div>
                       </div>

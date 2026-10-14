@@ -38,7 +38,8 @@ export async function settleReceipt(
     fail("Payment amount or account requires reconciliation", 409)
   }
   const id = recordId("receipt", context.profile, evidence.reference)
-  const orderNumber = generateOrderNumber(id)
+  const orderId = recordId("order", id)
+  const orderNumber = orderId
   const stripeReceiptUrl = evidence.receipt_url || null
   return ledger.locked(id, async () => {
     if (!renewal) {
@@ -47,7 +48,7 @@ export async function settleReceipt(
         if (latest?.data.initial_receipt_id && latest.data.initial_receipt_id !== id) {
           fail("This checkout already has a different settlement reference", 409)
         }
-        await ledger.patch(attempt.id, { initial_receipt_id: id })
+        await ledger.patch(attempt.id, { initial_receipt_id: id, order_id: orderId, order_number: orderId })
       })
     }
     const receipt = await ledger.create({
@@ -60,14 +61,14 @@ export async function settleReceipt(
         ...evidence,
         attempt_id: attempt.id,
         quote: q,
-        order_number: orderNumber,
-        display_id: orderNumber,
+        order_id: orderId,
+        order_number: orderId,
+        display_id: orderId,
         stripe_receipt_url: stripeReceiptUrl,
       },
     })
     if (receipt.data.attempt_id !== attempt.id) fail("Payment reference is already allocated to another order", 409)
     if (receipt.state === "confirmed") return receipt
-    const orderId = recordId("order", id)
     const orderModule = scope.resolve(Modules.ORDER)
     const existing = await orderModule.listOrders({ id: orderId }, { relations: ["items"] })
     if (!existing.length) {
@@ -90,7 +91,7 @@ export async function settleReceipt(
       }
       const input: any = {
         id: orderId,
-        custom_display_id: orderNumber,
+        custom_display_id: orderId,
         customer_id: q.customer_id,
         email: q.email,
         currency_code: q.currency,
@@ -107,7 +108,8 @@ export async function settleReceipt(
           subscription_id: attempt.data.subscription_id || null,
           fulfillment_hold: true,
           tax_policy: q.tax_policy,
-          order_number_formatted: orderNumber,
+          order_number_formatted: orderId,
+          order_id: orderId,
           stripe_receipt_url: stripeReceiptUrl,
           tags: attempt.data.subscription_id ? ["Sub-Order"] : [],
           auto_savings: q.lines.some((l) => l.recurring)
@@ -329,13 +331,40 @@ export async function settleReceipt(
         console.error("[PEPTECH Order Promotion Link Error]:", logErr)
       }
     }
+    const subtotalMinor = q.lines.reduce((s: number, l: any) => s + (l.unit_minor || 0) * (l.quantity || 1), 0)
+    const shippingMinor = typeof q.shipping_minor === "number" ? q.shipping_minor : 495
+    const totalMinor = typeof q.total_minor === "number" ? q.total_minor : (subtotalMinor + shippingMinor)
+    const shippingName = q.shipping_option_name || (shippingMinor === 0 ? "Royal Mail Tracked 24 (Free)" : "Royal Mail Tracked 24")
+
     await ledger.create({
       id: recordId("operation", id, "receipt-email"),
       kind: "operation",
       profile: context.profile,
       owner_id: q.customer_id,
       state: "pending",
-      data: { type: "email", template: "order-confirmed", to: q.email, order_id: orderId, order_number: orderNumber, reference: id },
+      data: {
+        type: "email",
+        template: "order-confirmed",
+        to: q.email,
+        order_id: orderId,
+        order_number: orderNumber,
+        reference: id,
+        customer_name: q.address ? `${q.address.first_name || ""} ${q.address.last_name || ""}`.trim() : "",
+        customer_email: q.email,
+        currency: (q.currency || "GBP").toUpperCase(),
+        items: q.lines.map((l: any) => ({
+          title: l.name,
+          sku: l.sku,
+          quantity: l.quantity,
+          unit_price: ((l.unit_minor || 0) / 100).toFixed(2),
+          total: (((l.unit_minor || 0) * (l.quantity || 1)) / 100).toFixed(2),
+        })),
+        subtotal: (subtotalMinor / 100).toFixed(2),
+        shipping: (shippingMinor / 100).toFixed(2),
+        shipping_name: shippingName,
+        total: (totalMinor / 100).toFixed(2),
+        shipping_address: q.address,
+      },
     })
     return receipt
   })

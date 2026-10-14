@@ -27,6 +27,7 @@ export async function GET(req: AuthenticatedMedusaRequest, res: MedusaResponse) 
       "items.*",
       "shipping_address.*",
       "billing_address.*",
+      "shipping_methods.*",
       "metadata",
     ]
 
@@ -57,20 +58,40 @@ export async function GET(req: AuthenticatedMedusaRequest, res: MedusaResponse) 
         const orderModule = req.scope.resolve(Modules.ORDER)
         const [list] = await orderModule.listAndCountOrders(
           filters,
-          { relations: ["items", "shipping_address", "billing_address", "summary"], order: { created_at: "DESC" }, take: 50 }
+          { relations: ["items", "shipping_address", "billing_address", "shipping_methods", "summary"], order: { created_at: "DESC" }, take: 50 }
         )
         orders = list
       } catch {}
     }
 
-    // Compute totals so orders never show £0.00
+    // Compute totals so orders accurately preserve free shipping (0) vs courier fees
     const computedOrders = orders.map((o: any) => {
       const lineItems = o.items || []
       const itemsTotalMinor = lineItems.reduce((acc: number, it: any) => acc + ((Number(it.unit_price) || 0) * (Number(it.quantity) || 1)), 0)
       const metaMinor = Number(o.metadata?.refunded_amount_minor) || 0
       const summaryPaid = Number(o.summary?.original_order_total) || Number(o.summary?.paid_total) || 0
       const summaryTotal = Number(o.summary?.total) || Number(o.total) || 0
-      const total = summaryPaid > 0 ? summaryPaid : (summaryTotal > 0 ? summaryTotal : (metaMinor > 0 ? metaMinor : (itemsTotalMinor > 0 ? itemsTotalMinor + 495 : 19995)))
+
+      const defaultShippingMinor = itemsTotalMinor >= 15000 ? 0 : 495
+      const actualShippingMinor =
+        typeof o.summary?.shipping_total === "number"
+          ? o.summary.shipping_total
+          : typeof o.shipping_methods?.[0]?.amount === "number"
+          ? (Number(o.shipping_methods[0].amount) >= 100
+              ? Number(o.shipping_methods[0].amount)
+              : Math.round(Number(o.shipping_methods[0].amount) * 100))
+          : defaultShippingMinor
+
+      const total =
+        summaryPaid > 0
+          ? summaryPaid
+          : summaryTotal > 0
+          ? summaryTotal
+          : metaMinor > 0
+          ? metaMinor
+          : itemsTotalMinor > 0
+          ? itemsTotalMinor + actualShippingMinor
+          : 19995
 
       return {
         ...o,
@@ -81,7 +102,7 @@ export async function GET(req: AuthenticatedMedusaRequest, res: MedusaResponse) 
           original_order_total: o.summary?.original_order_total || total,
           paid_total: o.summary?.paid_total || total,
           subtotal: o.summary?.subtotal || itemsTotalMinor,
-          shipping_total: o.summary?.shipping_total || 495,
+          shipping_total: actualShippingMinor,
         },
       }
     })

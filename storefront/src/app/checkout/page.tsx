@@ -546,7 +546,7 @@ export default function CheckoutPage() {
                   }}
                   className="text-xs text-[#00C5A0] hover:underline font-semibold shrink-0 ml-2 cursor-pointer"
                 >
-                  Apply →
+                  Apply
                 </button>
               </div>
             )}
@@ -793,7 +793,7 @@ export default function CheckoutPage() {
                         <span>Signing In...</span>
                       </>
                     ) : (
-                      <span>Sign In &amp; Proceed to Checkout →</span>
+                      <span>Sign In &amp; Proceed to Checkout</span>
                     )}
                   </button>
                 </form>
@@ -927,7 +927,7 @@ export default function CheckoutPage() {
                         <span>Creating Account...</span>
                       </>
                     ) : (
-                      <span>Create Account &amp; Proceed to Checkout →</span>
+                      <span>Create Account &amp; Proceed to Checkout</span>
                     )}
                   </button>
                 </form>
@@ -1112,7 +1112,7 @@ export default function CheckoutPage() {
                         onClick={() => setUseCustomAddress(true)}
                         className="text-xs text-[#16A6A3] hover:text-[#138d8a] font-semibold underline cursor-pointer"
                       >
-                        Edit or Enter Different Address →
+                        Edit or Enter Different Address
                       </button>
                     </div>
                   </div>
@@ -1221,7 +1221,7 @@ export default function CheckoutPage() {
                     <span>Loading Stripe Secure Payment Form…</span>
                   </>
                 ) : (
-                  <span>Continue to Stripe Checkout →</span>
+                  <span>Continue to Stripe Checkout</span>
                 )}
               </button>
 

@@ -268,7 +268,7 @@ export default function CartPage() {
                         }}
                         className="text-[#16a6a3] hover:underline font-bold shrink-0 ml-2 cursor-pointer"
                       >
-                        Apply →
+                        Apply
                       </button>
                     </div>
                   )}
@@ -383,7 +383,7 @@ export default function CartPage() {
                   href="/checkout"
                   className="w-full py-4 rounded-xl bg-[#0b1f3a] hover:bg-[#16a6a3] text-white font-bold text-sm text-center block transition-all shadow-md"
                 >
-                  Proceed to Checkout →
+                  Proceed to Checkout
                 </Link>
 
                 {/* Compliance & Security Guarantee Strip */}

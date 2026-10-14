@@ -365,7 +365,6 @@ export function CartDrawer() {
               data-name="Checkout Button"
             >
               <span>Proceed to Checkout</span>
-              <span className="ml-1.5 transition-transform duration-200 group-hover:translate-x-1.5">→</span>
             </Link>
           </div>
         )}

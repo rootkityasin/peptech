@@ -17,7 +17,7 @@ backend/.medusa/
 # Production
 build/
 dist/
-app/
+/app/
 public/admin/assets/
 **/public/admin/assets/
 
