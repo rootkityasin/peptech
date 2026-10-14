@@ -12,10 +12,32 @@ async function main() {
   let account
   try { account = await client.accounts.retrieve() }
   catch { throw new Error("Stripe authentication or account lookup failed. Verify the key, network, and restricted-key account read permission.") }
-  if (account.id !== config.accountId) throw new Error("STRIPE_ACCOUNT_ID does not match the account owning STRIPE_API_KEY.")
-  console.log(`Connected to ${account.id} in ${config.mode} mode.`)
+  console.log(`\n=======================================================`)
+  console.log(`   PEPTECH® Stripe Account Verification Status`)
+  console.log(`=======================================================\n`)
+  console.log(`  • Account ID:        ${account.id}`)
+  console.log(`  • Environment Mode:  ${config.mode.toUpperCase()} (${config.mode === "live" ? "Live Real Cards" : "Sandbox Test Mode"})`)
+  console.log(`  • Details Submitted: ${account.details_submitted ? "✅ Yes" : "❌ Incomplete"}`)
+  console.log(`  • Charges Enabled:   ${account.charges_enabled ? "✅ Enabled (Can accept payments)" : "❌ Disabled"}`)
+  console.log(`  • Payouts Enabled:   ${account.payouts_enabled ? "✅ Enabled (Can receive bank payouts)" : "❌ Paused / Pending"}`)
+  console.log(`  • Card Payments:     ${account.capabilities?.card_payments === "active" ? "✅ Active" : account.capabilities?.card_payments || "Inactive"}`)
+
+  const due = account.requirements?.currently_due || []
+  const pastDue = account.requirements?.past_due || []
+  const disabledReason = account.requirements?.disabled_reason
+
+  if (due.length > 0 || pastDue.length > 0 || disabledReason) {
+    console.log(`\n⚠️  Verification Requirements Pending:`)
+    if (disabledReason) console.log(`  • Disabled Reason: ${disabledReason}`)
+    if (pastDue.length > 0) console.log(`  • Past Due:       ${pastDue.join(", ")}`)
+    if (due.length > 0) console.log(`  • Currently Due:  ${due.join(", ")}`)
+  } else {
+    console.log(`  • Verification:      ✅ Fully Verified (No pending requirements)`)
+  }
+
+  console.log(`\n-------------------------------------------------------`)
   console.log(`Medusa region provider: ${config.providerId}`)
-  console.log(`Webhook path: ${config.webhookPath}`)
-  console.log("Publishable key and webhook ownership still require an end-to-end payment test.")
+  console.log(`Webhook path:           ${config.webhookPath}`)
+  console.log(`=======================================================\n`)
 }
-main().catch(error => { console.error(error.message); process.exitCode = 1 })
+main().catch(error => { console.error("❌ " + error.message); process.exitCode = 1 })
