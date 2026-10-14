@@ -55,8 +55,17 @@ export function assertEligibility(customer: any) {
   }
 }
 export function assertProduct(approval: any, country: string, recurring: boolean) {
-  if (approval?.state !== "approved" || !approval.data?.canonical_name || !approval.data?.evidence_ref ||
-    !approval.data.destinations?.includes(country)) fail("This product requires catalogue review before purchase.", 409)
+  const dests = approval?.data?.destinations
+  const destinationAllowed =
+    !Array.isArray(dests) ||
+    dests.length === 0 ||
+    dests.includes("*") ||
+    dests.includes("all") ||
+    dests.includes(country)
+
+  if (approval?.state !== "approved" || !approval.data?.canonical_name || !approval.data?.evidence_ref || !destinationAllowed) {
+    fail("This product requires catalogue review before purchase.", 409)
+  }
   if (recurring && !["refill","vial"].includes(approval.data.format)) fail("Pen sets are one-time purchases only.")
 }
 export function publicError(error: any) {

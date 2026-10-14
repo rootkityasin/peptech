@@ -10,7 +10,7 @@ const schema = z.object({
   sales_channel_id: z.string().min(1),
   location_id: z.string().min(1),
   shipping_option_id: z.string().min(1),
-  destinations: z.array(z.string().regex(/^[a-z]{2}$/)).min(1),
+  destinations: z.array(z.string().regex(/^([a-z]{2}|\*)$/)).min(1),
   tax_policy: z.literal("stripe_default").default("stripe_default"),
   tax_evidence_ref: z.string().default("Stripe Dashboard defaults"),
   version: z.string().min(1),

@@ -5,7 +5,7 @@ import { recordId } from "../../../modules/peptech-commerce/service"
 const review = z.object({ variant_id:z.string().min(1), state:z.enum(["approved","held"]),
   canonical_name:z.string().trim().min(1).max(200), canonical_sku:z.string().trim().min(1).max(100),
   format:z.enum(["pen","refill","vial"]), evidence_ref:z.string().trim().min(1).max(300),
-  destinations:z.array(z.string().regex(/^[a-z]{2}$/)).min(1), version:z.string().min(1),
+  destinations:z.array(z.string().regex(/^([a-z]{2}|\*)$/)).min(1), version:z.string().min(1),
   tax_code:z.string().optional(), }).strict()
 export async function GET(req: AuthenticatedMedusaRequest,res:MedusaResponse) {
   return endpoint(res,async()=>{

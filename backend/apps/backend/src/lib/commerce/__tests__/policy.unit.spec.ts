@@ -24,11 +24,17 @@ describe("authoritative commerce boundary", () => {
     expect(() => assertEligibility({ has_account:true,metadata:{ compliance_ack:true } })).not.toThrow()
     expect(() => assertEligibility({ has_account:false,metadata:{ compliance_ack:true } })).toThrow()
   })
-  it("rejects recurring pen sets and unapproved products", () => {
+  it("rejects recurring pen sets and unapproved products, and respects wildcard/native service zones", () => {
     const approval = { state:"approved",data:{ canonical_name:"Exact identity",evidence_ref:"catalog-v1",destinations:["gb"],format:"pen" } }
     expect(() => assertProduct(approval,"gb",true)).toThrow("one-time")
     expect(() => assertProduct(approval,"gb",false)).not.toThrow()
+    expect(() => assertProduct(approval,"bd",false)).toThrow("catalogue review")
     expect(() => assertProduct(null,"gb",false)).toThrow()
+
+    // Medusa 2.0 native service zones & wildcard destinations
+    const worldwideApproval = { state:"approved",data:{ canonical_name:"Worldwide Formulation",evidence_ref:"catalog-v1",destinations:["*"],format:"vial" } }
+    expect(() => assertProduct(worldwideApproval,"bd",false)).not.toThrow()
+    expect(() => assertProduct(worldwideApproval,"us",false)).not.toThrow()
   })
   it("accepts item metadata, company in address, and normalizes uppercase country codes", () => {
     const request = {

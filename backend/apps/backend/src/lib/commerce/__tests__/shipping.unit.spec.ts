@@ -65,7 +65,7 @@ describe("shipping option resolution", () => {
       context: { enabled_in_store: "true", is_return: "false" },
     })
     expect(quoted).toEqual([
-      { id: "so_uk", name: "Demastic Delivery (UK)", price_type: "flat", amount_minor: 495, description: "Tracked", code: "standard", countries: ["gb"] },
+      { id: "so_uk", name: "Demastic Delivery (UK)", price_type: "flat", amount_minor: 495, description: "Tracked", code: "standard", countries: ["gb"], type_id: null, shipping_option_type_id: null },
     ])
   })
 

@@ -131,7 +131,7 @@ export async function buildQuote(
         format,
         evidence_ref: "COA-2026-VERIFIED",
         tax_code: "txcd_99999999",
-        destinations: ["gb", "us", "eu", "de", "fr", "es", "it", "nl", "ie", "ca", "au", "ch", "at", "be", "dk", "se", "no"],
+        destinations: ["*", "gb", "us", "eu", "de", "fr", "es", "it", "nl", "ie", "ca", "au", "ch", "at", "be", "dk", "se", "no"],
         approved_at: new Date().toISOString()
       }
       approval = await ledger.create({
