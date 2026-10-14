@@ -158,7 +158,7 @@ export function Footer() {
 
         </div>
 
-        {/* Bottom Copyright & Legal Links - Figma Node 2:29669 */}
+        {/* Bottom Copyright & Legal Links */}
         <div className="border-t border-[#E2E8F0] pt-6 sm:pt-7 flex flex-col sm:flex-row items-center justify-between gap-4 text-[12px] text-[#64748B]">
           <div className="flex flex-wrap items-center gap-3">
             <span className="text-[#94A3B8]">© 2026 PEPTECH®. All rights reserved.</span>
@@ -168,15 +168,30 @@ export function Footer() {
             </Link>
             <span className="text-[#CBD5E1]">|</span>
             <Link href="/terms-of-sale" className="hover:text-[#0B1F3A] transition-colors">
-              Terms of Service
+              Terms of Sale
+            </Link>
+            <span className="text-[#CBD5E1]">|</span>
+            <Link href="/shipping-returns" className="hover:text-[#0B1F3A] transition-colors">
+              Shipping &amp; Returns
             </Link>
             <span className="text-[#CBD5E1]">|</span>
             <Link href="/research-disclaimer" className="hover:text-[#0B1F3A] transition-colors">
-              Sitemap
+              RUO Disclaimer
             </Link>
           </div>
-          <p className="font-medium text-[#0B1F3A]">
-            A Healthier World. Together.™
+          <p className="font-semibold text-[#0B1F3A] tracking-wide text-xs">
+            Quality. Safety. Precision.
+          </p>
+        </div>
+
+        {/* UK Statutory Trading & Sole Trader Underwriting Disclosure */}
+        <div className="pt-4 pb-2 text-[11px] text-[#94A3B8] leading-relaxed border-t border-[#F1F5F9] mt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+          <p>
+            PEPTECH® is a commercial trading style operated by <strong className="text-[#64748B]">Muawiyah Waheed</strong>. 
+            Registered address: 4 The Sidings, Dewsbury, WF12 9QU, United Kingdom.
+          </p>
+          <p className="text-[10px] text-[#A0AEC0] sm:text-right shrink-0">
+            For Laboratory &amp; Scientific Research Use Only (RUO). 18+ Age Restricted.
           </p>
         </div>
       </div>

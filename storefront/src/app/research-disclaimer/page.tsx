@@ -50,9 +50,10 @@ function LegalSidebar() {
           STATUTORY RUO OVERSIGHT
         </span>
         <h5 className="font-bold text-[#0b1f3a]">Regulatory Affairs Liaison</h5>
+        <p className="text-[11px] font-medium text-[#16a6a3]">Muawiyah Waheed t/a PEPTECH®</p>
         <p className="text-[#64748b] leading-relaxed">
-          PEPTECH BioSciences Ltd<br />
-          Cambridge Science Park, UK
+          4 The Sidings, Dewsbury<br />
+          WF12 9QU, United Kingdom
         </p>
         <div className="pt-2 border-t border-[#e2e8f0]">
           <Link

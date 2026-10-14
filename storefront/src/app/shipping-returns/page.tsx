@@ -194,7 +194,7 @@ export default function ShippingReturnsPage() {
                   <div className="p-3 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] text-xs">
                     <strong className="text-[#0b1f3a] block font-bold">✓ Complete Pen Sets (14-Day Return Window)</strong>
                     <span className="text-[#64748b] leading-relaxed">
-                      Unopened Complete Pen Sets with intact tamper-evident seals on the presentation box may be returned within 14 calendar days of delivery.
+                      Unopened Complete Pen Sets with intact tamper-evident seals on the presentation box may be returned within 14 calendar days of delivery. Authorized returns should be addressed to: <em>PEPTECH Returns, 4 The Sidings, Dewsbury, WF12 9QU, United Kingdom</em>.
                     </span>
                   </div>
 

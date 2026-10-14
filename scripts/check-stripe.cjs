@@ -16,6 +16,10 @@ async function main() {
   console.log(`   PEPTECH® Stripe Account Verification Status`)
   console.log(`=======================================================\n`)
   console.log(`  • Account ID:        ${account.id}`)
+  console.log(`  • Business Name:     ${account.business_profile?.name || account.company?.name || "Not set"}`)
+  console.log(`  • Business URL:      ${account.business_profile?.url || "Not set"}`)
+  console.log(`  • Statement Name:    ${account.settings?.payments?.statement_descriptor || "Not set"}`)
+  console.log(`  • Country / Entity:  ${account.country || "GB"}`)
   console.log(`  • Environment Mode:  ${config.mode.toUpperCase()} (${config.mode === "live" ? "Live Real Cards" : "Sandbox Test Mode"})`)
   console.log(`  • Details Submitted: ${account.details_submitted ? "✅ Yes" : "❌ Incomplete"}`)
   console.log(`  • Charges Enabled:   ${account.charges_enabled ? "✅ Enabled (Can accept payments)" : "❌ Disabled"}`)
@@ -27,7 +31,7 @@ async function main() {
   const disabledReason = account.requirements?.disabled_reason
 
   if (due.length > 0 || pastDue.length > 0 || disabledReason) {
-    console.log(`\n⚠️  Verification Requirements Pending:`)
+    console.log(`\n⚠️  Verification Requirements Pending for this Business:`)
     if (disabledReason) console.log(`  • Disabled Reason: ${disabledReason}`)
     if (pastDue.length > 0) console.log(`  • Past Due:       ${pastDue.join(", ")}`)
     if (due.length > 0) console.log(`  • Currently Due:  ${due.join(", ")}`)

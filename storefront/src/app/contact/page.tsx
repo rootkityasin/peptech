@@ -232,14 +232,14 @@ export default function ContactPage() {
               <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-3xl p-6 sm:p-8 space-y-6">
                 {/* Structured Header */}
                 <div className="border-b border-[#e2e8f0] pb-5 space-y-1">
-                  <span className="text-[11px] font-bold tracking-widest text-black uppercase block">
-                    DIRECT CONTACT
+                  <span className="text-[11px] font-bold tracking-widest text-[#16a6a3] uppercase block">
+                    DIRECT CONTACT &amp; TRADING ENTITY
                   </span>
                   <h4 className="text-xl font-bold text-black tracking-tight">
-                    PEPTECH BioSciences Ltd
+                    PEPTECH®
                   </h4>
-                  <p className="text-xs text-slate-500">
-                    Cambridge Science Park, United Kingdom
+                  <p className="text-xs text-slate-600">
+                    Operated by Muawiyah Waheed · UK Sole Trader
                   </p>
                 </div>
 
@@ -253,9 +253,24 @@ export default function ContactPage() {
                       </svg>
                     </div>
                     <div>
-                      <strong className="block text-black font-semibold">Direct Email</strong>
-                      <a href="mailto:info@peptech.bio" className="text-black font-medium hover:underline text-xs mt-0.5 block">
-                        info@peptech.bio
+                      <strong className="block text-black font-semibold">Direct Support Email</strong>
+                      <a href="mailto:support@peptech.bio" className="text-black font-medium hover:underline text-xs mt-0.5 block">
+                        support@peptech.bio
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* Direct Phone */}
+                  <div className="flex items-start gap-3.5">
+                    <div className="w-8 h-8 rounded-lg border border-[#e2e8f0] bg-white flex items-center justify-center text-black shrink-0 shadow-2xs">
+                      <svg className="w-4 h-4 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <strong className="block text-black font-semibold">Customer Support Line</strong>
+                      <a href="tel:+447547692956" className="text-black font-medium hover:underline text-xs mt-0.5 block">
+                        +44 7547 692956
                       </a>
                     </div>
                   </div>
@@ -274,7 +289,7 @@ export default function ContactPage() {
                     </div>
                   </div>
 
-                  {/* Facility Address */}
+                  {/* Registered Trading Address */}
                   <div className="flex items-start gap-3.5">
                     <div className="w-8 h-8 rounded-lg border border-[#e2e8f0] bg-white flex items-center justify-center text-black shrink-0 shadow-2xs">
                       <svg className="w-4 h-4 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
@@ -283,11 +298,11 @@ export default function ContactPage() {
                       </svg>
                     </div>
                     <div>
-                      <strong className="block text-black font-semibold">Facility Address</strong>
+                      <strong className="block text-black font-semibold">Registered Correspondence Address</strong>
                       <address className="not-italic text-slate-600 leading-relaxed block mt-0.5">
-                        PEPTECH BioSciences Ltd<br />
-                        Cambridge Science Park, Milton Road<br />
-                        Cambridge CB4 0FW, United Kingdom
+                        PEPTECH® c/o Muawiyah Waheed<br />
+                        4 The Sidings, Dewsbury<br />
+                        WF12 9QU, United Kingdom
                       </address>
                     </div>
                   </div>

@@ -44,23 +44,23 @@ function LegalSidebar() {
         </nav>
       </div>
 
-      {/* DPO Card */}
+      {/* DPO / Controller Card */}
       <div className="bg-[#f8fafc] rounded-3xl border border-[#e2e8f0] p-6 shadow-xs space-y-3 text-xs">
         <span className="text-[10px] font-bold text-[#16a6a3] uppercase tracking-wider">
-          DATA PROTECTION OFFICER (DPO)
+          DATA CONTROLLER &amp; DPO
         </span>
-        <h5 className="font-bold text-[#0b1f3a]">PEPTECH BioSciences Ltd</h5>
+        <h5 className="font-bold text-[#0b1f3a]">Muawiyah Waheed</h5>
+        <p className="text-[11px] font-medium text-[#16a6a3]">t/a PEPTECH® (UK Sole Trader)</p>
         <p className="text-[#64748b] leading-relaxed">
-          ICO Registration Ref: ZB841920<br />
-          Cambridge Science Park, Milton Road<br />
-          Cambridge CB4 0FW, United Kingdom
+          4 The Sidings, Dewsbury<br />
+          WF12 9QU, United Kingdom
         </p>
         <div className="pt-2 border-t border-[#e2e8f0]">
           <a
-            href="mailto:info@peptech.bio"
+            href="mailto:support@peptech.bio"
             className="text-[#16a6a3] hover:underline font-semibold"
           >
-            info@peptech.bio
+            support@peptech.bio
           </a>
         </div>
       </div>
