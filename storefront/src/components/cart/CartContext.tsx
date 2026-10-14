@@ -301,9 +301,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     const fetchPromotions = async () => {
       try {
         const base = getBackendUrl()
-        const pubKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "pk_556de0f5ea4724394f147569c8b5066ecda7a0d39bd60eb15b2550b2d5c52246"
-        const headers = {
-          "x-publishable-api-key": pubKey,
+        const pubKey = (process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "").trim()
+        const headers: Record<string, string> = {}
+        if (pubKey) {
+          headers["x-publishable-api-key"] = pubKey
         }
 
         let res: Response | null = null
@@ -532,7 +533,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     if (!code || !code.trim()) {
       return { success: false, message: "Please enter a promotional code." }
     }
-    const pubKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "pk_556de0f5ea4724394f147569c8b5066ecda7a0d39bd60eb15b2550b2d5c52246"
+    const pubKey = (process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "").trim()
     const payload = JSON.stringify({
       code: code.trim(),
       subtotal,
@@ -542,12 +543,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     })
 
     const requestPromo = async (endpoint: string) => {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      }
+      if (pubKey) {
+        headers["x-publishable-api-key"] = pubKey
+      }
       return await fetch(endpoint, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-publishable-api-key": pubKey,
-        },
+        headers,
         body: payload,
       })
     }

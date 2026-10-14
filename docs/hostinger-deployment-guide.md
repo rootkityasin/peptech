@@ -77,6 +77,9 @@ npm run build
 This compiles the backend into the `.medusa/server` distribution folder.
 
 ### Step 3.2: Build Next.js Storefront
+> [!IMPORTANT]
+> Next.js inlines all `NEXT_PUBLIC_*` variables into client-side JS bundles at build time. Ensure your `.env` file at the root contains the actual `NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY` and `NEXT_PUBLIC_MEDUSA_BACKEND_URL` before executing `npm run build`. If missing at build time, client requests to `/store/*` (e.g. user registration, carts) will fail with "Publishable API key required in the request header".
+
 In your local terminal:
 ```bash
 cd storefront

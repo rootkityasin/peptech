@@ -1,9 +1,6 @@
-const PUBLISHABLE_KEY = (
-  process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY ||
-  "pk_556de0f5ea4724394f147569c8b5066ecda7a0d39bd60eb15b2550b2d5c52246"
-).trim()
-if (!PUBLISHABLE_KEY && process.env.NODE_ENV === "production" && typeof window !== "undefined") {
-  console.error("[PEPTECH CRITICAL] Missing NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY environment variable.")
+const PUBLISHABLE_KEY = (process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "").trim()
+if (!PUBLISHABLE_KEY && typeof window !== "undefined") {
+  console.warn("[PEPTECH WARNING] Missing NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY environment variable. Store API requests will be rejected by Medusa.")
 }
 
 /**
@@ -214,6 +211,9 @@ export async function loginCustomer(email: string, password: string): Promise<st
  * Register a new customer via Medusa 2.0 Auth & Customer Store API
  */
 export async function registerCustomer(payload: CustomerRegisterPayload): Promise<{ token: string; customer: Customer }> {
+  if (!PUBLISHABLE_KEY) {
+    throw new Error("Storefront publishable API key is missing (NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY). Please configure it in your environment.")
+  }
   const normalizedEmail = payload.email.trim().toLowerCase()
   try {
     // Step 1: Register auth identity

@@ -112,9 +112,10 @@ async function run() {
   for (const v of variants.rows) {
     const catId = recordId("catalog", v.variant_id);
     let format = "vial";
-    if (v.handle.startsWith("pen-system") || v.handle.startsWith("complete-pen")) {
+    const h = (v.handle || "").toLowerCase();
+    if (h.includes("pen") || h.includes("device") || h.includes("starter-set")) {
       format = "device";
-    } else if (v.handle.startsWith("cartridge")) {
+    } else if (h.includes("cartridge") || h.includes("refill")) {
       format = "refill";
     }
 
