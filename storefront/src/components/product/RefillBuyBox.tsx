@@ -13,8 +13,8 @@ export function RefillBuyBox({ product }: RefillBuyBoxProps) {
     <ProductBuyBox
       product={product}
       title={product.name}
-      subtitle="Pre-filled 1.5 mL Cartridge • Fits PEPTECH® Precision Pen"
-      description={product.description}
+      subtitle={product.contents || ""}
+      description={product.description || ""}
       price={product.price}
       subscribePrice={product.subscribePrice}
       tag="REFILL CARTRIDGE"

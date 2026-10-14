@@ -21,7 +21,7 @@ export function VialBuyBox({ product }: VialBuyBoxProps) {
   const activePrice = purchaseType === "subscription" ? subscribePrice : oneTimePrice
   const totalPrice = activePrice * quantity
 
-  const batchCode = `VIAL-${product.category.toUpperCase().slice(0, 3)}-2026-04A`
+  const batchCode = product.sku || (product.handle ? `VIAL-${product.handle.toUpperCase()}` : "PEPTECH-VIAL")
 
   const handleAddToCart = () => {
     if(!product.variantId || !product.inStock) return
@@ -42,8 +42,7 @@ export function VialBuyBox({ product }: VialBuyBoxProps) {
         image: product.image,
         options: [
           { label: "Purchase Type", value: purchaseType === "subscription" ? "28-Day Automated Protocol" : "One-Time Order" },
-          { label: "Format", value: "Lyophilised Research Vial" },
-          { label: "Reconstitution", value: "Compatible with Bacteriostatic Water USP" },
+          { label: "Format", value: product.formatLabel || "Freeze-Dried Vial" },
         ],
       })
     }
@@ -92,9 +91,11 @@ export function VialBuyBox({ product }: VialBuyBoxProps) {
       </div>
 
       {/* Description */}
-      <p className="font-normal text-[#475569] text-[13px] leading-[22px]">
-        {product.description}. High-purity lyophilised peptide cake supplied in a sterile, vacuum-crimped borosilicate glass vial. Sealed under nitrogen atmosphere for maximum scientific stability.
-      </p>
+      {product.description && (
+        <p className="font-normal text-[#475569] text-[13px] leading-[22px]">
+          {product.description}
+        </p>
+      )}
 
       {/* Reconstitution & Storage Advisory */}
       <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-[10px] p-3.5 w-full flex items-start gap-3">

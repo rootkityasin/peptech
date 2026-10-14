@@ -281,37 +281,37 @@ export function ProductTechnicalSpecs({ product }: ProductTechnicalSpecsProps) {
                 <div className="h-[36px] px-[12px] flex items-center justify-between">
                   <span className="font-bold text-[#0b1f3a]">Contents / Strength</span>
                   <span className="text-[#475569] font-medium text-right truncate max-w-[190px]">
-                    {specs?.contentsOrStrength || product.contents || "Research Standard"}
+                    {specs?.contentsOrStrength || product.contents || "Specification Pending"}
                   </span>
                 </div>
                 <div className="h-[36px] px-[12px] flex items-center justify-between">
                   <span className="font-bold text-[#0b1f3a]">Peptide Class</span>
                   <span className="text-[#475569] font-medium text-right truncate max-w-[190px]">
-                    {specs?.peptideClass || "Research Reagent"}
+                    {specs?.peptideClass || "Specification Pending"}
                   </span>
                 </div>
                 <div className="h-[36px] px-[12px] flex items-center justify-between">
                   <span className="font-bold text-[#0b1f3a]">Molecular Weight</span>
                   <span className="text-[#475569] font-medium text-right">
-                    {specs?.molecularWeight || "Verified MS"}
+                    {specs?.molecularWeight || "Specification Pending"}
                   </span>
                 </div>
                 <div className="h-[36px] px-[12px] flex items-center justify-between">
                   <span className="font-bold text-[#0b1f3a]">CAS Number</span>
                   <span className="font-mono text-[#475569] text-[11px] text-right">
-                    {specs?.casNumber || "N/A"}
+                    {specs?.casNumber || "Specification Pending"}
                   </span>
                 </div>
                 <div className="h-[36px] px-[12px] flex items-center justify-between">
                   <span className="font-bold text-[#0b1f3a]">Formula</span>
                   <span className="font-mono text-[#475569] text-[11px] text-right truncate max-w-[190px]">
-                    {specs?.compositionOrSequence || "Analytical Reference"}
+                    {specs?.compositionOrSequence || "Specification Pending"}
                   </span>
                 </div>
                 <div className="h-[36px] px-[12px] flex items-center justify-between">
                   <span className="font-bold text-[#0b1f3a]">Recommended Storage</span>
                   <span className="text-[#10b981] font-semibold text-right text-[11.5px]">
-                    {specs?.storage || "2°C – 8°C (Refrigerated)"}
+                    {specs?.storage || "Specification Pending"}
                   </span>
                 </div>
               </div>

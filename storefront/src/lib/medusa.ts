@@ -384,7 +384,7 @@ export function mapMedusaToCatalogProduct(p: StoreProduct): CatalogProduct {
     (p.subtitle as string) ||
     (metadata.contents as string) ||
     (metadata.subtitle as string) ||
-    p.title
+    ""
   const accentColor = (metadata.accentColor as string) || "#16a6a3"
   const technicalSpecs: TechnicalSpecs = {
     compoundName: (metadata.compound_name as string) || (metadata.technicalSpecs as any)?.compoundName || p.title,
@@ -394,7 +394,7 @@ export function mapMedusaToCatalogProduct(p: StoreProduct): CatalogProduct {
     molecularWeight: (metadata.molecular_weight as string) || (metadata.mw as string) || (metadata.technicalSpecs as any)?.molecularWeight || "Specification Pending",
     casNumber: (metadata.cas_number as string) || (metadata.cas as string) || (metadata.technicalSpecs as any)?.casNumber || "Specification Pending",
     form: (metadata.form as string) || (metadata.technicalSpecs as any)?.form || (format === "complete-pen-set" ? "1.5 mL Borosilicate Cartridge in Pen System" : format === "refill-cartridge" ? "1.5 mL Pre-filled Glass Cartridge" : "Vacuum Freeze-Dried Lyophilised Cake"),
-    storage: (metadata.storage as string) || (metadata.technicalSpecs as any)?.storage || (format === "freeze-dried-vial" ? "-20°C (Up to 24 Months)" : "2°C – 8°C (Refrigerated)"),
+    storage: (metadata.storage as string) || (metadata.technicalSpecs as any)?.storage || "Specification Pending",
     accentColor,
     colorName: (metadata.colorName as string) || (metadata.technicalSpecs as any)?.colorName || "Teal",
   }
@@ -422,7 +422,7 @@ export function mapMedusaToCatalogProduct(p: StoreProduct): CatalogProduct {
     description:
       (p.description as string) ||
       (metadata.description as string) ||
-      "Laboratory Grade Research Peptide • 99%+ Purity Verified",
+      "",
     price: rawPrice,
     subscribePrice,
     inStock: p.status !== "draft" && p.status !== "proposed",

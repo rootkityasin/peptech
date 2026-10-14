@@ -131,8 +131,8 @@ export function ProductShowcase({
               <ProductBuyBox
                 product={currentProduct}
                 title={currentProduct.name}
-                subtitle={currentProduct.contents || "Pre-filled 1.5 mL Cartridge • Fits PEPTECH® Precision Pen"}
-                description={currentProduct.description || "Precision engineered pre-filled cartridge compatible with the PEPTECH reusable precision pen system."}
+                subtitle={currentProduct.contents || ""}
+                description={currentProduct.description || ""}
                 price={currentProduct.price}
                 subscribePrice={currentProduct.subscribePrice}
                 tag="REFILL CARTRIDGE"
@@ -141,8 +141,8 @@ export function ProductShowcase({
               <ProductBuyBox
                 product={currentProduct}
                 title={currentProduct.name}
-                subtitle={currentProduct.contents || "One system. Multiple possibilities."}
-                description={currentProduct.description || "Get started with the complete PEPTECH® system. Includes reusable pen, a compatible prefilled cartridge, 14 instructions and all accessories you need for accurate, reliable testing."}
+                subtitle={currentProduct.contents || ""}
+                description={currentProduct.description || ""}
                 price={currentProduct.price}
                 subscribePrice={currentProduct.subscribePrice}
                 tag="COMPLETE PEN SET"

@@ -18,10 +18,10 @@ interface ProductBuyBoxProps {
 
 export function ProductBuyBox({
   product,
-  title = "Complete PEPTECH®\nPen Set",
-  subtitle = "One system. Multiple possibilities.",
-  description = "Get started with the complete PEPTECH® system. Includes reusable pen, a compatible prefilled cartridge, 14 instructions and all accessories you need for accurate, reliable testing.",
-  price = 249.00,
+  title,
+  subtitle,
+  description,
+  price,
   subscribePrice,
   tag = "PEN SYSTEM",
 }: ProductBuyBoxProps) {
@@ -69,24 +69,15 @@ export function ProductBuyBox({
     const pName = (product?.name || "").toLowerCase()
 
     const match = availableCartridges.find((c) => {
+      if (product?.compound && c.compound && product.compound.toLowerCase() === c.compound.toLowerCase()) {
+        return true
+      }
       const cHandle = c.handle.toLowerCase()
       const cName = c.name.toLowerCase()
 
       // Exact 1:1 handle transformation (e.g. klow-stack-pen-set -> klow-stack-cartridge)
       if (pHandle.replace(/-pen-set$/, "-cartridge") === cHandle) return true
       if (pHandle.replace(/^pen-system-/, "").replace(/-pen-set$/, "") === cHandle.replace(/-cartridge$/, "")) return true
-
-      // Handle compound tokens
-      if (pHandle.includes("ghk-cu") && cHandle.includes("ghk-cu")) return true
-      if (pHandle.includes("tesamorelin") && cHandle.includes("tesamorelin")) return true
-      if (pHandle.includes("tirzepatide") && cHandle.includes("tirzepatide")) return true
-      if (pHandle.includes("melanotan") && cHandle.includes("melanotan")) return true
-      if (pHandle.includes("pt-141") && cHandle.includes("pt-141")) return true
-      if (pHandle.includes("mots-c") && cHandle.includes("mots-c")) return true
-      if (pHandle.includes("wolverine") && cHandle.includes("wolverine")) return true
-      if (pHandle.includes("klow") && cHandle.includes("klow")) return true
-      if (pHandle.includes("nad") && cHandle.includes("nad")) return true
-      if (pHandle.includes("retatrutide") && cHandle.includes("retatrutide")) return true
 
       const cleanToken = pHandle.replace(/^pen-system-/, "").replace(/-pen-set$/, "").replace(/[^a-z0-9]/g, "")
       return cleanToken.length > 2 && (cHandle.includes(cleanToken) || cName.replace(/[^a-z0-9]/g, "").includes(cleanToken))
@@ -124,32 +115,26 @@ export function ProductBuyBox({
     }
   }, [isDropdownOpen])
 
-  const currentOneTimePrice = product?.price ?? price
+  const currentOneTimePrice = product?.price ?? price ?? 0
   const dynamicSubPrice = autoSavings.discountType === "percentage"
     ? Number((currentOneTimePrice * (1 - autoSavings.discountValue / 100)).toFixed(2))
     : Math.max(0, Number((currentOneTimePrice - autoSavings.discountValue).toFixed(2)))
   const currentSubscribePrice = dynamicSubPrice
   const totalPrice = purchaseType === "subscription" ? currentSubscribePrice : currentOneTimePrice
 
-  // Determine title with balanced line break matching "Complete PEPTECH®\nPen Set"
-  const rawTitle = title || (isRefill ? (product?.name || "Refill Cartridge") : "Complete PEPTECH®\nPen Set")
-  const displayTitle = rawTitle.includes("\n")
-    ? rawTitle
-    : rawTitle.includes("Refill")
-    ? rawTitle.replace(/ (Refill|Cartridge|Refill Cartridge)$/i, "\n$1")
-    : rawTitle
-
-  const displaySubtitle = subtitle || (isRefill ? "Pre-filled 1.5 mL Cartridge • Fits PEPTECH® Precision Pen" : "One system. Multiple possibilities.")
-  const displayDescription = description || (isRefill ? (product?.description || "Precision engineered pre-filled cartridge compatible with PEPTECH reusable precision pens.") : "Get started with the complete PEPTECH® system. Includes reusable pen, a compatible prefilled cartridge, 14 instructions and all accessories you need for accurate, reliable testing.")
+  // Determine dynamic title, subtitle, and description directly from product
+  const displayTitle = (product?.name || title || "").trim()
+  const displaySubtitle = (product?.contents || subtitle || "").trim()
+  const displayDescription = (product?.description || description || "").trim()
 
   const handleAddToCart = () => {
-    const targetVariantId = product?.variantId || product?.id || "pen-system-starter"
+    const targetVariantId = product?.variantId || product?.id || ""
     const recurring = isRefill && purchaseType === "subscription"
     
     const options = !isRefill && activeCartridge
       ? [
           { label: "Included Cartridge", value: activeCartridge.name },
-          { label: "Specification", value: "1.5 mL Borosilicate Pre-filled • 99%+ HPLC" },
+          ...(activeCartridge.contents ? [{ label: "Specification", value: activeCartridge.contents }] : []),
         ]
       : undefined
 
@@ -157,7 +142,7 @@ export function ProductBuyBox({
       id: `${targetVariantId}-${recurring ? "subscription" : "one-time"}${activeCartridge && !isRefill ? `-${activeCartridge.id}` : ""}`,
       variantId: targetVariantId,
       productHandle: product?.handle || "pen-system",
-      title: product?.name || title.replace("\n", " "),
+      title: displayTitle.replace("\n", " "),
       format: isRefill ? "refill" : "pen-set",
       strength: product?.categoryLabel || "Precision Research",
       price: recurring ? currentSubscribePrice : currentOneTimePrice,
