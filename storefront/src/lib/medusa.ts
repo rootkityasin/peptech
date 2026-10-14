@@ -1,7 +1,6 @@
 import Medusa from "@medusajs/js-sdk"
 import { getBackendUrl } from "./customer-api"
-import { useState, useEffect } from "react"
-import { CATALOG_PRODUCTS, findCatalogProduct, type CatalogProduct } from "@/data/catalog"
+import { type CatalogProduct, type TechnicalSpecs } from "@/data/catalog"
 
 export interface StoreProductVariant {
   id: string
@@ -132,7 +131,7 @@ export async function getProducts(queryParams: Record<string, unknown> = {}, for
   const fetchPromise = (async () => {
     try {
       const response = await medusa.store.product.list({
-        fields: "*categories,*variants,*variants.prices,*images",
+        fields: "+metadata,*categories,*variants,*variants.prices,*images",
         limit: 100,
         ...queryParams,
       })
@@ -224,21 +223,21 @@ export async function getProduct(idOrHandle: string, forceRefresh = false): Prom
       let product: StoreProduct | null = null
       if (idOrHandle.startsWith("prod_")) {
         const response = await medusa.store.product.retrieve(idOrHandle, {
-          fields: "*categories,*variants,*variants.prices,*images",
+          fields: "+metadata,*categories,*variants,*variants.prices,*images",
         })
         product = (response.product as unknown as StoreProduct) || null
       } else {
         const cleanHandle = idOrHandle.replace(/^\//, "")
         let response = await medusa.store.product.list({
           handle: cleanHandle,
-          fields: "*categories,*variants,*variants.prices,*images",
+          fields: "+metadata,*categories,*variants,*variants.prices,*images",
           limit: 1,
         })
         let products = (response.products as unknown as StoreProduct[]) || []
         if (products.length === 0) {
           response = await medusa.store.product.list({
             handle: `/${cleanHandle}`,
-            fields: "*categories,*variants,*variants.prices,*images",
+            fields: "+metadata,*categories,*variants,*variants.prices,*images",
             limit: 1,
           })
           products = (response.products as unknown as StoreProduct[]) || []
@@ -306,15 +305,16 @@ export function mapMedusaToCatalogProduct(p: StoreProduct): CatalogProduct {
     }
   }
 
-  const staticFallback = findCatalogProduct(p.handle || p.id)
-  if (rawPrice === 0 && staticFallback) {
-    rawPrice = staticFallback.price
-  }
-
   // 2. Resolve format
+  const categories = (p.categories || []) as StoreProductCategory[]
+  const hasPenSetCat = categories.some((c) => c.handle === "complete-pen-sets" || c.name?.toLowerCase().includes("pen"))
+  const hasRefillCat = categories.some((c) => c.handle === "refill-cartridges" || c.name?.toLowerCase().includes("refill"))
+  const hasVialCat = categories.some((c) => c.handle === "freeze-dried-vials" || c.name?.toLowerCase().includes("vial"))
+
   const handleLower = (p.handle || p.title || "").toLowerCase()
   let format: "complete-pen-set" | "refill-cartridge" | "freeze-dried-vial" = "complete-pen-set"
   if (
+    hasRefillCat ||
     metadata.format === "refill" ||
     metadata.format === "refill-cartridge" ||
     handleLower.includes("refill") ||
@@ -322,6 +322,7 @@ export function mapMedusaToCatalogProduct(p: StoreProduct): CatalogProduct {
   ) {
     format = "refill-cartridge"
   } else if (
+    hasVialCat ||
     metadata.format === "vial" ||
     metadata.format === "freeze-dried-vial" ||
     handleLower.includes("vial") ||
@@ -383,20 +384,19 @@ export function mapMedusaToCatalogProduct(p: StoreProduct): CatalogProduct {
     (p.subtitle as string) ||
     (metadata.contents as string) ||
     (metadata.subtitle as string) ||
-    staticFallback?.contents ||
     p.title
-  const accentColor = (metadata.accentColor as string) || staticFallback?.accentColor || "#16a6a3"
-  const technicalSpecs = metadata.technicalSpecs || {
-    compoundName: (metadata.compound_name as string) || staticFallback?.technicalSpecs?.compoundName || p.title,
-    contentsOrStrength: (metadata.contents as string) || (p.subtitle as string) || staticFallback?.technicalSpecs?.contentsOrStrength || staticFallback?.contents || "Research Standard",
-    peptideClass: (metadata.peptide_class as string) || staticFallback?.technicalSpecs?.peptideClass || "Research Reagent",
-    compositionOrSequence: (metadata.sequence as string) || (metadata.formula as string) || staticFallback?.technicalSpecs?.compositionOrSequence || "Analytical Reference",
-    molecularWeight: (metadata.molecular_weight as string) || (metadata.mw as string) || staticFallback?.technicalSpecs?.molecularWeight || "Verified MS",
-    casNumber: (metadata.cas_number as string) || (metadata.cas as string) || staticFallback?.technicalSpecs?.casNumber || "Laboratory Standard",
-    form: (metadata.form as string) || staticFallback?.technicalSpecs?.form || (format === "complete-pen-set" ? "1.5 mL Borosilicate Cartridge in Pen System" : format === "refill-cartridge" ? "1.5 mL Pre-filled Glass Cartridge" : "Vacuum Freeze-Dried Lyophilised Cake"),
-    storage: (metadata.storage as string) || staticFallback?.technicalSpecs?.storage || (format === "freeze-dried-vial" ? "-20°C (Up to 24 Months)" : "2°C – 8°C (Refrigerated)"),
+  const accentColor = (metadata.accentColor as string) || "#16a6a3"
+  const technicalSpecs: TechnicalSpecs = {
+    compoundName: (metadata.compound_name as string) || (metadata.technicalSpecs as any)?.compoundName || p.title,
+    contentsOrStrength: (metadata.contents as string) || (p.subtitle as string) || (metadata.technicalSpecs as any)?.contentsOrStrength || "Specification Pending",
+    peptideClass: (metadata.peptide_class as string) || (metadata.technicalSpecs as any)?.peptideClass || "Specification Pending",
+    compositionOrSequence: (metadata.sequence as string) || (metadata.formula as string) || (metadata.technicalSpecs as any)?.compositionOrSequence || "Specification Pending",
+    molecularWeight: (metadata.molecular_weight as string) || (metadata.mw as string) || (metadata.technicalSpecs as any)?.molecularWeight || "Specification Pending",
+    casNumber: (metadata.cas_number as string) || (metadata.cas as string) || (metadata.technicalSpecs as any)?.casNumber || "Specification Pending",
+    form: (metadata.form as string) || (metadata.technicalSpecs as any)?.form || (format === "complete-pen-set" ? "1.5 mL Borosilicate Cartridge in Pen System" : format === "refill-cartridge" ? "1.5 mL Pre-filled Glass Cartridge" : "Vacuum Freeze-Dried Lyophilised Cake"),
+    storage: (metadata.storage as string) || (metadata.technicalSpecs as any)?.storage || (format === "freeze-dried-vial" ? "-20°C (Up to 24 Months)" : "2°C – 8°C (Refrigerated)"),
     accentColor,
-    colorName: staticFallback?.technicalSpecs?.colorName || "Teal",
+    colorName: (metadata.colorName as string) || (metadata.technicalSpecs as any)?.colorName || "Teal",
   }
 
   return {
@@ -405,17 +405,23 @@ export function mapMedusaToCatalogProduct(p: StoreProduct): CatalogProduct {
     sku: p.variants && p.variants.length > 0 ? p.variants[0].sku : undefined,
     name: p.title,
     handle: (p.handle || p.id).replace(/^\//, ""),
+    compound:
+      metadata.compound ||
+      (p.handle || p.id)
+        .replace(/-pen-set$/, "")
+        .replace(/-cartridge$/, "")
+        .replace(/-vial$/, "")
+        .replace(/^pen-system-/, ""),
     format,
     formatLabel,
     category,
-    categoryLabel: metadata.categoryLabel || categoryLabelMap[category],
+    categoryLabel: metadata.categoryLabel || categoryLabelMap[category] || "Research Peptide",
     contents,
     accentColor,
     technicalSpecs,
     description:
       (p.description as string) ||
       (metadata.description as string) ||
-      staticFallback?.description ||
       "Laboratory Grade Research Peptide • 99%+ Purity Verified",
     price: rawPrice,
     subscribePrice,
@@ -427,56 +433,27 @@ export function mapMedusaToCatalogProduct(p: StoreProduct): CatalogProduct {
 }
 
 /**
+ * Helper: Fetch single mapped CatalogProduct by handle or ID
+ */
+export async function getCatalogProduct(idOrHandle: string): Promise<CatalogProduct | null> {
+  const storeProduct = await getProduct(idOrHandle)
+  if (!storeProduct) return null
+  return mapMedusaToCatalogProduct(storeProduct)
+}
+
+/**
+ * Helper: Fetch all mapped CatalogProducts from Medusa Store API
+ */
+export async function getCatalogProducts(queryParams: Record<string, unknown> = {}): Promise<CatalogProduct[]> {
+  const storeProducts = await getProducts(queryParams)
+  return storeProducts.map(mapMedusaToCatalogProduct)
+}
+
+/**
  * Prefetch and cache all published products in the background
  */
 export function prefetchProducts(): Promise<StoreProduct[]> {
   return getProducts({ limit: 100 })
 }
 
-/**
- * React Hook: SWR Live Product Hook
- * Only published API catalogue entries can enter the purchase flow.
- * Returns synchronous cache immediately on mount if available, avoiding hydration delay and duplicate fetches.
- */
-export function useLiveProducts(initialFallback: CatalogProduct[] = CATALOG_PRODUCTS) {
-  const [products, setProducts] = useState<CatalogProduct[]>(() => {
-    if (cachedCatalogProducts !== null && typeof Date !== "undefined" && Date.now() - lastFetchedTimestamp < CACHE_TTL_MS) {
-      return cachedCatalogProducts
-    }
-    return []
-  })
-  const [isLoading, setIsLoading] = useState<boolean>(() => {
-    return !(cachedCatalogProducts !== null && typeof Date !== "undefined" && Date.now() - lastFetchedTimestamp < CACHE_TTL_MS)
-  })
 
-  useEffect(() => {
-    let isMounted = true
-    getProducts({ limit: 100 })
-      .then((medusaProducts) => {
-        if (isMounted) {
-          const mapped = medusaProducts.map(mapMedusaToCatalogProduct)
-          setProducts(mapped)
-          setIsLoading(false)
-        }
-      })
-      .catch((err) => {
-        console.warn("[Medusa] Revalidating from static catalog fallback:", err)
-        if (isMounted) {
-          if (products.length === 0 && initialFallback.length > 0) {
-            setProducts(initialFallback)
-          }
-          setIsLoading(false)
-        }
-      })
-
-    return () => {
-      isMounted = false
-    }
-  }, [])
-
-  return {
-    products,
-    isLoading,
-    refresh: () => getProducts({ limit: 100 }, true),
-  }
-}

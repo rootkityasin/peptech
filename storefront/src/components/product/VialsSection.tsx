@@ -5,12 +5,22 @@ import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 
-import { CATALOG_PRODUCTS } from "@/data/catalog"
+import { CatalogProduct } from "@/data/catalog"
+import { useLiveProducts } from "@/hooks/useLiveProducts"
 
-export function VialsSection() {
+interface VialsSectionProps {
+  excludeHandle?: string
+  products?: CatalogProduct[]
+}
+
+export function VialsSection({ excludeHandle, products: propProducts }: VialsSectionProps = {}) {
   const router = useRouter()
+  const { products: liveProducts } = useLiveProducts()
+  const products = propProducts || liveProducts
   const handleAddVial = (_item?: unknown) => router.push("/vials")
-  const displayVials = CATALOG_PRODUCTS.filter((p) => p.format === "freeze-dried-vial").slice(0, 4)
+  const displayVials = products.filter(
+    (p) => p.format === "freeze-dried-vial" && (!excludeHandle || p.handle !== excludeHandle)
+  ).slice(0, 4)
 
   return (
     <section className="bg-white py-[20px] pb-[60px] flex items-center justify-center border-t border-[#e2e8f0]">

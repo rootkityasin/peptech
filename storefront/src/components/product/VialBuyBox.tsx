@@ -224,24 +224,24 @@ export function VialBuyBox({ product }: VialBuyBoxProps) {
         <button
           type="button"
           onClick={handleAddToCart}
-          disabled={!product.variantId || !product.inStock}
-          className="btn-shimmer btn-press flex-1 bg-[#0b1f3a] hover:bg-[#162e52] cursor-pointer flex gap-[10px] h-[50px] items-center justify-center rounded-xl transition-all text-white font-semibold text-[15px] shadow-md hover:shadow-xl group"
+          disabled={product.inStock === false}
+          className={`btn-shimmer btn-press flex-1 ${product.inStock === false ? "bg-slate-200 cursor-not-allowed text-slate-400 border border-slate-300 shadow-none" : "bg-[#0b1f3a] hover:bg-[#162e52] cursor-pointer text-white shadow-md hover:shadow-xl"} flex gap-[10px] h-[50px] items-center justify-center rounded-xl transition-all font-semibold text-[15px] group`}
         >
           <img
             src="/images/figma/64d8de74a83e1fb14e8e8745813821f2e7537253.svg"
             alt=""
-            className="size-[18px] transition-transform duration-200 group-hover:scale-110"
+            className={`size-[18px] transition-transform duration-200 ${product.inStock === false ? "opacity-40" : "group-hover:scale-110"}`}
           />
-          <span>Add to Cart • £{totalPrice.toFixed(2)}</span>
+          <span>{product.inStock === false ? "Out of Stock" : `Add to Cart • £${totalPrice.toFixed(2)}`}</span>
         </button>
       </div>
 
       {/* Stock & Lab Report Link */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between w-full gap-2 pt-1 border-t border-slate-100">
         <div className="flex gap-[8px] items-center">
-          <div className="size-[8px] rounded-full bg-[#10b981]" />
-          <span className="font-medium text-[#0b1f3a] text-[13px]">
-            In Stock — Ships within 1-2 business days
+          <div className={`size-[8px] rounded-full ${product.inStock === false ? "bg-[#ef4444]" : "bg-[#10b981]"}`} />
+          <span className={`font-medium text-[13px] ${product.inStock === false ? "text-red-600 font-semibold" : "text-[#0b1f3a]"}`}>
+            {product.inStock === false ? "Out of Stock · Laboratory Synthesis Pending" : "In Stock — Ships within 1-2 business days"}
           </span>
         </div>
         <Link

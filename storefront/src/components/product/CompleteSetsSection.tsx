@@ -38,9 +38,21 @@ const CORE_FEATURES = [
   },
 ]
 
-export function CompleteSetsSection() {
-  const router=useRouter()
-  const handleAddSet = (_item?: unknown) => router.push("/pen-sets")
+import { CatalogProduct } from "@/data/catalog"
+import { useLiveProducts } from "@/hooks/useLiveProducts"
+
+interface CompleteSetsSectionProps {
+  excludeHandle?: string
+  products?: CatalogProduct[]
+}
+
+export function CompleteSetsSection({ excludeHandle, products: propProducts }: CompleteSetsSectionProps) {
+  const router = useRouter()
+  const { products: liveProducts } = useLiveProducts()
+  const products = propProducts || liveProducts
+  const featured =
+    products.find((p) => p.format === "complete-pen-set" && (!excludeHandle || p.handle !== excludeHandle)) ||
+    products[0]
 
   return (
     <section className="bg-white py-[20px] pb-[60px] flex items-center justify-center border-t border-[#e2e8f0]">
@@ -73,26 +85,30 @@ export function CompleteSetsSection() {
             
             {/* Top Box Image & Badge */}
             <div>
-              <div className="bg-[#f8fafc] h-[200px] min-h-[200px] rounded-[8px] relative overflow-hidden flex items-center justify-center mb-3">
-                <Image
-                  src="/images/figma/2fc8ae919de84fe5269092b52f019438e68ce3c8.png"
-                  alt="PEPTECH Complete Pen Set"
-                  fill
-                  sizes="(max-width: 1024px) 100vw, 380px"
-                  className="object-contain p-2"
-                />
-                <div className="absolute top-[12px] right-[12px] bg-[#16a6a3] px-[10px] py-[4px] rounded-[4px]">
-                  <span className="font-bold text-[10px] text-white uppercase tracking-wider">
-                    MOST POPULAR
-                  </span>
+              <Link href={`/products/${featured.handle}`} className="block">
+                <div className="bg-[#f8fafc] h-[200px] min-h-[200px] rounded-[8px] relative overflow-hidden flex items-center justify-center mb-3 group">
+                  <Image
+                    src={featured.image}
+                    alt={featured.name}
+                    fill
+                    sizes="(max-width: 1024px) 100vw, 380px"
+                    className="object-contain p-2 group-hover:scale-105 transition-transform"
+                  />
+                  <div className="absolute top-[12px] right-[12px] bg-[#16a6a3] px-[10px] py-[4px] rounded-[4px]">
+                    <span className="font-bold text-[10px] text-white uppercase tracking-wider">
+                      FEATURED SET
+                    </span>
+                  </div>
                 </div>
-              </div>
+              </Link>
 
               {/* Title, Rating & Copy */}
               <div className="space-y-1.5">
-                <h3 className="font-bold text-[#0b1f3a] text-[15px]">
-                  PEPTECH® Complete Pen Set
-                </h3>
+                <Link href={`/products/${featured.handle}`}>
+                  <h3 className="font-bold text-[#0b1f3a] text-[15px] hover:text-[#16a6a3] transition-colors">
+                    {featured.name}
+                  </h3>
+                </Link>
                 
                 <div className="flex items-center gap-[6px]">
                   <div className="flex gap-[2px]">
@@ -119,16 +135,15 @@ export function CompleteSetsSection() {
             {/* Price & Add to Cart */}
             <div className="pt-4 space-y-3">
               <div className="font-bold text-[#0b1f3a] text-[18px]">
-                From £99.99
+                £{featured.price.toFixed(2)}
               </div>
-              <button
-                type="button"
-                onClick={handleAddSet}
+              <Link
+                href={`/products/${featured.handle}`}
                 className="btn-shimmer btn-press bg-[#0b1f3a] hover:bg-[#162e52] cursor-pointer flex items-center justify-center gap-[8px] h-[42px] rounded-xl w-full text-white font-semibold text-[13px] transition-all shadow-xs hover:shadow-md group"
               >
                 <img src="/images/figma/64d8de74a83e1fb14e8e8745813821f2e7537253.svg" alt="" className="size-[16px] transition-transform duration-200 group-hover:scale-110" />
-                <span>Add to Cart</span>
-              </button>
+                <span>View Complete Set</span>
+              </Link>
             </div>
 
           </div>

@@ -6,7 +6,7 @@ import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { useCart } from "../cart/CartContext"
 import { useCustomer } from "@/context/CustomerContext"
-import { CATALOG_PRODUCTS } from "@/data/catalog"
+import { useLiveProducts } from "@/hooks/useLiveProducts"
 
 export function Header() {
   const pathname = usePathname()
@@ -91,11 +91,13 @@ export function Header() {
     }
   }, [mobileMenuOpen])
 
-  // Live search suggestions from catalog
+  const { products: liveProducts } = useLiveProducts()
+
+  // Live search suggestions from live Medusa products
   const searchSuggestions = useMemo(() => {
     const q = searchQuery.trim().toLowerCase()
     if (!q) return []
-    return CATALOG_PRODUCTS.filter((product) => {
+    return liveProducts.filter((product) => {
       return (
         product.name.toLowerCase().includes(q) ||
         product.description.toLowerCase().includes(q) ||
@@ -103,12 +105,12 @@ export function Header() {
         product.formatLabel.toLowerCase().includes(q)
       )
     }).slice(0, 6)
-  }, [searchQuery])
+  }, [searchQuery, liveProducts])
 
   const totalSearchMatches = useMemo(() => {
     const q = searchQuery.trim().toLowerCase()
     if (!q) return 0
-    return CATALOG_PRODUCTS.filter((product) => {
+    return liveProducts.filter((product) => {
       return (
         product.name.toLowerCase().includes(q) ||
         product.description.toLowerCase().includes(q) ||
@@ -116,7 +118,7 @@ export function Header() {
         product.formatLabel.toLowerCase().includes(q)
       )
     }).length
-  }, [searchQuery])
+  }, [searchQuery, liveProducts])
 
   // Do not show global header on checkout funnel pages (Figma Node 50:8021 / 52:8419)
   if (pathname?.startsWith("/checkout")) return null

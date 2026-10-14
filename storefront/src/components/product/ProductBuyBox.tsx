@@ -3,8 +3,8 @@
 import React, { useState, useEffect, useRef, useMemo } from "react"
 import Link from "next/link"
 import { useCart } from "@/components/cart/CartContext"
-import { CatalogProduct, CATALOG_PRODUCTS } from "@/data/catalog"
-import { useLiveProducts } from "@/lib/medusa"
+import { CatalogProduct } from "@/data/catalog"
+import { useLiveProducts } from "@/hooks/useLiveProducts"
 
 interface ProductBuyBoxProps {
   product?: CatalogProduct
@@ -41,7 +41,7 @@ export function ProductBuyBox({
 
   // Filter available refill cartridges
   const availableCartridges = useMemo(() => {
-    const source = liveProducts.length > 0 ? liveProducts : CATALOG_PRODUCTS
+    const source = liveProducts
     const cartridges = source.filter(
       (p) =>
         p.format === "refill-cartridge" ||
@@ -445,7 +445,7 @@ export function ProductBuyBox({
             </span>
           </div>
           <Link
-            href="/products/complete-pen-set"
+            href={product?.compound ? `/products/${product.compound}-pen-set` : "/pen-sets"}
             className="text-[12px] font-semibold text-[#16a6a3] hover:text-[#0b1f3a] transition-colors hover:underline shrink-0 ml-2"
           >
             Need the pen? →
@@ -458,17 +458,17 @@ export function ProductBuyBox({
         type="button"
         onClick={handleAddToCart}
         disabled={product ? product.inStock === false : false}
-        className="btn-shimmer btn-press bg-[#0b1f3a] hover:bg-[#162e52] cursor-pointer flex gap-[10px] h-[50px] items-center justify-center rounded-xl w-full transition-all text-white font-semibold text-[15px] shadow-md hover:shadow-xl group"
+        className={`btn-shimmer btn-press ${product?.inStock === false ? "bg-slate-200 cursor-not-allowed text-slate-400 border border-slate-300 shadow-none" : "bg-[#0b1f3a] hover:bg-[#162e52] cursor-pointer text-white shadow-md hover:shadow-xl"} flex gap-[10px] h-[50px] items-center justify-center rounded-xl w-full transition-all font-semibold text-[15px] group`}
       >
-        <img src="/images/figma/64d8de74a83e1fb14e8e8745813821f2e7537253.svg" alt="" className="size-[18px] transition-transform duration-200 group-hover:scale-110" />
-        <span>Add to Cart</span>
+        <img src="/images/figma/64d8de74a83e1fb14e8e8745813821f2e7537253.svg" alt="" className={`size-[18px] transition-transform duration-200 ${product?.inStock === false ? "opacity-40" : "group-hover:scale-110"}`} />
+        <span>{product?.inStock === false ? "Out of Stock" : "Add to Cart"}</span>
       </button>
 
       {/* Stock Notice - Figma Node 8:41139 */}
       <div className="flex gap-[8px] items-center">
-        <div className="size-[8px] rounded-full bg-[#10b981]" />
-        <span className="font-medium text-[#0b1f3a] text-[13px]">
-          In Stock — Ships within 1-2 business days
+        <div className={`size-[8px] rounded-full ${product?.inStock === false ? "bg-[#ef4444]" : "bg-[#10b981]"}`} />
+        <span className={`font-medium text-[13px] ${product?.inStock === false ? "text-red-600 font-semibold" : "text-[#0b1f3a]"}`}>
+          {product?.inStock === false ? "Out of Stock · Laboratory Synthesis Pending" : "In Stock — Ships within 1-2 business days"}
         </span>
       </div>
 

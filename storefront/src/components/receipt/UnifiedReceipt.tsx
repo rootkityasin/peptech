@@ -111,18 +111,16 @@ export function getItemDisplayDetails(item: ReceiptItem): {
 
   // Infer default cartridge for pen set models if not explicitly set
   if (isPenSystem && !cartridgeOpt) {
-    if (titleLower.includes("semaglutide")) cartridgeOpt = "Semaglutide 5mg Pre-filled Cartridge (1.5 mL)"
-    else if (titleLower.includes("tirzepatide")) cartridgeOpt = "Tirzepatide 10mg Pre-filled Cartridge (1.5 mL)"
-    else if (titleLower.includes("retatrutide")) cartridgeOpt = "Retatrutide 10mg Pre-filled Cartridge (1.5 mL)"
-    else if (titleLower.includes("bpc-157") || titleLower.includes("bpc157")) cartridgeOpt = "BPC-157 10mg Pre-filled Cartridge (1.5 mL)"
-    else if (titleLower.includes("tb-500") || titleLower.includes("tb500")) cartridgeOpt = "TB-500 10mg Pre-filled Cartridge (1.5 mL)"
-    else if (titleLower.includes("cc1236") || titleLower.includes("c.c-1236")) cartridgeOpt = "C.C-1236 1.5 mL Cartridge"
-    else if (titleLower.includes("rt40")) cartridgeOpt = "RT40 1.5 mL Cartridge"
-    else if (titleLower.includes("tbs30") || titleLower.includes("tb-s30")) cartridgeOpt = "TB-S30 1.5 mL Cartridge"
-    else if (titleLower.includes("ifc137") || titleLower.includes("ifc-137")) cartridgeOpt = "IFC-137 1.5 mL Cartridge"
-    else if (titleLower.includes("gvk")) cartridgeOpt = "GVK-0050 1.5 mL Cartridge"
-    else if (titleLower.includes("nad")) cartridgeOpt = "NAD+ 500mg Pre-filled Cartridge (1.5 mL)"
-    else if (titleLower.includes("melatonin")) cartridgeOpt = "Melatonin II 10mg Pre-filled Cartridge (1.5 mL)"
+    if (titleLower.includes("ghk")) cartridgeOpt = "GHK-Cu Pre-filled Cartridge (1.5 mL)"
+    else if (titleLower.includes("tesamorelin")) cartridgeOpt = "Tesamorelin Pre-filled Cartridge (1.5 mL)"
+    else if (titleLower.includes("tirzepatide")) cartridgeOpt = "Tirzepatide Pre-filled Cartridge (1.5 mL)"
+    else if (titleLower.includes("melanotan") || titleLower.includes("mt-2")) cartridgeOpt = "Melanotan II Pre-filled Cartridge (1.5 mL)"
+    else if (titleLower.includes("pt-141") || titleLower.includes("bremelanotide")) cartridgeOpt = "PT-141 Pre-filled Cartridge (1.5 mL)"
+    else if (titleLower.includes("mots-c") || titleLower.includes("mots")) cartridgeOpt = "MOTS-c Pre-filled Cartridge (1.5 mL)"
+    else if (titleLower.includes("wolverine")) cartridgeOpt = "Wolverine Stack (BPC-157 + TB-500) Pre-filled Cartridge (1.5 mL)"
+    else if (titleLower.includes("klow")) cartridgeOpt = "KLOW Stack Pre-filled Cartridge (1.5 mL)"
+    else if (titleLower.includes("nad")) cartridgeOpt = "NAD+ Pre-filled Cartridge (1.5 mL)"
+    else if (titleLower.includes("retatrutide") || titleLower.includes("glow")) cartridgeOpt = "Retatrutide Pre-filled Cartridge (1.5 mL)"
     else cartridgeOpt = "1× Pre-filled 1.5 mL Cartridge"
 
     if (!options.some((o) => o.label?.toLowerCase().includes("cartridge"))) {

@@ -1,3 +1,22 @@
+/**
+ * ==============================================================================
+ * PEPTECH® CATALOG INITIAL SEED & DISASTER RECOVERY PROVISIONING SCRIPT
+ * Quality. Safety. Precision.
+ * ==============================================================================
+ * IMPORTANT ARCHITECTURAL NOTICE:
+ * This script is an OPTIONAL, ONE-TIME disaster-recovery / initial provisioning
+ * utility. It is NOT executed automatically during server startup or runtime.
+ *
+ * The authoritative source of truth for all products, categories, pricing,
+ * inventory counts, images, and technical specifications is the Medusa 2.0 Admin
+ * Dashboard at: http://localhost:9000/app
+ *
+ * Store operators manage, create, and edit products directly in the Admin Panel.
+ * This file is maintained strictly as an emergency fallback to re-seed the
+ * 30 core products (10 compounds x 3 formats) if the database is ever wiped.
+ * ==============================================================================
+ */
+
 import { MedusaContainer } from "@medusajs/framework";
 import {
   ContainerRegistrationKeys,
@@ -19,8 +38,8 @@ export default async function seedPeptech({
   const query = container.resolve(ContainerRegistrationKeys.QUERY);
 
   logger.info("==================================================================");
-  logger.info("=== PEPTECH CATALOG SEED: 10 COMPOUNDS x 3 FORMATS = 30 PRODUCTS ===");
-  logger.info("=== HIGH-RES IMAGES: C:\\Users\\Rootkit\\Downloads\\Peptech product ===");
+  logger.info("=== PEPTECH CATALOG SEED (DISASTER RECOVERY / PROVISIONING ONLY) ==");
+  logger.info("=== 10 COMPOUNDS x 3 FORMATS = 30 PRODUCTS                     ==");
   logger.info("==================================================================");
 
   // 1. Fetch & Delete all legacy products
@@ -53,6 +72,32 @@ export default async function seedPeptech({
         ids: productIds,
       },
     });
+
+    // Hard-purge soft-deleted product records to prevent dual entries in Supabase
+    try {
+      const { Client } = require("pg");
+      const rawDbUrl = process.env.DATABASE_URL || "postgresql://postgres.ubzoovlhbnztjwemvrwo:Peptech2026!@aws-0-eu-west-2.pooler.supabase.com:6543/postgres";
+      const pgClient = new Client({ connectionString: rawDbUrl });
+      await pgClient.connect();
+      const delProd = "(SELECT id FROM product WHERE deleted_at IS NOT NULL)";
+      const delVar = "(SELECT id FROM product_variant WHERE deleted_at IS NOT NULL OR product_id IN (SELECT id FROM product WHERE deleted_at IS NOT NULL))";
+      await pgClient.query(`DELETE FROM product_variant_option WHERE variant_id IN ${delVar}`);
+      await pgClient.query(`DELETE FROM product_variant_price_set WHERE variant_id IN ${delVar}`);
+      await pgClient.query(`DELETE FROM product_variant_inventory_item WHERE variant_id IN ${delVar}`);
+      await pgClient.query(`DELETE FROM product_category_product WHERE product_id IN ${delProd}`);
+      await pgClient.query(`DELETE FROM image WHERE product_id IN ${delProd}`);
+      await pgClient.query(`DELETE FROM product_sales_channel WHERE product_id IN ${delProd}`);
+      await pgClient.query(`DELETE FROM product_shipping_profile WHERE product_id IN ${delProd}`);
+      await pgClient.query(`DELETE FROM product_tags WHERE product_id IN ${delProd}`);
+      await pgClient.query(`DELETE FROM product_product_option WHERE product_id IN ${delProd}`);
+      await pgClient.query(`DELETE FROM product_variant WHERE id IN ${delVar}`);
+      await pgClient.query(`DELETE FROM product WHERE id IN ${delProd}`);
+      await pgClient.end();
+      logger.info("Hard-purged all soft-deleted records from PostgreSQL.");
+    } catch (e: any) {
+      logger.warn(`Could not hard-purge: ${e.message}`);
+    }
+
     logger.info(`Successfully purged all ${productIds.length} previous products.`);
   } else {
     logger.info("No existing products to purge.");
@@ -541,5 +586,51 @@ export default async function seedPeptech({
     },
   });
 
-  logger.info(`✅ Successfully seeded ${productsToCreate.length} PEPTECH products matching Regenmed catalog with new images!`);
+  // Step 5: Establish initial inventory levels (10 units per product) and normalize required_quantity = 1
+  try {
+    const { Client } = require("pg");
+    const rawDbUrl = process.env.DATABASE_URL || "postgresql://postgres.ubzoovlhbnztjwemvrwo:Peptech2026!@aws-0-eu-west-2.pooler.supabase.com:6543/postgres";
+    const pgClient = new Client({ connectionString: rawDbUrl });
+    await pgClient.connect();
+    
+    // Normalize required_quantity = 1
+    await pgClient.query("UPDATE product_variant_inventory_item SET required_quantity = 1 WHERE required_quantity != 1");
+
+    // Get stock location
+    const locRes = await pgClient.query("SELECT id FROM stock_location LIMIT 1");
+    if (locRes.rows.length > 0) {
+      const locId = locRes.rows[0].id;
+      const crypto = require("crypto");
+      const activeLinks = await pgClient.query(`
+        SELECT pvii.inventory_item_id 
+        FROM product_variant_inventory_item pvii
+        JOIN product_variant pv ON pv.id = pvii.variant_id
+        JOIN product p ON p.id = pv.product_id
+        WHERE p.deleted_at IS NULL AND pv.deleted_at IS NULL
+      `);
+
+      for (const item of activeLinks.rows) {
+        const exist = await pgClient.query("SELECT id FROM inventory_level WHERE inventory_item_id = $1 AND location_id = $2", [item.inventory_item_id, locId]);
+        if (exist.rows.length > 0) {
+          await pgClient.query("UPDATE inventory_level SET stocked_quantity = 10, raw_stocked_quantity = '{\"value\": \"10\", \"precision\": 20}', reserved_quantity = 0 WHERE id = $1", [exist.rows[0].id]);
+        } else {
+          const chars = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+          let rand = "";
+          const bytes = crypto.randomBytes(26);
+          for (let i = 0; i < 26; i++) rand += chars[bytes[i] % chars.length];
+          const newId = `ilev_${rand}`;
+          await pgClient.query(
+            "INSERT INTO inventory_level (id, inventory_item_id, location_id, stocked_quantity, raw_stocked_quantity, reserved_quantity, raw_reserved_quantity, incoming_quantity, raw_incoming_quantity, created_at, updated_at) VALUES ($1, $2, $3, 10, '{\"value\": \"10\", \"precision\": 20}', 0, '{\"value\": \"0\", \"precision\": 20}', 0, '{\"value\": \"0\", \"precision\": 20}', NOW(), NOW())",
+            [newId, item.inventory_item_id, locId]
+          );
+        }
+      }
+      logger.info("Configured 10 units stocked inventory level for all active products.");
+    }
+    await pgClient.end();
+  } catch (err: any) {
+    logger.warn(`Could not sync initial inventory levels: ${err.message}`);
+  }
+
+  logger.info(`✅ Successfully seeded ${productsToCreate.length} PEPTECH products matching Regenmed catalog with new images and inventory levels!`);
 }

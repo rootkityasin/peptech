@@ -5,8 +5,8 @@ import Link from "next/link"
 import Image from "next/image"
 import { useSearchParams } from "next/navigation"
 import { useCart } from "@/components/cart/CartContext"
-import { CATALOG_PRODUCTS, CatalogProduct } from "@/data/catalog"
-import { useLiveProducts } from "@/lib/medusa"
+import { CatalogProduct } from "@/data/catalog"
+import { useLiveProducts } from "@/hooks/useLiveProducts"
 
 interface ShopCatalogProps {
   initialCategory?: "all" | "pen-sets" | "refills" | "vials"

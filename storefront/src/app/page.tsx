@@ -6,15 +6,14 @@ import Image from "next/image"
 import { useCart } from "@/components/cart/CartContext"
 import { Interactive3DPen } from "@/components/home/Interactive3DPen"
 import { TrustedBySection } from "@/components/common/TrustedBySection"
-import { useLiveProducts } from "@/lib/medusa"
-import { CATALOG_PRODUCTS } from "@/data/catalog"
+import { useLiveProducts } from "@/hooks/useLiveProducts"
 
 export default function HomePage() {
   const { addItem, setIsDrawerOpen } = useCart()
   const { products } = useLiveProducts()
 
-  // Dynamically resolve featured products from live Medusa API or authoritative CATALOG_PRODUCTS fallback
-  const sourceProducts = products.length > 0 ? products : CATALOG_PRODUCTS
+  // Dynamically resolve featured products from live Medusa Store API
+  const sourceProducts = products
 
   const displayPenSets = sourceProducts
     .filter((p) => p.format === "complete-pen-set")
@@ -481,7 +480,7 @@ export default function HomePage() {
                 </p>
                 <div className="pt-1">
                   <Link
-                    href="/products/complete-pen-set"
+                    href="/pen-sets"
                     className="bg-white hover:bg-slate-100 flex gap-[8px] items-center justify-center px-[22px] py-[12px] rounded-[6px] text-[#0b1f3a] text-[13px] font-semibold transition-colors shadow-sm"
                   >
                     <span>Get Started</span>

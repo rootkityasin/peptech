@@ -6,13 +6,23 @@ import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { useCart } from "@/components/cart/CartContext"
 
-import { CATALOG_PRODUCTS } from "@/data/catalog"
+import { CatalogProduct } from "@/data/catalog"
+import { useLiveProducts } from "@/hooks/useLiveProducts"
 
-export function RefillsSection() {
+interface RefillsSectionProps {
+  excludeHandle?: string
+  products?: CatalogProduct[]
+}
+
+export function RefillsSection({ excludeHandle, products: propProducts }: RefillsSectionProps = {}) {
   const router = useRouter()
   const { autoSavings } = useCart()
+  const { products: liveProducts } = useLiveProducts()
+  const products = propProducts || liveProducts
   const handleAddCartridge = (_item?: unknown) => router.push("/refills")
-  const displayRefills = CATALOG_PRODUCTS.filter((p) => p.format === "refill-cartridge").slice(0, 4)
+  const displayRefills = products.filter(
+    (p) => p.format === "refill-cartridge" && (!excludeHandle || p.handle !== excludeHandle)
+  ).slice(0, 4)
 
   return (
     <section className="bg-white py-[20px] pb-[60px] flex items-center justify-center border-t border-[#e2e8f0]">
