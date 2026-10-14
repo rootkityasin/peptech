@@ -5,9 +5,9 @@ import Link from "next/link"
 import { useCart, getItemSubtitle } from "@/components/cart/CartContext"
 import { useCustomer } from "@/context/CustomerContext"
 import { prepareStripeCheckout, type CheckoutSession } from "@/lib/stripe-checkout"
-import { COUNTRIES, getCountryByName } from "@/lib/countries"
 import { EmbeddedStripeCheckout } from "@/components/checkout/EmbeddedStripeCheckout"
 import { getCustomerOrders, getCustomerAddresses } from "@/lib/customer-api"
+import { findCountryByCode, findCountryByName, formatCountryCode } from "@/lib/regions"
 
 export default function CheckoutPage() {
   const {
@@ -25,6 +25,9 @@ export default function CheckoutPage() {
     shippingCost,
     country,
     setCountry,
+    countryCode,
+    countryOptions,
+    currency,
     removeItem,
     shippingOptions,
     shippingOptionId,
@@ -104,7 +107,7 @@ export default function CheckoutPage() {
     isUserManualCountryChangeRef.current = true
     setCountry(newCountryName)
 
-    const newCountryCode = getCountryByName(newCountryName).code.toLowerCase()
+    const newCountryCode = (findCountryByName(countryOptions, newCountryName)?.code || countryCode).toLowerCase()
 
     // Check if researcher has a saved address in this selected country
     const matchingSavedIndex = availableAddresses.findIndex(
@@ -239,7 +242,7 @@ export default function CheckoutPage() {
           phone: defaultAddr.phone || customer.phone || "",
         })
         if (!isUserManualCountryChangeRef.current && defaultAddr.country_code) {
-          const matched = COUNTRIES.find((c) => c.code.toLowerCase() === defaultAddr.country_code.toLowerCase())
+          const matched = findCountryByCode(countryOptions, defaultAddr.country_code)
           if (matched && country !== matched.name) setCountry(matched.name)
         }
       } else {
@@ -251,7 +254,7 @@ export default function CheckoutPage() {
         }))
       }
     }
-  }, [customer, availableAddresses, selectedAddressIndex])
+  }, [customer, availableAddresses, selectedAddressIndex, countryOptions])
 
   // Rate Limiting Security Cooldown
   useEffect(() => {
@@ -271,7 +274,7 @@ export default function CheckoutPage() {
 
   const hasSubscription = items.some((i) => i.isSubscription)
   const money = (n: number) =>
-    new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(n)
+    new Intl.NumberFormat("en-GB", { style: "currency", currency }).format(n)
 
   // Inline Sign-In Handler
   async function handleInlineLogin(e: React.FormEvent) {
@@ -367,16 +370,19 @@ export default function CheckoutPage() {
       if (!shippingReady) {
         throw new Error("Shipping rates are still loading. Please try again in a moment.")
       }
+      if (countryOptions.length === 0) {
+        throw new Error("Delivery countries could not be loaded from Medusa regions. Please refresh and try again.")
+      }
       if (!shippingAvailable || !shippingOptionId) {
         throw new Error("Shipping is unavailable for this destination. Choose another destination.")
       }
 
-      const currentCountryCode = getCountryByName(country).code.toLowerCase()
+      const currentCountryCode = (findCountryByName(countryOptions, country)?.code || countryCode).toLowerCase()
       const selectedAddr = availableAddresses[selectedAddressIndex]
       const isSavedAddrCountryMatching =
         selectedAddr?.country_code && selectedAddr.country_code.toLowerCase() === currentCountryCode
       const useSaved = availableAddresses.length > 0 && !useCustomAddress && isSavedAddrCountryMatching
-      const countryCode = currentCountryCode
+      const deliveryCountryCode = currentCountryCode
 
       const resolvedAddress =
         useSaved
@@ -389,7 +395,7 @@ export default function CheckoutPage() {
               address_2: selectedAddr?.address_2 || undefined,
               city: selectedAddr?.city || "",
               postal_code: selectedAddr?.postal_code || "",
-              country_code: countryCode,
+              country_code: deliveryCountryCode,
               province: selectedAddr?.province || undefined,
               phone: selectedAddr?.phone || customer.phone || undefined,
             }
@@ -401,7 +407,7 @@ export default function CheckoutPage() {
               address_2: customAddress.address_2 || undefined,
               city: customAddress.city,
               postal_code: customAddress.postal_code,
-              country_code: countryCode,
+              country_code: deliveryCountryCode,
               province: customAddress.province || undefined,
               phone: customAddress.phone || customer.phone || undefined,
             }
@@ -410,7 +416,7 @@ export default function CheckoutPage() {
         items,
         token,
         email: customer.email,
-        countryCode,
+        countryCode: deliveryCountryCode,
         address: resolvedAddress.address_1 ? resolvedAddress : undefined,
         ruoAccepted: ruo,
         recurringAccepted: recurring,
@@ -964,15 +970,20 @@ export default function CheckoutPage() {
                 <select
                   value={country}
                   onChange={(e) => handleCountryChange(e.target.value)}
-                  disabled={busy}
+                  disabled={busy || countryOptions.length === 0}
                   className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-sm text-[#0B1F3A] bg-white outline-none focus:border-[#16A6A3]"
                 >
-                  {COUNTRIES.map((c) => (
+                  {countryOptions.map((c) => (
                     <option key={c.code} value={c.name}>
-                      {c.name}
+                      {c.name} ({c.currencyCode})
                     </option>
                   ))}
                 </select>
+                {countryOptions.length === 0 && (
+                  <span className="mt-1 block text-[11px] font-medium text-amber-700">
+                    Loading countries from Medusa regions&hellip;
+                  </span>
+                )}
               </label>
 
               {/* Shipping Method Selection */}
@@ -1066,7 +1077,7 @@ export default function CheckoutPage() {
                           isUserManualCountryChangeRef.current = false
                           setUseCustomAddress(false)
                           if (addr.country_code) {
-                            const matched = COUNTRIES.find((c) => c.code.toLowerCase() === addr.country_code.toLowerCase())
+                            const matched = findCountryByCode(countryOptions, addr.country_code)
                             if (matched) setCountry(matched.name)
                           }
                         }}
@@ -1102,7 +1113,7 @@ export default function CheckoutPage() {
                       {availableAddresses[selectedAddressIndex]?.postal_code}
                       {(() => {
                         const cCode = availableAddresses[selectedAddressIndex]?.country_code
-                        const cName = cCode ? (COUNTRIES.find((c) => c.code.toLowerCase() === cCode.toLowerCase())?.name || cCode.toUpperCase()) : ""
+                        const cName = formatCountryCode(cCode, countryOptions)
                         return cName ? ` · ${cName}` : ""
                       })()}
                     </p>

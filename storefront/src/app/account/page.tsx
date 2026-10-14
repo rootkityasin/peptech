@@ -11,7 +11,7 @@ import { VisaBadge, MastercardBadge, AmexBadge, JcbBadge } from "@/components/ui
 import { useCustomer } from "@/context/CustomerContext"
 import { getCustomerOrders } from "@/lib/customer-api"
 import { formatFullReceiptDateTime, getItemDisplayDetails } from "@/components/receipt/UnifiedReceipt"
-import { COUNTRIES } from "@/lib/countries"
+import { fetchCountryOptions, formatCountryCode, type CountryOption } from "@/lib/regions"
 
 function formatOrderDate(rawDate?: string | Date | null): string {
   if (!rawDate) return new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
@@ -46,6 +46,7 @@ function AccountContent() {
   const [orders, setOrders] = useState<any[]>([])
   const [subscriptions, setSubscriptions] = useState<any[]>([])
   const [paymentCards, setPaymentCards] = useState<any[]>([])
+  const [countryOptions, setCountryOptions] = useState<CountryOption[]>([])
   const [isLoadingOrders, setIsLoadingOrders] = useState(false)
   const avatarInputRef = useRef<HTMLInputElement | null>(null)
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
@@ -63,6 +64,20 @@ function AccountContent() {
   // Lifecycle & Concurrency Refs
   const isMountedRef = useRef<boolean>(true)
   const inFlightFetchRef = useRef<boolean>(false)
+
+  useEffect(() => {
+    let cancelled = false
+    fetchCountryOptions()
+      .then((options) => {
+        if (!cancelled) setCountryOptions(options)
+      })
+      .catch((err) => {
+        console.warn("[PEPTECH REGIONS] Unable to load Medusa countries for account addresses:", err)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   // Auth Portal Input Refs & State
   const [authMode, setAuthMode] = useState<"signin" | "register">("signin")
@@ -587,11 +602,11 @@ function AccountContent() {
     const lastName = addrLastNameRef.current?.value?.trim() || customer?.last_name || ""
     const company = addrCompanyRef.current?.value?.trim() || customer?.company_name || ""
     const line2 = addrLine2Ref.current?.value?.trim() || ""
-    const country = addrCountryRef.current?.value?.toLowerCase() || "gb"
+    const country = addrCountryRef.current?.value?.toLowerCase() || ""
     const phone = addrPhoneRef.current?.value?.trim() || customer?.phone || ""
 
-    if (!line1 || !city || !postcode) {
-      alert("Please fill in Street Address, City, and Postal Code.")
+    if (!line1 || !city || !postcode || !country) {
+      alert("Please fill in Street Address, City, Postal Code, and select a Medusa-supported country.")
       return
     }
     setAddrSaving(true)
@@ -2153,7 +2168,7 @@ function AccountContent() {
                       {addr.company && <p className="text-[#64748b]">{addr.company}</p>}
                       <p className="text-[#64748b]">{addr.address_1}{addr.address_2 ? `, ${addr.address_2}` : ""}</p>
                       <p className="text-[#64748b]">
-                        {addr.city}, {addr.postal_code}, {COUNTRIES.find((c) => c.code.toLowerCase() === addr.country_code?.toLowerCase())?.name || addr.country_code?.toUpperCase()}
+                        {addr.city}, {addr.postal_code}, {formatCountryCode(addr.country_code, countryOptions) || addr.country_code?.toUpperCase()}
                       </p>
                       {addr.phone && <p className="text-[#64748b]">{addr.phone}</p>}
                     </div>
@@ -2501,12 +2516,14 @@ function AccountContent() {
                   <label className="text-[12px] font-semibold text-[#0b1f3a]">Country</label>
                   <select
                     ref={addrCountryRef}
-                    defaultValue="GB"
+                    defaultValue={countryOptions.find((c) => c.code === "GB")?.code || countryOptions[0]?.code || ""}
+                    disabled={countryOptions.length === 0}
                     className="border border-[#cbd5e1] rounded-[8px] px-2.5 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden bg-white"
                   >
-                    {COUNTRIES.map((c) => (
+                    {countryOptions.length === 0 && <option value="">Loading Medusa countries...</option>}
+                    {countryOptions.map((c) => (
                       <option key={c.code} value={c.code}>
-                        {c.name} ({c.code})
+                        {c.name} ({c.code}) · {c.currencyCode}
                       </option>
                     ))}
                   </select>
