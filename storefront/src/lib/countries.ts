@@ -111,12 +111,38 @@ export const COUNTRIES: CountryOption[] = [
   { code: "KE", name: "Kenya", dialCode: "+254", currency: "USD", region: "INTL", zipLabel: "Postal Code" }
 ]
 
+import { getCountryByCode as getRegionCountryByCode, getCountryByName as getRegionCountryByName } from "./regions"
+
 export function getCountryByCode(code: string): CountryOption {
+  const regionMatch = getRegionCountryByCode(code)
+  if (regionMatch) {
+    const existing = COUNTRIES.find((c) => c.code.toUpperCase() === regionMatch.code.toUpperCase())
+    if (existing) return existing
+    return {
+      code: regionMatch.code.toUpperCase(),
+      name: regionMatch.name,
+      dialCode: "",
+      currency: (regionMatch.currencyCode as any) || "GBP",
+      region: regionMatch.currencyCode === "GBP" ? "UK" : regionMatch.currencyCode === "EUR" ? "EU" : "INTL",
+    }
+  }
   const match = COUNTRIES.find((c) => c.code.toUpperCase() === code.toUpperCase())
   return match || COUNTRIES[0] // fallback to UK
 }
 
 export function getCountryByName(name: string): CountryOption {
+  const regionMatch = getRegionCountryByName(name)
+  if (regionMatch) {
+    const existing = COUNTRIES.find((c) => c.name.toLowerCase() === regionMatch.name.toLowerCase() || c.code.toUpperCase() === regionMatch.code.toUpperCase())
+    if (existing) return existing
+    return {
+      code: regionMatch.code.toUpperCase(),
+      name: regionMatch.name,
+      dialCode: "",
+      currency: (regionMatch.currencyCode as any) || "GBP",
+      region: regionMatch.currencyCode === "GBP" ? "UK" : regionMatch.currencyCode === "EUR" ? "EU" : "INTL",
+    }
+  }
   const match = COUNTRIES.find((c) => c.name.toLowerCase() === name.toLowerCase())
   return match || COUNTRIES[0]
 }

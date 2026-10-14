@@ -5,7 +5,7 @@ import Link from "next/link"
 import { useCart, getItemSubtitle } from "@/components/cart/CartContext"
 import { useCustomer } from "@/context/CustomerContext"
 import { prepareStripeCheckout, type CheckoutSession } from "@/lib/stripe-checkout"
-import { COUNTRIES, getCountryByName } from "@/lib/countries"
+import { getCountryByName, getCountryByCode, useRegions } from "@/lib/regions"
 import { EmbeddedStripeCheckout } from "@/components/checkout/EmbeddedStripeCheckout"
 import { getCustomerOrders, getCustomerAddresses } from "@/lib/customer-api"
 
@@ -33,7 +33,12 @@ export default function CheckoutPage() {
     shippingAvailable,
     shippingReady,
     isOptionEligibleForFree,
+    currency,
+    availableCountries: cartCountries,
   } = useCart()
+
+  const { countries: hookCountries } = useRegions()
+  const availableCountries = cartCountries?.length ? cartCountries : hookCountries
 
   const {
     customer,
@@ -103,8 +108,8 @@ export default function CheckoutPage() {
   const handleCountryChange = (newCountryName: string) => {
     isUserManualCountryChangeRef.current = true
     setCountry(newCountryName)
-
-    const newCountryCode = getCountryByName(newCountryName).code.toLowerCase()
+    const matchedOpt = getCountryByName(newCountryName, availableCountries)
+    const newCountryCode = (matchedOpt?.code || "gb").toLowerCase()
 
     // Check if researcher has a saved address in this selected country
     const matchingSavedIndex = availableAddresses.findIndex(
@@ -239,7 +244,7 @@ export default function CheckoutPage() {
           phone: defaultAddr.phone || customer.phone || "",
         })
         if (!isUserManualCountryChangeRef.current && defaultAddr.country_code) {
-          const matched = COUNTRIES.find((c) => c.code.toLowerCase() === defaultAddr.country_code.toLowerCase())
+          const matched = getCountryByCode(defaultAddr.country_code, availableCountries)
           if (matched && country !== matched.name) setCountry(matched.name)
         }
       } else {
@@ -270,8 +275,17 @@ export default function CheckoutPage() {
   }, [lockedUntil])
 
   const hasSubscription = items.some((i) => i.isSubscription)
-  const money = (n: number) =>
-    new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(n)
+  const money = (n: number) => {
+    const code = currency || "GBP"
+    try {
+      return new Intl.NumberFormat(code === "GBP" ? "en-GB" : code === "EUR" ? "de-DE" : "en-US", {
+        style: "currency",
+        currency: code,
+      }).format(n)
+    } catch {
+      return new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(n)
+    }
+  }
 
   // Inline Sign-In Handler
   async function handleInlineLogin(e: React.FormEvent) {
@@ -371,7 +385,8 @@ export default function CheckoutPage() {
         throw new Error("Shipping is unavailable for this destination. Choose another destination.")
       }
 
-      const currentCountryCode = getCountryByName(country).code.toLowerCase()
+      const currentCountryOpt = getCountryByName(country, availableCountries)
+      const currentCountryCode = (currentCountryOpt?.code || "gb").toLowerCase()
       const selectedAddr = availableAddresses[selectedAddressIndex]
       const isSavedAddrCountryMatching =
         selectedAddr?.country_code && selectedAddr.country_code.toLowerCase() === currentCountryCode
@@ -967,9 +982,9 @@ export default function CheckoutPage() {
                   disabled={busy}
                   className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-sm text-[#0B1F3A] bg-white outline-none focus:border-[#16A6A3]"
                 >
-                  {COUNTRIES.map((c) => (
+                  {availableCountries.map((c) => (
                     <option key={c.code} value={c.name}>
-                      {c.name}
+                      {c.name} ({c.currencyCode})
                     </option>
                   ))}
                 </select>
@@ -1066,7 +1081,7 @@ export default function CheckoutPage() {
                           isUserManualCountryChangeRef.current = false
                           setUseCustomAddress(false)
                           if (addr.country_code) {
-                            const matched = COUNTRIES.find((c) => c.code.toLowerCase() === addr.country_code.toLowerCase())
+                            const matched = getCountryByCode(addr.country_code, availableCountries)
                             if (matched) setCountry(matched.name)
                           }
                         }}
@@ -1102,7 +1117,8 @@ export default function CheckoutPage() {
                       {availableAddresses[selectedAddressIndex]?.postal_code}
                       {(() => {
                         const cCode = availableAddresses[selectedAddressIndex]?.country_code
-                        const cName = cCode ? (COUNTRIES.find((c) => c.code.toLowerCase() === cCode.toLowerCase())?.name || cCode.toUpperCase()) : ""
+                        const matched = cCode ? getCountryByCode(cCode, availableCountries) : null
+                        const cName = matched ? matched.name : (cCode ? cCode.toUpperCase() : "")
                         return cName ? ` · ${cName}` : ""
                       })()}
                     </p>

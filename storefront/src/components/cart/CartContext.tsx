@@ -1,7 +1,7 @@
 "use client"
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react"
-import { getCountryByName } from "@/lib/countries"
+import { getCountryByName, getCountryByCode, getAvailableCountries, getRegions, mapRegionsToCountryOptions, type RegionCountryOption, type StoreRegion } from "@/lib/regions"
 import { getShippingOptions, type ShippingOption } from "@/lib/shipping-options"
 import { getBackendUrl } from "@/lib/customer-api"
 
@@ -215,7 +215,9 @@ interface CartContextType {
   setDestination: (dest: "UK" | "INTL") => void
   country: string
   setCountry: (country: string) => void
-  currency: "GBP" | "USD" | "EUR"
+  currency: string
+  regions: StoreRegion[]
+  availableCountries: RegionCountryOption[]
   shippingOptions: ShippingOption[]
   shippingOptionId: string | null
   setShippingOptionId: (id: string) => void
@@ -242,6 +244,21 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [autoSavings, setAutoSavings] = useState<AutoSavingsConfig>(DEFAULT_AUTO_SAVINGS)
   const [featuredPromo, setFeaturedPromo] = useState<FeaturedPromoConfig | null>(null)
   const [freeShipping, setFreeShipping] = useState<FreeShippingConfig>(DEFAULT_FREE_SHIPPING)
+  const [regions, setRegions] = useState<StoreRegion[]>([])
+  const [availableCountries, setAvailableCountries] = useState<RegionCountryOption[]>([])
+
+  // Load regions dynamically from Medusa 2.0 backend
+  useEffect(() => {
+    let cancelled = false
+    getRegions().then((regs) => {
+      if (cancelled) return
+      setRegions(regs)
+      setAvailableCountries(mapRegionsToCountryOptions(regs))
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const setDestination = (dest: "UK" | "INTL") => {
     setDestinationState(dest)
@@ -251,8 +268,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const handleSetCountry = useCallback((newCountry: string) => {
     setCountry(newCountry)
-    setDestinationState(newCountry === "United Kingdom" ? "UK" : "INTL")
-  }, [])
+    const opt = getCountryByName(newCountry, availableCountries)
+    const isUk = opt?.code === "gb" || newCountry.toLowerCase() === "united kingdom"
+    setDestinationState(isUk ? "UK" : "INTL")
+  }, [availableCountries])
 
   // Load from local storage
   useEffect(() => {
@@ -414,7 +433,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     if (!loaded) return
     let cancelled = false
     setShippingLoaded(false)
-    const countryCode = getCountryByName(country).code.toLowerCase()
+    const countryOpt = getCountryByName(country, availableCountries)
+    const countryCode = (countryOpt?.code || "gb").toLowerCase()
     getShippingOptions(countryCode).then((options) => {
       if (cancelled) return
       setShippingOptions(options)
@@ -428,7 +448,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true
     }
-  }, [country, loaded])
+  }, [country, loaded, availableCountries])
 
   const setShippingOptionId = (id: string) => {
     setShippingOptionIdState(id)
@@ -611,7 +631,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     : 0
   const total = finalSubtotal + shippingCost
 
-  const currency = country === "United Kingdom" ? "GBP" : (["Germany", "France", "Italy", "Spain", "Netherlands", "Ireland", "Sweden", "Denmark", "Belgium", "Austria", "Finland", "Portugal", "Poland", "Czech Republic"].includes(country) ? "EUR" : "USD")
+  const matchedCountry = getCountryByName(country, availableCountries)
+  const currency = (matchedCountry?.currencyCode || "GBP").toUpperCase()
 
   return (
     <CartContext.Provider
@@ -647,6 +668,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         country,
         setCountry: handleSetCountry,
         currency,
+        regions,
+        availableCountries,
         shippingOptions,
         shippingOptionId,
         setShippingOptionId,
