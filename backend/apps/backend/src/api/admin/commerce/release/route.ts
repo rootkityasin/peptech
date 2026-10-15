@@ -1,6 +1,6 @@
 import type { AuthenticatedMedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { Modules } from "@medusajs/framework/utils"
-import { z } from "zod"
+import { z } from "@medusajs/framework/zod"
 import { operator, commerce, endpoint } from "../../../../lib/commerce/http"
 import { fail, assertEligibility, assertProduct } from "../../../../lib/commerce/policy"
 import { recordId } from "../../../../modules/peptech-commerce/service"

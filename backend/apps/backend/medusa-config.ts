@@ -1,4 +1,4 @@
-import { loadEnv, defineConfig } from '@medusajs/framework/utils'
+import { loadEnv, defineConfig, MedusaError } from '@medusajs/framework/utils'
 import { adminOrderOverrides } from './admin-order-overrides'
 const fs = require('fs')
 const path = require('path')
@@ -71,9 +71,9 @@ module.exports = defineConfig({
       storeCors: process.env.STORE_CORS || '/^https?:\\/\\/(localhost|127\\.0\\.0\\.1)(:\\d+)?$|^https?:\\/\\/(?:[a-zA-Z0-9-]+\\.)*peptech\\.bio$|^https?:\\/\\/docs\\.medusajs\\.com$/',
       adminCors: process.env.ADMIN_CORS || '/^https?:\\/\\/(localhost|127\\.0\\.0\\.1)(:\\d+)?$|^https?:\\/\\/(?:[a-zA-Z0-9-]+\\.)*peptech\\.bio$|^https?:\\/\\/docs\\.medusajs\\.com$/',
       authCors: process.env.AUTH_CORS || '/^https?:\\/\\/(localhost|127\\.0\\.0\\.1)(:\\d+)?$|^https?:\\/\\/(?:[a-zA-Z0-9-]+\\.)*peptech\\.bio$|^https?:\\/\\/docs\\.medusajs\\.com$/',
-      jwtSecret: process.env.JWT_SECRET || (process.env.NODE_ENV === 'production' ? (() => { throw new Error('JWT_SECRET must be set in production') })() : 'dev_jwt_secret_change_in_prod'),
+      jwtSecret: process.env.JWT_SECRET || (process.env.NODE_ENV === 'production' ? (() => { throw new MedusaError(MedusaError.Types.INVALID_DATA, 'JWT_SECRET must be set in production') })() : 'dev_jwt_secret_change_in_prod'),
       jwtExpiresIn: process.env.JWT_EXPIRES_IN || '30d',
-      cookieSecret: process.env.COOKIE_SECRET || (process.env.NODE_ENV === 'production' ? (() => { throw new Error('COOKIE_SECRET must be set in production') })() : 'dev_cookie_secret_change_in_prod'),
+      cookieSecret: process.env.COOKIE_SECRET || (process.env.NODE_ENV === 'production' ? (() => { throw new MedusaError(MedusaError.Types.INVALID_DATA, 'COOKIE_SECRET must be set in production') })() : 'dev_cookie_secret_change_in_prod'),
     },
     cookieOptions: {
       secure: process.env.NODE_ENV === "production",

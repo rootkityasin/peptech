@@ -1,3 +1,4 @@
+import crypto from "node:crypto"
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { commerceTick } from "../../../lib/commerce/worker"
 import { getStripeConfig } from "../../../lib/stripe-config"
@@ -17,6 +18,14 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
   return handleCronTick(req, res)
 }
 
+function timingSafeMatch(a?: string, b?: string): boolean {
+  if (!a || !b) return false
+  const bufA = Buffer.from(a)
+  const bufB = Buffer.from(b)
+  if (bufA.length !== bufB.length) return false
+  return crypto.timingSafeEqual(bufA, bufB)
+}
+
 async function handleCronTick(req: MedusaRequest, res: MedusaResponse) {
   const configuredSecret = process.env.COMMERCE_CRON_SECRET?.trim()
   const authHeader = (req.headers["authorization"] as string)?.replace(/^Bearer\s+/i, "").trim()
@@ -24,7 +33,7 @@ async function handleCronTick(req: MedusaRequest, res: MedusaResponse) {
   const querySecret = (req.query?.secret as string)?.trim()
   const providedSecret = headerSecret || authHeader || querySecret
 
-  if (!configuredSecret || providedSecret !== configuredSecret) {
+  if (!configuredSecret || !timingSafeMatch(providedSecret, configuredSecret)) {
     return res.status(401).json({
       error: "Unauthorized",
       message: "Valid x-cron-secret header, Bearer token, or secret query parameter is required.",

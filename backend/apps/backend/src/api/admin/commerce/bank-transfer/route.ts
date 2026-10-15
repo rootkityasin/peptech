@@ -1,5 +1,5 @@
 import type {AuthenticatedMedusaRequest,MedusaResponse} from "@medusajs/framework/http"
-import {z} from "zod"
+import {z} from "@medusajs/framework/zod"
 import {operator,commerce,endpoint} from "../../../../lib/commerce/http"
 import {settleReceipt} from "../../../../lib/commerce/settlement"
 import {fail,toMinor} from "../../../../lib/commerce/policy"

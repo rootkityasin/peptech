@@ -41,18 +41,22 @@ const nextConfig: NextConfig = {
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     minimumCacheTTL: 31536000,
     remotePatterns: [
-      {
-        protocol: "http",
-        hostname: "localhost",
-      },
-      {
-        protocol: "http",
-        hostname: "127.0.0.1",
-      },
-      {
-        protocol: "https",
-        hostname: "localhost",
-      },
+      ...(!isProd
+        ? [
+            {
+              protocol: "http" as const,
+              hostname: "localhost",
+            },
+            {
+              protocol: "http" as const,
+              hostname: "127.0.0.1",
+            },
+            {
+              protocol: "https" as const,
+              hostname: "localhost",
+            },
+          ]
+        : []),
       {
         protocol: "https",
         hostname: "admin.peptech.bio",
@@ -74,6 +78,39 @@ const nextConfig: NextConfig = {
         hostname: "*.amazonaws.com",
       },
     ],
+  },
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          {
+            key: "X-Content-Type-Options",
+            value: "nosniff",
+          },
+          {
+            key: "X-Frame-Options",
+            value: "SAMEORIGIN",
+          },
+          {
+            key: "Referrer-Policy",
+            value: "strict-origin-when-cross-origin",
+          },
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=(), browsing-topics=()",
+          },
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=63072000; includeSubDomains; preload",
+          },
+          {
+            key: "X-XSS-Protection",
+            value: "1; mode=block",
+          },
+        ],
+      },
+    ];
   },
   async rewrites() {
     return [
