@@ -1,5 +1,6 @@
 import { Suspense } from "react"
 import { ShopCatalog } from "@/components/catalog/ShopCatalog"
+import { CatalogSkeleton } from "@/components/ui/Skeletons"
 
 export const metadata = {
   title: "Freeze-Dried Vials | PEPTECH® Laboratory Peptides",
@@ -8,7 +9,7 @@ export const metadata = {
 
 export default function FreezeDriedVialsPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#f8fafc]" />}>
+    <Suspense fallback={<CatalogSkeleton category="vials" />}>
       <ShopCatalog initialCategory="vials" />
     </Suspense>
   )

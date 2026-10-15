@@ -93,12 +93,12 @@ export function ProductShowcase({
         <div className="flex flex-col lg:flex-row items-start justify-between max-w-[1240px] w-full px-4 sm:px-6 gap-[40px] lg:gap-[60px]" data-name="Showcase Inner">
           
           {/* Left: Product Gallery */}
-          <div className="w-full lg:w-[580px] shrink-0">
+          <div className="w-full lg:flex-1 lg:max-w-[580px]">
             <ProductGallery images={galleryImages} title={currentProduct.name} />
           </div>
 
           {/* Right: Buy Box */}
-          <div className="w-full lg:w-[600px] shrink-0">
+          <div className="w-full lg:flex-1 lg:max-w-[600px]">
             <ProductFormatSwitcher
               currentFormat={currentProduct.format}
               penSet={penSetProduct || undefined}

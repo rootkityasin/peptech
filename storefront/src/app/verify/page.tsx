@@ -3,6 +3,7 @@
 import React, { useState, useEffect, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import Link from "next/link"
+import { VerifySkeleton } from "@/components/ui/Skeletons"
 
 function VerifyContent() {
   const searchParams = useSearchParams()
@@ -495,13 +496,7 @@ function VerifyContent() {
 
 export default function VerifyPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-[500px] flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#16a6a3]" />
-        </div>
-      }
-    >
+    <Suspense fallback={<VerifySkeleton />}>
       <VerifyContent />
     </Suspense>
   )

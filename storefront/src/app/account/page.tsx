@@ -12,6 +12,7 @@ import { useCustomer } from "@/context/CustomerContext"
 import { getCustomerOrders } from "@/lib/customer-api"
 import { formatFullReceiptDateTime, getItemDisplayDetails } from "@/components/receipt/UnifiedReceipt"
 import { fetchCountryOptions, formatCountryCode, type CountryOption } from "@/lib/regions"
+import { AccountSkeleton } from "@/components/ui/Skeletons"
 
 function formatOrderDate(rawDate?: string | Date | null): string {
   if (!rawDate) return new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
@@ -929,7 +930,7 @@ function AccountContent() {
           ) : (
             /* Register Form */
             <form onSubmit={handleRegister} className="flex flex-col gap-3.5">
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
                 <div className="flex flex-col gap-1">
                   <label className="text-[12px] font-semibold text-[#0b1f3a]">Title</label>
                   <select
@@ -1128,8 +1129,8 @@ function AccountContent() {
         <div className="max-w-[1280px] mx-auto flex flex-col gap-[28px]">
           {/* Banner Top Row */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full">
-            <div className="flex gap-[20px] items-center">
-              <div className="relative shrink-0 w-[64px] h-[64px] rounded-full overflow-hidden border-2 border-slate-100 shadow-2xs group">
+            <div className="flex gap-[16px] sm:gap-[20px] items-center min-w-0">
+              <div className="relative shrink-0 w-[56px] h-[56px] sm:w-[64px] sm:h-[64px] rounded-full overflow-hidden border-2 border-slate-100 shadow-2xs group">
                 {customer.metadata?.avatar_url ? (
                   <img
                     alt={`${customer.first_name || ""} ${customer.last_name || ""}`}
@@ -1137,7 +1138,7 @@ function AccountContent() {
                     src={customer.metadata.avatar_url}
                   />
                 ) : (
-                  <div className="w-full h-full bg-[#0b1f3a] text-white font-bold text-[22px] flex items-center justify-center tracking-wider">
+                  <div className="w-full h-full bg-[#0b1f3a] text-white font-bold text-[20px] sm:text-[22px] flex items-center justify-center tracking-wider">
                     {getInitials(customer.first_name, customer.last_name)}
                   </div>
                 )}
@@ -1163,9 +1164,9 @@ function AccountContent() {
                   className="hidden"
                 />
               </div>
-              <div className="flex flex-col gap-[4px] items-start">
+              <div className="flex flex-col gap-[4px] items-start min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h1 className="font-extrabold text-[#0b1f3a] text-[20px] sm:text-[24px] tracking-tight">
+                  <h1 className="font-extrabold text-[#0b1f3a] text-[18px] sm:text-[24px] tracking-tight truncate max-w-full">
                     {customer.metadata?.title ? `${customer.metadata.title} ` : ""}
                     {customer.first_name} {customer.last_name}
                   </h1>
@@ -1177,16 +1178,16 @@ function AccountContent() {
                     Edit Profile
                   </button>
                 </div>
-                <p className="font-normal text-[#64748b] text-[12.5px] sm:text-[13px]">
+                <p className="font-normal text-[#64748b] text-[12px] sm:text-[13px] break-words">
                   {customer.metadata?.role || "Verified Clinical Researcher"} · Member since {customer.created_at ? new Date(customer.created_at).toLocaleDateString("en-GB", { month: "short", year: "numeric" }) : (customer.metadata?.member_since || new Date().toLocaleDateString("en-GB", { month: "short", year: "numeric" }))} · Customer ID: {customer.metadata?.customer_id_code || (customer.id ? `#PEP-CUST-${customer.id.replace(/[^0-9]/g, "").slice(-4) || customer.id.slice(-4).toUpperCase()}` : "")}
                   {customer.company_name ? ` · ${customer.company_name}` : ""}
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-3 shrink-0">
+            <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
               {subscriptions.length > 0 && (
                 <div className="bg-[#f1f5f9] flex items-center px-[12px] py-[8px] rounded-[8px]">
-                  <p className="font-medium text-[#0b1f3a] text-[12.5px] whitespace-nowrap">
+                  <p className="font-medium text-[#0b1f3a] text-[12px] sm:text-[12.5px] whitespace-nowrap">
                     Next Dispatch: <span className="font-bold text-[#16a6a3]">{subscriptions[0].nextDispatchDate || subscriptions[0].nextBillingDate || "Scheduled"}</span>
                   </p>
                 </div>
@@ -1194,7 +1195,7 @@ function AccountContent() {
               <button
                 type="button"
                 onClick={logout}
-                className="text-[12px] font-semibold text-[#64748b] hover:text-[#0b1f3a] bg-white border border-[#e2e8f0] px-3 py-2 rounded-[8px] shadow-2xs hover:bg-slate-50 transition-colors cursor-pointer"
+                className="text-[12px] font-semibold text-[#64748b] hover:text-[#0b1f3a] bg-white border border-[#e2e8f0] px-3 py-2 rounded-[8px] shadow-2xs hover:bg-slate-50 transition-colors cursor-pointer ml-auto sm:ml-0"
               >
                 Log Out
               </button>
@@ -1202,7 +1203,7 @@ function AccountContent() {
           </div>
 
           {/* Tabs Navigation Row */}
-          <div className="flex gap-[20px] sm:gap-[32px] items-end overflow-x-auto no-scrollbar w-full -mb-px">
+          <div className="flex gap-[16px] sm:gap-[32px] items-end overflow-x-auto no-scrollbar scroll-smooth w-full -mb-px -mx-4 px-4 sm:mx-0 sm:px-0">
             {/* Dashboard Overview */}
             <button
               type="button"
@@ -1300,24 +1301,24 @@ function AccountContent() {
             <div className="flex flex-col gap-[24px] w-full lg:flex-1">
               {/* Card 1: Latest Order or Empty State */}
               {orders.length > 0 ? (
-                <div className="bg-white rounded-[16px] px-6 sm:px-[28px] py-[26px] shadow-xs border border-slate-100 flex flex-col gap-[20px]">
-                  <div className="flex items-center justify-between">
+                <div className="bg-white rounded-[16px] px-4 sm:px-[28px] py-[20px] sm:py-[26px] shadow-xs border border-slate-100 flex flex-col gap-[18px] sm:gap-[20px]">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                     <div className="flex flex-col gap-[3px]">
-                      <p className="font-bold text-[#0b1f3a] text-[16px] break-all">
-                        Latest Order: <span className="font-mono text-[14.5px]">{orders[0].id}</span>
+                      <p className="font-bold text-[#0b1f3a] text-[15px] sm:text-[16px] break-all">
+                        Latest Order: <span className="font-mono text-[14px] sm:text-[14.5px]">{orders[0].id}</span>
                       </p>
-                      <p className="font-normal text-[#64748b] text-[12.5px]">
+                      <p className="font-normal text-[#64748b] text-[12px] sm:text-[12.5px]">
                         Placed {orders[0].displayDate} · {orders[0].items?.length || 1} Line Item{(orders[0].items?.length || 1) === 1 ? "" : "s"} · Royal Mail Tracked 24
                       </p>
                     </div>
                     {orders[0].isRefunded ? (
-                      <div className="bg-rose-50 border border-rose-200 px-[12px] py-[6px] rounded-[20px]">
+                      <div className="bg-rose-50 border border-rose-200 px-[12px] py-[6px] rounded-[20px] self-start sm:self-auto">
                         <p className="font-semibold text-rose-700 text-[12px] whitespace-nowrap">
                           Refunded
                         </p>
                       </div>
                     ) : (
-                      <div className="bg-[#e6fffa] px-[12px] py-[6px] rounded-[20px]">
+                      <div className="bg-[#e6fffa] px-[12px] py-[6px] rounded-[20px] self-start sm:self-auto">
                         <p className="font-semibold text-[#16a6a3] text-[12px] whitespace-nowrap">
                           {orders[0].status || "Cold-Chain Packing"}
                         </p>
@@ -1346,48 +1347,50 @@ function AccountContent() {
                       </span>
                     </div>
                   ) : (
-                    <div className="bg-[#f8fafc] rounded-[10px] px-[16px] py-[14px] flex items-center justify-between gap-2 overflow-x-auto">
-                      {/* Step 1 */}
-                      <div className="flex gap-[8px] items-center shrink-0">
-                        <div className="w-[22px] h-[22px] rounded-full bg-[#16a6a3] text-white flex items-center justify-center font-bold text-[11px]">
-                          ✓
+                    <div className="bg-[#f8fafc] rounded-[10px] px-[16px] py-[14px] overflow-x-auto no-scrollbar">
+                      <div className="flex items-center justify-between gap-2 min-w-[480px]">
+                        {/* Step 1 */}
+                        <div className="flex gap-[8px] items-center shrink-0">
+                          <div className="w-[22px] h-[22px] rounded-full bg-[#16a6a3] text-white flex items-center justify-center font-bold text-[11px]">
+                            ✓
+                          </div>
+                          <span className="font-medium text-[#0f172a] text-[12px] whitespace-nowrap">
+                            Order Placed
+                          </span>
                         </div>
-                        <span className="font-medium text-[#0f172a] text-[12px] whitespace-nowrap">
-                          Order Placed
-                        </span>
-                      </div>
-                      <div className="flex-1 h-[2px] min-w-[20px] bg-[#16a6a3] rounded-full" />
+                        <div className="flex-1 h-[2px] min-w-[20px] bg-[#16a6a3] rounded-full" />
 
-                      {/* Step 2 */}
-                      <div className="flex gap-[8px] items-center shrink-0">
-                        <div className={`w-[22px] h-[22px] rounded-full ${orders[0].status === "Delivered" ? "bg-[#16a6a3] text-white" : "bg-[#0b1f3a] text-white ring-4 ring-[#0b1f3a]/10"} flex items-center justify-center font-bold text-[11px]`}>
-                          {orders[0].status === "Delivered" ? "✓" : "2"}
+                        {/* Step 2 */}
+                        <div className="flex gap-[8px] items-center shrink-0">
+                          <div className={`w-[22px] h-[22px] rounded-full ${orders[0].status === "Delivered" ? "bg-[#16a6a3] text-white" : "bg-[#0b1f3a] text-white ring-4 ring-[#0b1f3a]/10"} flex items-center justify-center font-bold text-[11px]`}>
+                            {orders[0].status === "Delivered" ? "✓" : "2"}
+                          </div>
+                          <span className="font-bold text-[#0b1f3a] text-[12px] whitespace-nowrap">
+                            Cold-Chain Packing
+                          </span>
                         </div>
-                        <span className="font-bold text-[#0b1f3a] text-[12px] whitespace-nowrap">
-                          Cold-Chain Packing
-                        </span>
-                      </div>
-                      <div className={`flex-1 h-[2px] min-w-[20px] ${orders[0].status === "Delivered" ? "bg-[#16a6a3]" : "bg-[#e2e8f0]"} rounded-full`} />
+                        <div className={`flex-1 h-[2px] min-w-[20px] ${orders[0].status === "Delivered" ? "bg-[#16a6a3]" : "bg-[#e2e8f0]"} rounded-full`} />
 
-                      {/* Step 3 */}
-                      <div className="flex gap-[8px] items-center shrink-0">
-                        <div className={`w-[22px] h-[22px] rounded-full ${orders[0].status === "Delivered" ? "bg-[#16a6a3] text-white" : "bg-[#cbd5e1] text-white"} flex items-center justify-center font-bold text-[11px]`}>
-                          {orders[0].status === "Delivered" ? "✓" : "3"}
+                        {/* Step 3 */}
+                        <div className="flex gap-[8px] items-center shrink-0">
+                          <div className={`w-[22px] h-[22px] rounded-full ${orders[0].status === "Delivered" ? "bg-[#16a6a3] text-white" : "bg-[#cbd5e1] text-white"} flex items-center justify-center font-bold text-[11px]`}>
+                            {orders[0].status === "Delivered" ? "✓" : "3"}
+                          </div>
+                          <span className="font-medium text-[#94a3b8] text-[12px] whitespace-nowrap">
+                            Dispatched (Tracked 24)
+                          </span>
                         </div>
-                        <span className="font-medium text-[#94a3b8] text-[12px] whitespace-nowrap">
-                          Dispatched (Tracked 24)
-                        </span>
-                      </div>
-                      <div className={`flex-1 h-[2px] min-w-[20px] ${orders[0].status === "Delivered" ? "bg-[#16a6a3]" : "bg-[#e2e8f0]"} rounded-full`} />
+                        <div className={`flex-1 h-[2px] min-w-[20px] ${orders[0].status === "Delivered" ? "bg-[#16a6a3]" : "bg-[#e2e8f0]"} rounded-full`} />
 
-                      {/* Step 4 */}
-                      <div className="flex gap-[8px] items-center shrink-0">
-                        <div className={`w-[22px] h-[22px] rounded-full ${orders[0].status === "Delivered" ? "bg-[#16a6a3] text-white" : "bg-[#cbd5e1] text-white"} flex items-center justify-center font-bold text-[11px]`}>
-                          {orders[0].status === "Delivered" ? "✓" : "4"}
+                        {/* Step 4 */}
+                        <div className="flex gap-[8px] items-center shrink-0">
+                          <div className={`w-[22px] h-[22px] rounded-full ${orders[0].status === "Delivered" ? "bg-[#16a6a3] text-white" : "bg-[#cbd5e1] text-white"} flex items-center justify-center font-bold text-[11px]`}>
+                            {orders[0].status === "Delivered" ? "✓" : "4"}
+                          </div>
+                          <span className="font-medium text-[#94a3b8] text-[12px] whitespace-nowrap">
+                            Delivered
+                          </span>
                         </div>
-                        <span className="font-medium text-[#94a3b8] text-[12px] whitespace-nowrap">
-                          Delivered
-                        </span>
                       </div>
                     </div>
                   )}
@@ -1438,8 +1441,8 @@ function AccountContent() {
                   <div className="h-px bg-[#f1f5f9] w-full" />
 
                   {/* Actions Row */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="flex gap-[8px] items-center text-[13px]">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+                    <div className="flex flex-wrap gap-[8px] items-center text-[13px]">
                       <span className="text-[#64748b]">{orders[0].isRefunded ? "Total Refunded:" : "Total Paid:"}</span>
                       <span className="font-bold text-[#0b1f3a] text-[16px]">£{orders[0].total?.toFixed(2)}</span>
                       {orders[0].isRefunded ? (
@@ -1448,12 +1451,12 @@ function AccountContent() {
                         <span className="text-[#94a3b8] text-[12.5px]">({orders[0].paymentMethod})</span>
                       ) : null}
                     </div>
-                    <div className="flex gap-[10px] items-center">
+                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-[10px] items-stretch sm:items-center w-full sm:w-auto">
                       {!orders[0].isRefunded && (
                         <button
                           type="button"
                           onClick={() => handleTabChange("orders")}
-                          className="bg-[#0b1f3a] hover:bg-[#162a45] text-white text-[12.5px] font-semibold px-[16px] py-[8px] rounded-[6px] transition-colors cursor-pointer"
+                          className="bg-[#0b1f3a] hover:bg-[#162a45] text-white text-[12.5px] font-semibold px-[16px] py-[9px] rounded-[6px] transition-colors cursor-pointer text-center justify-center flex items-center"
                         >
                           Live Dispatch Tracker
                         </button>
@@ -1461,7 +1464,7 @@ function AccountContent() {
                       <Link
                         href={`/receipt/${encodeURIComponent(orders[0].id)}`}
                         target="_blank"
-                        className="bg-[#f1f5f9] hover:bg-slate-200 text-[#0b1f3a] text-[12.5px] font-semibold px-[14px] py-[8px] rounded-[6px] transition-colors inline-flex items-center gap-1.5"
+                        className="bg-[#f1f5f9] hover:bg-slate-200 text-[#0b1f3a] text-[12.5px] font-semibold px-[14px] py-[9px] rounded-[6px] transition-colors inline-flex items-center justify-center gap-1.5 text-center"
                       >
                         <svg className="w-3.5 h-3.5 text-[#16a6a3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -1840,25 +1843,25 @@ function AccountContent() {
                   .map((order) => (
                     <div
                       key={order.id}
-                      className="bg-white rounded-[16px] px-6 sm:px-[28px] py-[26px] shadow-xs border border-slate-100 flex flex-col gap-[20px]"
+                      className="bg-white rounded-[16px] px-4 sm:px-[28px] py-[20px] sm:py-[26px] shadow-xs border border-slate-100 flex flex-col gap-[18px] sm:gap-[20px]"
                     >
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                         <div className="flex flex-col gap-[3px]">
-                          <p className="font-bold text-[#0b1f3a] text-[16px] break-all">
+                          <p className="font-bold text-[#0b1f3a] text-[15px] sm:text-[16px] break-all">
                             Order ID: <span className="font-mono text-[14px]">{order.id}</span>
                           </p>
-                          <p className="font-normal text-[#64748b] text-[12.5px]">
+                          <p className="font-normal text-[#64748b] text-[12px] sm:text-[12.5px]">
                             Placed {order.displayDate} · Tracking: {order.trackingNumber || "GB-RM24-PENDING"}
                           </p>
                         </div>
                         {order.isRefunded ? (
-                          <div className="bg-rose-50 border border-rose-200 px-[12px] py-[6px] rounded-[20px]">
+                          <div className="bg-rose-50 border border-rose-200 px-[12px] py-[6px] rounded-[20px] self-start sm:self-auto">
                             <p className="font-semibold text-rose-700 text-[12px] whitespace-nowrap">
                               Refunded
                             </p>
                           </div>
                         ) : (
-                          <div className="bg-[#e6fffa] px-[12px] py-[6px] rounded-[20px]">
+                          <div className="bg-[#e6fffa] px-[12px] py-[6px] rounded-[20px] self-start sm:self-auto">
                             <p className="font-semibold text-[#16a6a3] text-[12px] whitespace-nowrap">
                               {order.status || "Cold-Chain Packing"}
                             </p>
@@ -1887,41 +1890,43 @@ function AccountContent() {
                           </span>
                         </div>
                       ) : (
-                        <div className="bg-[#f8fafc] rounded-[10px] px-[16px] py-[14px] flex items-center justify-between gap-2 overflow-x-auto">
-                          <div className="flex gap-[8px] items-center shrink-0">
-                            <div className="w-[22px] h-[22px] rounded-full bg-[#16a6a3] text-white flex items-center justify-center font-bold text-[11px]">
-                              ✓
+                        <div className="bg-[#f8fafc] rounded-[10px] px-[16px] py-[14px] overflow-x-auto no-scrollbar">
+                          <div className="flex items-center justify-between gap-2 min-w-[480px]">
+                            <div className="flex gap-[8px] items-center shrink-0">
+                              <div className="w-[22px] h-[22px] rounded-full bg-[#16a6a3] text-white flex items-center justify-center font-bold text-[11px]">
+                                ✓
+                              </div>
+                              <span className="font-medium text-[#0f172a] text-[12px] whitespace-nowrap">
+                                Order Placed
+                              </span>
                             </div>
-                            <span className="font-medium text-[#0f172a] text-[12px] whitespace-nowrap">
-                              Order Placed
-                            </span>
-                          </div>
-                          <div className="flex-1 h-[2px] min-w-[20px] bg-[#16a6a3] rounded-full" />
-                          <div className="flex gap-[8px] items-center shrink-0">
-                            <div className={`w-[22px] h-[22px] rounded-full ${order.status === "Delivered" ? "bg-[#16a6a3] text-white" : "bg-[#0b1f3a] text-white ring-4 ring-[#0b1f3a]/10"} flex items-center justify-center font-bold text-[11px]`}>
-                              {order.status === "Delivered" ? "✓" : "2"}
+                            <div className="flex-1 h-[2px] min-w-[20px] bg-[#16a6a3] rounded-full" />
+                            <div className="flex gap-[8px] items-center shrink-0">
+                              <div className={`w-[22px] h-[22px] rounded-full ${order.status === "Delivered" ? "bg-[#16a6a3] text-white" : "bg-[#0b1f3a] text-white ring-4 ring-[#0b1f3a]/10"} flex items-center justify-center font-bold text-[11px]`}>
+                                {order.status === "Delivered" ? "✓" : "2"}
+                              </div>
+                              <span className="font-bold text-[#0b1f3a] text-[12px] whitespace-nowrap">
+                                Cold-Chain Packing
+                              </span>
                             </div>
-                            <span className="font-bold text-[#0b1f3a] text-[12px] whitespace-nowrap">
-                              Cold-Chain Packing
-                            </span>
-                          </div>
-                          <div className={`flex-1 h-[2px] min-w-[20px] ${order.status === "Delivered" ? "bg-[#16a6a3]" : "bg-[#e2e8f0]"} rounded-full`} />
-                          <div className="flex gap-[8px] items-center shrink-0">
-                            <div className={`w-[22px] h-[22px] rounded-full ${order.status === "Delivered" ? "bg-[#16a6a3] text-white" : "bg-[#cbd5e1] text-white"} flex items-center justify-center font-bold text-[11px]`}>
-                              {order.status === "Delivered" ? "✓" : "3"}
+                            <div className={`flex-1 h-[2px] min-w-[20px] ${order.status === "Delivered" ? "bg-[#16a6a3]" : "bg-[#e2e8f0]"} rounded-full`} />
+                            <div className="flex gap-[8px] items-center shrink-0">
+                              <div className={`w-[22px] h-[22px] rounded-full ${order.status === "Delivered" ? "bg-[#16a6a3] text-white" : "bg-[#cbd5e1] text-white"} flex items-center justify-center font-bold text-[11px]`}>
+                                {order.status === "Delivered" ? "✓" : "3"}
+                              </div>
+                              <span className="font-medium text-[#94a3b8] text-[12px] whitespace-nowrap">
+                                Dispatched (Tracked 24)
+                              </span>
                             </div>
-                            <span className="font-medium text-[#94a3b8] text-[12px] whitespace-nowrap">
-                              Dispatched (Tracked 24)
-                            </span>
-                          </div>
-                          <div className={`flex-1 h-[2px] min-w-[20px] ${order.status === "Delivered" ? "bg-[#16a6a3]" : "bg-[#e2e8f0]"} rounded-full`} />
-                          <div className="flex gap-[8px] items-center shrink-0">
-                            <div className={`w-[22px] h-[22px] rounded-full ${order.status === "Delivered" ? "bg-[#16a6a3] text-white" : "bg-[#cbd5e1] text-white"} flex items-center justify-center font-bold text-[11px]`}>
-                              {order.status === "Delivered" ? "✓" : "4"}
+                            <div className={`flex-1 h-[2px] min-w-[20px] ${order.status === "Delivered" ? "bg-[#16a6a3]" : "bg-[#e2e8f0]"} rounded-full`} />
+                            <div className="flex gap-[8px] items-center shrink-0">
+                              <div className={`w-[22px] h-[22px] rounded-full ${order.status === "Delivered" ? "bg-[#16a6a3] text-white" : "bg-[#cbd5e1] text-white"} flex items-center justify-center font-bold text-[11px]`}>
+                                {order.status === "Delivered" ? "✓" : "4"}
+                              </div>
+                              <span className="font-medium text-[#94a3b8] text-[12px] whitespace-nowrap">
+                                Delivered
+                              </span>
                             </div>
-                            <span className="font-medium text-[#94a3b8] text-[12px] whitespace-nowrap">
-                              Delivered
-                            </span>
                           </div>
                         </div>
                       )}
@@ -1969,20 +1974,20 @@ function AccountContent() {
 
                       <div className="h-px bg-[#f1f5f9] w-full" />
 
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div className="flex gap-[8px] items-center text-[13px]">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+                        <div className="flex flex-wrap gap-[8px] items-center text-[13px]">
                           <span className="text-[#64748b]">{order.isRefunded ? "Total Refunded:" : "Total Paid:"}</span>
                           <span className="font-bold text-[#0b1f3a] text-[15px]">£{order.total?.toFixed(2)}</span>
                           {order.isRefunded && (
                             <span className="text-rose-600 font-semibold text-[12px]">(Refunded via Stripe)</span>
                           )}
                         </div>
-                        <div className="flex gap-[10px] items-center">
+                        <div className="flex flex-col sm:flex-row gap-2 sm:gap-[10px] items-stretch sm:items-center w-full sm:w-auto">
                           {!order.isRefunded && (
                             <button
                               type="button"
                               onClick={() => alert(`Tracking ${order.trackingNumber || order.id}: Cold-chain shipment verified.`)}
-                              className="bg-[#0b1f3a] hover:bg-[#162a45] text-white text-[12px] font-semibold px-[14px] py-[8px] rounded-[6px] transition-colors cursor-pointer"
+                              className="bg-[#0b1f3a] hover:bg-[#162a45] text-white text-[12.5px] font-semibold px-[16px] py-[9px] rounded-[6px] transition-colors cursor-pointer text-center justify-center flex items-center"
                             >
                               Track Live Dispatch
                             </button>
@@ -1990,7 +1995,7 @@ function AccountContent() {
                           <Link
                             href={`/receipt/${encodeURIComponent(order.id)}`}
                             target="_blank"
-                            className="bg-[#f1f5f9] hover:bg-slate-200 text-[#0b1f3a] text-[12px] font-semibold px-[14px] py-[8px] rounded-[6px] transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+                            className="bg-[#f1f5f9] hover:bg-slate-200 text-[#0b1f3a] text-[12.5px] font-semibold px-[14px] py-[9px] rounded-[6px] transition-colors inline-flex items-center justify-center gap-1.5 cursor-pointer text-center"
                           >
                             <svg className="w-3.5 h-3.5 text-[#16a6a3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -2007,7 +2012,7 @@ function AccountContent() {
             {/* Right Sidebar Column */}
             <div className="flex flex-col gap-[24px] w-full lg:w-[420px] shrink-0">
               {/* Order History & Spend Card */}
-              <div className="bg-white rounded-[16px] px-6 sm:px-[28px] py-[26px] shadow-xs border border-slate-100 flex flex-col gap-[16px]">
+              <div className="bg-white rounded-[16px] px-4 sm:px-[28px] py-[20px] sm:py-[26px] shadow-xs border border-slate-100 flex flex-col gap-[16px]">
                 <div className="flex items-center justify-between">
                   <p className="font-bold text-[#0b1f3a] text-[15px]">
                     Order History &amp; Spend
@@ -2017,7 +2022,7 @@ function AccountContent() {
                   </span>
                 </div>
 
-                <div className="grid grid-cols-3 gap-[10px] w-full">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-[10px] w-full">
                   <div className="bg-[#f8fafc] p-[10px] rounded-[8px]">
                     <p className="font-bold text-[#0b1f3a] text-[15px]">{orders.length} Orders</p>
                     <p className="text-[#64748b] text-[11px]">Total Orders</p>
@@ -2307,7 +2312,7 @@ function AccountContent() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="flex flex-col gap-1">
                   <label className="text-[12px] font-semibold text-[#0b1f3a]">Title</label>
                   <select
@@ -2427,7 +2432,7 @@ function AccountContent() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1">
                   <label className="text-[12px] font-semibold text-[#0b1f3a]">First Name</label>
                   <input
@@ -2488,7 +2493,7 @@ function AccountContent() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1">
                   <label className="text-[12px] font-semibold text-[#0b1f3a]">City *</label>
                   <input
@@ -2511,7 +2516,7 @@ function AccountContent() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1">
                   <label className="text-[12px] font-semibold text-[#0b1f3a]">Country</label>
                   <select
@@ -2567,13 +2572,7 @@ function AccountContent() {
 
 export default function AccountPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-[500px] flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#16a6a3]" />
-        </div>
-      }
-    >
+    <Suspense fallback={<AccountSkeleton />}>
       <AccountContent />
     </Suspense>
   )

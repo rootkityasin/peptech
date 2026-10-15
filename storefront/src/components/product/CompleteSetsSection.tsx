@@ -152,7 +152,7 @@ export function CompleteSetsSection({ excludeHandle, products: propProducts }: C
           <div className="lg:col-span-5 flex flex-col justify-between gap-6">
             
             {/* 3x2 Grid */}
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {CORE_FEATURES.map((f) => (
                 <div key={f.title} className="flex flex-col gap-[6px] items-center text-center p-2">
                   <div className="bg-[#e8f5fc] rounded-full size-[44px] flex items-center justify-center shrink-0">
@@ -199,7 +199,7 @@ export function CompleteSetsSection({ excludeHandle, products: propProducts }: C
           </div>
 
           {/* Right: One Pen Showcase Card (lg:col-span-3) - Figma Node 8:41429 */}
-          <div className="lg:col-span-3 h-[420px] sm:h-[470px] min-h-[420px] rounded-[12px] overflow-hidden relative flex flex-col justify-end p-[24px] pb-[32px] text-center shadow-xs">
+          <div className="lg:col-span-3 h-[260px] sm:h-[340px] lg:h-full min-h-[260px] sm:min-h-[340px] lg:min-h-[420px] rounded-[12px] overflow-hidden relative flex flex-col justify-end p-[24px] pb-[32px] text-center shadow-xs">
             <Image
               src="/images/figma/a899cee28c9a7dbe981b12963dd7556e80bb5a76.png"
               alt="One Pen Multiple Possibilities"

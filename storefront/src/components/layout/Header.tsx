@@ -423,7 +423,7 @@ export function Header() {
           </nav>
 
           {/* Right Utility Icons (Search, Account, Cart) */}
-          <div className="flex gap-[22px] items-center">
+          <div className="flex gap-[12px] sm:gap-[22px] items-center">
             {/* Search Button with smooth hover animation */}
             <button
               onClick={() => setSearchOpen(!searchOpen)}
@@ -448,7 +448,7 @@ export function Header() {
             {isAuthenticated && customer ? (
               <Link
                 href="/account"
-                className="bg-white border border-[#e2e8f0] hidden sm:flex items-center gap-[8px] pl-[8px] pr-[12px] py-[5px] rounded-[20px] shadow-2xs hover:border-[#16a6a3] transition-colors group"
+                className="bg-white border border-[#e2e8f0] flex items-center gap-[8px] p-1 sm:pl-[8px] sm:pr-[12px] sm:py-[5px] rounded-[20px] shadow-2xs hover:border-[#16a6a3] transition-colors group"
                 title={`${customer.first_name || ""} ${customer.last_name || ""}`}
               >
                 <div className="w-[22px] h-[22px] rounded-full overflow-hidden relative shrink-0 border border-slate-200">
@@ -464,14 +464,14 @@ export function Header() {
                     </div>
                   )}
                 </div>
-                <span className="font-semibold text-[#0b1f3a] group-hover:text-[#16a6a3] text-[12.5px] whitespace-nowrap transition-colors">
+                <span className="hidden sm:inline font-semibold text-[#0b1f3a] group-hover:text-[#16a6a3] text-[12.5px] whitespace-nowrap transition-colors">
                   {customer.metadata?.title ? `${customer.metadata.title} ` : ""}{customer.first_name} {customer.last_name ? `${customer.last_name[0]}.` : ""}
                 </span>
               </Link>
             ) : (
               <Link
                 href="/account"
-                className="w-[20px] h-[20px] hidden sm:flex items-center justify-center hover:opacity-80 transition-opacity"
+                className="w-[36px] h-[36px] rounded-full flex items-center justify-center hover:bg-slate-100 transition-colors"
                 aria-label="Account"
                 title="Customer Account"
               >

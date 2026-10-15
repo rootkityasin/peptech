@@ -1,6 +1,6 @@
 "use client"
 
-import React from "react"
+import React, { Suspense } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { useCart } from "@/components/cart/CartContext"
@@ -8,9 +8,258 @@ import { Interactive3DPen } from "@/components/home/Interactive3DPen"
 import { TrustedBySection } from "@/components/common/TrustedBySection"
 import { useLiveProducts } from "@/hooks/useLiveProducts"
 
-export default function HomePage() {
+// ---------------------------------------------------------------------------
+// Suspense Skeleton Fallbacks
+// ---------------------------------------------------------------------------
+
+function ProductCardsSkeleton({ count = 6 }: { count?: number }) {
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+      {Array.from({ length: count }).map((_, i) => (
+        <div
+          key={i}
+          className="bg-white border border-[#E2E8F0] rounded-[8px] p-3 flex flex-col justify-between animate-pulse"
+        >
+          <div className="h-[125px] min-h-[125px] w-full bg-slate-100 rounded-md mb-2 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full bg-slate-200/70" />
+          </div>
+          <div className="text-center space-y-1.5 mb-3">
+            <div className="h-4 bg-slate-200 rounded w-3/4 mx-auto" />
+            <div className="h-2.5 bg-slate-100 rounded w-1/2 mx-auto" />
+            <div className="h-3 bg-slate-100 rounded w-2/3 mx-auto" />
+            <div className="h-4 bg-slate-200 rounded w-1/3 mx-auto pt-1" />
+          </div>
+          <div className="w-full h-[36px] bg-slate-200 rounded-[6px]" />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function CartridgeCardsSkeleton({ count = 6 }: { count?: number }) {
+  return (
+    <div className="lg:col-span-9 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-3.5">
+      {Array.from({ length: count }).map((_, i) => (
+        <div
+          key={i}
+          className="bg-white border border-[#E2E8F0] rounded-[8px] p-2.5 sm:p-3 flex flex-col justify-between h-full min-h-[360px] sm:min-h-[380px] animate-pulse"
+        >
+          <div className="h-[150px] xs:h-[160px] sm:h-[160px] lg:h-[150px] xl:h-[160px] min-h-[150px] w-full bg-[#f8fafc] rounded-lg mb-2 flex items-center justify-center">
+            <div className="w-10 h-20 bg-slate-200/70 rounded-md" />
+          </div>
+          <div className="text-center space-y-1.5 my-2">
+            <div className="h-4 bg-slate-200 rounded w-3/4 mx-auto" />
+            <div className="h-3 bg-slate-100 rounded w-1/2 mx-auto" />
+            <div className="h-4 bg-slate-200 rounded w-1/3 mx-auto" />
+          </div>
+          <div className="w-full h-[36px] bg-slate-200 rounded-[6px] mt-auto" />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function Interactive3DPenSkeleton() {
+  return (
+    <div className="w-full h-[165px] xs:h-[185px] sm:h-[170px] lg:h-[160px] flex items-center justify-center select-none">
+      <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-white/95 border border-[#D2DFED] text-xs font-semibold text-[#0B1F3A] shadow-xs animate-pulse">
+        <span className="w-2 h-2 rounded-full bg-[#16A6A3] animate-ping" />
+        <span>Loading Interactive 3D Architecture...</span>
+      </div>
+    </div>
+  )
+}
+
+function HomePageSkeleton() {
+  return (
+    <main className="bg-white min-h-screen text-slate-900 overflow-x-hidden font-sans animate-pulse">
+      {/* Hero Skeleton */}
+      <section className="bg-[#F4F7FA] pt-6 pb-12 lg:py-16 border-b border-[#E2E8F0]">
+        <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            <div className="lg:col-span-6 space-y-4">
+              <div className="h-3 bg-[#16A6A3]/30 rounded w-36" />
+              <div className="h-10 bg-slate-200 rounded w-3/4" />
+              <div className="h-5 bg-slate-200 rounded w-full" />
+              <div className="h-4 bg-slate-100 rounded w-2/3" />
+              <div className="flex gap-3 pt-2">
+                <div className="h-11 w-40 bg-slate-300 rounded-xl" />
+                <div className="h-11 w-32 bg-slate-200 rounded-xl" />
+              </div>
+            </div>
+            <div className="lg:col-span-6 flex justify-center">
+              <div className="w-full max-w-[500px] h-[340px] bg-slate-200/60 rounded-2xl" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Featured Section Skeleton */}
+      <section className="py-16 max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+        <div className="space-y-2">
+          <div className="h-3 bg-[#16A6A3]/30 rounded w-32" />
+          <div className="h-7 bg-slate-200 rounded w-72" />
+          <div className="h-4 bg-slate-100 rounded w-96" />
+        </div>
+        <ProductCardsSkeleton count={6} />
+      </section>
+    </main>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Section Display Grids
+// ---------------------------------------------------------------------------
+
+interface PenSetCardItem {
+  id: string
+  name: string
+  handle: string
+  tag: string
+  application: string
+  price: number
+  image: string
+  accentColor?: string
+}
+
+function FeaturedPenSetsGrid({
+  products,
+  isLoading,
+}: {
+  products: PenSetCardItem[]
+  isLoading: boolean
+}) {
+  if (isLoading && products.length === 0) {
+    return <ProductCardsSkeleton count={6} />
+  }
+
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5 sm:gap-4">
+      {products.map((p) => (
+        <div
+          key={p.id}
+          className="bg-white border border-[#E2E8F0] rounded-[8px] p-2.5 sm:p-3 flex flex-col justify-between hover:shadow-md transition-shadow group h-full"
+        >
+          {/* Product Box Image */}
+          <Link href={`/products/${p.handle}`} className="block">
+            <div className="h-[125px] min-h-[125px] w-full relative flex items-center justify-center mb-2">
+              <Image
+                src={p.image}
+                alt={p.name}
+                fill
+                sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 160px"
+                className="object-contain p-1 group-hover:scale-105 transition-transform"
+              />
+            </div>
+          </Link>
+
+          {/* Info Block */}
+          <div className="text-center space-y-0.5 mb-2 sm:mb-3 grow flex flex-col justify-center">
+            <Link href={`/products/${p.handle}`}>
+              <h3 className="text-[13px] sm:text-[14px] font-bold text-[#0B1F3A] hover:text-[#16A6A3] transition-colors line-clamp-2 min-h-[36px] sm:min-h-[40px] flex items-center justify-center">
+                {p.name}
+              </h3>
+            </Link>
+            <p className="text-[10px] font-semibold text-[#64748B] tracking-[0.5px]">
+              {p.tag}
+            </p>
+            <p className="text-[11px] text-[#475569] truncate">
+              {p.application}
+            </p>
+            <p className="text-[14px] sm:text-[15px] font-bold text-[#0B1F3A] pt-0.5">
+              £{p.price.toFixed(2)}
+            </p>
+          </div>
+
+          {/* Actions Row */}
+          <div className="w-full mt-auto pt-1">
+            <Link
+              href={`/products/${p.handle}`}
+              className="btn-shimmer btn-press w-full h-[36px] bg-[#0B1F3A] hover:bg-[#16A6A3] text-white rounded-[6px] text-[12px] font-semibold flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-[0.98]"
+            >
+              <span>Details</span>
+            </Link>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+interface CartridgeCardItem {
+  id: string
+  name: string
+  handle: string
+  type: string
+  price: number
+  image: string
+  accentColor?: string
+}
+
+function CartridgesGrid({
+  cartridges,
+  isLoading,
+}: {
+  cartridges: CartridgeCardItem[]
+  isLoading: boolean
+}) {
+  if (isLoading && cartridges.length === 0) {
+    return <CartridgeCardsSkeleton count={6} />
+  }
+
+  return (
+    <div className="lg:col-span-9 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-3.5">
+      {cartridges.map((c) => (
+        <div
+          key={c.id}
+          className="bg-white border border-[#E2E8F0] rounded-[8px] p-2.5 sm:p-3 flex flex-col justify-between h-full min-h-[360px] sm:min-h-[380px] hover:shadow-md transition-shadow group"
+        >
+          {/* Cartridge Clear Photo */}
+          <Link href={`/products/${c.handle}`} className="block">
+            <div className="h-[150px] xs:h-[160px] sm:h-[160px] lg:h-[150px] xl:h-[160px] min-h-[150px] w-full relative flex items-center justify-center bg-[#f8fafc] rounded-lg group-hover:bg-slate-100 transition-colors">
+              <Image
+                src={c.image}
+                alt={c.name}
+                fill
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 280px"
+                className="object-contain p-2 group-hover:scale-105 transition-transform"
+              />
+            </div>
+          </Link>
+
+          {/* Info Block */}
+          <div className="text-center space-y-0.5 my-2 grow flex flex-col justify-center">
+            <Link href={`/products/${c.handle}`}>
+              <h3 className="text-[13px] sm:text-[14px] font-bold text-[#0B1F3A] hover:text-[#16A6A3] transition-colors line-clamp-2 min-h-[36px] sm:min-h-[40px] flex items-center justify-center">
+                {c.name}
+              </h3>
+            </Link>
+            <p className="text-[11px] text-[#64748B] truncate">
+              {c.type}
+            </p>
+            <p className="text-[14px] font-bold text-[#0B1F3A] pt-0.5">
+              £{c.price.toFixed(2)}
+            </p>
+          </div>
+
+          {/* Actions Row */}
+          <div className="w-full mt-auto pt-1">
+            <Link
+              href={`/products/${c.handle}`}
+              className="btn-shimmer btn-press w-full h-[36px] bg-[#0B1F3A] hover:bg-[#16A6A3] text-white rounded-[6px] text-[12px] font-semibold flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-[0.98]"
+            >
+              <span>Details</span>
+            </Link>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function HomeContent() {
   const { addItem, setIsDrawerOpen } = useCart()
-  const { products } = useLiveProducts()
+  const { products, isLoading } = useLiveProducts()
 
   // Dynamically resolve featured products from live Medusa Store API
   const sourceProducts = products
@@ -240,56 +489,10 @@ export default function HomePage() {
             </Link>
           </div>
 
-          {/* 6 Product Cards Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-            {displayPenSets.map((p) => (
-              <div
-                key={p.id}
-                className="bg-white border border-[#E2E8F0] rounded-[8px] p-3 flex flex-col justify-between hover:shadow-md transition-shadow group"
-              >
-                {/* Product Box Image */}
-                <Link href={`/products/${p.handle}`} className="block">
-                  <div className="h-[125px] min-h-[125px] w-full relative flex items-center justify-center mb-2">
-                    <Image
-                      src={p.image}
-                      alt={p.name}
-                      fill
-                      sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 160px"
-                      className="object-contain p-1 group-hover:scale-105 transition-transform"
-                    />
-                  </div>
-                </Link>
-
-                {/* Info Block */}
-                <div className="text-center space-y-0.5 mb-3">
-                  <Link href={`/products/${p.handle}`}>
-                    <h3 className="text-[15px] font-bold text-[#0B1F3A] hover:text-[#16A6A3] transition-colors">
-                      {p.name}
-                    </h3>
-                  </Link>
-                  <p className="text-[10px] font-semibold text-[#64748B] tracking-[0.5px]">
-                    {p.tag}
-                  </p>
-                  <p className="text-[11px] text-[#475569] truncate">
-                    {p.application}
-                  </p>
-                  <p className="text-[15px] font-bold text-[#0B1F3A] pt-1">
-                    £{p.price.toFixed(2)}
-                  </p>
-                </div>
-
-                {/* Actions Row */}
-                <div className="w-full">
-                  <Link
-                    href={`/products/${p.handle}`}
-                    className="btn-shimmer btn-press w-full h-[36px] bg-[#0B1F3A] hover:bg-[#16A6A3] text-white rounded-[6px] text-[12px] font-semibold flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-[0.98]"
-                  >
-                    <span>Details</span>
-                  </Link>
-                </div>
-              </div>
-            ))}
-          </div>
+          {/* 6 Product Cards Grid wrapped in Suspense */}
+          <Suspense fallback={<ProductCardsSkeleton count={6} />}>
+            <FeaturedPenSetsGrid products={displayPenSets} isLoading={isLoading} />
+          </Suspense>
 
         </div>
       </section>
@@ -322,53 +525,10 @@ export default function HomePage() {
               </Link>
             </div>
 
-            {/* Right 6-Card Cartridge Grid */}
-            <div className="lg:col-span-9 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
-              {displayCartridges.map((c) => (
-                <div
-                  key={c.id}
-                  className="bg-white border border-[#E2E8F0] rounded-[8px] p-3 flex flex-col justify-between h-[420px] hover:shadow-md transition-shadow group"
-                >
-                  {/* Cartridge Clear Photo */}
-                  <Link href={`/products/${c.handle}`} className="block">
-                    <div className="h-[220px] min-h-[220px] w-full relative flex items-center justify-center bg-[#f8fafc] rounded-lg group-hover:bg-slate-100 transition-colors">
-                      <Image
-                        src={c.image}
-                        alt={c.name}
-                        fill
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 280px"
-                        className="object-contain p-2 group-hover:scale-105 transition-transform"
-                      />
-                    </div>
-                  </Link>
-
-                  {/* Info Block */}
-                  <div className="text-center space-y-0.5 my-2">
-                    <Link href={`/products/${c.handle}`}>
-                      <h3 className="text-[14px] font-bold text-[#0B1F3A] hover:text-[#16A6A3] transition-colors">
-                        {c.name}
-                      </h3>
-                    </Link>
-                    <p className="text-[11px] text-[#64748B]">
-                      {c.type}
-                    </p>
-                    <p className="text-[14px] font-bold text-[#0B1F3A] pt-0.5">
-                      £{c.price.toFixed(2)}
-                    </p>
-                  </div>
-
-                  {/* Actions Row */}
-                  <div className="w-full">
-                    <Link
-                      href={`/products/${c.handle}`}
-                      className="btn-shimmer btn-press w-full h-[36px] bg-[#0B1F3A] hover:bg-[#16A6A3] text-white rounded-[6px] text-[12px] font-semibold flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-[0.98]"
-                    >
-                      <span>Details</span>
-                    </Link>
-                  </div>
-                </div>
-              ))}
-            </div>
+            {/* Right 6-Card Cartridge Grid wrapped in Suspense */}
+            <Suspense fallback={<CartridgeCardsSkeleton count={6} />}>
+              <CartridgesGrid cartridges={displayCartridges} isLoading={isLoading} />
+            </Suspense>
 
           </div>
         </div>
@@ -439,8 +599,10 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Interactive 3D Pen Centerpiece Box */}
-            <Interactive3DPen />
+            {/* Interactive 3D Pen Centerpiece Box wrapped in Suspense */}
+            <Suspense fallback={<Interactive3DPenSkeleton />}>
+              <Interactive3DPen />
+            </Suspense>
           </div>
         </div>
       </section>
@@ -531,5 +693,13 @@ export default function HomePage() {
       </section>
 
     </main>
+  )
+}
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={<HomePageSkeleton />}>
+      <HomeContent />
+    </Suspense>
   )
 }

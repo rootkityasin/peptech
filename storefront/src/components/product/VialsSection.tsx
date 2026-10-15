@@ -49,7 +49,7 @@ export function VialsSection({ excludeHandle, products: propProducts }: VialsSec
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
           
           {/* Left Feature Box */}
-          <div className="lg:col-span-3 bg-[#f0f6fa] rounded-[12px] p-[20px] sm:p-[24px] flex flex-col justify-between h-[380px] shadow-xs">
+          <div className="lg:col-span-3 bg-[#f0f6fa] rounded-[12px] p-[20px] sm:p-[24px] flex flex-col justify-between min-h-[360px] h-full shadow-xs">
             <div className="flex items-start gap-4 h-full">
               <div className="w-[88px] h-[300px] min-h-[300px] relative shrink-0">
                 <Image
@@ -97,15 +97,15 @@ export function VialsSection({ excludeHandle, products: propProducts }: VialsSec
           </div>
 
           {/* Right 4 Vials */}
-          <div className="lg:col-span-9 grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="lg:col-span-9 grid grid-cols-2 sm:grid-cols-4 gap-3.5 sm:gap-4">
             {displayVials.map((item) => (
               <div
                 key={item.id}
-                className="bg-white border border-[#e2e8f0] rounded-[12px] p-[16px] flex flex-col justify-between h-[390px] hover:shadow-md transition-shadow text-center group"
+                className="bg-white border border-[#e2e8f0] rounded-[12px] p-3 sm:p-[16px] flex flex-col justify-between h-full min-h-[360px] sm:min-h-[380px] hover:shadow-md transition-shadow text-center group"
               >
-                <Link href={`/products/${item.handle}`} className="block flex-1">
+                <Link href={`/products/${item.handle}`} className="block flex-1 flex flex-col">
                   {/* Vial Photo */}
-                  <div className="h-[160px] min-h-[160px] w-full relative mb-3 bg-[#f8fafc] rounded-lg group-hover:bg-slate-100 transition-colors">
+                  <div className="h-[145px] sm:h-[160px] min-h-[145px] w-full relative mb-2.5 bg-[#f8fafc] rounded-lg group-hover:bg-slate-100 transition-colors flex items-center justify-center shrink-0">
                     <Image
                       src={item.image}
                       alt={item.name}
@@ -116,18 +116,18 @@ export function VialsSection({ excludeHandle, products: propProducts }: VialsSec
                   </div>
 
                   {/* Info */}
-                  <div className="space-y-0.5">
-                    <h4 className="font-bold text-[#0b1f3a] text-[15px] group-hover:text-[#16a6a3] transition-colors truncate">
+                  <div className="space-y-0.5 grow flex flex-col justify-center">
+                    <h4 className="font-bold text-[#0b1f3a] text-[13px] sm:text-[14px] group-hover:text-[#16a6a3] transition-colors line-clamp-2 min-h-[36px] sm:min-h-[40px] flex items-center justify-center">
                       {item.name}
                     </h4>
                     <p className="font-medium text-[#16a6a3] text-[11px] truncate">
                       {item.contents || "Lyophilised Research Powder"}
                     </p>
-                    <p className="font-bold text-[#0b1f3a] text-[15px] pt-1">
+                    <p className="font-bold text-[#0b1f3a] text-[14px] sm:text-[15px] pt-0.5">
                       £{item.price.toFixed(2)}
                     </p>
-                    <div className="flex items-center justify-center gap-1 text-[11px]">
-                      <span className="text-[#64748b]">Subscribe &amp; Save</span>
+                    <div className="flex items-center justify-center gap-1 text-[11px] pt-0.5">
+                      <span className="text-[#64748b] text-[10.5px]">Sub &amp; Save</span>
                       <span className="font-bold text-[#0d7b78] bg-[#e6fffa] px-1 py-0.5 rounded text-[10px]">
                         £{(item.subscribePrice || item.price * 0.9).toFixed(2)}
                       </span>
@@ -136,7 +136,7 @@ export function VialsSection({ excludeHandle, products: propProducts }: VialsSec
                 </Link>
 
                 {/* Actions: View Details & Quick Add */}
-                <div className="flex items-center gap-2 mt-3 pt-1 border-t border-slate-100">
+                <div className="flex items-center gap-2 mt-auto pt-2 border-t border-slate-100">
                   <Link
                     href={`/products/${item.handle}`}
                     className="btn-shimmer btn-press flex-1 bg-[#0b1f3a] hover:bg-[#16a6a3] text-white flex items-center justify-center py-2 rounded-lg text-[12px] font-semibold transition-all"

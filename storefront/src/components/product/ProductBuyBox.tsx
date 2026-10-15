@@ -476,28 +476,28 @@ export function ProductBuyBox({
         </span>
       </div>
 
-      {/* Micro Value Props - Figma Node 8:41142 */}
-      <div className="border-t border-[#f1f5f9] flex items-start justify-between pt-[14px] w-full">
+      {/* Micro Value Props - Responsive 2x2 on Mobile, 4-col on Tablet/Desktop */}
+      <div className="border-t border-[#f1f5f9] grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-2 pt-[14px] w-full">
         
-        <div className="flex flex-col gap-[4px] items-center text-center w-[135px]">
+        <div className="flex flex-col gap-[4px] items-center text-center w-full p-1">
           <img src="/images/figma/4390b9070d822ecd5eca4fa40b80170724518a5e.svg" alt="" className="size-[20px]" />
           <span className="font-bold text-[#0b1f3a] text-[12px]">Free Shipping</span>
           <span className="font-normal text-[#64748b] text-[10px]">Orders over £100</span>
         </div>
 
-        <div className="flex flex-col gap-[4px] items-center text-center w-[135px]">
+        <div className="flex flex-col gap-[4px] items-center text-center w-full p-1">
           <img src="/images/figma/416aaa518d7e3b2366ccb720558673a93ab6bde4.svg" alt="" className="size-[20px]" />
           <span className="font-bold text-[#0b1f3a] text-[12px]">Secure Checkout</span>
           <span className="font-normal text-[#64748b] text-[10px]">256-bit encryption</span>
         </div>
 
-        <div className="flex flex-col gap-[4px] items-center text-center w-[135px]">
+        <div className="flex flex-col gap-[4px] items-center text-center w-full p-1">
           <img src="/images/figma/5a5cf195bb5ca3a772d64cd94711197cd2748bd6.svg" alt="" className="size-[20px]" />
           <span className="font-bold text-[#0b1f3a] text-[12px]">30-Day Returns</span>
           <span className="font-normal text-[#64748b] text-[10px]">Hassle-free</span>
         </div>
 
-        <div className="flex flex-col gap-[4px] items-center text-center w-[135px]">
+        <div className="flex flex-col gap-[4px] items-center text-center w-full p-1">
           <img src="/images/figma/62bff5b65f283bcf5397c72f82c6a2b3ed8693c2.svg" alt="" className="size-[20px]" />
           <span className="font-bold text-[#0b1f3a] text-[12px]">Dedicated Support</span>
           <span className="font-normal text-[#64748b] text-[10px]">Here when you need us</span>

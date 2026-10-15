@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useState, useRef } from "react"
+import React, { useEffect, useState, useRef, Suspense } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { useCustomer } from "@/context/CustomerContext"
@@ -11,6 +11,7 @@ import {
   type ReceiptData,
   type ReceiptItem,
 } from "@/components/receipt/UnifiedReceipt"
+import { ReceiptSkeleton } from "@/components/ui/Skeletons"
 
 function mapMedusaOrderToReceipt(mo: any, customerProfile?: any): ReceiptData {
   const rawTotal =
@@ -162,7 +163,7 @@ function mapMedusaOrderToReceipt(mo: any, customerProfile?: any): ReceiptData {
   }
 }
 
-export default function OrderReceiptPage() {
+function OrderReceiptContent() {
   const params = useParams()
   const router = useRouter()
   const rawId = typeof params?.id === "string" ? decodeURIComponent(params.id) : ""
@@ -258,12 +259,7 @@ export default function OrderReceiptPage() {
 
   // Loading state
   if (isLoading || (isFetching && !receiptData)) {
-    return (
-      <main className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center">
-        <div className="w-8 h-8 border-2 border-slate-200 border-t-[#16a6a3] rounded-full animate-spin mb-4" />
-        <p className="text-sm font-medium text-slate-600">Retrieving official order receipt…</p>
-      </main>
-    )
+    return <ReceiptSkeleton />
   }
 
   // Not authenticated (while redirecting)
@@ -308,5 +304,13 @@ export default function OrderReceiptPage() {
     <main className="min-h-screen bg-slate-50/60 py-8 px-4 sm:px-6 print:p-0 print:bg-white print:m-0">
       <UnifiedReceipt receipt={receiptData} standalone={true} showActions={true} />
     </main>
+  )
+}
+
+export default function OrderReceiptPage() {
+  return (
+    <Suspense fallback={<ReceiptSkeleton />}>
+      <OrderReceiptContent />
+    </Suspense>
   )
 }

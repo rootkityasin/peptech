@@ -1,5 +1,6 @@
 import { Suspense } from "react"
 import { ShopCatalog } from "@/components/catalog/ShopCatalog"
+import { CatalogSkeleton } from "@/components/ui/Skeletons"
 
 export const metadata = {
   title: "PEPTECH® Shop Catalog | Research Peptide Systems & Cartridges",
@@ -8,7 +9,7 @@ export const metadata = {
 
 export default function ShopPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#f8fafc]" />}>
+    <Suspense fallback={<CatalogSkeleton category="all" />}>
       <ShopCatalog initialCategory="all" />
     </Suspense>
   )

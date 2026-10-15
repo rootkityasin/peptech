@@ -23,8 +23,8 @@ export function ProductGallery({ images, title }: ProductGalleryProps) {
   return (
     <div className="flex flex-col gap-[16px] items-start w-full max-w-[580px]">
       {/* Main Image Box - Figma Node 8:41075 */}
-      <div className="bg-[#f4f8fb] border border-[#e2e8f0] h-[440px] sm:h-[520px] min-h-[440px] overflow-hidden relative rounded-[16px] w-full flex items-center justify-center">
-        <div className="relative w-full h-[440px] sm:h-[520px] min-h-[440px] p-6 flex items-center justify-center">
+      <div className="bg-[#f4f8fb] border border-[#e2e8f0] h-[320px] xs:h-[380px] sm:h-[480px] lg:h-[520px] min-h-[320px] overflow-hidden relative rounded-[16px] w-full flex items-center justify-center">
+        <div className="relative w-full h-[320px] xs:h-[380px] sm:h-[480px] lg:h-[520px] min-h-[320px] p-4 sm:p-6 flex items-center justify-center">
           <Image
             src={displayImages[activeIndex]}
             alt={title || "PEPTECH® Precision Research"}

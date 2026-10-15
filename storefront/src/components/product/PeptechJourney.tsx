@@ -307,7 +307,7 @@ export function PeptechJourney() {
                     {/* Step Card */}
                     <div
                       onClick={() => handleStepClick(step.number)}
-                      className={`group bg-white border rounded-[14px] p-[16px] sm:p-[18px] flex gap-[14px] sm:gap-[16px] items-start w-full lg:w-[352px] transition-all duration-300 cursor-pointer ${
+                      className={`group bg-white border rounded-[14px] p-[16px] sm:p-[18px] flex gap-[14px] sm:gap-[16px] items-start w-full lg:flex-1 transition-all duration-300 cursor-pointer ${
                         isActive
                           ? "border-[#16a6a3] shadow-[0_10px_25px_-5px_rgba(22,166,163,0.18)] ring-2 ring-[#16a6a3]/20 bg-gradient-to-b from-white to-[#f4fcfb] lg:-translate-y-1"
                           : isPast

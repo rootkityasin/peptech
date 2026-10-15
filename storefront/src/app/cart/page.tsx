@@ -1,11 +1,12 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, Suspense } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { useCart, getItemSubtitle } from "@/components/cart/CartContext"
+import { CartSkeleton } from "@/components/ui/Skeletons"
 
-export default function CartPage() {
+function CartContent() {
   const {
     items,
     removeItem,
@@ -408,5 +409,13 @@ export default function CartPage() {
         )}
       </div>
     </main>
+  )
+}
+
+export default function CartPage() {
+  return (
+    <Suspense fallback={<CartSkeleton />}>
+      <CartContent />
+    </Suspense>
   )
 }

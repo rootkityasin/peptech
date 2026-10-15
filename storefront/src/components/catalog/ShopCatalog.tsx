@@ -900,7 +900,7 @@ export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
               {filteredProducts.map((product) => (
                 <div
                   key={product.id}
-                  className="bg-white border border-[#e2e8f0] rounded-[10px] p-[12px] flex flex-col justify-between min-h-[380px] hover:shadow-md transition-shadow text-center group relative overflow-hidden"
+                  className="bg-white border border-[#e2e8f0] rounded-[10px] p-[12px] flex flex-col justify-between h-full min-h-[360px] sm:min-h-[380px] hover:shadow-md transition-shadow text-center group relative overflow-hidden"
                 >
                   {/* Subtle top accent border if product has accentColor */}
                   {product.accentColor && (
@@ -944,7 +944,7 @@ export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
 
                     {/* Info Block */}
                     <div className="flex flex-col gap-[3px] items-center text-center w-full">
-                      <h3 className="font-bold text-[#0b1f3a] text-[15px] group-hover:text-[#16a6a3] transition-colors line-clamp-1">
+                      <h3 className="font-bold text-[#0b1f3a] text-[14px] sm:text-[15px] group-hover:text-[#16a6a3] transition-colors line-clamp-2 min-h-[36px] sm:min-h-[40px] flex items-center justify-center">
                         {product.name}
                       </h3>
 
@@ -981,7 +981,7 @@ export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
                   </Link>
 
                   {/* Action Buttons Row */}
-                  <div className="w-full mt-3 pt-1">
+                  <div className="w-full mt-auto pt-2">
                     <Link
                       href={`/products/${product.handle}`}
                       className="btn-shimmer btn-press w-full bg-[#0b1f3a] hover:bg-[#16a6a3] text-white flex items-center justify-center py-[9px] rounded-xl text-[12px] font-semibold transition-all shadow-xs hover:shadow-md cursor-pointer"

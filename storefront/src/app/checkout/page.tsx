@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, Suspense } from "react"
 import Link from "next/link"
 import { useCart, getItemSubtitle } from "@/components/cart/CartContext"
 import { useCustomer } from "@/context/CustomerContext"
@@ -8,8 +8,9 @@ import { prepareStripeCheckout, type CheckoutSession } from "@/lib/stripe-checko
 import { EmbeddedStripeCheckout } from "@/components/checkout/EmbeddedStripeCheckout"
 import { getCustomerOrders, getCustomerAddresses } from "@/lib/customer-api"
 import { findCountryByCode, findCountryByName, formatCountryCode } from "@/lib/regions"
+import { CheckoutSkeleton } from "@/components/ui/Skeletons"
 
-export default function CheckoutPage() {
+function CheckoutContent() {
   const {
     items,
     subtotal,
@@ -447,7 +448,7 @@ export default function CheckoutPage() {
       {/* ========================================================================= */}
       {/* LEFT COLUMN: Dark Navy Summary & Cart Items (#0B1F3A)                     */}
       {/* ========================================================================= */}
-      <div className="w-full lg:w-[48%] min-h-screen bg-[#0B1F3A] p-6 sm:p-10 lg:p-14 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-slate-800">
+      <div className="w-full lg:w-[48%] min-h-0 lg:min-h-screen bg-[#0B1F3A] p-6 sm:p-10 lg:p-14 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-slate-800">
         <div className="max-w-xl mx-auto w-full flex flex-col gap-6">
           {/* Brand Header */}
           <div className="flex items-center justify-between">
@@ -667,7 +668,7 @@ export default function CheckoutPage() {
       {/* ========================================================================= */}
       {/* RIGHT COLUMN: White Background (#FFFFFF) & Inline Auth / Stripe Checkout  */}
       {/* ========================================================================= */}
-      <div className="w-full lg:w-[52%] min-h-screen bg-white text-[#0B1F3A] p-6 sm:p-10 lg:p-14 flex flex-col justify-center">
+      <div className="w-full lg:w-[52%] min-h-0 lg:min-h-screen bg-white text-[#0B1F3A] p-6 sm:p-10 lg:p-14 flex flex-col justify-start lg:justify-center">
         <div className="max-w-xl mx-auto w-full">
           {/* If Embedded Checkout is Active */}
           {embeddedSession?.clientSecret ? (
@@ -806,7 +807,7 @@ export default function CheckoutPage() {
               ) : (
                 /* Form 2: Inline Registration */
                 <form onSubmit={handleInlineRegister} className="flex flex-col gap-3.5">
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
                     <div className="flex flex-col gap-1">
                       <label className="text-xs font-bold text-[#0B1F3A]">Title</label>
                       <select
@@ -1250,5 +1251,13 @@ export default function CheckoutPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={<CheckoutSkeleton />}>
+      <CheckoutContent />
+    </Suspense>
   )
 }
