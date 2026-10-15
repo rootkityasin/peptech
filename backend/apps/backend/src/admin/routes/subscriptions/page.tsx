@@ -6,7 +6,7 @@ import { Link } from "react-router-dom";
 import { adminFetch } from "../../lib/sdk";
 
 const SubscriptionsPage = () => {
-  const [subscriptions, setSubscriptions] = useState([]);
+  const [subscriptions, setSubscriptions] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [filterState, setFilterState] = useState("all");
   const [isLoading, setIsLoading] = useState(true);
@@ -30,7 +30,7 @@ const SubscriptionsPage = () => {
     fetchSubscriptions();
   }, []);
 
-  const handleAction = async (sub, action) => {
+  const handleAction = async (sub: any, action: any) => {
     try {
       await adminFetch("/admin/custom/subscriptions", {
         method: "PUT",

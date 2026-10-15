@@ -25,7 +25,7 @@ export default function HomePage() {
       tag: "COMPLETE PEN SET",
       application: p.contents || p.categoryLabel || "Research Peptide",
       price: p.price,
-      image: p.image || "/images/figma/hero-presentation-box.png",
+      image: p.image || "/images/products/placeholder.png",
       accentColor: p.accentColor,
     }))
 
@@ -38,7 +38,7 @@ export default function HomePage() {
       handle: c.handle,
       type: c.contents || c.categoryLabel || "Refill Cartridge",
       price: c.price,
-      image: c.image || "/images/figma/cartridge-clear.png",
+      image: c.image || "/images/products/placeholder.png",
       accentColor: c.accentColor,
     }))
 

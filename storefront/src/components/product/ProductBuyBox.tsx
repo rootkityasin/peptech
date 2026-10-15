@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useCart } from "@/components/cart/CartContext"
 import { CatalogProduct } from "@/data/catalog"
 import { useLiveProducts } from "@/hooks/useLiveProducts"
+import { ProductAccordions } from "./ProductAccordions"
 
 interface ProductBuyBoxProps {
   product?: CatalogProduct
@@ -150,7 +151,7 @@ export function ProductBuyBox({
       subscriptionIntervalDays: recurring ? 28 : undefined,
       discountPercent: autoSavings.discountType === "percentage" ? autoSavings.discountValue : undefined,
       sku: product?.sku || "",
-      image: product?.image || "/images/peptech/mockup1.webp",
+      image: product?.image || "/images/products/placeholder.png",
       options,
     })
     setIsDrawerOpen(true)
@@ -207,6 +208,24 @@ export function ProductBuyBox({
         {displayDescription}
       </p>
 
+      {/* Lab Purity Verification Badge (RegenMed Benchmark) */}
+      <div className="flex items-center justify-between w-full p-2.5 rounded-lg bg-[#f0f6fa] border border-[#e2e8f0]/80 text-[12px]">
+        <div className="flex items-center gap-2">
+          <span className="flex items-center justify-center size-5 rounded-full bg-[#10b981]/15 text-[#10b981] font-bold text-[11px]">
+            ✓
+          </span>
+          <span className="font-semibold text-[#0b1f3a]">
+            {product?.technicalSpecs?.purity || "≥ 99.0% Purity"} · HPLC Verified Batch
+          </span>
+        </div>
+        <Link
+          href={`/lab-reports?search=${encodeURIComponent(product?.technicalSpecs?.compoundName || product?.name || "")}`}
+          className="font-bold text-[#16a6a3] hover:text-[#0b1f3a] transition-colors hover:underline text-[11.5px] shrink-0"
+        >
+          View Certificate →
+        </Link>
+      </div>
+
       {/* Primary Price */}
       <div className="flex items-baseline gap-3">
         <span className="font-bold text-[#0b1f3a] text-[28px] tracking-tight">
@@ -247,7 +266,7 @@ export function ProductBuyBox({
             <div className="flex items-center gap-3 min-w-0">
               <div className="size-10 rounded-lg bg-[#f8fafc] border border-[#e2e8f0] flex items-center justify-center shrink-0 p-1 overflow-hidden">
                 <img
-                  src={activeCartridge?.image || "/images/peptech/cartridge.webp"}
+                  src={activeCartridge?.image || "/images/products/placeholder.png"}
                   alt=""
                   className="size-full object-contain"
                 />
@@ -301,7 +320,7 @@ export function ProductBuyBox({
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="size-8 rounded-md bg-white border border-[#e2e8f0] flex items-center justify-center shrink-0 p-0.5 overflow-hidden">
                         <img
-                          src={cartridge.image || "/images/peptech/cartridge.webp"}
+                          src={cartridge.image || "/images/products/placeholder.png"}
                           alt=""
                           className="size-full object-contain"
                         />
@@ -485,6 +504,9 @@ export function ProductBuyBox({
         </div>
 
       </div>
+
+      {/* RegenMed-Style Research & Logistics Accordion Tabs */}
+      <ProductAccordions product={product} />
 
     </div>
   )

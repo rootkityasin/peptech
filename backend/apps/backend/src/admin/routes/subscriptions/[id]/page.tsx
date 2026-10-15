@@ -170,11 +170,11 @@ export const SubscriptionDetail = ({ subscriptionId: propSubId }) => {
   const subId = propSubId || paramId;
   const navigate = useNavigate();
 
-  const [subscription, setSubscription] = useState(null);
-  const [renewalOrders, setRenewalOrders] = useState([]);
+  const [subscription, setSubscription] = useState<any>(null);
+  const [renewalOrders, setRenewalOrders] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isMutating, setIsMutating] = useState(false);
-  const [notification, setNotification] = useState(null);
+  const [notification, setNotification] = useState<any>(null);
 
   // Tags management
   const [newTagInput, setNewTagInput] = useState("");
@@ -182,7 +182,7 @@ export const SubscriptionDetail = ({ subscriptionId: propSubId }) => {
 
   // Edit address modal
   const [showAddressModal, setShowAddressModal] = useState(false);
-  const [editAddress, setEditAddress] = useState({});
+  const [editAddress, setEditAddress] = useState<any>({});
 
   // Edit notes modal
   const [showNotesModal, setShowNotesModal] = useState(false);

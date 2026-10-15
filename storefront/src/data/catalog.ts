@@ -9,6 +9,10 @@ export interface TechnicalSpecs {
   storage: string
   accentColor: string
   colorName: string
+  ratio?: string
+  totalContent?: string
+  volume?: string
+  purity?: string
 }
 
 export interface CatalogProduct {
@@ -32,6 +36,8 @@ export interface CatalogProduct {
   images?: string[]
   accentColor?: string
   technicalSpecs?: TechnicalSpecs
+  howItWorks?: string[]
+  keyFeatures?: string[]
 }
 
 /**

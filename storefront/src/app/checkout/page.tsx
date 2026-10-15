@@ -485,7 +485,7 @@ export default function CheckoutPage() {
                 <li key={`${item.id}:${item.isSubscription}`} className="py-4 flex gap-4 items-center">
                   <div className="w-14 h-14 rounded-xl bg-slate-800/60 border border-slate-700/60 overflow-hidden flex items-center justify-center p-1.5 shrink-0">
                     <img
-                      src={item.image || "/images/figma/152e353c4afaa5945905ac686de871b57ec2a770.png"}
+                      src={item.image || "/images/products/placeholder.png"}
                       alt={item.title}
                       className="w-full h-full object-contain"
                     />

@@ -1,12 +1,9 @@
 import type { CartItem } from "@/components/cart/CartContext"
 import { getBackendUrl } from "./customer-api"
 
-const publishableKey = (
-  process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY ||
-  "pk_556de0f5ea4724394f147569c8b5066ecda7a0d39bd60eb15b2550b2d5c52246"
-).trim()
-if (!publishableKey && process.env.NODE_ENV === "production" && typeof window !== "undefined") {
-  console.error("[PEPTECH CRITICAL] Missing NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY environment variable.")
+const publishableKey = (process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "").trim()
+if (!publishableKey && typeof window !== "undefined") {
+  console.warn("[PEPTECH WARNING] Missing NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY environment variable.")
 }
 
 export type CheckoutSession = {

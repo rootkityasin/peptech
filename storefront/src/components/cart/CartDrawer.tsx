@@ -217,7 +217,7 @@ export function CartDrawer() {
                       data-name="Thumb Container"
                     >
                       <img
-                        src={item.image || "/images/figma/152e353c4afaa5945905ac686de871b57ec2a770.png"}
+                        src={item.image || "/images/products/placeholder.png"}
                         alt={item.title}
                         className="size-full object-contain pointer-events-none rounded-[6px] p-1 transition-transform duration-200 hover:scale-105"
                       />

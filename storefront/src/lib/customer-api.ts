@@ -1,9 +1,4 @@
-export const PUBLISHABLE_KEY = (
-  process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY ||
-  // Public Store API key fallback. Not secret; keeps client auth functional if
-  // Next.js misses the unified root .env during local dev/server startup.
-  "pk_556de0f5ea4724394f147569c8b5066ecda7a0d39bd60eb15b2550b2d5c52246"
-).trim()
+export const PUBLISHABLE_KEY = (process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "").trim()
 if (!PUBLISHABLE_KEY && typeof window !== "undefined") {
   console.warn("[PEPTECH WARNING] Missing NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY environment variable. Store API requests will be rejected by Medusa.")
 }

@@ -1,6 +1,6 @@
 -- ===================================================================================
 -- PEPTECH Master Schema Migration: Connect All Database Tables & Module Links
--- Target Project: Supabase Cloud (ubzoovlhbnztjwemvrwo) & Local PostgreSQL (peptech_db)
+-- Target Project: Supabase Cloud & Local PostgreSQL (peptech_db)
 -- Description: Establishes full relational integrity, foreign key constraints, indexes,
 --              and bi-directional synchronization triggers for all business entities.
 -- ===================================================================================

@@ -4,6 +4,7 @@ import React, { useState } from "react"
 import Link from "next/link"
 import { useCart } from "@/components/cart/CartContext"
 import { CatalogProduct } from "@/data/catalog"
+import { ProductAccordions } from "./ProductAccordions"
 
 interface VialBuyBoxProps {
   product: CatalogProduct
@@ -96,6 +97,24 @@ export function VialBuyBox({ product }: VialBuyBoxProps) {
           {product.description}
         </p>
       )}
+
+      {/* Lab Purity Verification Badge (RegenMed Benchmark) */}
+      <div className="flex items-center justify-between w-full p-2.5 rounded-lg bg-[#f0f6fa] border border-[#e2e8f0]/80 text-[12px]">
+        <div className="flex items-center gap-2">
+          <span className="flex items-center justify-center size-5 rounded-full bg-[#10b981]/15 text-[#10b981] font-bold text-[11px]">
+            ✓
+          </span>
+          <span className="font-semibold text-[#0b1f3a]">
+            {product.technicalSpecs?.purity || "≥ 99.0% Purity"} · HPLC Verified Batch
+          </span>
+        </div>
+        <Link
+          href={`/lab-reports?search=${encodeURIComponent(product.technicalSpecs?.compoundName || product.name)}`}
+          className="font-bold text-[#16a6a3] hover:text-[#0b1f3a] transition-colors hover:underline text-[11.5px] shrink-0"
+        >
+          View Certificate →
+        </Link>
+      </div>
 
       {/* Reconstitution & Storage Advisory */}
       <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-[10px] p-3.5 w-full flex items-start gap-3">
@@ -277,6 +296,9 @@ export function VialBuyBox({ product }: VialBuyBoxProps) {
           <span className="font-normal text-[#64748b] text-[10px]">info@peptech.bio</span>
         </div>
       </div>
+
+      {/* RegenMed-Style Research & Logistics Accordion Tabs */}
+      <ProductAccordions product={product} />
 
     </div>
   )

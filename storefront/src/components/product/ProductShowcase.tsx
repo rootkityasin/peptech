@@ -58,26 +58,9 @@ export function ProductShowcase({
   const galleryImages =
     currentProduct.images && currentProduct.images.length > 0
       ? currentProduct.images
-      : currentProduct.format === "complete-pen-set"
-      ? [
-          currentProduct.image || "/images/figma/hero-presentation-box.png",
-          "/images/figma/2fc8ae919de84fe5269092b52f019438e68ce3c8.png",
-          "/images/peptech/pen.webp",
-          "/images/peptech/cartridge.webp",
-        ]
-      : currentProduct.format === "refill-cartridge"
-      ? [
-          currentProduct.image || "/images/peptech/cartridge.webp",
-          "/images/figma/0e71e8560b9bae80ee21a3d08905300075c266b7.png",
-          "/images/peptech/cartridge.webp",
-          "/images/figma/6ae689249c306b3f6b31d8744c7c961d01964ca0.png",
-          "/images/peptech/back.webp",
-        ]
-      : [
-          currentProduct.image || "/images/peptech/mockup2.webp",
-          "/images/figma/2d7803f97be6d80d5630dfb42abba84289ed1bb5.png",
-          "/images/figma/9eac22019fa5ef074776d7d27b3528efdcf1708e.png",
-        ]
+      : currentProduct.image
+      ? [currentProduct.image]
+      : []
 
   return (
     <div className="bg-white min-h-screen text-slate-900">
@@ -111,7 +94,7 @@ export function ProductShowcase({
           
           {/* Left: Product Gallery */}
           <div className="w-full lg:w-[580px] shrink-0">
-            <ProductGallery images={galleryImages} />
+            <ProductGallery images={galleryImages} title={currentProduct.name} />
           </div>
 
           {/* Right: Buy Box */}

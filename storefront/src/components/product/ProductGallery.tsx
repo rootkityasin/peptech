@@ -5,19 +5,11 @@ import Image from "next/image"
 
 interface ProductGalleryProps {
   images?: string[]
+  title?: string
 }
 
-const DEFAULT_GALLERY_IMAGES = [
-  "/images/figma/2fc8ae919de84fe5269092b52f019438e68ce3c8.png", // Main pen set packaging
-  "/images/figma/6c45f3de1f0106a2749cbba78c5dfd998544baeb.png", // Pen angled with cartridge
-  "/images/figma/e52a6d3cac1aaae7fca44b96749f223772cf90a4.png", // Pen presentation close-up
-  "/images/figma/6ae689249c306b3f6b31d8744c7c961d01964ca0.png", // Cartridge clear detail
-  "/images/figma/c99c3796c997feceff8871b362c4b941211ea971.png", // Accessories kit
-  "/images/figma/hero-presentation-box.png", // Full box showcase
-]
-
-export function ProductGallery({ images }: ProductGalleryProps) {
-  const displayImages = images && images.length > 0 ? images : DEFAULT_GALLERY_IMAGES
+export function ProductGallery({ images, title }: ProductGalleryProps) {
+  const displayImages = images && images.length > 0 ? images : ["/images/products/placeholder.png"]
   const [activeIndex, setActiveIndex] = useState(0)
 
   const handlePrev = () => {
@@ -35,7 +27,7 @@ export function ProductGallery({ images }: ProductGalleryProps) {
         <div className="relative w-full h-[440px] sm:h-[520px] min-h-[440px] p-6 flex items-center justify-center">
           <Image
             src={displayImages[activeIndex]}
-            alt="PEPTECH® Complete Pen Set"
+            alt={title || "PEPTECH® Precision Research"}
             fill
             sizes="(max-width: 768px) 100vw, 580px"
             className="object-contain p-4 transition-all duration-300"

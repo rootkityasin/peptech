@@ -31,7 +31,7 @@ export function ProductTechnicalSpecs({ product }: ProductTechnicalSpecsProps) {
 
   const sectionSubtitle =
     format === "complete-pen-set"
-      ? "Everything included in your reusable precision pen starter kit, plus verified compound specifications."
+      ? "The molecular profile, verified analytical characteristics, and precision engineering tolerances."
       : format === "refill-cartridge"
       ? "Borosilicate Type I glass engineering tolerances and verified compound analytical profile."
       : "Pure vacuum freeze-dried scientific cake, molecular characteristics, and storage requirements."
@@ -66,7 +66,7 @@ export function ProductTechnicalSpecs({ product }: ProductTechnicalSpecsProps) {
                   </span>
                 </div>
                 <p className="text-[12px] text-[#64748b] mt-1">
-                  Reusable precision dosing &amp; testing hardware
+                  Reusable precision laboratory device &amp; testing hardware
                 </p>
 
                 <div className="flex flex-col gap-[14px] mt-5">
@@ -278,6 +278,22 @@ export function ProductTechnicalSpecs({ product }: ProductTechnicalSpecsProps) {
                     {specs?.compoundName || product.name}
                   </span>
                 </div>
+                {specs?.ratio && (
+                  <div className="h-[36px] px-[12px] flex items-center justify-between">
+                    <span className="font-bold text-[#0b1f3a]">Ratio</span>
+                    <span className="text-[#16a6a3] font-bold text-right">
+                      {specs.ratio}
+                    </span>
+                  </div>
+                )}
+                {specs?.totalContent && (
+                  <div className="h-[36px] px-[12px] flex items-center justify-between">
+                    <span className="font-bold text-[#0b1f3a]">Total Content</span>
+                    <span className="text-[#475569] font-medium text-right">
+                      {specs.totalContent}
+                    </span>
+                  </div>
+                )}
                 <div className="h-[36px] px-[12px] flex items-center justify-between">
                   <span className="font-bold text-[#0b1f3a]">Contents / Strength</span>
                   <span className="text-[#475569] font-medium text-right truncate max-w-[190px]">
@@ -303,7 +319,7 @@ export function ProductTechnicalSpecs({ product }: ProductTechnicalSpecsProps) {
                   </span>
                 </div>
                 <div className="h-[36px] px-[12px] flex items-center justify-between">
-                  <span className="font-bold text-[#0b1f3a]">Formula</span>
+                  <span className="font-bold text-[#0b1f3a]">Sequence / Formula</span>
                   <span className="font-mono text-[#475569] text-[11px] text-right truncate max-w-[190px]">
                     {specs?.compositionOrSequence || "Specification Pending"}
                   </span>

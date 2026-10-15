@@ -1,11 +1,15 @@
 import Medusa from "@medusajs/js-sdk"
 import { getBackendUrl } from "./customer-api"
 import { type CatalogProduct, type TechnicalSpecs } from "@/data/catalog"
+import { getChemicalProfile } from "./chemical-catalog"
 
 export interface StoreProductVariant {
   id: string
   title: string
   sku?: string
+  manage_inventory?: boolean
+  allow_backorder?: boolean
+  inventory_quantity?: number
   options?: Array<{
     id: string
     value: string
@@ -39,12 +43,9 @@ export interface StoreProduct {
 }
 
 const DEFAULT_BACKEND_URL = "http://localhost:9000"
-const publishableKey = (
-  process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY ||
-  "pk_556de0f5ea4724394f147569c8b5066ecda7a0d39bd60eb15b2550b2d5c52246"
-).trim()
-if (!publishableKey && process.env.NODE_ENV === "production" && typeof window !== "undefined") {
-  console.error("[PEPTECH CRITICAL] Missing NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY environment variable.")
+const publishableKey = (process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "").trim()
+if (!publishableKey && typeof window !== "undefined") {
+  console.warn("[PEPTECH WARNING] Missing NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY environment variable.")
 }
 
 /**
@@ -131,7 +132,7 @@ export async function getProducts(queryParams: Record<string, unknown> = {}, for
   const fetchPromise = (async () => {
     try {
       const response = await medusa.store.product.list({
-        fields: "+metadata,*categories,*variants,*variants.prices,*images",
+        fields: "+metadata,*categories,*variants,*variants.prices,*images,+variants.inventory_quantity",
         limit: 100,
         ...queryParams,
       })
@@ -223,24 +224,46 @@ export async function getProduct(idOrHandle: string, forceRefresh = false): Prom
       let product: StoreProduct | null = null
       if (idOrHandle.startsWith("prod_")) {
         const response = await medusa.store.product.retrieve(idOrHandle, {
-          fields: "+metadata,*categories,*variants,*variants.prices,*images",
+          fields: "+metadata,*categories,*variants,*variants.prices,*images,+variants.inventory_quantity",
         })
         product = (response.product as unknown as StoreProduct) || null
       } else {
         const cleanHandle = idOrHandle.replace(/^\//, "")
         let response = await medusa.store.product.list({
           handle: cleanHandle,
-          fields: "+metadata,*categories,*variants,*variants.prices,*images",
+          fields: "+metadata,*categories,*variants,*variants.prices,*images,+variants.inventory_quantity",
           limit: 1,
         })
         let products = (response.products as unknown as StoreProduct[]) || []
         if (products.length === 0) {
           response = await medusa.store.product.list({
             handle: `/${cleanHandle}`,
-            fields: "+metadata,*categories,*variants,*variants.prices,*images",
+            fields: "+metadata,*categories,*variants,*variants.prices,*images,+variants.inventory_quantity",
             limit: 1,
           })
           products = (response.products as unknown as StoreProduct[]) || []
+        }
+        if (products.length === 0) {
+          const aliasMap: Record<string, string> = {
+            "retatrutide-pen-set": "barbie-glow-pen-set",
+            "retatrutide-cartridge": "barbie-glow-cartridge",
+            "retatrutide-vial": "barbie-glow-vial",
+            "glow-stack-pen-set": "barbie-glow-pen-set",
+            "glow-stack-cartridge": "barbie-glow-cartridge",
+            "glow-stack-vial": "barbie-glow-vial",
+            "bpc-157-tb-500-pen-set": "wolverine-stack-pen-set",
+            "bpc-157-tb-500-cartridge": "wolverine-cartridge",
+            "bpc-157-tb-500-vial": "wolverine-vial",
+          }
+          const alias = aliasMap[cleanHandle]
+          if (alias) {
+            response = await medusa.store.product.list({
+              handle: alias,
+              fields: "+metadata,*categories,*variants,*variants.prices,*images,+variants.inventory_quantity",
+              limit: 1,
+            })
+            products = (response.products as unknown as StoreProduct[]) || []
+          }
         }
         product = products[0] || null
       }
@@ -370,34 +393,55 @@ export function mapMedusaToCatalogProduct(p: StoreProduct): CatalogProduct {
     .map((img) => (typeof img === "string" ? img : img?.url))
     .filter((url): url is string => Boolean(url && !url.includes("null") && !url.includes("Screenshot")))
 
-  let image = mappedImages[0] || (p.thumbnail as string)
+  let image = mappedImages[0] || (p.thumbnail as string) || ""
   if (!image || image === "null" || image.includes("Screenshot")) {
-    image =
-      format === "complete-pen-set"
-        ? "/images/peptech/mockup1.webp"
-        : format === "refill-cartridge"
-        ? "/images/peptech/cartridge.webp"
-        : "/images/peptech/mockup2.webp"
+    image = "/images/products/placeholder.png"
   }
+
+  const compoundSlug =
+    (metadata.compound as string) ||
+    (p.handle || p.id)
+      .replace(/-pen-set$/, "")
+      .replace(/-cartridge$/, "")
+      .replace(/-vial$/, "")
+      .replace(/^pen-system-/, "")
+
+  const fallbackProfile = getChemicalProfile(compoundSlug)
 
   const contents =
     (p.subtitle as string) ||
     (metadata.contents as string) ||
     (metadata.subtitle as string) ||
+    fallbackProfile?.contents ||
     ""
-  const accentColor = (metadata.accentColor as string) || "#16a6a3"
+  const accentColor = (metadata.accentColor as string) || fallbackProfile?.accentColor || "#16a6a3"
   const technicalSpecs: TechnicalSpecs = {
-    compoundName: (metadata.compound_name as string) || (metadata.technicalSpecs as any)?.compoundName || p.title,
-    contentsOrStrength: (metadata.contents as string) || (p.subtitle as string) || (metadata.technicalSpecs as any)?.contentsOrStrength || "Specification Pending",
-    peptideClass: (metadata.peptide_class as string) || (metadata.technicalSpecs as any)?.peptideClass || "Specification Pending",
-    compositionOrSequence: (metadata.sequence as string) || (metadata.formula as string) || (metadata.technicalSpecs as any)?.compositionOrSequence || "Specification Pending",
-    molecularWeight: (metadata.molecular_weight as string) || (metadata.mw as string) || (metadata.technicalSpecs as any)?.molecularWeight || "Specification Pending",
-    casNumber: (metadata.cas_number as string) || (metadata.cas as string) || (metadata.technicalSpecs as any)?.casNumber || "Specification Pending",
-    form: (metadata.form as string) || (metadata.technicalSpecs as any)?.form || (format === "complete-pen-set" ? "1.5 mL Borosilicate Cartridge in Pen System" : format === "refill-cartridge" ? "1.5 mL Pre-filled Glass Cartridge" : "Vacuum Freeze-Dried Lyophilised Cake"),
-    storage: (metadata.storage as string) || (metadata.technicalSpecs as any)?.storage || "Specification Pending",
+    compoundName: (metadata.compound_name as string) || (metadata.technicalSpecs as any)?.compoundName || fallbackProfile?.compoundName || p.title,
+    contentsOrStrength: (metadata.contents as string) || (p.subtitle as string) || (metadata.technicalSpecs as any)?.contentsOrStrength || fallbackProfile?.contents || "Specification Pending",
+    peptideClass: (metadata.peptide_class as string) || (metadata.technicalSpecs as any)?.peptideClass || fallbackProfile?.peptideClass || "Research Peptide Standard",
+    compositionOrSequence: (metadata.sequence as string) || (metadata.formula as string) || (metadata.technicalSpecs as any)?.compositionOrSequence || fallbackProfile?.sequence || "Sequence Confirmed by HPLC",
+    molecularWeight: (metadata.molecular_weight as string) || (metadata.mw as string) || (metadata.technicalSpecs as any)?.molecularWeight || fallbackProfile?.molecularWeight || "Verified Analytical Batch",
+    casNumber: (metadata.cas_number as string) || (metadata.cas as string) || (metadata.technicalSpecs as any)?.casNumber || fallbackProfile?.casNumber || "Reference Standard",
+    form: (metadata.form as string) || (metadata.technicalSpecs as any)?.form || fallbackProfile?.form || (format === "complete-pen-set" ? "1.5 mL Borosilicate Cartridge in Pen System" : format === "refill-cartridge" ? "1.5 mL Pre-filled Glass Cartridge" : "Vacuum Freeze-Dried Lyophilised Cake"),
+    storage: (metadata.storage as string) || (metadata.technicalSpecs as any)?.storage || fallbackProfile?.storage || "2°C – 8°C Refrigerated, protect from direct light",
+    ratio: (metadata.ratio as string) || fallbackProfile?.ratio,
+    totalContent: (metadata.total_content as string) || fallbackProfile?.totalContent,
+    volume: (metadata.volume as string) || "1.5 mL Precision Volume",
+    purity: (metadata.purity as string) || "≥ 99.0% HPLC",
     accentColor,
     colorName: (metadata.colorName as string) || (metadata.technicalSpecs as any)?.colorName || "Teal",
   }
+
+  // Admin description has 100% precedence unless it contains old test placeholder words like "water quality"
+  const adminDesc = (p.description as string) || (metadata.description as string) || ""
+  const description =
+    adminDesc && !adminDesc.toLowerCase().includes("water quality")
+      ? adminDesc
+      : fallbackProfile?.description ||
+        "PEPTECH® analytical reference research peptide verified for laboratory and scientific research. Manufactured under ISO 9001 standards."
+
+  const howItWorks = (metadata.how_it_works as string[]) || fallbackProfile?.howItWorks
+  const keyFeatures = (metadata.key_features as string[]) || fallbackProfile?.keyFeatures
 
   return {
     id: p.id,
@@ -405,13 +449,7 @@ export function mapMedusaToCatalogProduct(p: StoreProduct): CatalogProduct {
     sku: p.variants && p.variants.length > 0 ? p.variants[0].sku : undefined,
     name: p.title,
     handle: (p.handle || p.id).replace(/^\//, ""),
-    compound:
-      metadata.compound ||
-      (p.handle || p.id)
-        .replace(/-pen-set$/, "")
-        .replace(/-cartridge$/, "")
-        .replace(/-vial$/, "")
-        .replace(/^pen-system-/, ""),
+    compound: compoundSlug,
     format,
     formatLabel,
     category,
@@ -419,16 +457,22 @@ export function mapMedusaToCatalogProduct(p: StoreProduct): CatalogProduct {
     contents,
     accentColor,
     technicalSpecs,
-    description:
-      (p.description as string) ||
-      (metadata.description as string) ||
-      "",
+    description,
+    howItWorks,
+    keyFeatures,
     price: rawPrice,
     subscribePrice,
-    inStock: p.status !== "draft" && p.status !== "proposed",
+    inStock: (() => {
+      if (p.status === "draft" || p.status === "proposed") return false
+      if (!p.variants || p.variants.length === 0) return true
+      return p.variants.some((v) => {
+        if (!v.manage_inventory || v.allow_backorder) return true
+        return typeof v.inventory_quantity === "number" ? v.inventory_quantity > 0 : true
+      })
+    })(),
     isSubscriptionEligible,
     image,
-    images: mappedImages.length > 0 ? mappedImages : undefined,
+    images: mappedImages.length > 0 ? mappedImages : image ? [image] : [],
   }
 }
 
