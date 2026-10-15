@@ -103,7 +103,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
       }
     })
 
-    const freeShipRecord = enrichedPromotions.find((p: any) => p.code === "FREESHIP150" || p.discount_type === "shipping")
+    const freeShipRecord = enrichedPromotions.find((p: any) => p.code === "FREESHIP150" && p.status === "active") || enrichedPromotions.find((p: any) => p.code === "FREESHIP150") || enrichedPromotions.find((p: any) => p.discount_type === "shipping" && p.status === "active") || enrichedPromotions.find((p: any) => p.discount_type === "shipping")
 
     return res.status(200).json({
       success: true,

@@ -254,6 +254,12 @@ export async function getProduct(idOrHandle: string, forceRefresh = false): Prom
             "bpc-157-tb-500-pen-set": "wolverine-stack-pen-set",
             "bpc-157-tb-500-cartridge": "wolverine-cartridge",
             "bpc-157-tb-500-vial": "wolverine-vial",
+            "klow-pen-set": "klow-stack-pen-set",
+            "klow-stack-cartridge": "klow-cartridge",
+            "klow-stack-vial": "klow-vial",
+            "wolverine-pen-set": "wolverine-stack-pen-set",
+            "wolverine-stack-cartridge": "wolverine-cartridge",
+            "wolverine-stack-vial": "wolverine-vial",
           }
           const alias = aliasMap[cleanHandle]
           if (alias) {

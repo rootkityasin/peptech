@@ -211,13 +211,24 @@ function AccountContent() {
             const displayDate = formatFullReceiptDateTime(mo.created_at || mo.date)
             
             const rawItems = (mo.items || []).map((it: any) => {
-              const itPrice = typeof it.unit_price === "number" ? it.unit_price : 0
+              const rawPrice =
+                typeof it.unit_price === "number"
+                  ? it.unit_price
+                  : typeof it.price === "number"
+                  ? it.price
+                  : 0
+              const itPrice =
+                rawPrice > 1000 && Number.isInteger(rawPrice)
+                  ? rawPrice / 100
+                  : rawPrice > 0
+                  ? rawPrice
+                  : 195
               const itOptions = it.options || it.metadata?.options || (it.metadata?.cartridge_name ? [{ label: "Included Cartridge", value: it.metadata.cartridge_name }] : undefined)
               return {
                 id: it.id,
                 title: it.title,
                 subtitle: it.variant_title || it.subtitle || it.product_description || "Laboratory RUO Grade",
-                price: itPrice > 1000 ? itPrice / 100 : (itPrice > 0 ? itPrice : 195),
+                price: itPrice,
                 quantity: it.quantity || 1,
                 image: it.thumbnail || "/images/products/placeholder.png",
                 options: itOptions,
@@ -227,12 +238,12 @@ function AccountContent() {
 
             const rawSubtotal = typeof mo.summary?.subtotal === "number" ? mo.summary.subtotal : 0
             const subtotal =
-              rawSubtotal >= 100
+              itemsSum > 0
+                ? itemsSum
+                : rawSubtotal > 1000 && Number.isInteger(rawSubtotal)
                 ? rawSubtotal / 100
                 : rawSubtotal > 0
                 ? rawSubtotal
-                : itemsSum > 0
-                ? itemsSum
                 : 0
 
             const rawShipping =
@@ -244,7 +255,7 @@ function AccountContent() {
 
             const shippingTotal =
               typeof rawShipping === "number"
-                ? (rawShipping >= 100 ? rawShipping / 100 : rawShipping)
+                ? (rawShipping > 50 && Number.isInteger(rawShipping) ? rawShipping / 100 : rawShipping)
                 : (subtotal >= 150 ? 0 : 4.95)
 
             const shippingMethodName =
@@ -252,7 +263,7 @@ function AccountContent() {
               (shippingTotal === 0 ? "Royal Mail Tracked 24 (Free)" : "Royal Mail Tracked 24")
 
             const displayTotal =
-              rawTotal >= 100
+              rawTotal > 1000 && Number.isInteger(rawTotal)
                 ? rawTotal / 100
                 : rawTotal > 0
                 ? rawTotal
@@ -291,14 +302,14 @@ function AccountContent() {
               subtotal,
               shippingTotal,
               shippingMethodName,
-              status: isRefunded ? "Refunded" : isPartiallyRefunded ? "Partially Refunded" : (mo.fulfillment_status === "delivered" || mo.status === "completed" ? "Delivered" : "Cold-Chain Packing"),
+              status: isRefunded ? "Refunded" : isPartiallyRefunded ? "Partially Refunded" : (mo.fulfillment_status === "delivered" || mo.status === "completed" ? "Delivered" : (mo.fulfillment_status === "shipped" || mo.fulfillment_status === "fulfilled" ? "Dispatched" : "Cold-Chain Packing")),
               isRefunded,
               isPartiallyRefunded,
               refundStatus,
               refundedAmount,
               refundedDate,
               metadata: mo.metadata,
-              trackingNumber: mo.metadata?.tracking_number || `GB-RM24-${actualOrderId.replace(/[^a-zA-Z0-9]/g, "").slice(-10).toUpperCase()}-CLD`,
+              trackingNumber: mo.fulfillments?.[0]?.labels?.[0]?.tracking_number || mo.fulfillments?.[0]?.metadata?.tracking_number || mo.metadata?.tracking_number || mo.tracking_number || `GB-RM24-${actualOrderId.replace(/[^a-zA-Z0-9]/g, "").slice(-10).toUpperCase()}-CLD`,
               paymentMethod: mo.metadata?.payment_method || "Stripe 256-Bit SSL Encrypted (Card / Link)",
               stripeReceiptUrl: mo.metadata?.stripe_receipt_url || mo.metadata?.receipt_url || null,
               customerName: customer ? `${customer.first_name || ""} ${customer.last_name || ""}`.trim() || undefined : undefined,
@@ -1891,43 +1902,49 @@ function AccountContent() {
                         </div>
                       ) : (
                         <div className="bg-[#f8fafc] rounded-[10px] px-[16px] py-[14px] overflow-x-auto no-scrollbar">
-                          <div className="flex items-center justify-between gap-2 min-w-[480px]">
-                            <div className="flex gap-[8px] items-center shrink-0">
-                              <div className="w-[22px] h-[22px] rounded-full bg-[#16a6a3] text-white flex items-center justify-center font-bold text-[11px]">
-                                ✓
+                          {(() => {
+                            const isDelivered = order.status === "Delivered"
+                            const isDispatched = isDelivered || order.status === "Dispatched" || order.status === "Dispatched (Tracked 24)"
+                            return (
+                              <div className="flex items-center justify-between gap-2 min-w-[480px]">
+                                <div className="flex gap-[8px] items-center shrink-0">
+                                  <div className="w-[22px] h-[22px] rounded-full bg-[#16a6a3] text-white flex items-center justify-center font-bold text-[11px]">
+                                    ✓
+                                  </div>
+                                  <span className="font-medium text-[#0f172a] text-[12px] whitespace-nowrap">
+                                    Order Placed
+                                  </span>
+                                </div>
+                                <div className="flex-1 h-[2px] min-w-[20px] bg-[#16a6a3] rounded-full" />
+                                <div className="flex gap-[8px] items-center shrink-0">
+                                  <div className={`w-[22px] h-[22px] rounded-full ${isDispatched ? "bg-[#16a6a3] text-white" : "bg-[#0b1f3a] text-white ring-4 ring-[#0b1f3a]/10"} flex items-center justify-center font-bold text-[11px]`}>
+                                    {isDispatched ? "✓" : "2"}
+                                  </div>
+                                  <span className={`${isDispatched ? "font-medium text-[#0f172a]" : "font-bold text-[#0b1f3a]"} text-[12px] whitespace-nowrap`}>
+                                    Cold-Chain Packing
+                                  </span>
+                                </div>
+                                <div className={`flex-1 h-[2px] min-w-[20px] ${isDispatched ? "bg-[#16a6a3]" : "bg-[#e2e8f0]"} rounded-full`} />
+                                <div className="flex gap-[8px] items-center shrink-0">
+                                  <div className={`w-[22px] h-[22px] rounded-full ${isDelivered ? "bg-[#16a6a3] text-white" : isDispatched ? "bg-[#0b1f3a] text-white ring-4 ring-[#0b1f3a]/10" : "bg-[#cbd5e1] text-white"} flex items-center justify-center font-bold text-[11px]`}>
+                                    {isDelivered ? "✓" : "3"}
+                                  </div>
+                                  <span className={`text-[12px] whitespace-nowrap ${!isDelivered && isDispatched ? "font-bold text-[#0b1f3a]" : isDelivered ? "font-medium text-[#0f172a]" : "font-medium text-[#94a3b8]"}`}>
+                                    Dispatched (Tracked 24)
+                                  </span>
+                                </div>
+                                <div className={`flex-1 h-[2px] min-w-[20px] ${isDelivered ? "bg-[#16a6a3]" : "bg-[#e2e8f0]"} rounded-full`} />
+                                <div className="flex gap-[8px] items-center shrink-0">
+                                  <div className={`w-[22px] h-[22px] rounded-full ${isDelivered ? "bg-[#16a6a3] text-white" : "bg-[#cbd5e1] text-white"} flex items-center justify-center font-bold text-[11px]`}>
+                                    {isDelivered ? "✓" : "4"}
+                                  </div>
+                                  <span className={`text-[12px] whitespace-nowrap ${isDelivered ? "font-bold text-[#0b1f3a]" : "font-medium text-[#94a3b8]"}`}>
+                                    Delivered
+                                  </span>
+                                </div>
                               </div>
-                              <span className="font-medium text-[#0f172a] text-[12px] whitespace-nowrap">
-                                Order Placed
-                              </span>
-                            </div>
-                            <div className="flex-1 h-[2px] min-w-[20px] bg-[#16a6a3] rounded-full" />
-                            <div className="flex gap-[8px] items-center shrink-0">
-                              <div className={`w-[22px] h-[22px] rounded-full ${order.status === "Delivered" ? "bg-[#16a6a3] text-white" : "bg-[#0b1f3a] text-white ring-4 ring-[#0b1f3a]/10"} flex items-center justify-center font-bold text-[11px]`}>
-                                {order.status === "Delivered" ? "✓" : "2"}
-                              </div>
-                              <span className="font-bold text-[#0b1f3a] text-[12px] whitespace-nowrap">
-                                Cold-Chain Packing
-                              </span>
-                            </div>
-                            <div className={`flex-1 h-[2px] min-w-[20px] ${order.status === "Delivered" ? "bg-[#16a6a3]" : "bg-[#e2e8f0]"} rounded-full`} />
-                            <div className="flex gap-[8px] items-center shrink-0">
-                              <div className={`w-[22px] h-[22px] rounded-full ${order.status === "Delivered" ? "bg-[#16a6a3] text-white" : "bg-[#cbd5e1] text-white"} flex items-center justify-center font-bold text-[11px]`}>
-                                {order.status === "Delivered" ? "✓" : "3"}
-                              </div>
-                              <span className="font-medium text-[#94a3b8] text-[12px] whitespace-nowrap">
-                                Dispatched (Tracked 24)
-                              </span>
-                            </div>
-                            <div className={`flex-1 h-[2px] min-w-[20px] ${order.status === "Delivered" ? "bg-[#16a6a3]" : "bg-[#e2e8f0]"} rounded-full`} />
-                            <div className="flex gap-[8px] items-center shrink-0">
-                              <div className={`w-[22px] h-[22px] rounded-full ${order.status === "Delivered" ? "bg-[#16a6a3] text-white" : "bg-[#cbd5e1] text-white"} flex items-center justify-center font-bold text-[11px]`}>
-                                {order.status === "Delivered" ? "✓" : "4"}
-                              </div>
-                              <span className="font-medium text-[#94a3b8] text-[12px] whitespace-nowrap">
-                                Delivered
-                              </span>
-                            </div>
-                          </div>
+                            )
+                          })()}
                         </div>
                       )}
 
@@ -1984,13 +2001,17 @@ function AccountContent() {
                         </div>
                         <div className="flex flex-col sm:flex-row gap-2 sm:gap-[10px] items-stretch sm:items-center w-full sm:w-auto">
                           {!order.isRefunded && (
-                            <button
-                              type="button"
-                              onClick={() => alert(`Tracking ${order.trackingNumber || order.id}: Cold-chain shipment verified.`)}
-                              className="bg-[#0b1f3a] hover:bg-[#162a45] text-white text-[12.5px] font-semibold px-[16px] py-[9px] rounded-[6px] transition-colors cursor-pointer text-center justify-center flex items-center"
+                            <a
+                              href={`https://www.royalmail.com/track-your-item#/tracking-results/${order.trackingNumber || ""}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="bg-[#0b1f3a] hover:bg-[#162a45] text-white text-[12.5px] font-semibold px-[16px] py-[9px] rounded-[6px] transition-colors cursor-pointer text-center justify-center flex items-center gap-1.5"
                             >
-                              Track Live Dispatch
-                            </button>
+                              <span>Track Parcel</span>
+                              <svg className="w-3.5 h-3.5 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                              </svg>
+                            </a>
                           )}
                           <Link
                             href={`/receipt/${encodeURIComponent(order.id)}`}
@@ -2528,7 +2549,7 @@ function AccountContent() {
                     {countryOptions.length === 0 && <option value="">Loading Medusa countries...</option>}
                     {countryOptions.map((c) => (
                       <option key={c.code} value={c.code}>
-                        {c.name} ({c.code}) · {c.currencyCode}
+                        {c.name} ({c.code})
                       </option>
                     ))}
                   </select>

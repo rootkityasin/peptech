@@ -103,6 +103,11 @@ export function isShippingOptionEligibleForFree(
   if (!option || !freeShipping || !freeShipping.enabled) return false
   if (finalSubtotal < (freeShipping.threshold || 150)) return false
 
+  // Global Free Shipping: Royal Mail Domestic Tracked and Royal Mail Worldwide Tracked both qualify at £150+ net
+  if (/royal\s*mail/i.test(option.name) || (option.code || "").toLowerCase() === "standard") {
+    return true
+  }
+
   const hasSpecificRules =
     Boolean(freeShipping.has_target_rules) ||
     Boolean(freeShipping.eligible_types?.length) ||
@@ -523,15 +528,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const updateQuantity = (id: string, isSubscription: boolean, delta: number) => {
     setItems((prev) =>
-      prev
-        .map((i) => {
-          if (i.id === id && i.isSubscription === isSubscription) {
-            const nextQty = i.quantity + delta
-            return nextQty > 0 ? { ...i, quantity: nextQty } : null
-          }
-          return i
-        })
-        .filter(Boolean) as CartItem[]
+      prev.map((i) => {
+        if (i.id === id && i.isSubscription === isSubscription) {
+          const nextQty = Math.max(1, i.quantity + delta)
+          return { ...i, quantity: nextQty }
+        }
+        return i
+      })
     )
   }
 

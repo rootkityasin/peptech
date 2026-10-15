@@ -369,7 +369,7 @@ export function SubscriptionDashboard({
                         onClick={() => setSelectedSubForDosage(sub)}
                         className="bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold text-xs px-4 py-2.5 rounded-lg transition-colors cursor-pointer disabled:opacity-50 text-center w-full sm:w-auto"
                       >
-                        Update Dosage Protocol
+                        Select Concentration & Volume
                       </button>
                       {sub.control === "paused" && (
                         <button

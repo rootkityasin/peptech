@@ -175,7 +175,7 @@ export async function GET(req: AuthenticatedMedusaRequest, res: MedusaResponse) 
             product_name: prodName,
             format: "cartridge",
             strength: firstItem?.price?.metadata?.strength || "10mg (1.5 mL)",
-            protocol_info: `Weekly ${firstItem?.price?.metadata?.strength || "2.5mg"} Escalation Protocol · 4 Doses / Refill`,
+            protocol_info: `${firstItem?.price?.metadata?.strength || "10mg"} Analytical Concentration · Laboratory Refill`,
             price: unitPrice,
             currency: sub.currency || "gbp",
             quantity: firstItem?.quantity || 1,

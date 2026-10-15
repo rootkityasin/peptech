@@ -398,11 +398,11 @@ export function ProductTechnicalSpecs({ product }: ProductTechnicalSpecsProps) {
                   />
                 </div>
                 <div className="w-px h-[26px] bg-[#d1e0ed]" />
-                <div className="h-[36px] w-[85px] flex items-center justify-center shrink-0">
+                <div className="h-[36px] w-[65px] flex items-center justify-center shrink-0">
                   <img
-                    src="/images/figma/logo-fda.svg"
-                    alt="FDA Facility Registered"
-                    className="h-[28px] w-auto max-w-[80px] object-contain"
+                    src="/images/figma/logo-nsf.svg"
+                    alt="NSF Certified"
+                    className="h-[32px] w-auto max-w-[50px] object-contain"
                   />
                 </div>
                 <div className="w-px h-[26px] bg-[#d1e0ed]" />

@@ -67,42 +67,53 @@ export async function GET(req: AuthenticatedMedusaRequest, res: MedusaResponse) 
     // Compute totals so orders accurately preserve free shipping (0) vs courier fees
     const computedOrders = orders.map((o: any) => {
       const lineItems = o.items || []
-      const itemsTotalMinor = lineItems.reduce((acc: number, it: any) => acc + ((Number(it.unit_price) || 0) * (Number(it.quantity) || 1)), 0)
-      const metaMinor = Number(o.metadata?.refunded_amount_minor) || 0
-      const summaryPaid = Number(o.summary?.original_order_total) || Number(o.summary?.paid_total) || 0
-      const summaryTotal = Number(o.summary?.total) || Number(o.total) || 0
+      const itemsTotal = lineItems.reduce((acc: number, it: any) => {
+        const raw = Number(it.unit_price) || 0
+        const pounds = raw > 1000 && Number.isInteger(raw) ? raw / 100 : raw
+        return acc + pounds * (Number(it.quantity) || 1)
+      }, 0)
 
-      const defaultShippingMinor = itemsTotalMinor >= 15000 ? 0 : 495
-      const actualShippingMinor =
+      const rawShipping =
         typeof o.summary?.shipping_total === "number"
           ? o.summary.shipping_total
           : typeof o.shipping_methods?.[0]?.amount === "number"
-          ? (Number(o.shipping_methods[0].amount) >= 100
-              ? Number(o.shipping_methods[0].amount)
-              : Math.round(Number(o.shipping_methods[0].amount) * 100))
-          : defaultShippingMinor
+          ? o.shipping_methods[0].amount
+          : undefined
+
+      const defaultShipping = itemsTotal >= 150 ? 0 : 4.95
+      const actualShipping =
+        typeof rawShipping === "number"
+          ? (rawShipping > 50 && Number.isInteger(rawShipping) ? rawShipping / 100 : rawShipping)
+          : defaultShipping
+
+      const rawPaid = Number(o.summary?.original_order_total) || Number(o.summary?.paid_total) || 0
+      const rawSummaryTotal = Number(o.summary?.total) || Number(o.total) || 0
+      const metaRefunded = Number(o.metadata?.refunded_amount_minor) ? Number(o.metadata.refunded_amount_minor) / 100 : 0
+
+      const paidPounds = rawPaid > 1000 && Number.isInteger(rawPaid) ? rawPaid / 100 : rawPaid
+      const summaryTotalPounds = rawSummaryTotal > 1000 && Number.isInteger(rawSummaryTotal) ? rawSummaryTotal / 100 : rawSummaryTotal
 
       const total =
-        summaryPaid > 0
-          ? summaryPaid
-          : summaryTotal > 0
-          ? summaryTotal
-          : metaMinor > 0
-          ? metaMinor
-          : itemsTotalMinor > 0
-          ? itemsTotalMinor + actualShippingMinor
-          : 19995
+        paidPounds > 0
+          ? paidPounds
+          : summaryTotalPounds > 0
+          ? summaryTotalPounds
+          : metaRefunded > 0
+          ? metaRefunded
+          : itemsTotal > 0
+          ? itemsTotal + actualShipping
+          : 199.95
 
       return {
         ...o,
         total,
         summary: {
           ...o.summary,
-          total: o.summary?.total || total,
-          original_order_total: o.summary?.original_order_total || total,
-          paid_total: o.summary?.paid_total || total,
-          subtotal: o.summary?.subtotal || itemsTotalMinor,
-          shipping_total: actualShippingMinor,
+          total: summaryTotalPounds > 0 ? summaryTotalPounds : total,
+          original_order_total: paidPounds > 0 ? paidPounds : total,
+          paid_total: paidPounds > 0 ? paidPounds : total,
+          subtotal: itemsTotal > 0 ? itemsTotal : (o.summary?.subtotal || itemsTotal),
+          shipping_total: actualShipping,
         },
       }
     })

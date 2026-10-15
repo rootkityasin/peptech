@@ -201,14 +201,24 @@ export function UnifiedReceipt({
         .join("\n")
     : null
 
+  const itemsSubtotal = (receipt.items || []).reduce(
+    (acc, it) => acc + (Number(it.price) || 0) * (Number(it.quantity) || 1),
+    0
+  )
   const shipping =
     typeof receipt.shippingTotal === "number"
-      ? (receipt.shippingTotal >= 100 ? receipt.shippingTotal / 100 : receipt.shippingTotal)
-      : 4.95
+      ? (receipt.shippingTotal > 50 && Number.isInteger(receipt.shippingTotal) ? receipt.shippingTotal / 100 : receipt.shippingTotal)
+      : (itemsSubtotal >= 150 ? 0 : 4.95)
   const subtotal =
-    typeof receipt.subtotal === "number"
-      ? (receipt.subtotal >= 100 ? receipt.subtotal / 100 : receipt.subtotal)
-      : Math.max(0, receipt.total - shipping)
+    itemsSubtotal > 0
+      ? itemsSubtotal
+      : typeof receipt.subtotal === "number" && receipt.subtotal > 0
+      ? (receipt.subtotal > 1000 && Number.isInteger(receipt.subtotal) ? receipt.subtotal / 100 : receipt.subtotal)
+      : Math.max(0, (typeof receipt.total === "number" ? (receipt.total > 1000 && Number.isInteger(receipt.total) ? receipt.total / 100 : receipt.total) : 0) - shipping)
+  const total =
+    typeof receipt.total === "number" && receipt.total > 0
+      ? (receipt.total > 1000 && Number.isInteger(receipt.total) ? receipt.total / 100 : receipt.total)
+      : subtotal + shipping
   const tax = receipt.taxTotal ?? 0
   const orderDisplayNumber = String(receipt.id || receipt.displayId || "PEPTECH-ORDER")
   const trackingNumber = receipt.trackingNumber || `GB-RM24-${orderDisplayNumber.replace(/[^a-zA-Z0-9]/g, "").slice(-10).toUpperCase()}-CLD`
@@ -418,12 +428,12 @@ export function UnifiedReceipt({
           {receipt.isRefunded && (
             <div className="flex justify-between w-full max-w-xs text-rose-600 font-semibold border-t border-slate-100 pt-1.5">
               <span>Refunded via Stripe:</span>
-              <span className="font-mono">-£{(receipt.refundedAmount || receipt.total).toFixed(2)}</span>
+              <span className="font-mono">-£{(receipt.refundedAmount || total).toFixed(2)}</span>
             </div>
           )}
           <div className="flex justify-between w-full max-w-xs font-bold text-sm text-[#0b1f3a] border-t border-slate-200 pt-2 mt-1">
             <span>{receipt.isRefunded ? "Original Total Paid (Refunded):" : "Total Paid in Full:"}</span>
-            <span className="font-mono text-base">£{receipt.total.toFixed(2)}</span>
+            <span className="font-mono text-base">£{total.toFixed(2)}</span>
           </div>
         </div>
 

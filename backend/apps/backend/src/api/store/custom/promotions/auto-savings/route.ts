@@ -51,8 +51,14 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
       },
     })
 
-    // 2. Fallback to active promotions with code AUTODIS or SUB28-10 if is_automatic filter didn't match
-    if (!promotions || promotions.length === 0) {
+    // 2. Filter out shipping promotions — auto-savings only applies to line items, not shipping
+    let itemPromotions = (promotions || []).filter((p: any) => {
+      const targetType = p.application_method?.target_type
+      return targetType !== "shipping_methods" && p.code !== "FREESHIP150"
+    })
+
+    // 3. Fallback to active promotions with code AUTODIS or SUB28-10 if is_automatic filter didn't match
+    if (itemPromotions.length === 0) {
       const fallbackResult = await query.graph({
         entity: "promotion",
         fields: [
@@ -73,10 +79,13 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
           order: { updated_at: "DESC" },
         },
       })
-      promotions = fallbackResult.data || []
+      itemPromotions = (fallbackResult.data || []).filter((p: any) => {
+        const targetType = p.application_method?.target_type
+        return targetType !== "shipping_methods" && p.code !== "FREESHIP150"
+      })
     }
 
-    const promo = promotions[0]
+    const promo = itemPromotions[0]
 
     let discountType = "percentage"
     let discountValue = 10

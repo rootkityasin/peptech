@@ -18,11 +18,6 @@ export const TRUSTED_LOGOS = [
     className: "h-[38px] sm:h-[42px] w-auto max-w-[62px] object-contain",
   },
   {
-    name: "FDA Facility Registered",
-    src: "/images/figma/logo-fda.svg",
-    className: "h-[32px] sm:h-[34px] w-auto max-w-[92px] object-contain",
-  },
-  {
     name: "World Health Organization",
     src: "/images/figma/logo-who.svg",
     className: "h-[34px] sm:h-[36px] w-auto max-w-[130px] object-contain",

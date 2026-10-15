@@ -37,7 +37,7 @@ async function syncLockedSubscription(ledger:CommerceService,stripeId:string) {
 export const commandSchema = z.object({
   subscription_id: z.string().min(1),
   operation_id: z.string().uuid(),
-  action: z.enum(["pause", "resume", "skip", "cancel", "change_date", "change_cadence", "update_dosage", "update_address"]),
+  action: z.enum(["pause", "resume", "skip", "cancel", "change_date", "change_cadence", "update_dosage", "update_concentration", "update_address"]),
   date: z.string().datetime().optional(),
   pause_duration_months: z.number().int().min(1).max(12).optional(),
   cadence_days: z.number().int().min(7).max(90).optional(),
@@ -125,7 +125,7 @@ export async function subscriptionCommand(ledger: CommerceService, customer: str
       record.data.quote.address = { ...record.data.quote.address, ...input.address }
       params = { pause_collection: { behavior: "keep_as_draft" } }
     }
-    if (input.action === "update_dosage" && (input.variant_id || input.strength)) {
+    if ((input.action === "update_dosage" || input.action === "update_concentration") && (input.variant_id || input.strength)) {
       if (record.data.quote?.lines?.[0]) {
         if (input.variant_id) record.data.quote.lines[0].variant_id = input.variant_id
         if (input.strength) {

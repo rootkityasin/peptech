@@ -24,6 +24,7 @@ function CheckoutContent() {
     autoSavings,
     featuredPromo,
     shippingCost,
+    destination,
     country,
     setCountry,
     countryCode,
@@ -976,7 +977,7 @@ function CheckoutContent() {
                 >
                   {countryOptions.map((c) => (
                     <option key={c.code} value={c.name}>
-                      {c.name} ({c.currencyCode})
+                      {c.name}
                     </option>
                   ))}
                 </select>
@@ -984,6 +985,14 @@ function CheckoutContent() {
                   <span className="mt-1 block text-[11px] font-medium text-amber-700">
                     Loading countries from Medusa regions&hellip;
                   </span>
+                )}
+                {destination === "INTL" && (
+                  <div className="mt-2.5 flex items-center gap-2 p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600">
+                    <span className="text-[#16A6A3] font-bold">ℹ</span>
+                    <span>
+                      International orders are processed securely in <strong>GBP (£)</strong>. Your card provider will convert automatically at live interbank exchange rates.
+                    </span>
+                  </div>
                 )}
               </label>
 

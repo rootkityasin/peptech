@@ -35,7 +35,19 @@ function mapMedusaOrderToReceipt(mo: any, customerProfile?: any): ReceiptData {
   const displayDate = formatFullReceiptDateTime(mo.created_at || mo.date)
 
   const rawItems: ReceiptItem[] = (mo.items || []).map((it: any) => {
-    const itPrice = typeof it.unit_price === "number" ? it.unit_price : 0
+    const rawPrice =
+      typeof it.unit_price === "number"
+        ? it.unit_price
+        : typeof it.price === "number"
+        ? it.price
+        : 0
+    const price =
+      rawPrice > 1000 && Number.isInteger(rawPrice)
+        ? rawPrice / 100
+        : rawPrice > 0
+        ? rawPrice
+        : 195
+
     const itOptions =
       it.options ||
       it.metadata?.options ||
@@ -47,7 +59,7 @@ function mapMedusaOrderToReceipt(mo: any, customerProfile?: any): ReceiptData {
       id: it.id,
       title: it.title || "PEPTECH Product",
       subtitle: it.variant_title || it.subtitle || it.product_description || "Laboratory RUO Grade",
-      price: itPrice > 1000 ? itPrice / 100 : itPrice > 0 ? itPrice : 195,
+      price,
       quantity: it.quantity || 1,
       image: it.thumbnail || "/images/products/placeholder.png",
       options: itOptions,
@@ -58,12 +70,12 @@ function mapMedusaOrderToReceipt(mo: any, customerProfile?: any): ReceiptData {
 
   const rawSubtotal = typeof mo.summary?.subtotal === "number" ? mo.summary.subtotal : 0
   const subtotal =
-    rawSubtotal >= 100
+    itemsSum > 0
+      ? itemsSum
+      : rawSubtotal > 1000 && Number.isInteger(rawSubtotal)
       ? rawSubtotal / 100
       : rawSubtotal > 0
       ? rawSubtotal
-      : itemsSum > 0
-      ? itemsSum
       : 0
 
   const rawShipping =
@@ -75,7 +87,7 @@ function mapMedusaOrderToReceipt(mo: any, customerProfile?: any): ReceiptData {
 
   const shippingTotal =
     typeof rawShipping === "number"
-      ? (rawShipping >= 100 ? rawShipping / 100 : rawShipping)
+      ? (rawShipping > 50 && Number.isInteger(rawShipping) ? rawShipping / 100 : rawShipping)
       : (subtotal >= 150 ? 0 : 4.95)
 
   const shippingMethodName =
@@ -83,7 +95,7 @@ function mapMedusaOrderToReceipt(mo: any, customerProfile?: any): ReceiptData {
     (shippingTotal === 0 ? "Royal Mail Tracked 24 (Free)" : "Royal Mail Tracked 24")
 
   const displayTotal =
-    rawTotal >= 100
+    rawTotal > 1000 && Number.isInteger(rawTotal)
       ? rawTotal / 100
       : rawTotal > 0
       ? rawTotal
@@ -144,12 +156,16 @@ function mapMedusaOrderToReceipt(mo: any, customerProfile?: any): ReceiptData {
       ? "Partially Refunded"
       : mo.fulfillment_status === "delivered" || mo.status === "completed"
       ? "Delivered"
+      : mo.fulfillment_status === "shipped" || mo.fulfillment_status === "fulfilled"
+      ? "Dispatched"
       : "Cold-Chain Packing",
     isRefunded,
     refundStatus,
     refundedAmount,
     stripeRefundId: mo.metadata?.stripe_refund_id,
     trackingNumber:
+      mo.fulfillments?.[0]?.labels?.[0]?.tracking_number ||
+      mo.fulfillments?.[0]?.metadata?.tracking_number ||
       mo.metadata?.tracking_number ||
       mo.tracking_number ||
       `GB-RM24-${actualOrderId.replace(/[^a-zA-Z0-9]/g, "").slice(-10).toUpperCase()}-CLD`,

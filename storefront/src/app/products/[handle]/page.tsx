@@ -64,31 +64,33 @@ async function ProductDetailAsync({ handle }: { handle: string }) {
     )
   }
 
-  // Sibling formats for the current compound
-  const currentCompoundSlug =
-    product.compound ||
-    product.handle
+  // Sibling formats for the current compound with bidirectional slug normalization
+  const normalizeSlug = (slug: string) =>
+    slug
+      .toLowerCase()
+      .replace(/-stack$/, "")
       .replace(/-pen-set$/, "")
       .replace(/-cartridge$/, "")
       .replace(/-vial$/, "")
       .replace(/^pen-system-/, "")
 
+  const baseCompound = normalizeSlug(product.compound || product.handle)
+
+  const matchesCompound = (p: any) => {
+    const pSlug = normalizeSlug(p.compound || p.handle)
+    return pSlug === baseCompound || pSlug.startsWith(baseCompound) || baseCompound.startsWith(pSlug)
+  }
+
   const penSetProduct = allProducts.find(
-    (p) =>
-      p.format === "complete-pen-set" &&
-      (p.compound === currentCompoundSlug || p.handle.startsWith(currentCompoundSlug) || p.handle.includes(currentCompoundSlug))
+    (p) => p.format === "complete-pen-set" && matchesCompound(p)
   ) || null
 
   const cartridgeProduct = allProducts.find(
-    (p) =>
-      p.format === "refill-cartridge" &&
-      (p.compound === currentCompoundSlug || p.handle.startsWith(currentCompoundSlug) || p.handle.includes(currentCompoundSlug))
+    (p) => p.format === "refill-cartridge" && matchesCompound(p)
   ) || null
 
   const vialProduct = allProducts.find(
-    (p) =>
-      p.format === "freeze-dried-vial" &&
-      (p.compound === currentCompoundSlug || p.handle.startsWith(currentCompoundSlug) || p.handle.includes(currentCompoundSlug))
+    (p) => p.format === "freeze-dried-vial" && matchesCompound(p)
   ) || null
 
   return (

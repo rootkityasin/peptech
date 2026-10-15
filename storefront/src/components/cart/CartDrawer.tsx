@@ -21,7 +21,7 @@ export function CartDrawer() {
     freeShipping,
   } = useCart()
 
-  const itemsTotal = subtotal
+  const itemsTotal = finalSubtotal
 
   // Prevent background scrolling when drawer is open
   useEffect(() => {

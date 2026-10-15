@@ -449,7 +449,15 @@ export function ProductBuyBox({
             </span>
           </div>
           <Link
-            href={product?.compound ? `/products/${product.compound}-pen-set` : "/pen-sets"}
+            href={
+              product?.compound === "klow"
+                ? "/products/klow-stack-pen-set"
+                : product?.compound === "wolverine"
+                ? "/products/wolverine-stack-pen-set"
+                : product?.compound
+                ? `/products/${product.compound}-pen-set`
+                : "/pen-sets"
+            }
             className="text-[12px] font-semibold text-[#16a6a3] hover:text-[#0b1f3a] transition-colors hover:underline shrink-0 ml-2"
           >
             Need the pen? →

@@ -410,7 +410,16 @@ export async function addCustomerAddress(token: string, address: CustomerAddress
   }
 
   const data = await response.json()
-  return data.address
+  if (data.address) return data.address
+  if (Array.isArray(data.customer?.addresses)) {
+    const addrs = data.customer.addresses
+    const matched = addrs.find((a: any) =>
+      a.address_1 === address.address_1 &&
+      a.postal_code === address.postal_code
+    ) || addrs[addrs.length - 1]
+    if (matched) return matched
+  }
+  return data
 }
 
 /**
