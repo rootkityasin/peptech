@@ -219,7 +219,7 @@ function AccountContent() {
                 subtitle: it.variant_title || it.subtitle || it.product_description || "Laboratory RUO Grade",
                 price: itPrice > 1000 ? itPrice / 100 : (itPrice > 0 ? itPrice : 195),
                 quantity: it.quantity || 1,
-                image: it.thumbnail || "/images/figma/152e353c4afaa5945905ac686de871b57ec2a770.png",
+                image: it.thumbnail || "/images/products/placeholder.png",
                 options: itOptions,
               }
             })
@@ -1408,7 +1408,7 @@ function AccountContent() {
                               <img
                                 alt=""
                                 className="w-full h-full object-contain"
-                                src={item.image || "/images/figma/152e353c4afaa5945905ac686de871b57ec2a770.png"}
+                                src={item.image || "/images/products/placeholder.png"}
                               />
                             </div>
                             <div className="flex flex-col gap-[2px]">
@@ -1529,7 +1529,7 @@ function AccountContent() {
                         <img
                           alt=""
                           className="w-full h-full object-contain"
-                          src={subscriptions[0].image || "/images/figma/0e71e8560b9bae80ee21a3d08905300075c266b7.png"}
+                          src={subscriptions[0].image || "/images/products/refills/pt-141.png"}
                         />
                       </div>
                       <div className="flex flex-col gap-[3px]">
@@ -1942,7 +1942,7 @@ function AccountContent() {
                                   <img
                                     alt=""
                                     className="w-full h-full object-contain"
-                                    src={item.image || "/images/figma/152e353c4afaa5945905ac686de871b57ec2a770.png"}
+                                    src={item.image || "/images/products/placeholder.png"}
                                   />
                                 </div>
                                 <div className="flex flex-col gap-[2px]">

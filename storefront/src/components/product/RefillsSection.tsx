@@ -55,7 +55,7 @@ export function RefillsSection({ excludeHandle, products: propProducts }: Refill
             <div className="flex items-start gap-4 h-full">
               <div className="w-[88px] h-[300px] min-h-[300px] relative shrink-0">
                 <Image
-                  src="/images/figma/0e71e8560b9bae80ee21a3d08905300075c266b7.png"
+                  src={displayRefills[0]?.image || "/images/products/refills/pt-141.png"}
                   alt="PEPTECH Refill Cartridge"
                   fill
                   sizes="88px"

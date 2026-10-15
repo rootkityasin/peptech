@@ -303,7 +303,7 @@ export function Header() {
                   >
                     <div className="w-12 h-12 rounded-xl bg-[#f8fafc] group-hover/item:bg-white border border-[#e2e8f0] p-1.5 shrink-0 flex items-center justify-center transition-colors overflow-hidden">
                       <Image
-                        src="/images/figma/product-set-rt40.png"
+                        src="/images/products/pen-sets/pt-141.png"
                         alt="Complete Pen Sets"
                         width={36}
                         height={36}
@@ -331,7 +331,7 @@ export function Header() {
                   >
                     <div className="w-12 h-12 rounded-xl bg-[#f8fafc] group-hover/item:bg-white border border-[#e2e8f0] p-1.5 shrink-0 flex items-center justify-center transition-colors overflow-hidden">
                       <Image
-                        src="/images/figma/cartridge-clear.png"
+                        src="/images/products/refills/pt-141.png"
                         alt="Refill Cartridges"
                         width={36}
                         height={36}
@@ -361,7 +361,7 @@ export function Header() {
                   >
                     <div className="w-12 h-12 rounded-xl bg-[#f8fafc] group-hover/item:bg-white border border-[#e2e8f0] p-1.5 shrink-0 flex items-center justify-center transition-colors overflow-hidden">
                       <Image
-                        src="/images/figma/7f278c9d9e9d928a9e34cd536ca8e36bd11a5280.png"
+                        src="/images/products/vials/pt-141.png"
                         alt="Freeze-Dried Vials"
                         width={36}
                         height={36}
@@ -529,7 +529,7 @@ export function Header() {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search products, systems, or cartridges (e.g., RT40, C.C-1236, TB-S30)..."
+                  placeholder="Search compounds, pen systems, or refill cartridges (e.g. PT-141, GHK-Cu, Tirzepatide)..."
                   className="w-full h-[48px] rounded-full bg-[#f8fafc] border border-[#e2e8f0] focus:border-[#16a6a3] focus:bg-white focus:ring-4 focus:ring-[#16a6a3]/10 pl-11 pr-28 text-[13.5px] text-[#0b1f3a] placeholder:text-[#94a3b8] transition-all outline-none"
                 />
 

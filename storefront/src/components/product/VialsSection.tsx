@@ -53,7 +53,7 @@ export function VialsSection({ excludeHandle, products: propProducts }: VialsSec
             <div className="flex items-start gap-4 h-full">
               <div className="w-[88px] h-[300px] min-h-[300px] relative shrink-0">
                 <Image
-                  src="/images/figma/2d7803f97be6d80d5630dfb42abba84289ed1bb5.png"
+                  src={displayVials[0]?.image || "/images/products/vials/pt-141.png"}
                   alt="PEPTECH Freeze-Dried Vial"
                   fill
                   sizes="88px"

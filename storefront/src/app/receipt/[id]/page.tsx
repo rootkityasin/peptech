@@ -49,7 +49,7 @@ function mapMedusaOrderToReceipt(mo: any, customerProfile?: any): ReceiptData {
       subtitle: it.variant_title || it.subtitle || it.product_description || "Laboratory RUO Grade",
       price: itPrice > 1000 ? itPrice / 100 : itPrice > 0 ? itPrice : 195,
       quantity: it.quantity || 1,
-      image: it.thumbnail || "/images/figma/152e353c4afaa5945905ac686de871b57ec2a770.png",
+      image: it.thumbnail || "/images/products/placeholder.png",
       options: itOptions,
     }
   })

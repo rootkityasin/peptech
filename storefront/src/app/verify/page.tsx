@@ -379,7 +379,7 @@ function VerifyContent() {
                 <img
                   alt="PEPTECH Product Kit"
                   className="w-full h-full object-contain"
-                  src="/images/figma/152e353c4afaa5945905ac686de871b57ec2a770.png"
+                  src="/images/products/pen-sets/pt-141.png"
                 />
               </div>
 

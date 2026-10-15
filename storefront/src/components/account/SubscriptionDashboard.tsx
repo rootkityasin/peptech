@@ -294,7 +294,7 @@ export function SubscriptionDashboard({
                       <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
                         <div className="w-12 sm:w-14 h-12 sm:h-14 bg-white rounded-lg border border-slate-200/80 flex items-center justify-center p-1 shrink-0 overflow-hidden">
                           <Image
-                            src="/images/figma/0e71e8560b9bae80ee21a3d08905300075c266b7.png"
+                            src={sub.image || sub.thumbnail || "/images/products/refills/pt-141.png"}
                             alt={sub.product_name || "Product"}
                             width={48}
                             height={48}

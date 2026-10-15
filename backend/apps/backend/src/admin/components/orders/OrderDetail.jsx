@@ -150,18 +150,16 @@ function resolveItemThumbnail(item) {
   let thumb = item?.thumbnail;
   const title = (item?.title || "").toLowerCase();
   const defaultImg = title.includes("pen") || title.includes("set")
-    ? "/images/peptech/mockup1.webp"
+    ? "/images/products/pen-sets/pt-141.png"
     : title.includes("vial") || title.includes("lyophilised")
-    ? "/images/peptech/mockup2.webp"
-    : "/images/peptech/cartridge.webp";
+    ? "/images/products/vials/pt-141.png"
+    : "/images/products/refills/pt-141.png";
 
   if (!thumb || thumb === "null") {
     return defaultImg;
   }
 
-  // Normalize cartridge.png typo
-  let clean = thumb.replace('cartridge.png', 'peptech/cartridge.webp');
-  // Normalize localhost:3000
+  let clean = thumb;
   if (clean.includes('localhost:3000/images/')) {
     clean = clean.replace(/https?:\/\/localhost:3000/, '');
   }
@@ -224,16 +222,16 @@ function resolveSubItemThumbnail(item) {
   let thumb = item?.thumbnail;
   const title = (item?.title || "").toLowerCase();
   const defaultImg = title.includes("pen") || title.includes("set")
-    ? "/images/peptech/mockup1.webp"
+    ? "/images/products/pen-sets/pt-141.png"
     : title.includes("vial") || title.includes("lyophilised")
-    ? "/images/peptech/mockup2.webp"
-    : "/images/peptech/cartridge.webp";
+    ? "/images/products/vials/pt-141.png"
+    : "/images/products/refills/pt-141.png";
 
   if (!thumb || thumb === "null") {
     return defaultImg;
   }
 
-  let clean = thumb.replace('cartridge.png', 'peptech/cartridge.webp');
+  let clean = thumb;
   if (clean.includes('localhost:3000/images/')) {
     clean = clean.replace(/https?:\/\/localhost:3000/, '');
   }
@@ -1185,10 +1183,10 @@ function StandardOrderDetail({ id }) {
                                       e.currentTarget.onerror = null;
                                       const t = (item?.title || "").toLowerCase();
                                       e.currentTarget.src = t.includes("pen") || t.includes("set")
-                                        ? "/images/peptech/mockup1.webp"
+                                        ? "/images/products/pen-sets/pt-141.png"
                                         : t.includes("vial") || t.includes("lyophilised")
-                                        ? "/images/peptech/mockup2.webp"
-                                        : "/images/peptech/cartridge.webp";
+                                        ? "/images/products/vials/pt-141.png"
+                                        : "/images/products/refills/pt-141.png";
                                     },
                                   }),
                                 }),

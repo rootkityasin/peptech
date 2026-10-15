@@ -62,7 +62,7 @@ export default async function createCartridge({
             handle,
             description:
               "Laboratory research grade GHK-Cu 50mg pre-filled precision cartridge. 1.5 mL sealed borosilicate cartridge engineered exclusively for the PEPTECH® Precision Pen system. Sealed under inert nitrogen. Research Use Only.",
-            thumbnail: "/images/peptech/cartridge.webp",
+            thumbnail: "/images/products/refills/ghk-cu.png",
             category_ids: refillCategory ? [refillCategory.id] : [],
             status: ProductStatus.PUBLISHED,
             shipping_profile_id: shippingProfile.id,

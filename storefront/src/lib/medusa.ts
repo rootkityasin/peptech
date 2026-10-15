@@ -391,7 +391,7 @@ export function mapMedusaToCatalogProduct(p: StoreProduct): CatalogProduct {
   const rawImages = (p.images as Array<{ url: string } | string>) || []
   const mappedImages = rawImages
     .map((img) => (typeof img === "string" ? img : img?.url))
-    .filter((url): url is string => Boolean(url && !url.includes("null") && !url.includes("Screenshot")))
+    .filter((url): url is string => Boolean(url && !url.includes("null") && !url.includes("Screenshot") && !url.includes("cartridge.webp") && !url.includes("mockup2.webp")))
 
   let image = mappedImages[0] || (p.thumbnail as string) || ""
   if (!image || image === "null" || image.includes("Screenshot")) {

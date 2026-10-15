@@ -9,7 +9,13 @@ interface ProductGalleryProps {
 }
 
 export function ProductGallery({ images, title }: ProductGalleryProps) {
-  const displayImages = images && images.length > 0 ? images : ["/images/products/placeholder.png"]
+  const validImages = (images || [])
+    .filter(Boolean)
+    .filter((img) => !img.includes("cartridge.webp") && !img.includes("mockup2.webp"))
+  const displayImages =
+    validImages.length > 0
+      ? Array.from(new Set(validImages))
+      : ["/images/products/placeholder.png"]
   const [activeIndex, setActiveIndex] = useState(0)
 
   const handlePrev = () => {

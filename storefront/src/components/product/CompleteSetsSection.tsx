@@ -201,7 +201,7 @@ export function CompleteSetsSection({ excludeHandle, products: propProducts }: C
           {/* Right: One Pen Showcase Card (lg:col-span-3) - Figma Node 8:41429 */}
           <div className="lg:col-span-3 h-[260px] sm:h-[340px] lg:h-full min-h-[260px] sm:min-h-[340px] lg:min-h-[420px] rounded-[12px] overflow-hidden relative flex flex-col justify-end p-[24px] pb-[32px] text-center shadow-xs">
             <Image
-              src="/images/figma/a899cee28c9a7dbe981b12963dd7556e80bb5a76.png"
+              src={featured.image || "/images/products/pen-sets/pt-141.png"}
               alt="One Pen Multiple Possibilities"
               fill
               sizes="(max-width: 1024px) 100vw, 320px"
