@@ -1,17 +1,34 @@
-import React, { Suspense } from "react"
+import React, { Suspense, cache } from "react"
 import Link from "next/link"
 import { Metadata } from "next"
 import { getCatalogProduct, getCatalogProducts } from "@/lib/medusa"
 import { ProductShowcase } from "@/components/product/ProductShowcase"
 import { ProductDetailSkeleton } from "@/components/product/ProductDetailSkeleton"
 
+// Hostinger Cache Manager & Edge CDN ISR: Revalidate every 5 minutes in background
+export const revalidate = 300
+
 interface PageProps {
   params: Promise<{ handle: string }>
 }
 
+// React cache to deduplicate catalog fetch across generateMetadata and Page
+const getCachedCatalog = cache(async () => {
+  return getCatalogProducts({ limit: 100 }).catch(() => [])
+})
+
+export async function generateStaticParams() {
+  const products = await getCachedCatalog()
+  return products.map((p) => ({ handle: p.handle }))
+}
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { handle } = await params
-  const product = await getCatalogProduct(handle)
+  const allProducts = await getCachedCatalog()
+  let product = allProducts.find((p) => p.handle === handle || p.id === handle) || null
+  if (!product) {
+    product = await getCatalogProduct(handle).catch(() => null)
+  }
 
   if (!product) {
     return {
@@ -32,10 +49,16 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 async function ProductDetailAsync({ handle }: { handle: string }) {
-  const [product, allProducts] = await Promise.all([
-    getCatalogProduct(handle),
-    getCatalogProducts({ limit: 100 }),
-  ])
+  // Fetch full catalog once (reused from cache without duplicate network hits)
+  const allProducts = await getCachedCatalog()
+
+  // Resolve matching product in 0ms from cached catalog
+  let product = allProducts.find((p) => p.handle === handle || p.id === handle) || null
+
+  // Fallback if not found in catalog list
+  if (!product) {
+    product = await getCatalogProduct(handle).catch(() => null)
+  }
 
   if (!product) {
     return (

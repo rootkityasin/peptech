@@ -463,8 +463,28 @@ export async function getCustomerAddresses(token: string): Promise<CustomerAddre
 /**
  * Fetch authenticated customer's order history from Medusa 2.0 PostgreSQL database
  */
-export async function getCustomerOrders(token?: string, customerId?: string, email?: string): Promise<any[]> {
+const ordersMemoryCache = new Map<string, { data: any[]; timestamp: number }>()
+const ORDERS_CACHE_TTL_MS = 15000 // 15 seconds in-memory TTL
+
+export function clearOrdersMemoryCache(): void {
+  ordersMemoryCache.clear()
+}
+
+export async function getCustomerOrders(
+  token?: string,
+  customerId?: string,
+  email?: string,
+  forceRefresh = false
+): Promise<any[]> {
   try {
+    const cacheKey = `${customerId || ""}_${token ? token.slice(-16) : ""}`
+    if (!forceRefresh && cacheKey) {
+      const cached = ordersMemoryCache.get(cacheKey)
+      if (cached && Date.now() - cached.timestamp < ORDERS_CACHE_TTL_MS) {
+        return cached.data
+      }
+    }
+
     const params = new URLSearchParams()
     if (customerId) params.append("customer_id", customerId)
 
@@ -484,6 +504,9 @@ export async function getCustomerOrders(token?: string, customerId?: string, ema
     if (customResponse.ok) {
       const data = await customResponse.json()
       if (Array.isArray(data.orders)) {
+        if (cacheKey) {
+          ordersMemoryCache.set(cacheKey, { data: data.orders, timestamp: Date.now() })
+        }
         return data.orders
       }
     }
@@ -496,7 +519,11 @@ export async function getCustomerOrders(token?: string, customerId?: string, ema
       })
       if (response.ok) {
         const data = await response.json()
-        return data.orders || []
+        const orders = data.orders || []
+        if (cacheKey) {
+          ordersMemoryCache.set(cacheKey, { data: orders, timestamp: Date.now() })
+        }
+        return orders
       }
     }
 

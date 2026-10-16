@@ -9,6 +9,7 @@ import { EmbeddedStripeCheckout } from "@/components/checkout/EmbeddedStripeChec
 import { getCustomerOrders, getCustomerAddresses } from "@/lib/customer-api"
 import { findCountryByCode, findCountryByName, formatCountryCode } from "@/lib/regions"
 import { CheckoutSkeleton } from "@/components/ui/Skeletons"
+import { resolveProductImage } from "@/lib/product-images"
 
 function CheckoutContent() {
   const {
@@ -487,9 +488,16 @@ function CheckoutContent() {
                 <li key={`${item.id}:${item.isSubscription}`} className="py-4 flex gap-4 items-center">
                   <div className="w-14 h-14 rounded-xl bg-slate-800/60 border border-slate-700/60 overflow-hidden flex items-center justify-center p-1.5 shrink-0">
                     <img
-                      src={item.image || "/images/products/placeholder.png"}
+                      src={resolveProductImage(item)}
                       alt={item.title}
                       className="w-full h-full object-contain"
+                      onError={(e) => {
+                        const target = e.currentTarget as HTMLImageElement
+                        const fallback = "/images/products/pen-sets/ghk-cu.jpg"
+                        if (!target.src.endsWith(fallback)) {
+                          target.src = fallback
+                        }
+                      }}
                     />
                   </div>
                   <div className="flex-1 min-w-0">

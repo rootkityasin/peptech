@@ -5,6 +5,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { useCart, getItemSubtitle } from "@/components/cart/CartContext"
 import { CartSkeleton } from "@/components/ui/Skeletons"
+import { resolveProductImage } from "@/lib/product-images"
 
 function CartContent() {
   const {
@@ -146,7 +147,7 @@ function CartContent() {
                   <div className="flex items-center gap-4">
                     <div className="w-20 h-20 rounded-2xl bg-[#f8fafc] border border-[#e2e8f0] p-2 shrink-0 flex items-center justify-center relative overflow-hidden">
                       <Image
-                        src={item.image || "/images/products/placeholder.png"}
+                        src={resolveProductImage(item)}
                         alt={item.title}
                         width={70}
                         height={70}

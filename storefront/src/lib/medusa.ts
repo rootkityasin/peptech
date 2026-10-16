@@ -2,6 +2,8 @@ import Medusa from "@medusajs/js-sdk"
 import { getBackendUrl } from "./customer-api"
 import { type CatalogProduct, type TechnicalSpecs } from "@/data/catalog"
 import { getChemicalProfile } from "./chemical-catalog"
+import { resolveProductImage } from "./product-images"
+import { bumpCatalogRevision } from "./catalog-version"
 
 export interface StoreProductVariant {
   id: string
@@ -88,7 +90,7 @@ function ensureRuntimeBaseUrl() {
 }
 
 // In-memory caching and promise deduplication
-const CACHE_TTL_MS = 60 * 1000 // 60 seconds
+const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes in-memory TTL (Hostinger & local session)
 
 let cachedStoreProducts: StoreProduct[] | null = null
 let cachedCatalogProducts: CatalogProduct[] | null = null
@@ -106,6 +108,7 @@ export function invalidateProductsCache(): void {
   cachedCatalogProducts = null
   lastFetchedTimestamp = 0
   productByHandleCache.clear()
+  bumpCatalogRevision()
 }
 
 /**
@@ -245,9 +248,6 @@ export async function getProduct(idOrHandle: string, forceRefresh = false): Prom
         }
         if (products.length === 0) {
           const aliasMap: Record<string, string> = {
-            "retatrutide-pen-set": "barbie-glow-pen-set",
-            "retatrutide-cartridge": "barbie-glow-cartridge",
-            "retatrutide-vial": "barbie-glow-vial",
             "glow-stack-pen-set": "barbie-glow-pen-set",
             "glow-stack-cartridge": "barbie-glow-cartridge",
             "glow-stack-vial": "barbie-glow-vial",
@@ -400,8 +400,15 @@ export function mapMedusaToCatalogProduct(p: StoreProduct): CatalogProduct {
     .filter((url): url is string => Boolean(url && !url.includes("null") && !url.includes("Screenshot") && !url.includes("cartridge.webp") && !url.includes("mockup2.webp")))
 
   let image = mappedImages[0] || (p.thumbnail as string) || ""
-  if (!image || image === "null" || image.includes("Screenshot")) {
-    image = "/images/products/placeholder.png"
+  if (!image || image === "null" || image.includes("Screenshot") || image.includes("placeholder.png")) {
+    image = resolveProductImage({
+      id: p.id,
+      title: p.title,
+      handle: p.handle,
+      subtitle: typeof p.subtitle === "string" ? p.subtitle : undefined,
+      format,
+      metadata: (p.metadata as Record<string, any>) || undefined,
+    })
   }
 
   const compoundSlug =
@@ -494,8 +501,8 @@ export async function getCatalogProduct(idOrHandle: string): Promise<CatalogProd
 /**
  * Helper: Fetch all mapped CatalogProducts from Medusa Store API
  */
-export async function getCatalogProducts(queryParams: Record<string, unknown> = {}): Promise<CatalogProduct[]> {
-  const storeProducts = await getProducts(queryParams)
+export async function getCatalogProducts(queryParams: Record<string, unknown> = {}, forceRefresh = false): Promise<CatalogProduct[]> {
+  const storeProducts = await getProducts(queryParams, forceRefresh)
   return storeProducts.map(mapMedusaToCatalogProduct)
 }
 

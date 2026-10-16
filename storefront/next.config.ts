@@ -110,6 +110,70 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      {
+        source: "/api/catalog",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=60, s-maxage=3600, stale-while-revalidate=86400",
+          },
+          {
+            key: "CDN-Cache-Control",
+            value: "public, s-maxage=3600",
+          },
+          {
+            key: "X-LiteSpeed-Cache-Control",
+            value: "public, max-age=3600, stale-while-revalidate=86400",
+          },
+        ],
+      },
+      {
+        source: "/products/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=60, s-maxage=300, stale-while-revalidate=86400",
+          },
+          {
+            key: "CDN-Cache-Control",
+            value: "public, s-maxage=300",
+          },
+          {
+            key: "X-LiteSpeed-Cache-Control",
+            value: "public, max-age=300, stale-while-revalidate=86400",
+          },
+        ],
+      },
+      {
+        source: "/:path(shop|pen-sets|refills|vials)",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=60, s-maxage=300, stale-while-revalidate=86400",
+          },
+          {
+            key: "CDN-Cache-Control",
+            value: "public, s-maxage=300",
+          },
+          {
+            key: "X-LiteSpeed-Cache-Control",
+            value: "public, max-age=300, stale-while-revalidate=86400",
+          },
+        ],
+      },
+      {
+        source: "/images/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+          {
+            key: "X-LiteSpeed-Cache-Control",
+            value: "public, max-age=31536000",
+          },
+        ],
+      },
     ];
   },
   async rewrites() {

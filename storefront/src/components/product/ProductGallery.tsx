@@ -2,6 +2,7 @@
 
 import React, { useState } from "react"
 import Image from "next/image"
+import { resolveProductImage } from "@/lib/product-images"
 
 interface ProductGalleryProps {
   images?: string[]
@@ -11,11 +12,12 @@ interface ProductGalleryProps {
 export function ProductGallery({ images, title }: ProductGalleryProps) {
   const validImages = (images || [])
     .filter(Boolean)
-    .filter((img) => !img.includes("cartridge.webp") && !img.includes("mockup2.webp"))
+    .filter((img) => !img.includes("cartridge.webp") && !img.includes("mockup2.webp") && !img.includes("placeholder.png"))
+  const cleanedImages = validImages.map((img) => resolveProductImage(img))
   const displayImages =
-    validImages.length > 0
-      ? Array.from(new Set(validImages))
-      : ["/images/products/placeholder.png"]
+    cleanedImages.length > 0
+      ? Array.from(new Set(cleanedImages))
+      : [resolveProductImage({ title })]
   const [activeIndex, setActiveIndex] = useState(0)
 
   const handlePrev = () => {

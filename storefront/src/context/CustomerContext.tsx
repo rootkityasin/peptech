@@ -12,6 +12,7 @@ import {
   updateCustomerMe,
   addCustomerAddress,
   deleteCustomerAddress,
+  clearOrdersMemoryCache,
 } from "@/lib/customer-api"
 
 interface CustomerContextType {
@@ -31,28 +32,65 @@ interface CustomerContextType {
 const CustomerContext = createContext<CustomerContextType | undefined>(undefined)
 
 const TOKEN_KEY = "peptech_customer_token"
+const PROFILE_KEY = "peptech_customer_profile"
 
 export function CustomerProvider({ children }: { children: React.ReactNode }) {
-  const [customer, setCustomer] = useState<Customer | null>(null)
-  const [token, setToken] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState<boolean>(true)
+  const [customer, setCustomer] = useState<Customer | null>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const cached = localStorage.getItem(PROFILE_KEY)
+        return cached ? JSON.parse(cached) : null
+      } catch {
+        return null
+      }
+    }
+    return null
+  })
+  const [token, setToken] = useState<string | null>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem(TOKEN_KEY)
+    }
+    return null
+  })
+  const [isLoading, setIsLoading] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      const hasToken = !!localStorage.getItem(TOKEN_KEY)
+      const hasProfile = !!localStorage.getItem(PROFILE_KEY)
+      return hasToken && !hasProfile
+    }
+    return false
+  })
+
+  const setSyncedCustomer = useCallback((cust: Customer | null) => {
+    setCustomer(cust)
+    if (typeof window !== "undefined") {
+      if (cust) {
+        try {
+          localStorage.setItem(PROFILE_KEY, JSON.stringify(cust))
+        } catch {}
+      } else {
+        localStorage.removeItem(PROFILE_KEY)
+      }
+    }
+  }, [])
 
   const fetchCustomer = useCallback(async (authToken: string) => {
     try {
       const data = await getCustomerMe(authToken)
-      setCustomer(data)
+      setSyncedCustomer(data)
       setToken(authToken)
     } catch (err) {
       console.warn("Failed to restore customer session:", err)
       if (typeof window !== "undefined") {
         localStorage.removeItem(TOKEN_KEY)
+        localStorage.removeItem(PROFILE_KEY)
       }
-      setCustomer(null)
+      setSyncedCustomer(null)
       setToken(null)
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [setSyncedCustomer])
 
   useEffect(() => {
     let isMounted = true
@@ -66,7 +104,7 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
       if (isMounted) {
         setIsLoading(false)
       }
-    }, 3500)
+    }, 2500)
 
     fetchCustomer(savedToken).finally(() => {
       clearTimeout(fallbackTimer)
@@ -85,7 +123,7 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
     }
     setToken(receivedToken)
     const data = await getCustomerMe(receivedToken)
-    setCustomer(data)
+    setSyncedCustomer(data)
   }
 
   const register = async (payload: CustomerRegisterPayload) => {
@@ -94,19 +132,31 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem(TOKEN_KEY, result.token)
     }
     setToken(result.token)
-    setCustomer(result.customer)
+    setSyncedCustomer(result.customer)
   }
 
   const logout = () => {
-    localStorage.removeItem(TOKEN_KEY)
+    if (typeof window !== "undefined") {
+      if (customer?.id) {
+        try {
+          localStorage.removeItem(`peptech_customer_orders_${customer.id}`)
+        } catch {}
+      }
+      localStorage.removeItem(TOKEN_KEY)
+      localStorage.removeItem(PROFILE_KEY)
+      try {
+        sessionStorage.clear()
+      } catch {}
+    }
+    clearOrdersMemoryCache()
     setToken(null)
-    setCustomer(null)
+    setSyncedCustomer(null)
   }
 
   const updateProfile = async (payload: CustomerUpdatePayload) => {
     if (!token) throw new Error("Not authenticated")
     const updated = await updateCustomerMe(token, payload)
-    setCustomer(updated)
+    setSyncedCustomer(updated)
   }
 
   const addAddress = async (payload: CustomerAddressPayload) => {
@@ -114,7 +164,7 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
     await addCustomerAddress(token, payload)
     // Refresh to get full updated customer object with addresses
     const updated = await getCustomerMe(token)
-    setCustomer(updated)
+    setSyncedCustomer(updated)
   }
 
   const deleteAddress = async (addressId: string) => {
@@ -122,13 +172,13 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
     await deleteCustomerAddress(token, addressId)
     // Refresh to get full updated customer object with addresses
     const updated = await getCustomerMe(token)
-    setCustomer(updated)
+    setSyncedCustomer(updated)
   }
 
   const refreshCustomer = async () => {
     if (!token) return
     const updated = await getCustomerMe(token)
-    setCustomer(updated)
+    setSyncedCustomer(updated)
   }
 
   return (

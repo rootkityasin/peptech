@@ -3,7 +3,6 @@
 import React from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { useRouter } from "next/navigation"
 import { useCart } from "@/components/cart/CartContext"
 
 import { CatalogProduct } from "@/data/catalog"
@@ -15,11 +14,9 @@ interface RefillsSectionProps {
 }
 
 export function RefillsSection({ excludeHandle, products: propProducts }: RefillsSectionProps = {}) {
-  const router = useRouter()
   const { autoSavings } = useCart()
-  const { products: liveProducts } = useLiveProducts()
-  const products = propProducts || liveProducts
-  const handleAddCartridge = (_item?: unknown) => router.push("/refills")
+  const { products: liveProducts } = useLiveProducts(propProducts || [])
+  const products = propProducts && propProducts.length > 0 ? propProducts : liveProducts
   const displayRefills = products.filter(
     (p) => p.format === "refill-cartridge" && (!excludeHandle || p.handle !== excludeHandle)
   ).slice(0, 4)
@@ -140,55 +137,14 @@ export function RefillsSection({ excludeHandle, products: propProducts }: Refill
                   </div>
                 </Link>
 
-                {/* Actions: View Details & Quick Add */}
-                <div className="flex items-center gap-2 mt-auto pt-2 border-t border-slate-100">
+                {/* Actions: View Details */}
+                <div className="mt-auto pt-2 border-t border-slate-100">
                   <Link
                     href={`/products/${item.handle}`}
-                    className="btn-shimmer btn-press flex-1 bg-[#0b1f3a] hover:bg-[#16a6a3] text-white flex items-center justify-center py-2 rounded-lg text-[12px] font-semibold transition-all"
+                    className="btn-shimmer btn-press w-full bg-[#0b1f3a] hover:bg-[#16a6a3] text-white flex items-center justify-center py-2 rounded-lg text-[12px] font-semibold transition-all shadow-xs"
                   >
                     <span>Details</span>
                   </Link>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault()
-                      e.stopPropagation()
-                      handleAddCartridge(item)
-                    }}
-                    title="Quick Add to Cart"
-                    aria-label={`Quick Add ${item.name} to Cart`}
-                    className="group size-[34px] rounded-lg border border-[#cbd5e1] hover:border-[#0b1f3a] hover:bg-slate-50 flex items-center justify-center shrink-0 transition-colors cursor-pointer text-[#0b1f3a]"
-                  >
-                    <svg
-                      className="size-[15px] text-[#0b1f3a] group-hover:text-[#16a6a3] group-hover:scale-110 transition-all"
-                      viewBox="0 0 16 16"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                      aria-hidden="true"
-                    >
-                      <path
-                        d="M6 14.6667C6.36819 14.6667 6.66667 14.3682 6.66667 14C6.66667 13.6318 6.36819 13.3333 6 13.3333C5.63181 13.3333 5.33333 13.6318 5.33333 14C5.33333 14.3682 5.63181 14.6667 6 14.6667Z"
-                        stroke="currentColor"
-                        strokeWidth="1.33333"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                      <path
-                        d="M13.3333 14.6667C13.7015 14.6667 14 14.3682 14 14C14 13.6318 13.7015 13.3333 13.3333 13.3333C12.9651 13.3333 12.6667 13.6318 12.6667 14C12.6667 14.3682 12.9651 14.6667 13.3333 14.6667Z"
-                        stroke="currentColor"
-                        strokeWidth="1.33333"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                      <path
-                        d="M0.666666 0.666666H3.33333L5.12 9.59333C5.18096 9.90026 5.34794 10.176 5.5917 10.3722C5.83546 10.5684 6.14047 10.6727 6.45333 10.6667H12.9333C13.2462 10.6727 13.5512 10.5684 13.795 10.3722C14.0387 10.176 14.2057 9.90026 14.2667 9.59333L15.3333 4H4"
-                        stroke="currentColor"
-                        strokeWidth="1.33333"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </button>
                 </div>
               </div>
             ))}

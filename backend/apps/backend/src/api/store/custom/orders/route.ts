@@ -2,6 +2,41 @@ import type { AuthenticatedMedusaRequest, MedusaResponse } from "@medusajs/frame
 import { Modules } from "@medusajs/framework/utils"
 import { actor, endpoint } from "../../../../lib/commerce/http"
 
+function resolveItemThumbnail(it: any): string {
+  let thumb = it?.thumbnail
+  if (thumb && typeof thumb === "string" && !thumb.includes("null") && !thumb.includes("placeholder")) {
+    return thumb.replace(/^https?:\/\/localhost:\d+/, "")
+  }
+  const title = (it?.title || it?.name || "").toLowerCase()
+  const sub = (it?.variant_title || it?.subtitle || "").toLowerCase()
+  const combined = `${title} ${sub}`
+
+  const isVial = combined.includes("vial") || combined.includes("lyophilised") || combined.includes("freeze-dried")
+  const isRefill = combined.includes("refill") || combined.includes("cartridge")
+  
+  let slug = "ghk-cu"
+  if (combined.includes("ghk") || combined.includes("copper")) slug = "ghk-cu"
+  else if (combined.includes("tesamorelin") || combined.includes("tesa")) slug = "tesamorelin"
+  else if (combined.includes("tirzepatide") || combined.includes("tirz") || combined.includes("retatrutide")) slug = "tirzepatide"
+  else if (combined.includes("bpc") || combined.includes("tb-500") || combined.includes("wolverine")) slug = "bpc-157-tb-500"
+  else if (combined.includes("mots")) slug = "mots-c"
+  else if (combined.includes("nad")) slug = "nad-plus"
+  else if (combined.includes("pt-141") || combined.includes("pt141") || combined.includes("bremelanotide")) slug = "pt-141"
+  else if (combined.includes("melanotan") || combined.includes("mt-2") || combined.includes("mt2")) slug = "melanotan-2"
+  else if (combined.includes("barbie") || combined.includes("glow")) slug = "barbie-glow"
+  else if (combined.includes("klow")) slug = "klow"
+
+  if (isRefill) {
+    return `/images/products/refills/${slug}.png`
+  }
+  if (isVial) {
+    return `/images/products/vials/${slug}.png`
+  }
+  if (slug === "ghk-cu") return "/images/products/pen-sets/ghk-cu.jpg"
+  if (slug === "tesamorelin") return "/images/products/pen-sets/tesamorelin.jpg"
+  return `/images/products/pen-sets/${slug}.png`
+}
+
 export async function GET(req: AuthenticatedMedusaRequest, res: MedusaResponse) {
   res.setHeader("Cache-Control", "no-store")
   return endpoint(res, async () => {
@@ -66,7 +101,10 @@ export async function GET(req: AuthenticatedMedusaRequest, res: MedusaResponse) 
 
     // Compute totals so orders accurately preserve free shipping (0) vs courier fees
     const computedOrders = orders.map((o: any) => {
-      const lineItems = o.items || []
+      const lineItems = (o.items || []).map((it: any) => ({
+        ...it,
+        thumbnail: resolveItemThumbnail(it),
+      }))
       const itemsTotal = lineItems.reduce((acc: number, it: any) => {
         const raw = Number(it.unit_price) || 0
         const pounds = raw > 1000 && Number.isInteger(raw) ? raw / 100 : raw

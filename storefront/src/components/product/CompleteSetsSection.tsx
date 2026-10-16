@@ -48,8 +48,8 @@ interface CompleteSetsSectionProps {
 
 export function CompleteSetsSection({ excludeHandle, products: propProducts }: CompleteSetsSectionProps) {
   const router = useRouter()
-  const { products: liveProducts } = useLiveProducts()
-  const products = propProducts || liveProducts
+  const { products: liveProducts } = useLiveProducts(propProducts || [])
+  const products = propProducts && propProducts.length > 0 ? propProducts : liveProducts
   const featured =
     products.find((p) => p.format === "complete-pen-set" && (!excludeHandle || p.handle !== excludeHandle)) ||
     products[0]

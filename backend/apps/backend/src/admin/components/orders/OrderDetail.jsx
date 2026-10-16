@@ -148,22 +148,42 @@ html.dark .orders-theme-root input[type="checkbox"],
 
 function resolveItemThumbnail(item) {
   let thumb = item?.thumbnail;
-  const title = (item?.title || "").toLowerCase();
-  const defaultImg = title.includes("pen") || title.includes("set")
-    ? "/images/products/pen-sets/pt-141.png"
-    : title.includes("vial") || title.includes("lyophilised")
-    ? "/images/products/vials/pt-141.png"
-    : "/images/products/refills/pt-141.png";
-
-  if (!thumb || thumb === "null") {
-    return defaultImg;
+  if (thumb && thumb !== "null" && !thumb.includes("placeholder")) {
+    let clean = thumb;
+    if (clean.includes('localhost:3000/images/')) {
+      clean = clean.replace(/https?:\/\/localhost:3000/, '');
+    }
+    return clean;
   }
 
-  let clean = thumb;
-  if (clean.includes('localhost:3000/images/')) {
-    clean = clean.replace(/https?:\/\/localhost:3000/, '');
+  const title = (item?.title || item?.name || "").toLowerCase();
+  const sub = (item?.variant_title || item?.subtitle || "").toLowerCase();
+  const combined = `${title} ${sub}`;
+
+  const isVial = combined.includes("vial") || combined.includes("lyophilised") || combined.includes("freeze-dried");
+  const isRefill = combined.includes("refill") || combined.includes("cartridge");
+
+  let slug = "ghk-cu";
+  if (combined.includes("ghk") || combined.includes("copper")) slug = "ghk-cu";
+  else if (combined.includes("tesamorelin") || combined.includes("tesa")) slug = "tesamorelin";
+  else if (combined.includes("tirzepatide") || combined.includes("tirz") || combined.includes("retatrutide")) slug = "tirzepatide";
+  else if (combined.includes("bpc") || combined.includes("tb-500") || combined.includes("wolverine")) slug = "bpc-157-tb-500";
+  else if (combined.includes("mots")) slug = "mots-c";
+  else if (combined.includes("nad")) slug = "nad-plus";
+  else if (combined.includes("pt-141") || combined.includes("pt141") || combined.includes("bremelanotide")) slug = "pt-141";
+  else if (combined.includes("melanotan") || combined.includes("mt-2") || combined.includes("mt2")) slug = "melanotan-2";
+  else if (combined.includes("barbie") || combined.includes("glow")) slug = "barbie-glow";
+  else if (combined.includes("klow")) slug = "klow";
+
+  if (isRefill) {
+    return `/images/products/refills/${slug}.png`;
   }
-  return clean;
+  if (isVial) {
+    return `/images/products/vials/${slug}.png`;
+  }
+  if (slug === "ghk-cu") return "/images/products/pen-sets/ghk-cu.jpg";
+  if (slug === "tesamorelin") return "/images/products/pen-sets/tesamorelin.jpg";
+  return `/images/products/pen-sets/${slug}.png`;
 }
 
 

@@ -7,6 +7,7 @@ import { commerceRequest } from "@/lib/stripe-checkout"
 import { ScheduleConfigurationPanel } from "./ScheduleConfigurationPanel"
 import { DosageProtocolModal } from "./DosageProtocolModal"
 import { VisaBadge, MastercardBadge, AmexBadge, JcbBadge } from "@/components/ui/PaymentBadges"
+import { resolveProductImage } from "@/lib/product-images"
 
 function CardBrandBadge({ brand, className = "w-[36px] h-[22px]" }: { brand?: string; className?: string }) {
   const b = (brand || "").toLowerCase()
@@ -294,7 +295,7 @@ export function SubscriptionDashboard({
                       <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
                         <div className="w-12 sm:w-14 h-12 sm:h-14 bg-white rounded-lg border border-slate-200/80 flex items-center justify-center p-1 shrink-0 overflow-hidden">
                           <Image
-                            src={sub.image || sub.thumbnail || "/images/products/refills/pt-141.png"}
+                            src={resolveProductImage(sub)}
                             alt={sub.product_name || "Product"}
                             width={48}
                             height={48}

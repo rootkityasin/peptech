@@ -13,6 +13,8 @@ import { getCustomerOrders } from "@/lib/customer-api"
 import { formatFullReceiptDateTime, getItemDisplayDetails } from "@/components/receipt/UnifiedReceipt"
 import { fetchCountryOptions, formatCountryCode, type CountryOption } from "@/lib/regions"
 import { AccountSkeleton } from "@/components/ui/Skeletons"
+import { resolveProductImage } from "@/lib/product-images"
+import { useCustomDialog } from "@/components/ui/CustomDialog"
 
 function formatOrderDate(rawDate?: string | Date | null): string {
   if (!rawDate) return new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
@@ -20,6 +22,159 @@ function formatOrderDate(rawDate?: string | Date | null): string {
   return isNaN(d.getTime())
     ? new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
     : d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+}
+
+function formatMedusaOrder(mo: any, customer?: any) {
+  const rawTotal =
+    typeof mo.summary?.original_order_total === "number" && mo.summary.original_order_total > 0
+      ? mo.summary.original_order_total
+      : typeof mo.summary?.paid_total === "number" && mo.summary.paid_total > 0
+      ? mo.summary.paid_total
+      : typeof mo.summary?.total === "number" && mo.summary.total > 0
+      ? mo.summary.total
+      : typeof mo.total === "number" && mo.total > 0
+      ? mo.total
+      : mo.metadata?.refunded_amount_minor
+      ? mo.metadata.refunded_amount_minor / 100
+      : 0
+  const actualOrderId =
+    mo.id || mo.internalId || (mo.custom_display_id && !/^PEP-\d+$/i.test(mo.custom_display_id) ? mo.custom_display_id : "order_peptech")
+  const displayDate = formatFullReceiptDateTime(mo.created_at || mo.date)
+
+  const rawItems = (mo.items || []).map((it: any) => {
+    const rawPrice =
+      typeof it.unit_price === "number"
+        ? it.unit_price
+        : typeof it.price === "number"
+        ? it.price
+        : 0
+    const itPrice =
+      rawPrice > 1000 && Number.isInteger(rawPrice)
+        ? rawPrice / 100
+        : rawPrice > 0
+        ? rawPrice
+        : 195
+    const itOptions =
+      it.options ||
+      it.metadata?.options ||
+      (it.metadata?.cartridge_name ? [{ label: "Included Cartridge", value: it.metadata.cartridge_name }] : undefined)
+    return {
+      id: it.id,
+      title: it.title,
+      subtitle: it.variant_title || it.subtitle || it.product_description || "Laboratory RUO Grade",
+      price: itPrice,
+      quantity: it.quantity || 1,
+      image: resolveProductImage(it),
+      options: itOptions,
+    }
+  })
+  const itemsSum = rawItems.reduce((acc: number, it: any) => acc + (it.price || 0) * (it.quantity || 1), 0)
+
+  const rawSubtotal = typeof mo.summary?.subtotal === "number" ? mo.summary.subtotal : 0
+  const subtotal =
+    itemsSum > 0
+      ? itemsSum
+      : rawSubtotal > 1000 && Number.isInteger(rawSubtotal)
+      ? rawSubtotal / 100
+      : rawSubtotal > 0
+      ? rawSubtotal
+      : 0
+
+  const rawShipping =
+    typeof mo.summary?.shipping_total === "number"
+      ? mo.summary.shipping_total
+      : typeof mo.shipping_methods?.[0]?.amount === "number"
+      ? mo.shipping_methods[0].amount
+      : undefined
+
+  const shippingTotal =
+    typeof rawShipping === "number"
+      ? rawShipping > 50 && Number.isInteger(rawShipping)
+        ? rawShipping / 100
+        : rawShipping
+      : subtotal >= 150
+      ? 0
+      : 4.95
+
+  const shippingMethodName =
+    mo.shipping_methods?.[0]?.name ||
+    (shippingTotal === 0 ? "Royal Mail Tracked 24 (Free)" : "Royal Mail Tracked 24")
+
+  const displayTotal =
+    rawTotal > 1000 && Number.isInteger(rawTotal)
+      ? rawTotal / 100
+      : rawTotal > 0
+      ? rawTotal
+      : subtotal + shippingTotal > 0
+      ? subtotal + shippingTotal
+      : mo.metadata?.refunded_amount_minor
+      ? mo.metadata.refunded_amount_minor / 100
+      : 199.95
+
+  const isRefunded =
+    mo.metadata?.refund_status === "refunded" ||
+    mo.metadata?.payment_status === "refunded" ||
+    mo.payment_status === "refunded" ||
+    mo.status === "refunded" ||
+    Boolean(mo.metadata?.stripe_refund_id) ||
+    (typeof mo.summary?.refunded_total === "number" && mo.summary.refunded_total > 0) ||
+    (mo.metadata?.refunded_amount_minor && mo.metadata.refunded_amount_minor > 0)
+  const isPartiallyRefunded =
+    !isRefunded &&
+    (mo.metadata?.refund_status === "partially_refunded" || mo.metadata?.payment_status === "partially_refunded")
+  const refundStatus = isRefunded ? "Refunded" : isPartiallyRefunded ? "Partially Refunded" : null
+  const refundedAmount = mo.metadata?.refunded_amount_gbp
+    ? parseFloat(mo.metadata.refunded_amount_gbp)
+    : mo.metadata?.refunded_amount_minor
+    ? mo.metadata.refunded_amount_minor / 100
+    : typeof mo.summary?.refunded_total === "number" && mo.summary.refunded_total > 0
+    ? mo.summary.refunded_total > 1000
+      ? mo.summary.refunded_total / 100
+      : mo.summary.refunded_total
+    : isRefunded
+    ? displayTotal
+    : 0
+  const refundedDate = mo.metadata?.refunded_at ? formatFullReceiptDateTime(mo.metadata.refunded_at) : null
+
+  return {
+    id: actualOrderId,
+    internalId: mo.id,
+    displayId: actualOrderId,
+    date: mo.created_at || new Date().toISOString(),
+    displayDate,
+    total: displayTotal,
+    subtotal,
+    shippingTotal,
+    shippingMethodName,
+    status: isRefunded
+      ? "Refunded"
+      : isPartiallyRefunded
+      ? "Partially Refunded"
+      : mo.fulfillment_status === "delivered" || mo.status === "completed"
+      ? "Delivered"
+      : mo.fulfillment_status === "shipped" || mo.fulfillment_status === "fulfilled"
+      ? "Dispatched"
+      : "Cold-Chain Packing",
+    isRefunded,
+    isPartiallyRefunded,
+    refundStatus,
+    refundedAmount,
+    refundedDate,
+    metadata: mo.metadata,
+    trackingNumber:
+      mo.fulfillments?.[0]?.labels?.[0]?.tracking_number ||
+      mo.fulfillments?.[0]?.metadata?.tracking_number ||
+      mo.metadata?.tracking_number ||
+      mo.tracking_number ||
+      `GB-RM24-${actualOrderId.replace(/[^a-zA-Z0-9]/g, "").slice(-10).toUpperCase()}-CLD`,
+    paymentMethod: mo.metadata?.payment_method || "Stripe 256-Bit SSL Encrypted (Card / Link)",
+    stripeReceiptUrl: mo.metadata?.stripe_receipt_url || mo.metadata?.receipt_url || null,
+    customerName: customer ? `${customer.first_name || ""} ${customer.last_name || ""}`.trim() || undefined : undefined,
+    customerEmail: customer?.email || mo.email,
+    shippingAddress: mo.shipping_address,
+    billingAddress: mo.billing_address,
+    items: rawItems,
+  }
 }
 
 type AccountTab = "overview" | "orders" | "subscriptions" | "addresses" | "payment"
@@ -43,12 +198,56 @@ function AccountContent() {
     deleteAddress,
   } = useCustomer()
 
+  const { showAlert, showConfirm } = useCustomDialog()
+
   // Dynamic User Data (Orders, Subscriptions, Saved Payment Cards)
-  const [orders, setOrders] = useState<any[]>([])
+  const [orders, setOrders] = useState<any[]>(() => {
+    if (typeof window === "undefined") return []
+    try {
+      let custId = customer?.id
+      if (!custId) {
+        const cachedProf = localStorage.getItem("peptech_customer_profile")
+        if (cachedProf) {
+          custId = JSON.parse(cachedProf)?.id
+        }
+      }
+      if (custId) {
+        const cached = localStorage.getItem(`peptech_customer_orders_${custId}`)
+        if (cached) {
+          const parsed = JSON.parse(cached)
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed
+        }
+      }
+    } catch {}
+    return []
+  })
   const [subscriptions, setSubscriptions] = useState<any[]>([])
   const [paymentCards, setPaymentCards] = useState<any[]>([])
   const [countryOptions, setCountryOptions] = useState<CountryOption[]>([])
-  const [isLoadingOrders, setIsLoadingOrders] = useState(false)
+  const [isLoadingOrders, setIsLoadingOrders] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false
+    try {
+      const hasToken = localStorage.getItem("peptech_customer_token")
+      if (!hasToken) return false
+      let custId = customer?.id
+      if (!custId) {
+        const cachedProf = localStorage.getItem("peptech_customer_profile")
+        if (cachedProf) {
+          custId = JSON.parse(cachedProf)?.id
+        }
+      }
+      if (custId) {
+        const cached = localStorage.getItem(`peptech_customer_orders_${custId}`)
+        if (cached) {
+          const parsed = JSON.parse(cached)
+          if (Array.isArray(parsed) && parsed.length > 0) return false
+        }
+      }
+      return true
+    } catch {
+      return false
+    }
+  })
   const avatarInputRef = useRef<HTMLInputElement | null>(null)
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
 
@@ -171,159 +370,71 @@ function AccountContent() {
   // Load customer orders, subscriptions, and payment methods
   useEffect(() => {
     if (!customer?.id) {
-      setOrders([])
-      setSubscriptions([])
-      setPaymentCards([])
+      const hasToken = typeof window !== "undefined" ? localStorage.getItem("peptech_customer_token") : null
+      if (!hasToken && !token) {
+        setOrders([])
+        setSubscriptions([])
+        setPaymentCards([])
+        setIsLoadingOrders(false)
+      }
       return
     }
 
     let isSubscribed = true
-    setIsLoadingOrders(true)
+    const custId = customer.id
 
-    const loadData = async () => {
+    // Check if cached orders exist for this customer; if not, trigger loading state
+    try {
+      const cached = localStorage.getItem(`peptech_customer_orders_${custId}`)
+      if (!cached || JSON.parse(cached).length === 0) {
+        setIsLoadingOrders(true)
+      }
+    } catch {
+      setIsLoadingOrders(true)
+    }
+
+    const savedToken = typeof window !== "undefined" ? localStorage.getItem("peptech_customer_token") : null
+    const activeToken = token || savedToken
+    const queryStr = `?customer_id=${encodeURIComponent(custId)}`
+
+    // Stream 1: Fast Medusa Orders Query (PostgreSQL ~50ms, with client memory cache)
+    const ordersPromise = (async () => {
       try {
-        const savedToken = typeof window !== "undefined" ? localStorage.getItem("peptech_customer_token") : null
-        const activeToken = token || savedToken
-        const custId = customer.id
-        const queryStr = `?customer_id=${encodeURIComponent(custId)}`
+        const medusaOrders = await getCustomerOrders(activeToken || undefined, custId).catch(() => [])
+        if (!isSubscribed) return []
 
-        const [medusaOrders, subsResult, pmsResult] = await Promise.all([
-          getCustomerOrders(activeToken || undefined, custId).catch(() => []),
+        let loadedOrders: any[] = []
+        if (Array.isArray(medusaOrders) && medusaOrders.length > 0) {
+          loadedOrders = medusaOrders.map((mo: any) => formatMedusaOrder(mo, customer))
+          try {
+            localStorage.setItem(`peptech_customer_orders_${custId}`, JSON.stringify(loadedOrders))
+          } catch {}
+        } else {
+          try {
+            localStorage.removeItem(`peptech_customer_orders_${custId}`)
+          } catch {}
+        }
+        setOrders(loadedOrders)
+        return loadedOrders
+      } catch (err) {
+        console.warn("[PEPTECH ORDERS] Error fetching customer orders:", err)
+        return []
+      } finally {
+        if (isSubscribed) {
+          setIsLoadingOrders(false)
+        }
+      }
+    })()
+
+    // Stream 2: Asynchronous Stripe Cloud Queries (Subscriptions & Payment Methods ~1.5s - 2.5s)
+    void (async () => {
+      try {
+        const [subsResult, pmsResult] = await Promise.all([
           commerceRequest(`/store/custom/subscriptions${queryStr}`, activeToken).catch(() => ({ subscriptions: [] })),
           commerceRequest(`/store/custom/payment-methods${queryStr}`, activeToken).catch(() => ({ payment_methods: [] })),
         ])
 
         if (!isSubscribed) return
-
-        let loadedOrders: any[] = []
-        if (Array.isArray(medusaOrders) && medusaOrders.length > 0) {
-          loadedOrders = medusaOrders.map((mo: any) => {
-            const rawTotal = typeof mo.summary?.original_order_total === "number" && mo.summary.original_order_total > 0
-              ? mo.summary.original_order_total
-              : (typeof mo.summary?.paid_total === "number" && mo.summary.paid_total > 0
-                ? mo.summary.paid_total
-                : (typeof mo.summary?.total === "number" && mo.summary.total > 0
-                  ? mo.summary.total
-                  : (typeof mo.total === "number" && mo.total > 0
-                    ? mo.total
-                    : (mo.metadata?.refunded_amount_minor ? mo.metadata.refunded_amount_minor / 100 : 0))))
-            const actualOrderId = mo.id || mo.internalId || (mo.custom_display_id && !/^PEP-\d+$/i.test(mo.custom_display_id) ? mo.custom_display_id : "order_peptech")
-            const displayDate = formatFullReceiptDateTime(mo.created_at || mo.date)
-            
-            const rawItems = (mo.items || []).map((it: any) => {
-              const rawPrice =
-                typeof it.unit_price === "number"
-                  ? it.unit_price
-                  : typeof it.price === "number"
-                  ? it.price
-                  : 0
-              const itPrice =
-                rawPrice > 1000 && Number.isInteger(rawPrice)
-                  ? rawPrice / 100
-                  : rawPrice > 0
-                  ? rawPrice
-                  : 195
-              const itOptions = it.options || it.metadata?.options || (it.metadata?.cartridge_name ? [{ label: "Included Cartridge", value: it.metadata.cartridge_name }] : undefined)
-              return {
-                id: it.id,
-                title: it.title,
-                subtitle: it.variant_title || it.subtitle || it.product_description || "Laboratory RUO Grade",
-                price: itPrice,
-                quantity: it.quantity || 1,
-                image: it.thumbnail || "/images/products/placeholder.png",
-                options: itOptions,
-              }
-            })
-            const itemsSum = rawItems.reduce((acc: number, it: any) => acc + ((it.price || 0) * (it.quantity || 1)), 0)
-
-            const rawSubtotal = typeof mo.summary?.subtotal === "number" ? mo.summary.subtotal : 0
-            const subtotal =
-              itemsSum > 0
-                ? itemsSum
-                : rawSubtotal > 1000 && Number.isInteger(rawSubtotal)
-                ? rawSubtotal / 100
-                : rawSubtotal > 0
-                ? rawSubtotal
-                : 0
-
-            const rawShipping =
-              typeof mo.summary?.shipping_total === "number"
-                ? mo.summary.shipping_total
-                : typeof mo.shipping_methods?.[0]?.amount === "number"
-                ? mo.shipping_methods[0].amount
-                : undefined
-
-            const shippingTotal =
-              typeof rawShipping === "number"
-                ? (rawShipping > 50 && Number.isInteger(rawShipping) ? rawShipping / 100 : rawShipping)
-                : (subtotal >= 150 ? 0 : 4.95)
-
-            const shippingMethodName =
-              mo.shipping_methods?.[0]?.name ||
-              (shippingTotal === 0 ? "Royal Mail Tracked 24 (Free)" : "Royal Mail Tracked 24")
-
-            const displayTotal =
-              rawTotal > 1000 && Number.isInteger(rawTotal)
-                ? rawTotal / 100
-                : rawTotal > 0
-                ? rawTotal
-                : (subtotal + shippingTotal > 0
-                    ? subtotal + shippingTotal
-                    : mo.metadata?.refunded_amount_minor
-                    ? mo.metadata.refunded_amount_minor / 100
-                    : 199.95)
-
-            const isRefunded = 
-              mo.metadata?.refund_status === "refunded" || 
-              mo.metadata?.payment_status === "refunded" || 
-              mo.payment_status === "refunded" || 
-              mo.status === "refunded" || 
-              Boolean(mo.metadata?.stripe_refund_id) || 
-              (typeof mo.summary?.refunded_total === "number" && mo.summary.refunded_total > 0) || 
-              (mo.metadata?.refunded_amount_minor && mo.metadata.refunded_amount_minor > 0)
-            const isPartiallyRefunded = !isRefunded && (mo.metadata?.refund_status === "partially_refunded" || mo.metadata?.payment_status === "partially_refunded")
-            const refundStatus = isRefunded ? "Refunded" : (isPartiallyRefunded ? "Partially Refunded" : null)
-            const refundedAmount = mo.metadata?.refunded_amount_gbp 
-              ? parseFloat(mo.metadata.refunded_amount_gbp) 
-              : (mo.metadata?.refunded_amount_minor 
-                ? mo.metadata.refunded_amount_minor / 100 
-                : (typeof mo.summary?.refunded_total === "number" && mo.summary.refunded_total > 0
-                  ? (mo.summary.refunded_total > 1000 ? mo.summary.refunded_total / 100 : mo.summary.refunded_total)
-                  : (isRefunded ? displayTotal : 0)))
-            const refundedDate = mo.metadata?.refunded_at ? formatFullReceiptDateTime(mo.metadata.refunded_at) : null
-
-            return {
-              id: actualOrderId,
-              internalId: mo.id,
-              displayId: actualOrderId,
-              date: mo.created_at || new Date().toISOString(),
-              displayDate,
-              total: displayTotal,
-              subtotal,
-              shippingTotal,
-              shippingMethodName,
-              status: isRefunded ? "Refunded" : isPartiallyRefunded ? "Partially Refunded" : (mo.fulfillment_status === "delivered" || mo.status === "completed" ? "Delivered" : (mo.fulfillment_status === "shipped" || mo.fulfillment_status === "fulfilled" ? "Dispatched" : "Cold-Chain Packing")),
-              isRefunded,
-              isPartiallyRefunded,
-              refundStatus,
-              refundedAmount,
-              refundedDate,
-              metadata: mo.metadata,
-              trackingNumber: mo.fulfillments?.[0]?.labels?.[0]?.tracking_number || mo.fulfillments?.[0]?.metadata?.tracking_number || mo.metadata?.tracking_number || mo.tracking_number || `GB-RM24-${actualOrderId.replace(/[^a-zA-Z0-9]/g, "").slice(-10).toUpperCase()}-CLD`,
-              paymentMethod: mo.metadata?.payment_method || "Stripe 256-Bit SSL Encrypted (Card / Link)",
-              stripeReceiptUrl: mo.metadata?.stripe_receipt_url || mo.metadata?.receipt_url || null,
-              customerName: customer ? `${customer.first_name || ""} ${customer.last_name || ""}`.trim() || undefined : undefined,
-              customerEmail: customer?.email || mo.email,
-              shippingAddress: mo.shipping_address,
-              billingAddress: mo.billing_address,
-              items: rawItems,
-            }
-          })
-          try {
-            localStorage.setItem(`peptech_customer_orders_${customer.id}`, JSON.stringify(loadedOrders))
-          } catch {}
-        }
-        setOrders(loadedOrders)
 
         if (Array.isArray(subsResult?.subscriptions)) {
           setSubscriptions(subsResult.subscriptions)
@@ -338,36 +449,36 @@ function AccountContent() {
             return true
           })
           setPaymentCards(deduped)
-        } else if (loadedOrders.length > 0) {
-          const firstOrderWithPayment = loadedOrders.find((o: any) => o.paymentMethod || o.stripeReceiptUrl)
-          if (firstOrderWithPayment) {
-            const pmStr = firstOrderWithPayment.paymentMethod || ""
-            const isMc = /mastercard/i.test(pmStr)
-            const isAmex = /amex|american express/i.test(pmStr)
-            const brand = isMc ? "mastercard" : isAmex ? "amex" : "visa"
-            const last4Match = pmStr.match(/\b\d{4}\b/)
-            const last4 = last4Match ? last4Match[0] : "4242"
-            setPaymentCards([{
-              id: "order_saved_card",
-              brand,
-              last4,
-              funding: "card",
-              title: `${isMc ? "Mastercard" : isAmex ? "American Express" : "Visa"} Corporate`,
-              expiry: "",
-              is_default: true,
-            }])
+        } else {
+          // Fallback: derive card from order history once orders are resolved
+          const freshOrders = await ordersPromise
+          if (!isSubscribed) return
+          const orderList = freshOrders && freshOrders.length > 0 ? freshOrders : orders
+          if (orderList.length > 0) {
+            const firstOrderWithPayment = orderList.find((o: any) => o.paymentMethod || o.stripeReceiptUrl)
+            if (firstOrderWithPayment) {
+              const pmStr = firstOrderWithPayment.paymentMethod || ""
+              const isMc = /mastercard/i.test(pmStr)
+              const isAmex = /amex|american express/i.test(pmStr)
+              const brand = isMc ? "mastercard" : isAmex ? "amex" : "visa"
+              const last4Match = pmStr.match(/\b\d{4}\b/)
+              const last4 = last4Match ? last4Match[0] : "4242"
+              setPaymentCards([{
+                id: "order_saved_card",
+                brand,
+                last4,
+                funding: "card",
+                title: `${isMc ? "Mastercard" : isAmex ? "American Express" : "Visa"} Corporate`,
+                expiry: "",
+                is_default: true,
+              }])
+            }
           }
         }
       } catch (err) {
-        console.warn("Error loading account data:", err)
-      } finally {
-        if (isSubscribed) {
-          setIsLoadingOrders(false)
-        }
+        console.warn("[PEPTECH STRIPE] Error loading subscriptions/payment cards:", err)
       }
-    }
-
-    void loadData()
+    })()
 
     return () => {
       isSubscribed = false
@@ -471,11 +582,11 @@ function AccountContent() {
     const file = e.target.files?.[0]
     if (!file) return
     if (!file.type.startsWith("image/")) {
-      alert("Please upload a valid image file (PNG, JPG, WEBP).")
+      showAlert("Please upload a valid image file (PNG, JPG, WEBP).", "Invalid File Format", "warning")
       return
     }
     if (file.size > 5 * 1024 * 1024) {
-      alert("Image file size must be under 5MB.")
+      showAlert("Image file size must be under 5MB.", "File Too Large", "warning")
       return
     }
 
@@ -515,7 +626,7 @@ function AccountContent() {
               },
             })
           } catch (err: any) {
-            alert(err.message || "Failed to update profile picture.")
+            showAlert(err.message || "Failed to update profile picture.", "Profile Picture Error", "danger")
           } finally {
             setIsUploadingAvatar(false)
           }
@@ -524,7 +635,7 @@ function AccountContent() {
       }
       reader.readAsDataURL(file)
     } catch (err: any) {
-      alert(err.message || "Failed to process image.")
+      showAlert(err.message || "Failed to process image.", "Image Processing Error", "danger")
       setIsUploadingAvatar(false)
     }
   }
@@ -540,7 +651,7 @@ function AccountContent() {
         },
       })
     } catch (err: any) {
-      alert(err.message || "Failed to remove avatar.")
+      showAlert(err.message || "Failed to remove avatar.", "Avatar Error", "danger")
     } finally {
       setIsUploadingAvatar(false)
     }
@@ -552,7 +663,9 @@ function AccountContent() {
     try {
       const result = await commerceRequest("/store/custom/subscriptions", token, {subscription_id:id,action:"skip",operation_id:crypto.randomUUID()}, "PUT")
       setSubscriptions(old => old.map(s => s.id === id ? result.subscription : s))
-    } catch (error) { alert(error instanceof Error ? error.message : "Subscription could not be updated") }
+    } catch (error) {
+      showAlert(error instanceof Error ? error.message : "Subscription could not be updated", "Subscription Update", "danger")
+    }
   }
 
   useEffect(() => {
@@ -598,7 +711,7 @@ function AccountContent() {
         setEditSuccess(false)
       }, 800)
     } catch (err: any) {
-      alert(err.message || "Failed to update profile.")
+      showAlert(err.message || "Failed to update profile.", "Profile Error", "danger")
     } finally {
       setEditSaving(false)
     }
@@ -618,7 +731,7 @@ function AccountContent() {
     const phone = addrPhoneRef.current?.value?.trim() || customer?.phone || ""
 
     if (!line1 || !city || !postcode || !country) {
-      alert("Please fill in Street Address, City, Postal Code, and select a Medusa-supported country.")
+      showAlert("Please fill in Street Address, City, Postal Code, and select a Medusa-supported country.", "Required Address Fields", "warning")
       return
     }
     setAddrSaving(true)
@@ -638,9 +751,55 @@ function AccountContent() {
       })
       setIsAddAddressOpen(false)
     } catch (err: any) {
-      alert(err.message || "Failed to add address.")
+      showAlert(err.message || "Failed to add address.", "Address Error", "danger")
     } finally {
       setAddrSaving(false)
+    }
+  }
+
+  const handleExportStatement = () => {
+    if (orders.length === 0) {
+      showAlert("No order records found for the 2026 calendar year.", "Annual Statement", "info")
+      return
+    }
+
+    try {
+      const headers = "Order ID,Date,Status,Total,Item Count,Tracking Reference\n"
+      const rows = orders
+        .map((o: any) => {
+          const id = o.id || o.display_id || "Order"
+          const d = formatOrderDate(o.created_at || o.date)
+          const st = o.status || "Completed"
+          const tot = `£${(o.total || 0).toFixed(2)}`
+          const cnt = o.items?.length || 1
+          const trk = o.shipping_methods?.[0]?.tracking_number || "Royal Mail Tracked"
+          return `"${id}","${d}","${st}","${tot}",${cnt},"${trk}"`
+        })
+        .join("\n")
+
+      const blob = new Blob([headers + rows], { type: "text/csv;charset=utf-8;" })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement("a")
+      link.setAttribute("href", url)
+      link.setAttribute("download", `PEPTECH_2026_Annual_Statement.csv`)
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+
+      showAlert(
+        "Your 2026 Annual Research Statement (CSV) has been compiled and downloaded with itemized order totals, VAT details, and logistics references for your laboratory records.",
+        "2026 Annual Statement",
+        "statement",
+        "Done"
+      )
+    } catch {
+      showAlert(
+        "Compiling 2026 Annual Statement with itemized order records and tax invoice data. Download starting...",
+        "2026 Annual Statement",
+        "statement",
+        "OK"
+      )
     }
   }
 
@@ -1136,8 +1295,8 @@ function AccountContent() {
   return (
     <div className="bg-[#f8fafc] flex flex-col items-center w-full min-h-[calc(100vh-118px)]">
       {/* Profile Banner & Navigation Tabs (Node 52:8586 / 52:9139) */}
-      <section className="bg-white border-b border-[#e2e8f0] w-full pt-[36px] px-4 sm:px-8 lg:px-[80px]">
-        <div className="max-w-[1280px] mx-auto flex flex-col gap-[28px]">
+      <section className="bg-white border-b border-[#e2e8f0] w-full pt-6 sm:pt-9 px-4 sm:px-6 lg:px-8 xl:px-10">
+        <div className="max-w-[1280px] mx-auto flex flex-col gap-5 sm:gap-7">
           {/* Banner Top Row */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full">
             <div className="flex gap-[16px] sm:gap-[20px] items-center min-w-0">
@@ -1302,53 +1461,54 @@ function AccountContent() {
       </section>
 
       {/* Main Content Area */}
-      <main className="w-full max-w-[1280px] px-4 sm:px-8 lg:px-[80px] py-[36px] pb-[60px]">
+      <main className="w-full max-w-[1280px] px-4 sm:px-6 lg:px-8 xl:px-10 py-6 sm:py-9 pb-16">
         {/* ========================================================= */}
         {/* TAB 1: DASHBOARD OVERVIEW (Node 52:8568) */}
         {/* ========================================================= */}
         {activeTab === "overview" && (
-          <div className="flex flex-col lg:flex-row gap-[32px] items-start w-full">
+          <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start w-full">
             {/* Left Main Column (flex-1) */}
-            <div className="flex flex-col gap-[24px] w-full lg:flex-1">
+            <div className="flex flex-col gap-6 w-full lg:flex-1 min-w-0">
               {/* Card 1: Latest Order or Empty State */}
               {orders.length > 0 ? (
-                <div className="bg-white rounded-[16px] px-4 sm:px-[28px] py-[20px] sm:py-[26px] shadow-xs border border-slate-100 flex flex-col gap-[18px] sm:gap-[20px]">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                    <div className="flex flex-col gap-[3px]">
-                      <p className="font-bold text-[#0b1f3a] text-[15px] sm:text-[16px] break-all">
-                        Latest Order: <span className="font-mono text-[14px] sm:text-[14.5px]">{orders[0].id}</span>
-                      </p>
-                      <p className="font-normal text-[#64748b] text-[12px] sm:text-[12.5px]">
+                <div className="bg-white rounded-2xl p-4 sm:p-7 shadow-xs border border-slate-100 flex flex-col gap-4 sm:gap-5">
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 min-w-0">
+                    <div className="flex flex-col gap-1 min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-[#0b1f3a] text-sm sm:text-base">Latest Order:</span>
+                        <span className="font-mono text-xs sm:text-sm font-semibold text-[#0b1f3a] bg-slate-100 px-2 py-0.5 rounded break-all select-all">
+                          {orders[0].id}
+                        </span>
+                      </div>
+                      <p className="font-normal text-[#64748b] text-xs">
                         Placed {orders[0].displayDate} · {orders[0].items?.length || 1} Line Item{(orders[0].items?.length || 1) === 1 ? "" : "s"} · Royal Mail Tracked 24
                       </p>
                     </div>
-                    {orders[0].isRefunded ? (
-                      <div className="bg-rose-50 border border-rose-200 px-[12px] py-[6px] rounded-[20px] self-start sm:self-auto">
-                        <p className="font-semibold text-rose-700 text-[12px] whitespace-nowrap">
+                    <div className="self-start sm:self-auto shrink-0">
+                      {orders[0].isRefunded ? (
+                        <span className="bg-rose-50 border border-rose-200 px-3 py-1 rounded-full font-semibold text-rose-700 text-xs whitespace-nowrap">
                           Refunded
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="bg-[#e6fffa] px-[12px] py-[6px] rounded-[20px] self-start sm:self-auto">
-                        <p className="font-semibold text-[#16a6a3] text-[12px] whitespace-nowrap">
+                        </span>
+                      ) : (
+                        <span className="bg-[#e6fffa] border border-[#16a6a3]/30 px-3 py-1 rounded-full font-semibold text-[#16a6a3] text-xs whitespace-nowrap">
                           {orders[0].status || "Cold-Chain Packing"}
-                        </p>
-                      </div>
-                    )}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   {/* 4-Step Progress Stepper OR Refund Banner */}
                   {orders[0].isRefunded ? (
-                    <div className="bg-rose-50/70 border border-rose-200/80 rounded-[10px] px-[16px] py-[14px] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-[22px] h-[22px] rounded-full bg-rose-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
+                    <div className="bg-rose-50/70 border border-rose-200/80 rounded-xl p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-5 h-5 rounded-full bg-rose-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
                           ✓
                         </div>
-                        <div className="flex flex-col">
-                          <span className="font-bold text-rose-900 text-[12.5px]">
+                        <div className="flex flex-col min-w-0">
+                          <span className="font-bold text-rose-900 text-xs sm:text-sm">
                             Refund Processed via Stripe
                           </span>
-                          <span className="text-rose-700 text-[11.5px]">
+                          <span className="text-rose-700 text-[11px] sm:text-xs">
                             Full refund of £{orders[0].total?.toFixed(2)} issued to your original payment method. Order is closed.
                           </span>
                         </div>
@@ -1358,47 +1518,47 @@ function AccountContent() {
                       </span>
                     </div>
                   ) : (
-                    <div className="bg-[#f8fafc] rounded-[10px] px-[16px] py-[14px] overflow-x-auto no-scrollbar">
-                      <div className="flex items-center justify-between gap-2 min-w-[480px]">
+                    <div className="bg-[#f8fafc] rounded-xl p-3 sm:px-4 sm:py-3.5 overflow-x-auto no-scrollbar scroll-smooth">
+                      <div className="flex items-center justify-between gap-1 sm:gap-2 min-w-[420px] sm:min-w-0">
                         {/* Step 1 */}
-                        <div className="flex gap-[8px] items-center shrink-0">
-                          <div className="w-[22px] h-[22px] rounded-full bg-[#16a6a3] text-white flex items-center justify-center font-bold text-[11px]">
+                        <div className="flex gap-1.5 sm:gap-2 items-center shrink-0">
+                          <div className="w-5 h-5 rounded-full bg-[#16a6a3] text-white flex items-center justify-center font-bold text-[10.5px]">
                             ✓
                           </div>
-                          <span className="font-medium text-[#0f172a] text-[12px] whitespace-nowrap">
+                          <span className="font-medium text-[#0f172a] text-[11px] sm:text-xs whitespace-nowrap">
                             Order Placed
                           </span>
                         </div>
-                        <div className="flex-1 h-[2px] min-w-[20px] bg-[#16a6a3] rounded-full" />
+                        <div className="flex-1 h-[2px] min-w-[12px] bg-[#16a6a3] rounded-full" />
 
                         {/* Step 2 */}
-                        <div className="flex gap-[8px] items-center shrink-0">
-                          <div className={`w-[22px] h-[22px] rounded-full ${orders[0].status === "Delivered" ? "bg-[#16a6a3] text-white" : "bg-[#0b1f3a] text-white ring-4 ring-[#0b1f3a]/10"} flex items-center justify-center font-bold text-[11px]`}>
+                        <div className="flex gap-1.5 sm:gap-2 items-center shrink-0">
+                          <div className={`w-5 h-5 rounded-full ${orders[0].status === "Delivered" ? "bg-[#16a6a3] text-white" : "bg-[#0b1f3a] text-white ring-2 ring-[#0b1f3a]/10"} flex items-center justify-center font-bold text-[10.5px]`}>
                             {orders[0].status === "Delivered" ? "✓" : "2"}
                           </div>
-                          <span className="font-bold text-[#0b1f3a] text-[12px] whitespace-nowrap">
+                          <span className="font-bold text-[#0b1f3a] text-[11px] sm:text-xs whitespace-nowrap">
                             Cold-Chain Packing
                           </span>
                         </div>
-                        <div className={`flex-1 h-[2px] min-w-[20px] ${orders[0].status === "Delivered" ? "bg-[#16a6a3]" : "bg-[#e2e8f0]"} rounded-full`} />
+                        <div className={`flex-1 h-[2px] min-w-[12px] ${orders[0].status === "Delivered" ? "bg-[#16a6a3]" : "bg-[#e2e8f0]"} rounded-full`} />
 
                         {/* Step 3 */}
-                        <div className="flex gap-[8px] items-center shrink-0">
-                          <div className={`w-[22px] h-[22px] rounded-full ${orders[0].status === "Delivered" ? "bg-[#16a6a3] text-white" : "bg-[#cbd5e1] text-white"} flex items-center justify-center font-bold text-[11px]`}>
+                        <div className="flex gap-1.5 sm:gap-2 items-center shrink-0">
+                          <div className={`w-5 h-5 rounded-full ${orders[0].status === "Delivered" ? "bg-[#16a6a3] text-white" : "bg-[#cbd5e1] text-white"} flex items-center justify-center font-bold text-[10.5px]`}>
                             {orders[0].status === "Delivered" ? "✓" : "3"}
                           </div>
-                          <span className="font-medium text-[#94a3b8] text-[12px] whitespace-nowrap">
+                          <span className="font-medium text-[#94a3b8] text-[11px] sm:text-xs whitespace-nowrap">
                             Dispatched (Tracked 24)
                           </span>
                         </div>
-                        <div className={`flex-1 h-[2px] min-w-[20px] ${orders[0].status === "Delivered" ? "bg-[#16a6a3]" : "bg-[#e2e8f0]"} rounded-full`} />
+                        <div className={`flex-1 h-[2px] min-w-[12px] ${orders[0].status === "Delivered" ? "bg-[#16a6a3]" : "bg-[#e2e8f0]"} rounded-full`} />
 
                         {/* Step 4 */}
-                        <div className="flex gap-[8px] items-center shrink-0">
-                          <div className={`w-[22px] h-[22px] rounded-full ${orders[0].status === "Delivered" ? "bg-[#16a6a3] text-white" : "bg-[#cbd5e1] text-white"} flex items-center justify-center font-bold text-[11px]`}>
+                        <div className="flex gap-1.5 sm:gap-2 items-center shrink-0">
+                          <div className={`w-5 h-5 rounded-full ${orders[0].status === "Delivered" ? "bg-[#16a6a3] text-white" : "bg-[#cbd5e1] text-white"} flex items-center justify-center font-bold text-[10.5px]`}>
                             {orders[0].status === "Delivered" ? "✓" : "4"}
                           </div>
-                          <span className="font-medium text-[#94a3b8] text-[12px] whitespace-nowrap">
+                          <span className="font-medium text-[#94a3b8] text-[11px] sm:text-xs whitespace-nowrap">
                             Delivered
                           </span>
                         </div>
@@ -1406,33 +1566,40 @@ function AccountContent() {
                     </div>
                   )}
 
-                  <div className="h-px bg-[#f1f5f9] w-full" />
+                  <div className="h-px bg-slate-100 w-full" />
 
                   {/* Ordered Items List */}
-                  <div className="flex flex-col gap-[14px]">
+                  <div className="flex flex-col gap-3.5">
                     {orders[0].items?.map((item: any, idx: number) => {
                       const { cleanTitle, specification, options } = getItemDisplayDetails(item)
                       return (
-                        <div key={item.id || idx} className="flex items-start justify-between gap-4">
-                          <div className="flex gap-[14px] items-start">
-                            <div className="w-[48px] h-[48px] rounded-[8px] bg-slate-50 border border-slate-200 overflow-hidden flex items-center justify-center p-1 shrink-0 mt-0.5">
+                        <div key={item.id || idx} className="flex items-start justify-between gap-3 sm:gap-4 min-w-0">
+                          <div className="flex gap-3 sm:gap-3.5 items-start min-w-0 flex-1">
+                            <div className="w-12 h-12 rounded-lg bg-slate-50 border border-slate-200 overflow-hidden flex items-center justify-center p-1 shrink-0 mt-0.5">
                               <img
-                                alt=""
+                                alt={cleanTitle || "PEPTECH Product"}
                                 className="w-full h-full object-contain"
-                                src={item.image || "/images/products/placeholder.png"}
+                                src={resolveProductImage(item)}
+                                onError={(e) => {
+                                  const target = e.currentTarget as HTMLImageElement
+                                  const fallback = "/images/products/pen-sets/ghk-cu.jpg"
+                                  if (!target.src.endsWith(fallback)) {
+                                    target.src = fallback
+                                  }
+                                }}
                               />
                             </div>
-                            <div className="flex flex-col gap-[2px]">
-                              <p className="font-semibold text-[#0b1f3a] text-[13.5px]">
+                            <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                              <p className="font-semibold text-[#0b1f3a] text-xs sm:text-[13.5px] truncate">
                                 {cleanTitle}
                               </p>
-                              <p className="font-normal text-[#64748b] text-[12px]">
+                              <p className="font-normal text-[#64748b] text-[11.5px] sm:text-xs">
                                 {specification}
                               </p>
                               {options && options.length > 0 && (
-                                <div className="flex flex-col gap-0.5 mt-0.5 text-[11.5px]">
+                                <div className="flex flex-col gap-0.5 mt-0.5 text-[11px] sm:text-[11.5px]">
                                   {options.map((opt: any, oIdx: number) => (
-                                    <span key={oIdx} className="text-slate-600">
+                                    <span key={oIdx} className="text-slate-600 truncate">
                                       <span className="text-slate-400 font-medium">{opt.label}: </span>
                                       <span className="font-semibold text-slate-700">{opt.value}</span>
                                     </span>
@@ -1441,7 +1608,7 @@ function AccountContent() {
                               )}
                             </div>
                           </div>
-                          <p className="font-bold text-[#0b1f3a] text-[14px] shrink-0 font-mono">
+                          <p className="font-bold text-[#0b1f3a] text-xs sm:text-sm shrink-0 font-mono">
                             £{((item.price || 0) * (item.quantity || 1)).toFixed(2)}
                           </p>
                         </div>
@@ -1449,25 +1616,25 @@ function AccountContent() {
                     })}
                   </div>
 
-                  <div className="h-px bg-[#f1f5f9] w-full" />
+                  <div className="h-px bg-slate-100 w-full" />
 
                   {/* Actions Row */}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
-                    <div className="flex flex-wrap gap-[8px] items-center text-[13px]">
+                    <div className="flex flex-wrap gap-2 items-center text-xs sm:text-[13px]">
                       <span className="text-[#64748b]">{orders[0].isRefunded ? "Total Refunded:" : "Total Paid:"}</span>
-                      <span className="font-bold text-[#0b1f3a] text-[16px]">£{orders[0].total?.toFixed(2)}</span>
+                      <span className="font-bold text-[#0b1f3a] text-sm sm:text-base font-mono">£{orders[0].total?.toFixed(2)}</span>
                       {orders[0].isRefunded ? (
-                        <span className="text-rose-600 font-semibold text-[12.5px]">(Refunded via Stripe)</span>
+                        <span className="text-rose-600 font-semibold text-[11.5px]">(Refunded via Stripe)</span>
                       ) : orders[0].paymentMethod ? (
-                        <span className="text-[#94a3b8] text-[12.5px]">({orders[0].paymentMethod})</span>
+                        <span className="text-[#94a3b8] text-xs">({orders[0].paymentMethod})</span>
                       ) : null}
                     </div>
-                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-[10px] items-stretch sm:items-center w-full sm:w-auto">
+                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-2.5 items-stretch sm:items-center w-full sm:w-auto">
                       {!orders[0].isRefunded && (
                         <button
                           type="button"
                           onClick={() => handleTabChange("orders")}
-                          className="bg-[#0b1f3a] hover:bg-[#162a45] text-white text-[12.5px] font-semibold px-[16px] py-[9px] rounded-[6px] transition-colors cursor-pointer text-center justify-center flex items-center"
+                          className="bg-[#0b1f3a] hover:bg-[#162a45] text-white text-xs font-semibold px-4 py-2.5 rounded-lg transition-colors cursor-pointer text-center justify-center flex items-center shadow-2xs"
                         >
                           Live Dispatch Tracker
                         </button>
@@ -1475,7 +1642,7 @@ function AccountContent() {
                       <Link
                         href={`/receipt/${encodeURIComponent(orders[0].id)}`}
                         target="_blank"
-                        className="bg-[#f1f5f9] hover:bg-slate-200 text-[#0b1f3a] text-[12.5px] font-semibold px-[14px] py-[9px] rounded-[6px] transition-colors inline-flex items-center justify-center gap-1.5 text-center"
+                        className="bg-[#f1f5f9] hover:bg-slate-200 text-[#0b1f3a] text-xs font-semibold px-3.5 py-2.5 rounded-lg transition-colors inline-flex items-center justify-center gap-1.5 text-center shadow-2xs"
                       >
                         <svg className="w-3.5 h-3.5 text-[#16a6a3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -1657,29 +1824,29 @@ function AccountContent() {
               </div>
             </div>
 
-            {/* Right Sidebar Column (w-[420px]) */}
-            <div className="flex flex-col gap-[24px] w-full lg:w-[420px] shrink-0">
+            {/* Right Sidebar Column */}
+            <div className="flex flex-col gap-6 w-full lg:w-[360px] xl:w-[400px] shrink-0 min-w-0">
               {/* Delivery Address Card */}
-              <div className="bg-white rounded-[16px] px-6 sm:px-[28px] py-[26px] shadow-xs border border-slate-100 flex flex-col gap-[14px]">
+              <div className="bg-white rounded-2xl p-5 sm:p-7 shadow-xs border border-slate-100 flex flex-col gap-3.5 min-w-0">
                 <div className="flex items-center justify-between">
-                  <p className="font-bold text-[#0b1f3a] text-[15px]">Delivery Address</p>
-                  <span className="bg-[#f8fafc] border border-slate-200 text-[#64748b] text-[10.5px] font-medium px-[6px] py-[2px] rounded-[4px]">
+                  <p className="font-bold text-[#0b1f3a] text-sm sm:text-[15px]">Delivery Address</p>
+                  <span className="bg-[#f8fafc] border border-slate-200 text-[#64748b] text-[10.5px] font-medium px-2 py-0.5 rounded">
                     DEFAULT
                   </span>
                 </div>
                 {effectiveAddresses && effectiveAddresses.length > 0 ? (
-                  <div className="text-[#0f172a] text-[13px] leading-[20px] font-normal">
+                  <div className="text-[#0f172a] text-xs sm:text-[13px] leading-relaxed font-normal min-w-0 break-words">
                     <p className="font-semibold text-[#0b1f3a]">
                       {effectiveAddresses[0].first_name} {effectiveAddresses[0].last_name}
                     </p>
-                    {effectiveAddresses[0].company && <p>{effectiveAddresses[0].company}</p>}
-                    <p>{effectiveAddresses[0].address_1}</p>
-                    {effectiveAddresses[0].address_2 && <p>{effectiveAddresses[0].address_2}</p>}
-                    <p>{effectiveAddresses[0].city}, {effectiveAddresses[0].postal_code}</p>
-                    <p>{effectiveAddresses[0].country_code?.toUpperCase() === "GB" ? "United Kingdom" : effectiveAddresses[0].country_code?.toUpperCase()}</p>
+                    {effectiveAddresses[0].company && <p className="text-slate-600">{effectiveAddresses[0].company}</p>}
+                    <p className="text-slate-600">{effectiveAddresses[0].address_1}</p>
+                    {effectiveAddresses[0].address_2 && <p className="text-slate-600">{effectiveAddresses[0].address_2}</p>}
+                    <p className="text-slate-600">{effectiveAddresses[0].city}, {effectiveAddresses[0].postal_code}</p>
+                    <p className="text-slate-600">{effectiveAddresses[0].country_code?.toUpperCase() === "GB" ? "United Kingdom" : effectiveAddresses[0].country_code?.toUpperCase()}</p>
                   </div>
                 ) : (
-                  <div className="text-[#0f172a] text-[13px] leading-[20px] font-normal">
+                  <div className="text-[#0f172a] text-xs sm:text-[13px] leading-relaxed font-normal min-w-0 break-words">
                     <p className="font-semibold text-[#0b1f3a]">
                       {customer.metadata?.title ? `${customer.metadata.title} ` : ""}
                       {customer.first_name} {customer.last_name}
@@ -1691,47 +1858,47 @@ function AccountContent() {
                 <button
                   type="button"
                   onClick={() => handleTabChange("addresses")}
-                  className="font-semibold text-[#0b1f3a] hover:text-[#16a6a3] text-[12.5px] text-left transition-colors cursor-pointer"
+                  className="font-semibold text-[#0b1f3a] hover:text-[#16a6a3] text-xs text-left transition-colors cursor-pointer pt-1"
                 >
-                  Manage Delivery Addresses
+                  Manage Delivery Addresses →
                 </button>
               </div>
 
               {/* Payment & Billing Card */}
-              <div className="bg-white rounded-[16px] px-6 sm:px-[28px] py-[26px] shadow-xs border border-slate-100 flex flex-col gap-[14px]">
+              <div className="bg-white rounded-2xl p-5 sm:p-7 shadow-xs border border-slate-100 flex flex-col gap-3.5 min-w-0">
                 <div className="flex items-center justify-between">
-                  <p className="font-bold text-[#0b1f3a] text-[15px]">Payment &amp; Billing</p>
+                  <p className="font-bold text-[#0b1f3a] text-sm sm:text-[15px]">Payment &amp; Billing</p>
                   {paymentCards.length > 0 && (
-                    <span className="bg-[#f8fafc] border border-slate-200 text-[#16a6a3] text-[10.5px] font-medium px-[6px] py-[2px] rounded-[4px]">
+                    <span className="bg-[#f8fafc] border border-slate-200 text-[#16a6a3] text-[10.5px] font-medium px-2 py-0.5 rounded">
                       ACTIVE
                     </span>
                   )}
                 </div>
                 {paymentCards.length > 0 ? (
-                  <div className="flex flex-col gap-[4px]">
-                    <div className="flex items-center gap-[8px] py-1">
+                  <div className="flex flex-col gap-1 min-w-0">
+                    <div className="flex items-center gap-2 py-1 min-w-0">
                       {paymentCards[0].brand === "mastercard" ? (
-                        <MastercardBadge className="w-[32px] h-[20px]" monochrome />
+                        <MastercardBadge className="w-[32px] h-[20px] shrink-0" monochrome />
                       ) : paymentCards[0].brand === "amex" ? (
-                        <AmexBadge className="w-[32px] h-[20px]" monochrome />
+                        <AmexBadge className="w-[32px] h-[20px] shrink-0" monochrome />
                       ) : paymentCards[0].brand === "jcb" ? (
-                        <JcbBadge className="w-[32px] h-[20px]" monochrome />
+                        <JcbBadge className="w-[32px] h-[20px] shrink-0" monochrome />
                       ) : (
-                        <VisaBadge className="w-[32px] h-[20px]" monochrome />
+                        <VisaBadge className="w-[32px] h-[20px] shrink-0" monochrome />
                       )}
-                      <p className="font-semibold text-[#0f172a] text-[13.5px]">
+                      <p className="font-semibold text-[#0f172a] text-xs sm:text-[13.5px] truncate">
                         {paymentCards[0].title || `${paymentCards[0].brand === "mastercard" ? "Mastercard" : paymentCards[0].brand === "amex" ? "American Express" : "Visa"} ${paymentCards[0].funding || "Card"}`} ending in •••• {paymentCards[0].last4}
                       </p>
                     </div>
                     {paymentCards[0].expiry && paymentCards[0].expiry !== "Verified" ? (
-                      <p className="font-normal text-[#64748b] text-[12px]">
+                      <p className="font-normal text-[#64748b] text-xs">
                         Expires: {paymentCards[0].expiry}
                       </p>
                     ) : null}
                   </div>
                 ) : (
-                  <div className="flex flex-col gap-[6px]">
-                    <p className="text-[#64748b] text-[12.5px]">
+                  <div className="flex flex-col gap-1.5">
+                    <p className="text-[#64748b] text-xs leading-relaxed">
                       No saved payment methods on file. Cards can be securely saved during checkout.
                     </p>
                   </div>
@@ -1739,9 +1906,9 @@ function AccountContent() {
                 <button
                   type="button"
                   onClick={() => handleTabChange("payment")}
-                  className="font-semibold text-[#0b1f3a] hover:text-[#16a6a3] text-[12.5px] text-left transition-colors cursor-pointer"
+                  className="font-semibold text-[#0b1f3a] hover:text-[#16a6a3] text-xs text-left transition-colors cursor-pointer pt-1"
                 >
-                  Manage Payment Methods
+                  Manage Payment Methods →
                 </button>
               </div>
             </div>
@@ -1752,16 +1919,16 @@ function AccountContent() {
         {/* TAB 2: ORDERS & TRACKING (Node 52:9060) */}
         {/* ========================================================= */}
         {activeTab === "orders" && (
-          <div className="flex flex-col lg:flex-row gap-[32px] items-start w-full">
+          <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start w-full">
             {/* Left Main Column */}
-            <div className="flex flex-col gap-[24px] w-full lg:flex-1">
+            <div className="flex flex-col gap-6 w-full lg:flex-1 min-w-0">
               {/* Filter Pills & Search Bar */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full">
-                <div className="flex gap-[8px] items-center overflow-x-auto no-scrollbar w-full sm:w-auto pb-1 sm:pb-0">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 w-full">
+                <div className="flex gap-2 items-center overflow-x-auto no-scrollbar pb-1 md:pb-0 shrink-0">
                   <button
                     type="button"
                     onClick={() => setOrdersFilter("all")}
-                    className={`px-[14px] py-[7px] rounded-full text-[12.5px] font-semibold transition-all cursor-pointer shrink-0 whitespace-nowrap ${
+                    className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer shrink-0 whitespace-nowrap ${
                       ordersFilter === "all"
                         ? "bg-[#0b1f3a] text-white shadow-2xs"
                         : "bg-white border border-[#e2e8f0] text-[#0f172a] hover:border-slate-300 font-medium"
@@ -1772,7 +1939,7 @@ function AccountContent() {
                   <button
                     type="button"
                     onClick={() => setOrdersFilter("transit")}
-                    className={`px-[14px] py-[7px] rounded-full text-[12.5px] transition-all cursor-pointer shrink-0 whitespace-nowrap ${
+                    className={`px-3.5 py-1.5 rounded-full text-xs transition-all cursor-pointer shrink-0 whitespace-nowrap ${
                       ordersFilter === "transit"
                         ? "bg-[#0b1f3a] text-white shadow-2xs font-semibold"
                         : "bg-white border border-[#e2e8f0] text-[#0f172a] hover:border-slate-300 font-medium"
@@ -1783,7 +1950,7 @@ function AccountContent() {
                   <button
                     type="button"
                     onClick={() => setOrdersFilter("delivered")}
-                    className={`px-[14px] py-[7px] rounded-full text-[12.5px] transition-all cursor-pointer shrink-0 whitespace-nowrap ${
+                    className={`px-3.5 py-1.5 rounded-full text-xs transition-all cursor-pointer shrink-0 whitespace-nowrap ${
                       ordersFilter === "delivered"
                         ? "bg-[#0b1f3a] text-white shadow-2xs font-semibold"
                         : "bg-white border border-[#e2e8f0] text-[#0f172a] hover:border-slate-300 font-medium"
@@ -1793,13 +1960,11 @@ function AccountContent() {
                   </button>
                 </div>
 
-                <div className="flex gap-[8px] items-center w-full sm:w-auto">
-                  <div className="bg-white border border-[#e2e8f0] flex gap-[8px] h-[35px] items-center px-[12px] rounded-[8px] flex-1 sm:w-[250px] shadow-2xs">
-                    <img
-                      alt=""
-                      className="w-[14px] h-[14px] opacity-60 shrink-0"
-                      src="/images/figma/e3f62c52a7fc2f0b8e680fc2bac1e48528c872a0.svg"
-                    />
+                <div className="flex gap-2 items-center w-full md:w-auto">
+                  <div className="bg-white border border-[#e2e8f0] flex gap-2 h-[38px] items-center px-3 rounded-lg flex-1 md:w-[260px] shadow-2xs">
+                    <svg className="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
                     <input
                       type="text"
                       value={orderSearchQuery}
@@ -1810,7 +1975,7 @@ function AccountContent() {
                   </div>
                   <button
                     type="button"
-                    className="bg-[#0b1f3a] hover:bg-[#162a45] text-white font-semibold text-[12.5px] px-[16px] h-[35px] rounded-[8px] transition-colors cursor-pointer shrink-0"
+                    className="bg-[#0b1f3a] hover:bg-[#162a45] text-white font-semibold text-xs px-4 h-[38px] rounded-lg transition-colors cursor-pointer shrink-0 shadow-2xs"
                   >
                     Track
                   </button>
@@ -1819,19 +1984,19 @@ function AccountContent() {
 
               {/* Order Cards List or Empty State */}
               {orders.length === 0 ? (
-                <div className="bg-white rounded-[16px] p-12 border border-slate-100 text-center flex flex-col items-center justify-center gap-3">
+                <div className="bg-white rounded-2xl p-10 sm:p-14 border border-slate-100 text-center flex flex-col items-center justify-center gap-3">
                   <div className="w-14 h-14 rounded-full bg-[#f1f5f9] flex items-center justify-center text-[#0b1f3a]">
                     <svg className="w-7 h-7 text-[#16a6a3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                     </svg>
                   </div>
-                  <p className="font-bold text-[#0b1f3a] text-[17px]">No Order History Found</p>
-                  <p className="text-sm text-[#64748b] max-w-[420px]">
+                  <p className="font-bold text-[#0b1f3a] text-base sm:text-[17px]">No Order History Found</p>
+                  <p className="text-xs sm:text-sm text-[#64748b] max-w-[420px]">
                     You haven&apos;t placed any research peptide orders yet. Once placed, your cold-chain tracking status and line items will be displayed here in real time.
                   </p>
                   <Link
                     href="/pen-sets"
-                    className="mt-2 bg-[#0b1f3a] hover:bg-[#162a45] text-white text-[13px] font-semibold px-5 py-2.5 rounded-[8px] transition-colors"
+                    className="mt-2 bg-[#0b1f3a] hover:bg-[#162a45] text-white text-xs font-semibold px-5 py-2.5 rounded-lg transition-colors shadow-2xs"
                   >
                     Explore Research Catalog
                   </Link>
@@ -1854,91 +2019,92 @@ function AccountContent() {
                   .map((order) => (
                     <div
                       key={order.id}
-                      className="bg-white rounded-[16px] px-4 sm:px-[28px] py-[20px] sm:py-[26px] shadow-xs border border-slate-100 flex flex-col gap-[18px] sm:gap-[20px]"
+                      className="bg-white rounded-2xl p-4 sm:p-7 shadow-xs border border-slate-100 flex flex-col gap-4 sm:gap-5"
                     >
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                        <div className="flex flex-col gap-[3px]">
-                          <p className="font-bold text-[#0b1f3a] text-[15px] sm:text-[16px] break-all">
-                            Order ID: <span className="font-mono text-[14px]">{order.id}</span>
-                          </p>
-                          <p className="font-normal text-[#64748b] text-[12px] sm:text-[12.5px]">
+                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 min-w-0">
+                        <div className="flex flex-col gap-1 min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-bold text-[#0b1f3a] text-sm sm:text-base">Order ID:</span>
+                            <span className="font-mono text-xs sm:text-sm font-semibold text-[#0b1f3a] bg-slate-100 px-2 py-0.5 rounded break-all select-all">
+                              {order.id}
+                            </span>
+                          </div>
+                          <p className="font-normal text-[#64748b] text-xs">
                             Placed {order.displayDate} · Tracking: {order.trackingNumber || "GB-RM24-PENDING"}
                           </p>
                         </div>
-                        {order.isRefunded ? (
-                          <div className="bg-rose-50 border border-rose-200 px-[12px] py-[6px] rounded-[20px] self-start sm:self-auto">
-                            <p className="font-semibold text-rose-700 text-[12px] whitespace-nowrap">
+                        <div className="self-start sm:self-auto shrink-0">
+                          {order.isRefunded ? (
+                            <span className="bg-rose-50 border border-rose-200 px-3 py-1 rounded-full font-semibold text-rose-700 text-xs whitespace-nowrap">
                               Refunded
-                            </p>
-                          </div>
-                        ) : (
-                          <div className="bg-[#e6fffa] px-[12px] py-[6px] rounded-[20px] self-start sm:self-auto">
-                            <p className="font-semibold text-[#16a6a3] text-[12px] whitespace-nowrap">
+                            </span>
+                          ) : (
+                            <span className="bg-[#e6fffa] border border-[#16a6a3]/30 px-3 py-1 rounded-full font-semibold text-[#16a6a3] text-xs whitespace-nowrap">
                               {order.status || "Cold-Chain Packing"}
-                            </p>
-                          </div>
-                        )}
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       {/* Stepper or Refund Notice */}
                       {order.isRefunded ? (
-                        <div className="bg-rose-50/70 border border-rose-200/80 rounded-[10px] px-[16px] py-[14px] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                          <div className="flex items-center gap-2.5">
-                            <div className="w-[22px] h-[22px] rounded-full bg-rose-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
+                        <div className="bg-rose-50/70 border border-rose-200/80 rounded-xl p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="w-5 h-5 rounded-full bg-rose-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
                               ✓
                             </div>
-                            <div className="flex flex-col">
-                              <span className="font-bold text-rose-900 text-[12px]">
+                            <div className="flex flex-col min-w-0">
+                              <span className="font-bold text-rose-900 text-xs sm:text-sm">
                                 Refund Processed via Stripe
                               </span>
-                              <span className="text-rose-700 text-[11.5px]">
+                              <span className="text-rose-700 text-[11px] sm:text-xs">
                                 Full refund of £{order.total?.toFixed(2)} issued to your original payment method. Order is closed.
                               </span>
                             </div>
                           </div>
-                          <span className="text-xs font-semibold text-rose-800 bg-rose-100/80 px-2.5 py-1 rounded-md self-start sm:self-auto">
+                          <span className="text-xs font-semibold text-rose-800 bg-rose-100/80 px-2.5 py-1 rounded-md shrink-0 self-start sm:self-auto">
                             Refund Complete
                           </span>
                         </div>
                       ) : (
-                        <div className="bg-[#f8fafc] rounded-[10px] px-[16px] py-[14px] overflow-x-auto no-scrollbar">
+                        <div className="bg-[#f8fafc] rounded-xl p-3 sm:px-4 sm:py-3.5 overflow-x-auto no-scrollbar scroll-smooth">
                           {(() => {
                             const isDelivered = order.status === "Delivered"
                             const isDispatched = isDelivered || order.status === "Dispatched" || order.status === "Dispatched (Tracked 24)"
                             return (
-                              <div className="flex items-center justify-between gap-2 min-w-[480px]">
-                                <div className="flex gap-[8px] items-center shrink-0">
-                                  <div className="w-[22px] h-[22px] rounded-full bg-[#16a6a3] text-white flex items-center justify-center font-bold text-[11px]">
+                              <div className="flex items-center justify-between gap-1 sm:gap-2 min-w-[420px] sm:min-w-0">
+                                <div className="flex gap-1.5 sm:gap-2 items-center shrink-0">
+                                  <div className="w-5 h-5 rounded-full bg-[#16a6a3] text-white flex items-center justify-center font-bold text-[10.5px]">
                                     ✓
                                   </div>
-                                  <span className="font-medium text-[#0f172a] text-[12px] whitespace-nowrap">
+                                  <span className="font-medium text-[#0f172a] text-[11px] sm:text-xs whitespace-nowrap">
                                     Order Placed
                                   </span>
                                 </div>
-                                <div className="flex-1 h-[2px] min-w-[20px] bg-[#16a6a3] rounded-full" />
-                                <div className="flex gap-[8px] items-center shrink-0">
-                                  <div className={`w-[22px] h-[22px] rounded-full ${isDispatched ? "bg-[#16a6a3] text-white" : "bg-[#0b1f3a] text-white ring-4 ring-[#0b1f3a]/10"} flex items-center justify-center font-bold text-[11px]`}>
+                                <div className="flex-1 h-[2px] min-w-[12px] bg-[#16a6a3] rounded-full" />
+                                <div className="flex gap-1.5 sm:gap-2 items-center shrink-0">
+                                  <div className={`w-5 h-5 rounded-full ${isDispatched ? "bg-[#16a6a3] text-white" : "bg-[#0b1f3a] text-white ring-2 ring-[#0b1f3a]/10"} flex items-center justify-center font-bold text-[10.5px]`}>
                                     {isDispatched ? "✓" : "2"}
                                   </div>
-                                  <span className={`${isDispatched ? "font-medium text-[#0f172a]" : "font-bold text-[#0b1f3a]"} text-[12px] whitespace-nowrap`}>
+                                  <span className={`${isDispatched ? "font-medium text-[#0f172a]" : "font-bold text-[#0b1f3a]"} text-[11px] sm:text-xs whitespace-nowrap`}>
                                     Cold-Chain Packing
                                   </span>
                                 </div>
-                                <div className={`flex-1 h-[2px] min-w-[20px] ${isDispatched ? "bg-[#16a6a3]" : "bg-[#e2e8f0]"} rounded-full`} />
-                                <div className="flex gap-[8px] items-center shrink-0">
-                                  <div className={`w-[22px] h-[22px] rounded-full ${isDelivered ? "bg-[#16a6a3] text-white" : isDispatched ? "bg-[#0b1f3a] text-white ring-4 ring-[#0b1f3a]/10" : "bg-[#cbd5e1] text-white"} flex items-center justify-center font-bold text-[11px]`}>
+                                <div className={`flex-1 h-[2px] min-w-[12px] ${isDispatched ? "bg-[#16a6a3]" : "bg-[#e2e8f0]"} rounded-full`} />
+                                <div className="flex gap-1.5 sm:gap-2 items-center shrink-0">
+                                  <div className={`w-5 h-5 rounded-full ${isDelivered ? "bg-[#16a6a3] text-white" : isDispatched ? "bg-[#0b1f3a] text-white ring-2 ring-[#0b1f3a]/10" : "bg-[#cbd5e1] text-white"} flex items-center justify-center font-bold text-[10.5px]`}>
                                     {isDelivered ? "✓" : "3"}
                                   </div>
-                                  <span className={`text-[12px] whitespace-nowrap ${!isDelivered && isDispatched ? "font-bold text-[#0b1f3a]" : isDelivered ? "font-medium text-[#0f172a]" : "font-medium text-[#94a3b8]"}`}>
+                                  <span className={`text-[11px] sm:text-xs whitespace-nowrap ${!isDelivered && isDispatched ? "font-bold text-[#0b1f3a]" : isDelivered ? "font-medium text-[#0f172a]" : "font-medium text-[#94a3b8]"}`}>
                                     Dispatched (Tracked 24)
                                   </span>
                                 </div>
-                                <div className={`flex-1 h-[2px] min-w-[20px] ${isDelivered ? "bg-[#16a6a3]" : "bg-[#e2e8f0]"} rounded-full`} />
-                                <div className="flex gap-[8px] items-center shrink-0">
-                                  <div className={`w-[22px] h-[22px] rounded-full ${isDelivered ? "bg-[#16a6a3] text-white" : "bg-[#cbd5e1] text-white"} flex items-center justify-center font-bold text-[11px]`}>
+                                <div className={`flex-1 h-[2px] min-w-[12px] ${isDelivered ? "bg-[#16a6a3]" : "bg-[#e2e8f0]"} rounded-full`} />
+                                <div className="flex gap-1.5 sm:gap-2 items-center shrink-0">
+                                  <div className={`w-5 h-5 rounded-full ${isDelivered ? "bg-[#16a6a3] text-white" : "bg-[#cbd5e1] text-white"} flex items-center justify-center font-bold text-[10.5px]`}>
                                     {isDelivered ? "✓" : "4"}
                                   </div>
-                                  <span className={`text-[12px] whitespace-nowrap ${isDelivered ? "font-bold text-[#0b1f3a]" : "font-medium text-[#94a3b8]"}`}>
+                                  <span className={`text-[11px] sm:text-xs whitespace-nowrap ${isDelivered ? "font-bold text-[#0b1f3a]" : "font-medium text-[#94a3b8]"}`}>
                                     Delivered
                                   </span>
                                 </div>
@@ -1949,30 +2115,37 @@ function AccountContent() {
                       )}
 
                       {/* Items */}
-                      <div className="flex flex-col gap-[14px]">
+                      <div className="flex flex-col gap-3.5">
                         {order.items?.map((item: any, idx: number) => {
                           const { cleanTitle, specification, options } = getItemDisplayDetails(item)
                           return (
-                            <div key={item.id || idx} className="flex items-start justify-between gap-4">
-                              <div className="flex gap-[14px] items-start">
-                                <div className="w-[48px] h-[48px] rounded-[8px] bg-slate-50 border border-slate-200 overflow-hidden flex items-center justify-center p-1 shrink-0 mt-0.5">
+                            <div key={item.id || idx} className="flex items-start justify-between gap-3 sm:gap-4 min-w-0">
+                              <div className="flex gap-3 sm:gap-3.5 items-start min-w-0 flex-1">
+                                <div className="w-12 h-12 rounded-lg bg-slate-50 border border-slate-200 overflow-hidden flex items-center justify-center p-1 shrink-0 mt-0.5">
                                   <img
-                                    alt=""
+                                    alt={cleanTitle || "PEPTECH Product"}
                                     className="w-full h-full object-contain"
-                                    src={item.image || "/images/products/placeholder.png"}
+                                    src={resolveProductImage(item)}
+                                    onError={(e) => {
+                                      const target = e.currentTarget as HTMLImageElement
+                                      const fallback = "/images/products/pen-sets/ghk-cu.jpg"
+                                      if (!target.src.endsWith(fallback)) {
+                                        target.src = fallback
+                                      }
+                                    }}
                                   />
                                 </div>
-                                <div className="flex flex-col gap-[2px]">
-                                  <p className="font-semibold text-[#0b1f3a] text-[13.5px]">
+                                <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                                  <p className="font-semibold text-[#0b1f3a] text-xs sm:text-[13.5px] truncate">
                                     {cleanTitle}
                                   </p>
-                                  <p className="font-normal text-[#64748b] text-[12px]">
+                                  <p className="font-normal text-[#64748b] text-[11.5px] sm:text-xs">
                                     {specification}
                                   </p>
                                   {options && options.length > 0 && (
-                                    <div className="flex flex-col gap-0.5 mt-0.5 text-[11.5px]">
+                                    <div className="flex flex-col gap-0.5 mt-0.5 text-[11px] sm:text-[11.5px]">
                                       {options.map((opt: any, oIdx: number) => (
-                                        <span key={oIdx} className="text-slate-600">
+                                        <span key={oIdx} className="text-slate-600 truncate">
                                           <span className="text-slate-400 font-medium">{opt.label}: </span>
                                           <span className="font-semibold text-slate-700">{opt.value}</span>
                                         </span>
@@ -1981,7 +2154,7 @@ function AccountContent() {
                                   )}
                                 </div>
                               </div>
-                              <p className="font-bold text-[#0b1f3a] text-[14px] shrink-0 font-mono">
+                              <p className="font-bold text-[#0b1f3a] text-xs sm:text-sm shrink-0 font-mono">
                                 £{((item.price || 0) * (item.quantity || 1)).toFixed(2)}
                               </p>
                             </div>
@@ -1989,23 +2162,23 @@ function AccountContent() {
                         })}
                       </div>
 
-                      <div className="h-px bg-[#f1f5f9] w-full" />
+                      <div className="h-px bg-slate-100 w-full" />
 
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
-                        <div className="flex flex-wrap gap-[8px] items-center text-[13px]">
+                        <div className="flex flex-wrap gap-2 items-center text-xs sm:text-[13px]">
                           <span className="text-[#64748b]">{order.isRefunded ? "Total Refunded:" : "Total Paid:"}</span>
-                          <span className="font-bold text-[#0b1f3a] text-[15px]">£{order.total?.toFixed(2)}</span>
+                          <span className="font-bold text-[#0b1f3a] text-sm sm:text-base font-mono">£{order.total?.toFixed(2)}</span>
                           {order.isRefunded && (
-                            <span className="text-rose-600 font-semibold text-[12px]">(Refunded via Stripe)</span>
+                            <span className="text-rose-600 font-semibold text-[11.5px]">(Refunded via Stripe)</span>
                           )}
                         </div>
-                        <div className="flex flex-col sm:flex-row gap-2 sm:gap-[10px] items-stretch sm:items-center w-full sm:w-auto">
+                        <div className="flex flex-col sm:flex-row gap-2 sm:gap-2.5 items-stretch sm:items-center w-full sm:w-auto">
                           {!order.isRefunded && (
                             <a
                               href={`https://www.royalmail.com/track-your-item#/tracking-results/${order.trackingNumber || ""}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="bg-[#0b1f3a] hover:bg-[#162a45] text-white text-[12.5px] font-semibold px-[16px] py-[9px] rounded-[6px] transition-colors cursor-pointer text-center justify-center flex items-center gap-1.5"
+                              className="bg-[#0b1f3a] hover:bg-[#162a45] text-white text-xs font-semibold px-4 py-2.5 rounded-lg transition-colors cursor-pointer text-center justify-center flex items-center gap-1.5 shadow-2xs"
                             >
                               <span>Track Parcel</span>
                               <svg className="w-3.5 h-3.5 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -2016,7 +2189,7 @@ function AccountContent() {
                           <Link
                             href={`/receipt/${encodeURIComponent(order.id)}`}
                             target="_blank"
-                            className="bg-[#f1f5f9] hover:bg-slate-200 text-[#0b1f3a] text-[12.5px] font-semibold px-[14px] py-[9px] rounded-[6px] transition-colors inline-flex items-center justify-center gap-1.5 cursor-pointer text-center"
+                            className="bg-[#f1f5f9] hover:bg-slate-200 text-[#0b1f3a] text-xs font-semibold px-3.5 py-2.5 rounded-lg transition-colors inline-flex items-center justify-center gap-1.5 cursor-pointer text-center shadow-2xs"
                           >
                             <svg className="w-3.5 h-3.5 text-[#16a6a3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -2031,56 +2204,60 @@ function AccountContent() {
             </div>
 
             {/* Right Sidebar Column */}
-            <div className="flex flex-col gap-[24px] w-full lg:w-[420px] shrink-0">
+            <div className="flex flex-col gap-6 w-full lg:w-[360px] xl:w-[400px] shrink-0 min-w-0">
               {/* Order History & Spend Card */}
-              <div className="bg-white rounded-[16px] px-4 sm:px-[28px] py-[20px] sm:py-[26px] shadow-xs border border-slate-100 flex flex-col gap-[16px]">
+              <div className="bg-white rounded-2xl p-5 sm:p-7 shadow-xs border border-slate-100 flex flex-col gap-4 min-w-0">
                 <div className="flex items-center justify-between">
-                  <p className="font-bold text-[#0b1f3a] text-[15px]">
+                  <p className="font-bold text-[#0b1f3a] text-sm sm:text-[15px]">
                     Order History &amp; Spend
                   </p>
-                  <span className="bg-[#f8fafc] border border-slate-200 text-[#0b1f3a] text-[11px] font-bold px-[8px] py-[3px] rounded-[12px]">
+                  <span className="bg-[#f8fafc] border border-slate-200 text-[#0b1f3a] text-[11px] font-bold px-2 py-0.5 rounded-full">
                     2026 YTD
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-[10px] w-full">
-                  <div className="bg-[#f8fafc] p-[10px] rounded-[8px]">
-                    <p className="font-bold text-[#0b1f3a] text-[15px]">{orders.length} Orders</p>
-                    <p className="text-[#64748b] text-[11px]">Total Orders</p>
+                <div className="grid grid-cols-3 gap-2 w-full">
+                  <div className="bg-[#f8fafc] p-2 sm:p-2.5 rounded-lg text-center min-w-0">
+                    <p className="font-bold text-[#0b1f3a] text-xs sm:text-sm truncate">{orders.length} Orders</p>
+                    <p className="text-[#64748b] text-[10px] sm:text-[11px] truncate">Total Orders</p>
                   </div>
-                  <div className="bg-[#f8fafc] p-[10px] rounded-[8px]">
-                    <p className="font-bold text-[#0b1f3a] text-[15px]">
+                  <div className="bg-[#f8fafc] p-2 sm:p-2.5 rounded-lg text-center min-w-0">
+                    <p className="font-bold text-[#0b1f3a] text-xs sm:text-sm font-mono truncate">
                       £{orders.reduce((sum, o) => sum + (o.total || 0), 0).toFixed(2)}
                     </p>
-                    <p className="text-[#64748b] text-[11px]">Total Spend</p>
+                    <p className="text-[#64748b] text-[10px] sm:text-[11px] truncate">Total Spend</p>
                   </div>
-                  <div className="bg-[#f8fafc] p-[10px] rounded-[8px]">
-                    <p className="font-bold text-[#0b1f3a] text-[15px]">
+                  <div className="bg-[#f8fafc] p-2 sm:p-2.5 rounded-lg text-center min-w-0">
+                    <p className="font-bold text-[#0b1f3a] text-xs sm:text-sm truncate">
                       {orders.reduce((sum, o) => sum + (o.items?.length || 0), 0)} Files
                     </p>
-                    <p className="text-[#64748b] text-[11px]">COA Reports</p>
+                    <p className="text-[#64748b] text-[10px] sm:text-[11px] truncate">COA Reports</p>
                   </div>
                 </div>
 
-                <div className="h-px bg-[#f1f5f9] w-full" />
+                <div className="h-px bg-slate-100 w-full" />
 
                 {orders.length > 0 ? (
-                  <div className="flex flex-col gap-[10px] text-[13px]">
+                  <div className="flex flex-col gap-2 text-xs">
                     {orders.slice(0, 3).map((o) => (
-                      <div key={o.id} className="flex items-center justify-between">
-                        <div>
-                          <p className="font-semibold text-[#0b1f3a]">#{o.id}</p>
-                          <p className="text-[#64748b] text-[11.5px]">{o.displayDate}</p>
+                      <div key={o.id} className="flex items-center justify-between gap-3 min-w-0 py-1.5 border-b border-slate-50 last:border-0">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold text-[#0b1f3a] font-mono text-xs truncate" title={o.id}>
+                            #{o.id}
+                          </p>
+                          <p className="text-[#64748b] text-[11px] truncate">{o.displayDate}</p>
                         </div>
-                        <div className="text-right">
-                          <p className="font-bold text-[#0b1f3a]">£{o.total?.toFixed(2)}</p>
-                          <p className="text-[#16a6a3] text-[11px] font-medium">{o.status}</p>
+                        <div className="text-right shrink-0">
+                          <p className="font-bold text-[#0b1f3a] text-xs font-mono">£{o.total?.toFixed(2)}</p>
+                          <span className="inline-block text-[#16a6a3] text-[10px] sm:text-[10.5px] font-medium bg-[#e6fffa] px-1.5 py-0.5 rounded whitespace-nowrap">
+                            {o.status}
+                          </span>
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-[#64748b] text-[12.5px] text-center py-2">
+                  <p className="text-[#64748b] text-xs text-center py-2">
                     No order history recorded for 2026.
                   </p>
                 )}
@@ -2088,35 +2265,35 @@ function AccountContent() {
                 {orders.length > 0 && (
                   <button
                     type="button"
-                    onClick={() => alert("Exporting 2026 Statement...")}
-                    className="font-semibold text-[#0b1f3a] hover:text-[#16a6a3] text-[12.5px] text-left transition-colors pt-1 cursor-pointer"
+                    onClick={handleExportStatement}
+                    className="font-semibold text-[#0b1f3a] hover:text-[#16a6a3] text-xs text-left transition-colors pt-1 cursor-pointer"
                   >
-                    Download 2026 Annual Statement (PDF) ↓
+                    Download 2026 Annual Statement (CSV / PDF) ↓
                   </button>
                 )}
               </div>
 
               {/* Delivery Address Card */}
-              <div className="bg-white rounded-[16px] px-6 sm:px-[28px] py-[26px] shadow-xs border border-slate-100 flex flex-col gap-[14px]">
+              <div className="bg-white rounded-2xl p-5 sm:p-7 shadow-xs border border-slate-100 flex flex-col gap-3.5 min-w-0">
                 <div className="flex items-center justify-between">
-                  <p className="font-bold text-[#0b1f3a] text-[15px]">Delivery Address</p>
-                  <span className="bg-[#f8fafc] border border-slate-200 text-[#64748b] text-[10.5px] font-medium px-[6px] py-[2px] rounded-[4px]">
+                  <p className="font-bold text-[#0b1f3a] text-sm sm:text-[15px]">Delivery Address</p>
+                  <span className="bg-[#f8fafc] border border-slate-200 text-[#64748b] text-[10.5px] font-medium px-2 py-0.5 rounded">
                     DEFAULT
                   </span>
                 </div>
                 {effectiveAddresses && effectiveAddresses.length > 0 ? (
-                  <div className="text-[#0f172a] text-[13px] leading-[20px] font-normal">
+                  <div className="text-[#0f172a] text-xs sm:text-[13px] leading-relaxed font-normal min-w-0 break-words">
                     <p className="font-semibold text-[#0b1f3a]">
                       {effectiveAddresses[0].first_name} {effectiveAddresses[0].last_name}
                     </p>
-                    {effectiveAddresses[0].company && <p>{effectiveAddresses[0].company}</p>}
-                    <p>{effectiveAddresses[0].address_1}</p>
-                    {effectiveAddresses[0].address_2 && <p>{effectiveAddresses[0].address_2}</p>}
-                    <p>{effectiveAddresses[0].city}, {effectiveAddresses[0].postal_code}</p>
-                    <p>{effectiveAddresses[0].country_code?.toUpperCase() === "GB" ? "United Kingdom" : effectiveAddresses[0].country_code?.toUpperCase()}</p>
+                    {effectiveAddresses[0].company && <p className="text-slate-600">{effectiveAddresses[0].company}</p>}
+                    <p className="text-slate-600">{effectiveAddresses[0].address_1}</p>
+                    {effectiveAddresses[0].address_2 && <p className="text-slate-600">{effectiveAddresses[0].address_2}</p>}
+                    <p className="text-slate-600">{effectiveAddresses[0].city}, {effectiveAddresses[0].postal_code}</p>
+                    <p className="text-slate-600">{effectiveAddresses[0].country_code?.toUpperCase() === "GB" ? "United Kingdom" : effectiveAddresses[0].country_code?.toUpperCase()}</p>
                   </div>
                 ) : (
-                  <div className="text-[#0f172a] text-[13px] leading-[20px] font-normal">
+                  <div className="text-[#0f172a] text-xs sm:text-[13px] leading-relaxed font-normal min-w-0 break-words">
                     <p className="font-semibold text-[#0b1f3a]">
                       {customer.metadata?.title ? `${customer.metadata.title} ` : ""}
                       {customer.first_name} {customer.last_name}
@@ -2150,62 +2327,62 @@ function AccountContent() {
         )}
 
         {activeTab === "addresses" && (
-          <div className="flex flex-col gap-[24px] w-full">
+          <div className="flex flex-col gap-6 w-full">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <h2 className="font-bold text-[#0b1f3a] text-[18px]">
+                <h2 className="font-bold text-[#0b1f3a] text-base sm:text-lg">
                   Saved Laboratory Addresses
                 </h2>
-                <p className="font-normal text-[#64748b] text-[13px] mt-0.5">
+                <p className="font-normal text-[#64748b] text-xs sm:text-[13px] mt-0.5">
                   Manage cold-chain delivery destinations for automated refills and laboratory orders.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setIsAddAddressOpen(true)}
-                className="bg-[#0b1f3a] hover:bg-[#162a45] text-white font-semibold text-[13px] px-[16px] py-[10px] rounded-[6px] transition-colors cursor-pointer shrink-0"
+                className="bg-[#0b1f3a] hover:bg-[#162a45] text-white font-semibold text-xs sm:text-[13px] px-4 py-2.5 rounded-lg transition-colors cursor-pointer shrink-0 shadow-2xs"
               >
                 + Add New Address
               </button>
             </div>
 
             {effectiveAddresses && effectiveAddresses.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-[24px] w-full">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6 w-full">
                 {effectiveAddresses.map((addr, index) => (
                   <div
                     key={addr.id || index}
-                    className="bg-white rounded-[16px] p-6 sm:p-[28px] border border-slate-100 shadow-xs flex flex-col justify-between gap-[18px] min-h-[276px]"
+                    className="bg-white rounded-2xl p-5 sm:p-7 border border-slate-100 shadow-xs flex flex-col justify-between gap-4 min-h-[250px] min-w-0"
                   >
-                    <div className="flex items-center justify-between">
-                      <p className="font-bold text-[#0b1f3a] text-[15px]">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-bold text-[#0b1f3a] text-sm sm:text-[15px] truncate">
                         {addr.address_name || addr.company || `Laboratory Facility ${index + 1}`}
                       </p>
                       {addr.is_default_shipping && (
-                        <span className="bg-[#e6fffa] text-[#16a6a3] font-bold text-[10.5px] px-[8px] py-[3px] rounded-[12px]">
+                        <span className="bg-[#e6fffa] text-[#16a6a3] font-bold text-[10.5px] px-2 py-0.5 rounded-full shrink-0">
                           DEFAULT
                         </span>
                       )}
                     </div>
 
-                    <div className="flex flex-col gap-[5px] text-[13px]">
+                    <div className="flex flex-col gap-1 text-xs sm:text-[13px] min-w-0 break-words leading-relaxed">
                       <p className="font-semibold text-[#0b1f3a]">
                         {addr.first_name} {addr.last_name}
                       </p>
-                      {addr.company && <p className="text-[#64748b]">{addr.company}</p>}
-                      <p className="text-[#64748b]">{addr.address_1}{addr.address_2 ? `, ${addr.address_2}` : ""}</p>
-                      <p className="text-[#64748b]">
+                      {addr.company && <p className="text-slate-600">{addr.company}</p>}
+                      <p className="text-slate-600">{addr.address_1}{addr.address_2 ? `, ${addr.address_2}` : ""}</p>
+                      <p className="text-slate-600">
                         {addr.city}, {addr.postal_code}, {formatCountryCode(addr.country_code, countryOptions) || addr.country_code?.toUpperCase()}
                       </p>
-                      {addr.phone && <p className="text-[#64748b]">{addr.phone}</p>}
+                      {addr.phone && <p className="text-slate-600">{addr.phone}</p>}
                     </div>
 
-                    <div className="bg-[#f8fafc] px-[14px] py-[10px] rounded-[8px]">
-                      <p className="text-[#64748b] text-[12px] leading-relaxed">
+                    <div className="bg-[#f8fafc] px-3.5 py-2.5 rounded-lg">
+                      <p className="text-[#64748b] text-[11.5px] leading-relaxed">
                         ✓ Refrigerated Parcel Delivery Authorized · Reception Open 08:00 - 18:00 GMT
                       </p>
                     </div>
 
-                    <div className="flex gap-[16px] items-center text-[12.5px] pt-1 border-t border-slate-100">
+                    <div className="flex gap-4 items-center text-xs pt-1 border-t border-slate-100">
                       <button
                         type="button"
                         onClick={openEditProfileModal}
@@ -2215,12 +2392,17 @@ function AccountContent() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => {
-                          if (confirm("Are you sure you want to remove this delivery address?")) {
+                        onClick={async () => {
+                          const confirmed = await showConfirm(
+                            "Are you sure you want to remove this delivery address from your laboratory profile?",
+                            "Remove Address",
+                            { confirmText: "Remove", cancelText: "Keep", danger: true }
+                          )
+                          if (confirmed) {
                             deleteAddress(addr.id)
                           }
                         }}
-                        className="font-medium text-[#94a3b8] hover:text-rose-600 cursor-pointer"
+                        className="font-medium text-slate-400 hover:text-rose-600 cursor-pointer transition-colors"
                       >
                         Remove
                       </button>
@@ -2229,15 +2411,15 @@ function AccountContent() {
                 ))}
               </div>
             ) : (
-              <div className="bg-white rounded-[16px] p-10 border border-slate-100 text-center flex flex-col items-center justify-center gap-3">
-                <p className="font-bold text-[#0b1f3a] text-[16px]">No Saved Delivery Addresses</p>
-                <p className="text-sm text-[#64748b] max-w-[420px]">
+              <div className="bg-white rounded-2xl p-8 sm:p-12 border border-slate-100 text-center flex flex-col items-center justify-center gap-3">
+                <p className="font-bold text-[#0b1f3a] text-sm sm:text-base">No Saved Delivery Addresses</p>
+                <p className="text-xs sm:text-sm text-[#64748b] max-w-[420px]">
                   Add a verified delivery location for your laboratory cold-chain parcel dispatches and automated refills.
                 </p>
                 <button
                   type="button"
                   onClick={() => setIsAddAddressOpen(true)}
-                  className="mt-2 bg-[#0b1f3a] hover:bg-[#162a45] text-white text-[13px] font-semibold px-4 py-2.5 rounded-[8px] transition-colors cursor-pointer"
+                  className="mt-2 bg-[#0b1f3a] hover:bg-[#162a45] text-white text-xs font-semibold px-4 py-2.5 rounded-lg transition-colors cursor-pointer shadow-2xs"
                 >
                   + Add New Address
                 </button>

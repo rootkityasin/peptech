@@ -10,9 +10,10 @@ import { useLiveProducts } from "@/hooks/useLiveProducts"
 
 interface ShopCatalogProps {
   initialCategory?: "all" | "pen-sets" | "refills" | "vials"
+  initialProducts?: CatalogProduct[]
 }
 
-export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
+export function ShopCatalog({ initialCategory = "all", initialProducts }: ShopCatalogProps) {
   const { addItem, setIsDrawerOpen } = useCart()
   const searchParams = useSearchParams()
   const urlSearch = searchParams?.get("search") || ""
@@ -67,8 +68,8 @@ export function ShopCatalog({ initialCategory = "all" }: ShopCatalogProps) {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [selectedPurchaseType, setSelectedPurchaseType] = useState<"all" | "sub" | "one-time">("all")
 
-  // Live products from Medusa API with instant static fallback
-  const { products: allProducts } = useLiveProducts()
+  // Live products from Medusa API with instant static fallback & SSR hydration
+  const { products: allProducts } = useLiveProducts(initialProducts)
 
   // Counts
   const penSetsCount = allProducts.filter((p) => p.format === "complete-pen-set").length

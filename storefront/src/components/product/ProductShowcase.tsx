@@ -119,6 +119,7 @@ export function ProductShowcase({
                 price={currentProduct.price}
                 subscribePrice={currentProduct.subscribePrice}
                 tag="REFILL CARTRIDGE"
+                allProducts={allProducts}
               />
             ) : (
               <ProductBuyBox
@@ -129,6 +130,7 @@ export function ProductShowcase({
                 price={currentProduct.price}
                 subscribePrice={currentProduct.subscribePrice}
                 tag="COMPLETE PEN SET"
+                allProducts={allProducts}
               />
             )}
           </div>

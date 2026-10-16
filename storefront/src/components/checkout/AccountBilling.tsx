@@ -4,6 +4,7 @@ import React, { useEffect, useState, useCallback } from "react"
 import { commerceRequest } from "@/lib/stripe-checkout"
 import { VisaBadge, MastercardBadge, AmexBadge, JcbBadge } from "@/components/ui/PaymentBadges"
 import { SubscriptionDashboard } from "@/components/account/SubscriptionDashboard"
+import { useCustomDialog } from "@/components/ui/CustomDialog"
 import Link from "next/link"
 
 function CardBrandBadge({ brand, className = "w-[36px] h-[22px]" }: { brand?: string; className?: string }) {
@@ -42,6 +43,7 @@ export function AccountBilling({
   subscriptionsOnly?: boolean
 }) {
   const { customer, token: ctxToken } = useCustomer()
+  const { showConfirm } = useCustomDialog()
   const [subscriptions, setSubscriptions] = useState<any[]>(() => initialSubscriptions || [])
   const [paymentMethods, setPaymentMethods] = useState<any[]>(() => initialPaymentMethods || [])
   const [isLoadingPaymentMethods, setIsLoadingPaymentMethods] = useState(() => !initialPaymentMethods)
@@ -123,7 +125,14 @@ export function AccountBilling({
 
   const command = async (id: string, action: string) => {
     if (busy) return
-    if (action === "cancel" && !window.confirm("Cancel future renewals? Already paid orders are handled separately.")) return
+    if (action === "cancel") {
+      const confirmed = await showConfirm(
+        "Cancel future refills? Already scheduled or dispatched laboratory orders are handled separately.",
+        "Cancel Subscription",
+        { confirmText: "Cancel Subscription", cancelText: "Keep Active", danger: true }
+      )
+      if (!confirmed) return
+    }
     setBusy(id)
     setError("")
     setSuccessMsg("")
@@ -159,7 +168,12 @@ export function AccountBilling({
 
   const removePaymentMethod = async (pmId: string) => {
     if (busy) return
-    if (!window.confirm("Remove this saved payment method from your account?")) return
+    const confirmed = await showConfirm(
+      "Remove this saved payment method from your laboratory account?",
+      "Remove Payment Card",
+      { confirmText: "Remove Card", cancelText: "Keep", danger: true }
+    )
+    if (!confirmed) return
     setBusy(pmId)
     setError("")
     setSuccessMsg("")

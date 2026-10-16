@@ -6,6 +6,7 @@ import { useCart } from "@/components/cart/CartContext"
 import { CatalogProduct } from "@/data/catalog"
 import { useLiveProducts } from "@/hooks/useLiveProducts"
 import { ProductAccordions } from "./ProductAccordions"
+import { resolveProductImage } from "@/lib/product-images"
 
 interface ProductBuyBoxProps {
   product?: CatalogProduct
@@ -15,6 +16,7 @@ interface ProductBuyBoxProps {
   price?: number
   subscribePrice?: number
   tag?: string
+  allProducts?: CatalogProduct[]
 }
 
 export function ProductBuyBox({
@@ -25,6 +27,7 @@ export function ProductBuyBox({
   price,
   subscribePrice,
   tag = "PEN SYSTEM",
+  allProducts,
 }: ProductBuyBoxProps) {
   const { addItem, setIsDrawerOpen, autoSavings } = useCart()
   const [purchaseType, setPurchaseType] = useState<"one-time" | "subscription">("one-time")
@@ -37,8 +40,8 @@ export function ProductBuyBox({
       (typeof title === "string" && title.toLowerCase().includes("cartridge"))
     ))
 
-  // Fetch live products for dynamic cartridge choices
-  const { products: liveProducts } = useLiveProducts()
+  // Fetch live products for dynamic cartridge choices (hydrates from allProducts or localStorage in 0ms)
+  const { products: liveProducts } = useLiveProducts(allProducts || [])
 
   // Filter available refill cartridges
   const availableCartridges = useMemo(() => {
@@ -151,7 +154,7 @@ export function ProductBuyBox({
       subscriptionIntervalDays: recurring ? 28 : undefined,
       discountPercent: autoSavings.discountType === "percentage" ? autoSavings.discountValue : undefined,
       sku: product?.sku || "",
-      image: product?.image || "/images/products/placeholder.png",
+      image: resolveProductImage(product),
       options,
     })
     setIsDrawerOpen(true)
@@ -266,7 +269,7 @@ export function ProductBuyBox({
             <div className="flex items-center gap-3 min-w-0">
               <div className="size-10 rounded-lg bg-[#f8fafc] border border-[#e2e8f0] flex items-center justify-center shrink-0 p-1 overflow-hidden">
                 <img
-                  src={activeCartridge?.image || "/images/products/placeholder.png"}
+                  src={resolveProductImage(activeCartridge)}
                   alt=""
                   className="size-full object-contain"
                 />
@@ -320,7 +323,7 @@ export function ProductBuyBox({
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="size-8 rounded-md bg-white border border-[#e2e8f0] flex items-center justify-center shrink-0 p-0.5 overflow-hidden">
                         <img
-                          src={cartridge.image || "/images/products/placeholder.png"}
+                          src={resolveProductImage(cartridge)}
                           alt=""
                           className="size-full object-contain"
                         />

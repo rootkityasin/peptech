@@ -3,6 +3,7 @@
 import React, { useEffect } from "react"
 import Link from "next/link"
 import { useCart, getItemSubtitle } from "./CartContext"
+import { resolveProductImage } from "@/lib/product-images"
 
 export function CartDrawer() {
   const {
@@ -217,9 +218,16 @@ export function CartDrawer() {
                       data-name="Thumb Container"
                     >
                       <img
-                        src={item.image || "/images/products/placeholder.png"}
+                        src={resolveProductImage(item)}
                         alt={item.title}
                         className="size-full object-contain pointer-events-none rounded-[6px] p-1 transition-transform duration-200 hover:scale-105"
+                        onError={(e) => {
+                          const target = e.currentTarget as HTMLImageElement
+                          const fallback = "/images/products/pen-sets/ghk-cu.jpg"
+                          if (!target.src.endsWith(fallback)) {
+                            target.src = fallback
+                          }
+                        }}
                       />
                     </div>
 

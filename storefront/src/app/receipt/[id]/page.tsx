@@ -12,6 +12,7 @@ import {
   type ReceiptItem,
 } from "@/components/receipt/UnifiedReceipt"
 import { ReceiptSkeleton } from "@/components/ui/Skeletons"
+import { resolveProductImage } from "@/lib/product-images"
 
 function mapMedusaOrderToReceipt(mo: any, customerProfile?: any): ReceiptData {
   const rawTotal =
@@ -61,7 +62,7 @@ function mapMedusaOrderToReceipt(mo: any, customerProfile?: any): ReceiptData {
       subtitle: it.variant_title || it.subtitle || it.product_description || "Laboratory RUO Grade",
       price,
       quantity: it.quantity || 1,
-      image: it.thumbnail || "/images/products/placeholder.png",
+      image: resolveProductImage(it),
       options: itOptions,
     }
   })

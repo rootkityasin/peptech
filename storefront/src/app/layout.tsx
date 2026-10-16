@@ -5,6 +5,7 @@ import { CustomerProvider } from "@/context/CustomerContext"
 import { CartProvider } from "@/components/cart/CartContext"
 import { CartDrawer } from "@/components/cart/CartDrawer"
 import { ResearchDisclaimerModal } from "@/components/compliance/ResearchDisclaimerModal"
+import { CustomDialogProvider } from "@/components/ui/CustomDialog"
 import { Header } from "@/components/layout/Header"
 import { Footer } from "@/components/layout/Footer"
 
@@ -31,15 +32,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         className="min-h-full flex flex-col bg-white text-slate-900 font-sans"
         suppressHydrationWarning
       >
-        <CustomerProvider>
-          <CartProvider>
-            <ResearchDisclaimerModal />
-            <Header />
-            <div className="flex-1">{children}</div>
-            <Footer />
-            <CartDrawer />
-          </CartProvider>
-        </CustomerProvider>
+        <CustomDialogProvider>
+          <CustomerProvider>
+            <CartProvider>
+              <ResearchDisclaimerModal />
+              <Header />
+              <div className="flex-1">{children}</div>
+              <Footer />
+              <CartDrawer />
+            </CartProvider>
+          </CustomerProvider>
+        </CustomDialogProvider>
       </body>
     </html>
   )

@@ -13,6 +13,8 @@ out/
 # Medusa build output
 .medusa/
 backend/.medusa/
+.config/
+**/.config/
 
 # Production
 build/
