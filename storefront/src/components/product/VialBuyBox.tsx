@@ -293,7 +293,7 @@ export function VialBuyBox({ product }: VialBuyBoxProps) {
         <div className="flex flex-col gap-[3px] items-center text-center w-[135px]">
           <img src="/images/figma/62bff5b65f283bcf5397c72f82c6a2b3ed8693c2.svg" alt="" className="size-[20px]" />
           <span className="font-bold text-[#0b1f3a] text-[12px]">Dedicated Support</span>
-          <span className="font-normal text-[#64748b] text-[10px]">info@peptech.bio</span>
+          <span className="font-normal text-[#64748b] text-[10px]">support@peptech.bio</span>
         </div>
       </div>
 

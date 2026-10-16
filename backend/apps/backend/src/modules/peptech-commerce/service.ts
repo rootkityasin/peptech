@@ -121,4 +121,122 @@ export default class CommerceService {
       connection.release()
     }
   }
+
+  async delete(id: string): Promise<boolean> {
+    const res = await this.pool.query("DELETE FROM peptech_commerce_record WHERE id=$1", [id])
+    return (res.rowCount || 0) > 0
+  }
+
+  async findDevicePassport(query: string): Promise<LedgerRecord | null> {
+    await this.seedInitialPassports()
+    const clean = query.trim()
+    const upper = clean.toUpperCase()
+    const res = await this.pool.query(
+      `SELECT * FROM peptech_commerce_record
+       WHERE kind = 'device_passport'
+         AND (
+           UPPER(id) = $1
+           OR UPPER(id) = UPPER($2)
+           OR UPPER(data->>'serial_number') = $1
+           OR UPPER(data->>'batch_number') = $1
+           OR UPPER(data->>'serial_number') = $3
+         )
+       LIMIT 1`,
+      [upper, `devpass_${upper}`, clean]
+    )
+    return res.rows[0] || null
+  }
+
+  async listDevicePassports(options: { search?: string; status?: string; limit?: number; offset?: number } = {}) {
+    await this.seedInitialPassports()
+    const values: any[] = ["device_passport"]
+    const where: string[] = ["kind = $1"]
+
+    if (options.status && options.status !== "all") {
+      values.push(options.status)
+      where.push(`state = $${values.length}`)
+    }
+
+    if (options.search && options.search.trim()) {
+      values.push(`%${options.search.trim()}%`)
+      where.push(`(
+        data->>'serial_number' ILIKE $${values.length}
+        OR data->>'batch_number' ILIKE $${values.length}
+        OR data->>'product_name' ILIKE $${values.length}
+        OR id ILIKE $${values.length}
+      )`)
+    }
+
+    const countRes = await this.pool.query(
+      `SELECT count(*) as total FROM peptech_commerce_record WHERE ${where.join(" AND ")}`,
+      values
+    )
+    const total = parseInt(countRes.rows[0]?.total || "0", 10)
+
+    values.push(Math.min(options.limit || 50, 200))
+    values.push(Math.max(options.offset || 0, 0))
+
+    const query = `SELECT * FROM peptech_commerce_record WHERE ${where.join(" AND ")}
+      ORDER BY updated_at DESC, id LIMIT $${values.length - 1} OFFSET $${values.length}`
+
+    const rowsRes = await this.pool.query(query, values)
+    return { records: rowsRes.rows as LedgerRecord[], total }
+  }
+
+  private hasSeededPassports = false
+  async seedInitialPassports(): Promise<void> {
+    if (this.hasSeededPassports) return
+    this.hasSeededPassports = true
+    try {
+      const initialDevices = [
+        {
+          serial_number: "PT-26-000184",
+          product_name: "PEPTECH® Reusable Precision Pen 1.0",
+          batch_number: "RT-2609A",
+          manufacture_date: "01/2026",
+          expiry_date: "01/2029",
+          device_type: "Precision Pen Device",
+          notes: "Card Authenticated - Photo verified physical device passport",
+        },
+        {
+          serial_number: "PT-26-000185",
+          product_name: "PEPTECH® Reusable Precision Pen 1.0",
+          batch_number: "RT-2609A",
+          manufacture_date: "01/2026",
+          expiry_date: "01/2029",
+          device_type: "Precision Pen Device",
+          notes: "Standard production run",
+        },
+        {
+          serial_number: "PT-984128",
+          product_name: "PEPTECH® Reusable Precision Pen 1.0",
+          batch_number: "RT-2609A",
+          manufacture_date: "09/2025",
+          expiry_date: "09/2028",
+          device_type: "Precision Pen Device",
+          notes: "Launch batch device passport",
+        },
+      ]
+
+      for (const dev of initialDevices) {
+        const id = `devpass_${dev.serial_number.toUpperCase().replace(/[^A-Z0-9_-]/g, "")}`
+        await this.create({
+          id,
+          kind: "device_passport",
+          profile: "device",
+          owner_id: null,
+          state: "active",
+          data: {
+            ...dev,
+            nfc_enabled: true,
+            qr_enabled: true,
+            security_seal: "HOLOGRAPHIC-VERIFIED",
+          },
+        })
+      }
+    } catch (e) {
+      console.warn("[seedInitialPassports] Notice:", (e as any)?.message || e)
+    }
+  }
 }
+

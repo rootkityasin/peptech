@@ -335,7 +335,7 @@ export default function LabReportsPage() {
             <div className="text-4xl">📄</div>
             <h3 className="font-bold text-base text-[#0b1f3a]">No COA reports match "{query}"</h3>
             <p className="text-xs text-[#64748b] max-w-sm mx-auto">
-              Please check your batch number on your product label or contact support at <a href="mailto:info@peptech.bio" className="text-[#16a6a3] underline">info@peptech.bio</a>.
+              Please check your batch number on your product label or contact support at <a href="mailto:support@peptech.bio" className="text-[#16a6a3] underline">support@peptech.bio</a>.
             </p>
           </div>
         )}

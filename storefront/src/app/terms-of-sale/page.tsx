@@ -49,11 +49,12 @@ function LegalSidebar() {
         <span className="text-[10px] font-bold text-[#16a6a3] uppercase tracking-wider">
           REGISTERED TRADING ENTITY
         </span>
-        <h5 className="font-bold text-[#0b1f3a]">Muawiyah Waheed</h5>
-        <p className="text-[11px] font-medium text-[#16a6a3]">t/a PEPTECH®</p>
+        <h5 className="font-bold text-[#0b1f3a]">PEPTECH LTD</h5>
+        <p className="text-[11px] font-medium text-[#16a6a3]">Registered Company</p>
         <p className="text-[#64748b] leading-relaxed">
-          4 The Sidings, Dewsbury<br />
-          WF12 9QU, United Kingdom
+          Office 17 Ips Innovate, Chartermark Way<br />
+          Colburn Business Park, DL9 4QJ, Colburn<br />
+          United Kingdom
         </p>
         <div className="pt-2 border-t border-[#e2e8f0]">
           <a

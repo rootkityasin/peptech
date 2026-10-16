@@ -5,7 +5,7 @@ These rules are mandatory for all AI agents and developers working in this works
 ---
 
 ## 1. Brand Identity & Design Standards
-- **Brand**: PEPTECH® (`peptech.bio`). Support: `info@peptech.bio`.
+- **Brand**: PEPTECH® (`peptech.bio`). Support: `support@peptech.bio`.
 - **Slogan**: *Quality. Safety. Precision.*
 - **Core Color Palette**:
   - Deep Navy: `#0B1F3A`

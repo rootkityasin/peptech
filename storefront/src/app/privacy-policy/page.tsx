@@ -49,11 +49,12 @@ function LegalSidebar() {
         <span className="text-[10px] font-bold text-[#16a6a3] uppercase tracking-wider">
           DATA CONTROLLER &amp; DPO
         </span>
-        <h5 className="font-bold text-[#0b1f3a]">Muawiyah Waheed</h5>
-        <p className="text-[11px] font-medium text-[#16a6a3]">t/a PEPTECH® (UK Sole Trader)</p>
+        <h5 className="font-bold text-[#0b1f3a]">PEPTECH LTD</h5>
+        <p className="text-[11px] font-medium text-[#16a6a3]">Data Controller</p>
         <p className="text-[#64748b] leading-relaxed">
-          4 The Sidings, Dewsbury<br />
-          WF12 9QU, United Kingdom
+          Office 17 Ips Innovate, Chartermark Way<br />
+          Colburn Business Park, DL9 4QJ, Colburn<br />
+          United Kingdom
         </p>
         <div className="pt-2 border-t border-[#e2e8f0]">
           <a
@@ -222,7 +223,7 @@ export default function PrivacyPolicyPage() {
                   Exercising Your Rights &amp; ICO Complaints
                 </h3>
                 <p>
-                  To make a Subject Access Request (SAR) or exercise any of your data rights, contact our Data Protection Officer at <a href="mailto:info@peptech.bio" className="text-[#16a6a3] underline font-semibold">info@peptech.bio</a>. You also have the right to lodge a complaint with the UK Information Commissioner’s Office (ICO) at <code>ico.org.uk</code>.
+                  To make a Subject Access Request (SAR) or exercise any of your data rights, contact our Data Protection Officer at <a href="mailto:support@peptech.bio" className="text-[#16a6a3] underline font-semibold">support@peptech.bio</a>. You also have the right to lodge a complaint with the UK Information Commissioner’s Office (ICO) at <code>ico.org.uk</code>.
                 </p>
               </section>
 

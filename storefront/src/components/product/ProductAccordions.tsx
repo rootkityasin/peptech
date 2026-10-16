@@ -111,31 +111,46 @@ export function ProductAccordions({ product }: ProductAccordionsProps) {
   ]
 
   return (
-    <div className="w-full divide-y divide-[#e2e8f0] border-y border-[#e2e8f0] mt-2">
+    <div className="w-full divide-y divide-[#e2e8f0] border-y border-[#e2e8f0] mt-3">
       {sections.map((section) => {
         const isOpen = openSection === section.id
         return (
-          <div key={section.id} className="py-2.5">
+          <div key={section.id} className="py-1">
             <button
               type="button"
               onClick={() => toggleSection(section.id)}
-              className="w-full flex items-center justify-between text-left py-1 text-[13.5px] font-bold text-[#0b1f3a] hover:text-[#16a6a3] transition-colors"
+              className="w-full px-3 py-3 text-left flex items-center justify-between gap-3 rounded-xl hover:bg-[#f8fafc] transition-all duration-200 group cursor-pointer"
               aria-expanded={isOpen}
             >
-              <span>{section.title}</span>
-              <svg
-                className={`size-4 text-[#64748b] transition-transform duration-200 ${
-                  isOpen ? "rotate-180" : ""
+              <span
+                className={`text-[13.5px] sm:text-[14px] font-bold transition-colors duration-200 ${
+                  isOpen ? "text-[#16a6a3]" : "text-[#0b1f3a] group-hover:text-[#16a6a3]"
                 }`}
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
+                {section.title}
+              </span>
+              <span
+                className={`size-6 sm:size-7 rounded-full flex items-center justify-center shrink-0 transition-all duration-300 ${
+                  isOpen
+                    ? "bg-[#0b1f3a] text-white shadow-xs scale-105"
+                    : "bg-[#f1f5f9] text-[#64748b] group-hover:bg-[#e2e8f0] group-hover:text-[#0b1f3a]"
+                }`}
+              >
+                <svg
+                  className={`size-3.5 transition-transform duration-300 ease-in-out transform ${
+                    isOpen ? "rotate-180 text-white" : "rotate-0 text-[#64748b] group-hover:text-[#0b1f3a]"
+                  }`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2.5}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </span>
             </button>
             {isOpen && (
-              <div className="pt-2 pb-3 animate-in fade-in duration-150">
+              <div className="px-3 pt-1 pb-3 animate-in fade-in duration-200">
                 {section.content}
               </div>
             )}

@@ -83,37 +83,26 @@ export function ResourceCardsSection() {
               </p>
             </div>
           </div>
-          <div className="flex items-center justify-between w-full max-w-[346px]" data-name="Contact Links Row">
-            <button
-              onClick={() => alert("Connecting to PEPTECH Lab Support Chat...")}
-              className="flex gap-[4px] items-center hover:opacity-80 transition-opacity"
-            >
-              <div className="size-[22px] shrink-0">
-                <img alt="" className="size-full" src="/images/figma/b00dbfc31bf617a6c5a02915924d1f5ace8c8c45.svg" />
-              </div>
-              <span className="font-medium text-[#0b1f3a] text-[11px] whitespace-nowrap">
-                Chat Live
-              </span>
-            </button>
+          <div className="flex items-center gap-[20px] sm:gap-[28px]" data-name="Contact Links Row">
             <a
-              href="mailto:info@peptech.bio"
-              className="flex gap-[4px] items-center hover:opacity-80 transition-opacity"
+              href="mailto:support@peptech.bio"
+              className="flex gap-[6px] items-center hover:opacity-80 transition-opacity"
             >
-              <div className="size-[22px] shrink-0">
+              <div className="size-[20px] shrink-0">
                 <img alt="" className="size-full" src="/images/figma/c4a6280f711b3d1aba2486c8a03800c3802a2ef1.svg" />
               </div>
-              <span className="font-medium text-[#0b1f3a] text-[11px] whitespace-nowrap">
+              <span className="font-medium text-[#0b1f3a] text-[12px] whitespace-nowrap">
                 Email Us
               </span>
             </a>
             <a
               href="tel:+18001234567"
-              className="flex gap-[4px] items-center hover:opacity-80 transition-opacity"
+              className="flex gap-[6px] items-center hover:opacity-80 transition-opacity"
             >
-              <div className="size-[22px] shrink-0">
+              <div className="size-[20px] shrink-0">
                 <img alt="" className="size-full" src="/images/figma/6ae6020cc789a7710eede2f5fe4ca66dfcd7648c.svg" />
               </div>
-              <span className="font-medium text-[#0b1f3a] text-[11px] whitespace-nowrap">
+              <span className="font-medium text-[#0b1f3a] text-[12px] whitespace-nowrap">
                 +1 (800) 123-4567
               </span>
             </a>

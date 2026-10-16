@@ -56,6 +56,9 @@ export async function commerceRequest(path: string, token?: string | null, body?
   if (token) {
     headers["Authorization"] = `Bearer ${token}`
   }
+  if (typeof window !== "undefined" && window.location?.origin) {
+    headers["x-storefront-origin"] = window.location.origin
+  }
 
   const response = await fetch(`${getBackendUrl()}${path}`, {
     method: body === undefined ? "GET" : method,

@@ -63,8 +63,18 @@ const serveStaticImage = (req: MedusaRequest, res: MedusaResponse, next: MedusaN
   next()
 }
 
+const ensureVerifyPublishableKey = (req: MedusaRequest, res: MedusaResponse, next: MedusaNextFunction) => {
+  if (!req.headers["x-publishable-api-key"]) {
+    req.headers["x-publishable-api-key"] =
+      process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY ||
+      "pk_556de0f5ea4724394f147569c8b5066ecda7a0d39bd60eb15b2550b2d5c52246"
+  }
+  next()
+}
+
 export default defineMiddlewares({
   routes: [
+    { matcher: "/store/custom/verify*", middlewares: [ensureVerifyPublishableKey, handleStoreCors] },
     { matcher: "/store/custom*", middlewares: [handleStoreCors] },
     ...validatePromoMiddlewares,
     { matcher: "/store/payment-collections/:id/payment-sessions", methods: ["POST"], middlewares: [retiredPaymentCreation] },
@@ -83,6 +93,7 @@ export default defineMiddlewares({
     { matcher: "/store/custom/billing-portal", middlewares: [authenticate("customer", ["bearer"])] },
     { matcher: "/admin/commerce*", middlewares: [authenticate("user", ["session", "bearer"])] },
     { matcher: "/admin/custom/subscriptions", middlewares: [authenticate("user", ["session", "bearer"])] },
+    { matcher: "/admin/custom/device-passports*", middlewares: [authenticate("user", ["session", "bearer"])] },
     { matcher: "/hooks/peptech-stripe", bodyParser: { preserveRawBody: true, sizeLimit: "1mb" } },
     {
       matcher: "/images/*",

@@ -5,7 +5,7 @@ import { TrustedBySection } from "@/components/common/TrustedBySection"
 
 export const metadata = {
   title: "About Us | PEPTECH® Precision Peptide Systems",
-  description: "Learn about PEPTECH®, our Cambridge Science Park research facility, reusable precision pen architecture, and uncompromising analytical purity standards.",
+  description: "Learn about PEPTECH®, our UK research facilities, reusable precision pen architecture, and uncompromising analytical purity standards.",
 }
 
 export default function AboutPage() {
@@ -35,7 +35,7 @@ export default function AboutPage() {
             </h1>
 
             <p className="text-xs sm:text-[14px] text-[#64748B] leading-[22px] max-w-2xl">
-              PEPTECH® was established in Cambridge, United Kingdom with a singular scientific mission: elevating laboratory peptide research through durable reusable engineering, rigorous cold-chain integrity, and uncompromising analytical transparency.
+              PEPTECH® was established in the United Kingdom with a singular scientific mission: elevating laboratory peptide research through durable reusable engineering, rigorous cold-chain integrity, and uncompromising analytical transparency.
             </p>
 
             <div className="flex flex-wrap items-center gap-4 pt-2">
@@ -183,19 +183,19 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* 05 Cambridge Facility Section */}
+      {/* 05 Registered UK Operations & Standards */}
       <section className="py-16 sm:py-24 bg-white border-b border-[#e2e8f0]">
         <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             <div className="lg:col-span-6 space-y-5">
               <span className="text-[12px] font-bold text-[#16A6A3] tracking-[1.2px] uppercase">
-                CAMBRIDGE BIOCLUSTER
+                UK RESEARCH OPERATIONS
               </span>
               <h2 className="text-2xl sm:text-[28px] font-bold text-[#0B1F3A]">
-                Operating from the Heart of Cambridge Bioscience
+                Operating with Rigorous UK Laboratory Standards
               </h2>
               <p className="text-[14px] text-[#64748B] leading-[22px]">
-                Situated within the Cambridge Science Park ecosystem, PEPTECH works alongside leading analytical laboratories, bio-incubators, and clinical researchers across Europe and North America.
+                Operating from North Yorkshire, PEPTECH LTD works alongside leading analytical testing facilities, synthesis partners, and clinical researchers across the United Kingdom and internationally.
               </p>
               
               <div className="space-y-3 pt-2">
@@ -224,7 +224,7 @@ export default function AboutPage() {
                   href="/contact"
                   className="text-xs sm:text-sm font-bold text-[#0b1f3a] hover:text-[#16a6a3] inline-flex items-center gap-1 transition-colors"
                 >
-                  Contact Cambridge Laboratory Hub <span>→</span>
+                  Contact Laboratory Support <span>→</span>
                 </Link>
               </div>
             </div>
@@ -234,7 +234,7 @@ export default function AboutPage() {
                 <div className="flex items-center justify-between border-b border-[#e2e8f0] pb-4">
                   <div className="space-y-0.5">
                     <span className="text-[11px] font-bold text-[#64748b] uppercase tracking-wider">Corporate Entity</span>
-                    <h5 className="font-bold text-[#0b1f3a] text-sm">PEPTECH BioSciences Ltd</h5>
+                    <h5 className="font-bold text-[#0b1f3a] text-sm">PEPTECH LTD</h5>
                   </div>
                   <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200">
                     UK Registered
@@ -244,11 +244,11 @@ export default function AboutPage() {
                 <div className="grid grid-cols-2 gap-4 text-xs">
                   <div>
                     <span className="text-[#64748b] block">Location</span>
-                    <span className="font-semibold text-[#0b1f3a]">Cambridge, UK</span>
+                    <span className="font-semibold text-[#0b1f3a]">Colburn, United Kingdom</span>
                   </div>
                   <div>
                     <span className="text-[#64748b] block">Inquiries</span>
-                    <span className="font-semibold text-[#0b1f3a]">info@peptech.bio</span>
+                    <span className="font-semibold text-[#0b1f3a]">support@peptech.bio</span>
                   </div>
                   <div>
                     <span className="text-[#64748b] block">Courier Logistics</span>
@@ -261,8 +261,8 @@ export default function AboutPage() {
                 </div>
 
                 <div className="p-4 rounded-xl bg-white border border-[#e2e8f0] text-xs text-[#64748b] space-y-1 leading-relaxed">
-                  <p className="font-semibold text-[#0b1f3a]">Facility Address:</p>
-                  <p>PEPTECH BioSciences Ltd<br />Cambridge Science Park, Milton Road<br />Cambridge CB4 0FW, United Kingdom</p>
+                  <p className="font-semibold text-[#0b1f3a]">Registered Trading Address:</p>
+                  <p>PEPTECH LTD<br />Office 17 Ips Innovate, Chartermark Way<br />Colburn Business Park, DL9 4QJ, Colburn, United Kingdom</p>
                 </div>
               </div>
             </div>

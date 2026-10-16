@@ -184,11 +184,11 @@ export function Footer() {
           </p>
         </div>
 
-        {/* UK Statutory Trading & Sole Trader Underwriting Disclosure */}
+        {/* UK Statutory Trading & Company Disclosure */}
         <div className="pt-4 pb-2 text-[11px] text-[#94A3B8] leading-relaxed border-t border-[#F1F5F9] mt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
           <p>
-            PEPTECH® is a commercial trading style operated by <strong className="text-[#64748B]">Muawiyah Waheed</strong>. 
-            Registered address: 4 The Sidings, Dewsbury, WF12 9QU, United Kingdom.
+            PEPTECH® is operated by <strong className="text-[#64748B]">PEPTECH LTD</strong>. 
+            Registered address: Office 17 Ips Innovate, Chartermark Way, Colburn Business Park, DL9 4QJ, Colburn, United Kingdom.
           </p>
           <p className="text-[10px] text-[#A0AEC0] sm:text-right shrink-0">
             For Laboratory &amp; Scientific Research Use Only (RUO). 18+ Age Restricted.

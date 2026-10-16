@@ -50,57 +50,6 @@ const STEPS: StepItem[] = [
   },
 ]
 
-/**
- * Animated number component:
- * When triggered or scrolled to, the number counts up from 0 to target
- * with a smooth upward slide animation ("numbers are going up").
- */
-function UpwardNumber({
-  target,
-  isTriggered,
-  isActive,
-}: {
-  target: number
-  isTriggered: boolean
-  isActive: boolean
-}) {
-  const [displayNum, setDisplayNum] = useState<number>(0)
-
-  useEffect(() => {
-    if (!isTriggered) {
-      setDisplayNum(0)
-      return
-    }
-
-    let current = 0
-    const delay = target === 1 ? 130 : target === 2 ? 90 : 65
-    const timer = setInterval(() => {
-      current += 1
-      setDisplayNum(current)
-      if (current >= target) {
-        clearInterval(timer)
-      }
-    }, delay)
-
-    return () => clearInterval(timer)
-  }, [target, isTriggered])
-
-  return (
-    <div className="relative h-[22px] w-[16px] flex items-center justify-center overflow-hidden">
-      <span
-        key={displayNum}
-        className={`inline-block font-bold text-[13px] leading-none transition-all duration-300 ${
-          isActive ? "text-white scale-110" : "text-white"
-        }`}
-        style={{
-          animation: "numberSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards",
-        }}
-      >
-        {isTriggered ? displayNum : target}
-      </span>
-    </div>
-  )
-}
 
 export function PeptechJourney() {
   const { autoSavings } = useCart()
@@ -299,7 +248,6 @@ export function PeptechJourney() {
               {STEPS.map((step, idx) => {
                 const isActive = activeStep === step.number
                 const isPast = activeStep > step.number
-                const isTriggered = hasEntered && (activeStep >= step.number || scrollProgress >= (idx * 0.28))
 
                 return (
                   <React.Fragment key={step.number}>
@@ -318,10 +266,10 @@ export function PeptechJourney() {
                     >
                       {/* Left Column: Number Badge Vertically Above Icon (Faithful to Figma & Screenshot) */}
                       <div className="flex flex-col gap-[8px] items-center shrink-0">
-                        {/* Number Badge with Animated Count Up */}
+                        {/* Number Badge */}
                         <div className="relative">
                           <div
-                            className={`size-[26px] sm:size-[28px] rounded-full flex items-center justify-center font-bold text-[13px] transition-all duration-500 ${
+                            className={`size-[26px] sm:size-[28px] rounded-full flex items-center justify-center font-bold text-[13px] transition-all duration-300 ${
                               isActive
                                 ? "bg-gradient-to-br from-[#16a6a3] to-[#0d827f] text-white shadow-md shadow-[#16a6a3]/35 ring-4 ring-[#16a6a3]/20 scale-105"
                                 : isPast
@@ -329,11 +277,7 @@ export function PeptechJourney() {
                                 : "bg-[#0b1f3a] text-white"
                             }`}
                           >
-                            <UpwardNumber
-                              target={step.number}
-                              isTriggered={isTriggered}
-                              isActive={isActive}
-                            />
+                            <span className="leading-none select-none">{step.number}</span>
                           </div>
 
                           {/* Upward pulse radar when active */}

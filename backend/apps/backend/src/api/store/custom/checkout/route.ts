@@ -6,7 +6,7 @@ import { reconcileSession } from "../../../../lib/commerce/events"
 
 export async function POST(req: AuthenticatedMedusaRequest, res: MedusaResponse) {
   res.setHeader("Cache-Control", "no-store")
-  return endpoint(res, () => prepareCheckout(req.scope, commerce(req), actor(req), req.body))
+  return endpoint(res, () => prepareCheckout(req.scope, commerce(req), actor(req), req.body, req))
 }
 
 export async function GET(req: AuthenticatedMedusaRequest, res: MedusaResponse) {

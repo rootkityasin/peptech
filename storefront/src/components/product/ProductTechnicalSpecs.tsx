@@ -65,60 +65,60 @@ export function ProductTechnicalSpecs({ product }: ProductTechnicalSpecsProps) {
                     COMPLETE KIT
                   </span>
                 </div>
-                <p className="text-[12px] text-[#64748b] mt-1">
+                <p className="text-[12px] text-[#64748b] mt-1.5">
                   Reusable precision laboratory device &amp; testing hardware
                 </p>
 
-                <div className="flex flex-col gap-[14px] mt-5">
-                  <div className="flex items-start gap-3">
-                    <div className="size-[20px] shrink-0 mt-0.5 flex items-center justify-center">
+                <div className="flex flex-col gap-[18px] sm:gap-[20px] mt-6">
+                  <div className="flex items-start gap-3.5">
+                    <div className="size-[22px] shrink-0 mt-0.5 flex items-center justify-center">
                       <img src={KIT_ICONS.pen} alt="" className="size-full object-contain" />
                     </div>
-                    <div>
-                      <p className="font-bold text-[#0b1f3a] text-[13px] leading-tight">Reusable Precision Pen</p>
-                      <p className="text-[#64748b] text-[11px] mt-0.5 leading-snug">Aircraft-grade anodized aluminum body with micro-click dial</p>
+                    <div className="space-y-0.5">
+                      <p className="font-bold text-[#0b1f3a] text-[13px] leading-snug">Reusable Precision Pen</p>
+                      <p className="text-[#64748b] text-[11.5px] leading-relaxed">Aircraft-grade anodized aluminum body with micro-click dial</p>
                     </div>
                   </div>
-                  <div className="flex items-start gap-3">
-                    <div className="size-[20px] shrink-0 mt-0.5 flex items-center justify-center">
+                  <div className="flex items-start gap-3.5">
+                    <div className="size-[22px] shrink-0 mt-0.5 flex items-center justify-center">
                       <img src={KIT_ICONS.cartridge} alt="" className="size-full object-contain" />
                     </div>
-                    <div>
-                      <p className="font-bold text-[#0b1f3a] text-[13px] leading-tight">1× Pre-filled Cartridge</p>
-                      <p className="text-[#64748b] text-[11px] mt-0.5 leading-snug">1.5 mL Borosilicate Type I glass pre-loaded under laminar airflow</p>
+                    <div className="space-y-0.5">
+                      <p className="font-bold text-[#0b1f3a] text-[13px] leading-snug">1× Pre-filled Cartridge</p>
+                      <p className="text-[#64748b] text-[11.5px] leading-relaxed">1.5 mL Borosilicate Type I glass pre-loaded under laminar airflow</p>
                     </div>
                   </div>
-                  <div className="flex items-start gap-3">
-                    <div className="size-[20px] shrink-0 mt-0.5 flex items-center justify-center">
+                  <div className="flex items-start gap-3.5">
+                    <div className="size-[22px] shrink-0 mt-0.5 flex items-center justify-center">
                       <img src={KIT_ICONS.needle} alt="" className="size-full object-contain" />
                     </div>
-                    <div>
-                      <p className="font-bold text-[#0b1f3a] text-[13px] leading-tight">4× 31G 5mm Sterile Needles</p>
-                      <p className="text-[#64748b] text-[11px] mt-0.5 leading-snug">Ultra-fine, individually blister-sealed laboratory needles</p>
+                    <div className="space-y-0.5">
+                      <p className="font-bold text-[#0b1f3a] text-[13px] leading-snug">4× 31G 5mm Sterile Needles</p>
+                      <p className="text-[#64748b] text-[11.5px] leading-relaxed">Ultra-fine, individually blister-sealed laboratory needles</p>
                     </div>
                   </div>
-                  <div className="flex items-start gap-3">
-                    <div className="size-[20px] shrink-0 mt-0.5 flex items-center justify-center">
+                  <div className="flex items-start gap-3.5">
+                    <div className="size-[22px] shrink-0 mt-0.5 flex items-center justify-center">
                       <img src={KIT_ICONS.prep} alt="" className="size-full object-contain" />
                     </div>
-                    <div>
-                      <p className="font-bold text-[#0b1f3a] text-[13px] leading-tight">4× Alcohol Prep Pads</p>
-                      <p className="text-[#64748b] text-[11px] mt-0.5 leading-snug">70% Isopropyl USP grade laboratory surface prep pads</p>
+                    <div className="space-y-0.5">
+                      <p className="font-bold text-[#0b1f3a] text-[13px] leading-snug">4× Alcohol Prep Pads</p>
+                      <p className="text-[#64748b] text-[11.5px] leading-relaxed">70% Isopropyl USP grade laboratory surface prep pads</p>
                     </div>
                   </div>
-                  <div className="flex items-start gap-3">
-                    <div className="size-[20px] shrink-0 mt-0.5 flex items-center justify-center">
+                  <div className="flex items-start gap-3.5">
+                    <div className="size-[22px] shrink-0 mt-0.5 flex items-center justify-center">
                       <img src={KIT_ICONS.passport} alt="" className="size-full object-contain" />
                     </div>
-                    <div>
-                      <p className="font-bold text-[#0b1f3a] text-[13px] leading-tight">Device Passport &amp; Storage Case</p>
-                      <p className="text-[#64748b] text-[11px] mt-0.5 leading-snug">Serial authenticity card with packaging QR verification</p>
+                    <div className="space-y-0.5">
+                      <p className="font-bold text-[#0b1f3a] text-[13px] leading-snug">Device Passport &amp; Storage Case</p>
+                      <p className="text-[#64748b] text-[11.5px] leading-relaxed">Serial authenticity card with packaging QR verification</p>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="pt-4 mt-4 border-t border-[#dce6ee] flex items-center justify-between text-[11.5px]">
+              <div className="pt-4 mt-6 border-t border-[#dce6ee] flex items-center justify-between text-[11.5px]">
                 <span className="font-semibold text-[#0b1f3a]">
                   Format: Complete Reusable Pen Kit
                 </span>
@@ -138,51 +138,51 @@ export function ProductTechnicalSpecs({ product }: ProductTechnicalSpecsProps) {
                     BOROSILICATE TYPE I
                   </span>
                 </div>
-                <p className="text-[12px] text-[#64748b] mt-1">
+                <p className="text-[12px] text-[#64748b] mt-1.5">
                   Precision-molded for the PEPTECH® Reusable Pen System
                 </p>
 
-                <div className="flex flex-col gap-[14px] mt-5">
-                  <div className="flex items-start gap-3">
-                    <div className="size-[20px] shrink-0 mt-0.5 flex items-center justify-center">
+                <div className="flex flex-col gap-[20px] sm:gap-[24px] mt-6">
+                  <div className="flex items-start gap-3.5">
+                    <div className="size-[22px] shrink-0 mt-0.5 flex items-center justify-center">
                       <img src={KIT_ICONS.cartridge} alt="" className="size-full object-contain" />
                     </div>
-                    <div>
-                      <p className="font-bold text-[#0b1f3a] text-[13px] leading-tight">Borosilicate Type I Glass</p>
-                      <p className="text-[#64748b] text-[11px] mt-0.5 leading-snug">Chemically inert, zero-leaching pharmaceutical glass chamber</p>
+                    <div className="space-y-0.5">
+                      <p className="font-bold text-[#0b1f3a] text-[13px] leading-snug">Borosilicate Type I Glass</p>
+                      <p className="text-[#64748b] text-[11.5px] leading-relaxed">Chemically inert, zero-leaching pharmaceutical glass chamber</p>
                     </div>
                   </div>
-                  <div className="flex items-start gap-3">
-                    <div className="size-[20px] shrink-0 mt-0.5 flex items-center justify-center">
+                  <div className="flex items-start gap-3.5">
+                    <div className="size-[22px] shrink-0 mt-0.5 flex items-center justify-center">
                       <img src={KIT_ICONS.cartridge} alt="" className="size-full object-contain" />
                     </div>
-                    <div>
-                      <p className="font-bold text-[#0b1f3a] text-[13px] leading-tight">1.5 mL Precision Volume</p>
-                      <p className="text-[#64748b] text-[11px] mt-0.5 leading-snug">Pre-filled under sterile ISO 5 laminar airflow environment</p>
+                    <div className="space-y-0.5">
+                      <p className="font-bold text-[#0b1f3a] text-[13px] leading-snug">1.5 mL Precision Volume</p>
+                      <p className="text-[#64748b] text-[11.5px] leading-relaxed">Pre-filled under sterile ISO 5 laminar airflow environment</p>
                     </div>
                   </div>
-                  <div className="flex items-start gap-3">
-                    <div className="size-[20px] shrink-0 mt-0.5 flex items-center justify-center">
+                  <div className="flex items-start gap-3.5">
+                    <div className="size-[22px] shrink-0 mt-0.5 flex items-center justify-center">
                       <img src={KIT_ICONS.pen} alt="" className="size-full object-contain" />
                     </div>
-                    <div>
-                      <p className="font-bold text-[#0b1f3a] text-[13px] leading-tight">60-Unit Calibration</p>
-                      <p className="text-[#64748b] text-[11px] mt-0.5 leading-snug">Exact mechanical match for PEPTECH reusable pen dial</p>
+                    <div className="space-y-0.5">
+                      <p className="font-bold text-[#0b1f3a] text-[13px] leading-snug">60-Unit Calibration</p>
+                      <p className="text-[#64748b] text-[11.5px] leading-relaxed">Exact mechanical match for PEPTECH reusable pen dial</p>
                     </div>
                   </div>
-                  <div className="flex items-start gap-3">
-                    <div className="size-[20px] shrink-0 mt-0.5 flex items-center justify-center">
+                  <div className="flex items-start gap-3.5">
+                    <div className="size-[22px] shrink-0 mt-0.5 flex items-center justify-center">
                       <img src={KIT_ICONS.needle} alt="" className="size-full object-contain" />
                     </div>
-                    <div>
-                      <p className="font-bold text-[#0b1f3a] text-[13px] leading-tight">Multi-Pierce Septum</p>
-                      <p className="text-[#64748b] text-[11px] mt-0.5 leading-snug">Medical-grade bromobutyl rubber septum with reseal memory</p>
+                    <div className="space-y-0.5">
+                      <p className="font-bold text-[#0b1f3a] text-[13px] leading-snug">Multi-Pierce Septum</p>
+                      <p className="text-[#64748b] text-[11.5px] leading-relaxed">Medical-grade bromobutyl rubber septum with reseal memory</p>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="pt-4 mt-4 border-t border-[#dce6ee] flex items-center justify-between text-[11.5px]">
+              <div className="pt-4 mt-6 border-t border-[#dce6ee] flex items-center justify-between text-[11.5px]">
                 <span className="font-semibold text-[#0b1f3a]">
                   Compatibility: PEPTECH Reusable Pen
                 </span>
@@ -202,51 +202,51 @@ export function ProductTechnicalSpecs({ product }: ProductTechnicalSpecsProps) {
                     NITROGEN CRIMPT
                   </span>
                 </div>
-                <p className="text-[12px] text-[#64748b] mt-1">
+                <p className="text-[12px] text-[#64748b] mt-1.5">
                   Vacuum freeze-dried scientific reference cake
                 </p>
 
-                <div className="flex flex-col gap-[14px] mt-5">
-                  <div className="flex items-start gap-3">
-                    <div className="size-[20px] shrink-0 mt-0.5 flex items-center justify-center">
+                <div className="flex flex-col gap-[20px] sm:gap-[24px] mt-6">
+                  <div className="flex items-start gap-3.5">
+                    <div className="size-[22px] shrink-0 mt-0.5 flex items-center justify-center">
                       <img src={KIT_ICONS.vial} alt="" className="size-full object-contain" />
                     </div>
-                    <div>
-                      <p className="font-bold text-[#0b1f3a] text-[13px] leading-tight">Pure Peptide Cake</p>
-                      <p className="text-[#64748b] text-[11px] mt-0.5 leading-snug">Free of excessive excipients, binders, or unverified stabilizers</p>
+                    <div className="space-y-0.5">
+                      <p className="font-bold text-[#0b1f3a] text-[13px] leading-snug">Pure Peptide Cake</p>
+                      <p className="text-[#64748b] text-[11.5px] leading-relaxed">Free of excessive excipients, binders, or unverified stabilizers</p>
                     </div>
                   </div>
-                  <div className="flex items-start gap-3">
-                    <div className="size-[20px] shrink-0 mt-0.5 flex items-center justify-center">
+                  <div className="flex items-start gap-3.5">
+                    <div className="size-[22px] shrink-0 mt-0.5 flex items-center justify-center">
                       <img src={KIT_ICONS.vial} alt="" className="size-full object-contain" />
                     </div>
-                    <div>
-                      <p className="font-bold text-[#0b1f3a] text-[13px] leading-tight">Inert Nitrogen Atmosphere</p>
-                      <p className="text-[#64748b] text-[11px] mt-0.5 leading-snug">Hermetically sealed under dry nitrogen to prevent oxidation</p>
+                    <div className="space-y-0.5">
+                      <p className="font-bold text-[#0b1f3a] text-[13px] leading-snug">Inert Nitrogen Atmosphere</p>
+                      <p className="text-[#64748b] text-[11.5px] leading-relaxed">Hermetically sealed under dry nitrogen to prevent oxidation</p>
                     </div>
                   </div>
-                  <div className="flex items-start gap-3">
-                    <div className="size-[20px] shrink-0 mt-0.5 flex items-center justify-center">
+                  <div className="flex items-start gap-3.5">
+                    <div className="size-[22px] shrink-0 mt-0.5 flex items-center justify-center">
                       <img src={KIT_ICONS.needle} alt="" className="size-full object-contain" />
                     </div>
-                    <div>
-                      <p className="font-bold text-[#0b1f3a] text-[13px] leading-tight">Chlorobutyl Stopper</p>
-                      <p className="text-[#64748b] text-[11px] mt-0.5 leading-snug">Multi-entry sterile elastomer stopper with aluminum flip-off cap</p>
+                    <div className="space-y-0.5">
+                      <p className="font-bold text-[#0b1f3a] text-[13px] leading-snug">Chlorobutyl Stopper</p>
+                      <p className="text-[#64748b] text-[11.5px] leading-relaxed">Multi-entry sterile elastomer stopper with aluminum flip-off cap</p>
                     </div>
                   </div>
-                  <div className="flex items-start gap-3">
-                    <div className="size-[20px] shrink-0 mt-0.5 flex items-center justify-center">
+                  <div className="flex items-start gap-3.5">
+                    <div className="size-[22px] shrink-0 mt-0.5 flex items-center justify-center">
                       <img src={KIT_ICONS.prep} alt="" className="size-full object-contain" />
                     </div>
-                    <div>
-                      <p className="font-bold text-[#0b1f3a] text-[13px] leading-tight">Rapid Reconstitution</p>
-                      <p className="text-[#64748b] text-[11px] mt-0.5 leading-snug">Dissolves clearly with standard bacteriostatic water USP</p>
+                    <div className="space-y-0.5">
+                      <p className="font-bold text-[#0b1f3a] text-[13px] leading-snug">Rapid Reconstitution</p>
+                      <p className="text-[#64748b] text-[11.5px] leading-relaxed">Dissolves clearly with standard bacteriostatic water USP</p>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="pt-4 mt-4 border-t border-[#dce6ee] flex items-center justify-between text-[11.5px]">
+              <div className="pt-4 mt-6 border-t border-[#dce6ee] flex items-center justify-between text-[11.5px]">
                 <span className="font-semibold text-[#0b1f3a]">
                   Form Factor: Lyophilised Glass Vial
                 </span>
@@ -271,63 +271,86 @@ export function ProductTechnicalSpecs({ product }: ProductTechnicalSpecsProps) {
               </p>
 
               {/* Clean White Specification Table */}
-              <div className="bg-white border border-[#e2e8f0] rounded-[8px] divide-y divide-[#f1f5f9] text-[12px] overflow-hidden mt-3.5 shadow-2xs">
-                <div className="h-[36px] px-[12px] flex items-center justify-between">
-                  <span className="font-bold text-[#0b1f3a]">Compound</span>
-                  <span className="text-[#475569] font-medium text-right truncate max-w-[190px]">
+              <div className="bg-white border border-[#e2e8f0] rounded-[12px] divide-y divide-[#edf2f7] text-[12px] sm:text-[12.5px] overflow-hidden mt-4 shadow-2xs">
+                {/* Compound */}
+                <div className="py-2.5 sm:py-3 px-3.5 sm:px-4 flex items-start justify-between gap-3">
+                  <span className="font-bold text-[#0b1f3a] shrink-0">Compound</span>
+                  <span className="text-[#334155] font-semibold text-right break-words flex-1 pl-3">
                     {specs?.compoundName || product.name}
                   </span>
                 </div>
+
+                {/* Ratio (if exists) */}
                 {specs?.ratio && (
-                  <div className="h-[36px] px-[12px] flex items-center justify-between">
-                    <span className="font-bold text-[#0b1f3a]">Ratio</span>
+                  <div className="py-2.5 sm:py-3 px-3.5 sm:px-4 flex items-center justify-between gap-3">
+                    <span className="font-bold text-[#0b1f3a] shrink-0">Ratio</span>
                     <span className="text-[#16a6a3] font-bold text-right">
                       {specs.ratio}
                     </span>
                   </div>
                 )}
+
+                {/* Total Content (if exists) */}
                 {specs?.totalContent && (
-                  <div className="h-[36px] px-[12px] flex items-center justify-between">
-                    <span className="font-bold text-[#0b1f3a]">Total Content</span>
-                    <span className="text-[#475569] font-medium text-right">
+                  <div className="py-2.5 sm:py-3 px-3.5 sm:px-4 flex items-center justify-between gap-3">
+                    <span className="font-bold text-[#0b1f3a] shrink-0">Total Content</span>
+                    <span className="text-[#334155] font-medium text-right">
                       {specs.totalContent}
                     </span>
                   </div>
                 )}
-                <div className="h-[36px] px-[12px] flex items-center justify-between">
-                  <span className="font-bold text-[#0b1f3a]">Contents / Strength</span>
-                  <span className="text-[#475569] font-medium text-right truncate max-w-[190px]">
+
+                {/* Contents / Strength */}
+                <div className="py-2.5 sm:py-3 px-3.5 sm:px-4 flex items-start justify-between gap-3">
+                  <span className="font-bold text-[#0b1f3a] shrink-0">Contents / Strength</span>
+                  <span className="text-[#334155] font-medium text-right leading-snug break-words flex-1 pl-3">
                     {specs?.contentsOrStrength || product.contents || "Specification Pending"}
                   </span>
                 </div>
-                <div className="h-[36px] px-[12px] flex items-center justify-between">
-                  <span className="font-bold text-[#0b1f3a]">Peptide Class</span>
-                  <span className="text-[#475569] font-medium text-right truncate max-w-[190px]">
+
+                {/* Peptide Class */}
+                <div className="py-2.5 sm:py-3 px-3.5 sm:px-4 flex items-start justify-between gap-3">
+                  <span className="font-bold text-[#0b1f3a] shrink-0">Peptide Class</span>
+                  <span className="text-[#334155] font-medium text-right leading-snug break-words flex-1 pl-3">
                     {specs?.peptideClass || "Specification Pending"}
                   </span>
                 </div>
-                <div className="h-[36px] px-[12px] flex items-center justify-between">
-                  <span className="font-bold text-[#0b1f3a]">Molecular Weight</span>
-                  <span className="text-[#475569] font-medium text-right">
+
+                {/* Molecular Weight */}
+                <div className="py-2.5 sm:py-3 px-3.5 sm:px-4 flex items-center justify-between gap-3">
+                  <span className="font-bold text-[#0b1f3a] shrink-0">Molecular Weight</span>
+                  <span className="font-semibold text-[#0b1f3a] text-right">
                     {specs?.molecularWeight || "Specification Pending"}
                   </span>
                 </div>
-                <div className="h-[36px] px-[12px] flex items-center justify-between">
-                  <span className="font-bold text-[#0b1f3a]">CAS Number</span>
-                  <span className="font-mono text-[#475569] text-[11px] text-right">
+
+                {/* CAS Number */}
+                <div className="py-2.5 sm:py-3 px-3.5 sm:px-4 flex items-center justify-between gap-3">
+                  <span className="font-bold text-[#0b1f3a] shrink-0">CAS Number</span>
+                  <span className="font-mono text-[#334155] font-medium text-[11.5px] text-right bg-slate-50 px-2 py-0.5 rounded border border-slate-200/60">
                     {specs?.casNumber || "Specification Pending"}
                   </span>
                 </div>
-                <div className="h-[36px] px-[12px] flex items-center justify-between">
-                  <span className="font-bold text-[#0b1f3a]">Sequence / Formula</span>
-                  <span className="font-mono text-[#475569] text-[11px] text-right truncate max-w-[190px]">
+
+                {/* Sequence / Formula */}
+                <div className="py-2.5 sm:py-3 px-3.5 sm:px-4 flex flex-col gap-1.5 bg-[#f8fafc]/50">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-[#0b1f3a]">Sequence / Formula</span>
+                    <span className="text-[10px] font-bold text-[#16a6a3] uppercase tracking-wider">
+                      HPLC Verified
+                    </span>
+                  </div>
+                  <div className="font-mono text-[11px] text-[#334155] leading-relaxed break-words bg-white p-2 rounded-[6px] border border-[#e2e8f0]/80">
                     {specs?.compositionOrSequence || "Specification Pending"}
-                  </span>
+                  </div>
                 </div>
-                <div className="h-[36px] px-[12px] flex items-center justify-between">
-                  <span className="font-bold text-[#0b1f3a]">Recommended Storage</span>
-                  <span className="text-[#10b981] font-semibold text-right text-[11.5px]">
-                    {specs?.storage || "Specification Pending"}
+
+                {/* Recommended Storage */}
+                <div className="py-2.5 sm:py-3 px-3.5 sm:px-4 flex items-center justify-between gap-3">
+                  <span className="font-bold text-[#0b1f3a] shrink-0">Recommended Storage</span>
+                  <span className="text-[#059669] font-semibold text-right text-[11.5px] inline-flex items-center gap-1.5 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/70">
+                    <span className="size-1.5 rounded-full bg-[#10b981] shrink-0" />
+                    {specs?.storage || "2°C – 8°C Refrigerated"}
                   </span>
                 </div>
               </div>
@@ -369,55 +392,57 @@ export function ProductTechnicalSpecs({ product }: ProductTechnicalSpecsProps) {
               </div>
 
               {/* Research Protocol Table */}
-              <div className="bg-white border border-[#e2e8f0] rounded-[8px] divide-y divide-[#f1f5f9] text-[12px] overflow-hidden mt-3.5 shadow-2xs">
-                <div className="h-[36px] px-[12px] flex items-center justify-between">
-                  <span className="font-bold text-[#0b1f3a]">Compliance Standard</span>
-                  <span className="text-[#475569] font-medium">18+ Research Only (In-Vitro)</span>
+              <div className="bg-white border border-[#e2e8f0] rounded-[12px] divide-y divide-[#edf2f7] text-[12px] sm:text-[12.5px] overflow-hidden mt-6 shadow-2xs">
+                <div className="py-3.5 sm:py-4 px-3.5 sm:px-4 flex items-center justify-between gap-3">
+                  <span className="font-bold text-[#0b1f3a] shrink-0">Compliance Standard</span>
+                  <span className="text-[#475569] font-medium text-right">18+ Research Only (In-Vitro)</span>
                 </div>
-                <div className="h-[36px] px-[12px] flex items-center justify-between">
-                  <span className="font-bold text-[#0b1f3a]">QR Batch Verification</span>
-                  <span className="text-[#10b981] font-semibold">✓ Packaging Scan Enabled</span>
+                <div className="py-3.5 sm:py-4 px-3.5 sm:px-4 flex items-center justify-between gap-3">
+                  <span className="font-bold text-[#0b1f3a] shrink-0">QR Batch Verification</span>
+                  <span className="text-[#10b981] font-semibold text-right inline-flex items-center gap-1">
+                    <span>✓</span> Packaging Scan Enabled
+                  </span>
                 </div>
-                <div className="h-[36px] px-[12px] flex items-center justify-between">
-                  <span className="font-bold text-[#0b1f3a]">Outer Packaging</span>
-                  <span className="text-[#475569] font-medium">Discreet Protective Box</span>
+                <div className="py-3.5 sm:py-4 px-3.5 sm:px-4 flex items-center justify-between gap-3">
+                  <span className="font-bold text-[#0b1f3a] shrink-0">Outer Packaging</span>
+                  <span className="text-[#475569] font-medium text-right">Discreet Protective Box</span>
                 </div>
-                <div className="h-[36px] px-[12px] flex items-center justify-between">
-                  <span className="font-bold text-[#0b1f3a]">Logistics Dispatch</span>
-                  <span className="text-[#475569] font-medium">Royal Mail Tracked (£4.95 UK)</span>
+                <div className="py-3.5 sm:py-4 px-3.5 sm:px-4 flex items-center justify-between gap-3">
+                  <span className="font-bold text-[#0b1f3a] shrink-0">Logistics Dispatch</span>
+                  <span className="text-[#475569] font-medium text-right">Royal Mail Tracked (£4.95 UK)</span>
                 </div>
               </div>
 
               {/* Official Figma Certification Logos Row */}
-              <div className="flex items-center justify-between w-full pt-4 mt-2">
-                <div className="h-[36px] w-[65px] flex items-center justify-center shrink-0">
+              <div className="flex items-center justify-between w-full pt-8 sm:pt-10 mt-2">
+                <div className="h-[40px] w-[65px] flex items-center justify-center shrink-0">
                   <img
                     src="/images/figma/logo-iso.svg"
                     alt="ISO 9001 Certified"
-                    className="h-[32px] w-auto max-w-[60px] object-contain"
+                    className="h-[34px] w-auto max-w-[60px] object-contain"
                   />
                 </div>
-                <div className="w-px h-[26px] bg-[#d1e0ed]" />
-                <div className="h-[36px] w-[65px] flex items-center justify-center shrink-0">
+                <div className="w-px h-[28px] bg-[#d1e0ed]" />
+                <div className="h-[40px] w-[65px] flex items-center justify-center shrink-0">
                   <img
                     src="/images/figma/logo-nsf.svg"
                     alt="NSF Certified"
-                    className="h-[32px] w-auto max-w-[50px] object-contain"
+                    className="h-[34px] w-auto max-w-[50px] object-contain"
                   />
                 </div>
-                <div className="w-px h-[26px] bg-[#d1e0ed]" />
-                <div className="h-[36px] w-[55px] flex items-center justify-center shrink-0">
+                <div className="w-px h-[28px] bg-[#d1e0ed]" />
+                <div className="h-[40px] w-[55px] flex items-center justify-center shrink-0">
                   <img
                     src="/images/figma/logo-ce.svg"
                     alt="CE Mark"
-                    className="h-[30px] w-auto max-w-[50px] object-contain"
+                    className="h-[32px] w-auto max-w-[50px] object-contain"
                   />
                 </div>
               </div>
             </div>
 
             {/* Bottom Verification Link */}
-            <div className="pt-4 mt-4 border-t border-[#dce6ee] flex items-center justify-between">
+            <div className="pt-4 mt-8 border-t border-[#dce6ee] flex items-center justify-between">
               <Link
                 href="/verify"
                 className="text-[12px] font-bold text-[#0b1f3a] hover:text-[#16a6a3] transition-colors flex items-center gap-1 group"

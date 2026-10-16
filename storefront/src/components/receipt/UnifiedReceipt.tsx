@@ -280,10 +280,10 @@ export function UnifiedReceipt({
               />
             </div>
             <div className="mt-3 text-xs text-slate-500 space-y-0.5">
-              <p className="font-semibold text-slate-700">PEPTECH®</p>
-              <p>Operated by Muawiyah Waheed · UK Sole Trader</p>
-              <p>4 The Sidings, Dewsbury, WF12 9QU, UK</p>
-              <p>support@peptech.bio | +44 7547 692956</p>
+              <p className="font-semibold text-slate-700">PEPTECH LTD</p>
+              <p>Office 17 Ips Innovate, Chartermark Way</p>
+              <p>Colburn Business Park, DL9 4QJ, Colburn, UK</p>
+              <p>support@peptech.bio</p>
             </div>
           </div>
 

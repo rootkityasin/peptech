@@ -1,6 +1,6 @@
 import type { AuthenticatedMedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { Modules } from "@medusajs/framework/utils"
-import { actor, commerce, endpoint } from "../../../../lib/commerce/http"
+import { actor, commerce, endpoint, resolveStorefrontOrigin } from "../../../../lib/commerce/http"
 import { stripeContext } from "../../../../lib/commerce/stripe"
 import { recordId } from "../../../../modules/peptech-commerce/service"
 import { fail } from "../../../../lib/commerce/policy"
@@ -40,7 +40,7 @@ export async function POST(req: AuthenticatedMedusaRequest, res: MedusaResponse)
 
     if (!stripeId) fail("No billing account exists yet. Complete a checkout first.", 404)
 
-    const storefrontUrl = (process.env.STRIPE_STOREFRONT_URL || "http://localhost:3000").replace(/\/$/, "")
+    const storefrontUrl = resolveStorefrontOrigin(req)
 
     if (process.env.STRIPE_PORTAL_CONFIGURATION_ID) {
       try {

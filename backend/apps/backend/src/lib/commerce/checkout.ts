@@ -6,8 +6,9 @@ import { assertStripeAccount, stripeContext } from "./stripe"
 import { checkoutSchema, fail, owned } from "./policy"
 import { buildQuote, reserveQuote, releaseQuote, Quote } from "./quote"
 import { getPaymentGateway } from "./gateways/registry"
+import { resolveStorefrontOrigin } from "./http"
 
-export async function prepareCheckout(scope: any, ledger: CommerceService, customerId: string, body: unknown) {
+export async function prepareCheckout(scope: any, ledger: CommerceService, customerId: string, body: unknown, req?: any) {
   const input = checkoutSchema.parse(body)
   const context = await assertStripeAccount()
   if (context.mode === "live") {
@@ -93,7 +94,7 @@ export async function prepareCheckout(scope: any, ledger: CommerceService, custo
     await reserveQuote(scope, quote, id)
 
     const gateway = getPaymentGateway(input.payment_method || "stripe")
-    const origin = process.env.STRIPE_STOREFRONT_URL || "http://localhost:3000"
+    const origin = resolveStorefrontOrigin(req)
 
     let customerObj: any = null
     try {

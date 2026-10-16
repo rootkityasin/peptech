@@ -7,16 +7,19 @@ const reviews = [
     quote1: "Excellent product and service. Highly",
     quote2: "recommended for any research lab.",
     name: "Michael T.",
+    avatar: "/images/reviews/reviewer-1.jpg",
   },
   {
     quote1: "The quality is outstanding. Fast shipping",
     quote2: "and great customer support.",
     name: "Dr. Emily R.",
+    avatar: "/images/reviews/reviewer-2.jpg",
   },
   {
     quote1: "Easy to use and very reliable. Will",
     quote2: "continue to order.",
     name: "James L.",
+    avatar: "/images/reviews/reviewer-3.jpg",
   },
 ]
 
@@ -72,11 +75,11 @@ export function VerifiedReviewsSection() {
               </div>
 
               <div className="flex gap-[8px] items-center w-full" data-name="Author Row">
-                <div className="rounded-[14px] size-[28px] shrink-0 overflow-hidden">
+                <div className="rounded-[14px] size-[28px] shrink-0 overflow-hidden bg-slate-100">
                   <img
-                    alt=""
+                    alt={r.name}
                     className="size-full object-cover rounded-[14px]"
-                    src="/images/figma/138573664d114462601fdac5ccec165f33058ecc.png"
+                    src={r.avatar}
                   />
                 </div>
                 <p className="font-bold text-[#0b1f3a] text-[12px] whitespace-nowrap">
