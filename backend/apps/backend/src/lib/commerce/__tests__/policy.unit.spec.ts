@@ -69,4 +69,40 @@ describe("authoritative commerce boundary", () => {
     expect(parsed.address?.country_code).toBe("gb")
     expect(parsed.items[0].metadata?.title).toBe("BPC-157")
   })
+  it("validates configurable shipping rates with sensible default minor units", () => {
+    const { shippingRatesSchema } = require("../policy")
+    const defaults = shippingRatesSchema.parse({})
+    expect(defaults.pen_set_uk_minor).toBe(495)
+    expect(defaults.pen_set_intl_minor).toBe(1800)
+    expect(defaults.refill_uk_minor).toBe(395)
+    expect(defaults.refill_intl_minor).toBe(1000)
+    expect(defaults.vial_uk_minor).toBe(395)
+    expect(defaults.vial_intl_minor).toBe(1000)
+
+    const custom = shippingRatesSchema.parse({
+      pen_set_uk_minor: 500,
+      pen_set_intl_minor: 2000,
+      refill_uk_minor: 400,
+      refill_intl_minor: 1200,
+      vial_uk_minor: 400,
+      vial_intl_minor: 1200,
+    })
+    expect(custom.pen_set_uk_minor).toBe(500)
+    expect(custom.pen_set_intl_minor).toBe(2000)
+    expect(() => shippingRatesSchema.parse({ pen_set_uk_minor: -10 })).toThrow()
+
+    const { serviceZoneRateTierSchema } = require("../policy")
+    const zoneDefaults = serviceZoneRateTierSchema.parse({})
+    expect(zoneDefaults.pen_set_minor).toBe(495)
+    expect(zoneDefaults.refill_minor).toBe(395)
+    expect(zoneDefaults.vial_minor).toBe(395)
+    const customZone = serviceZoneRateTierSchema.parse({
+      pen_set_minor: 650,
+      refill_minor: 450,
+      vial_minor: 450,
+    })
+    expect(customZone.pen_set_minor).toBe(650)
+    expect(() => serviceZoneRateTierSchema.parse({ pen_set_minor: -1 })).toThrow()
+  })
 })
+
