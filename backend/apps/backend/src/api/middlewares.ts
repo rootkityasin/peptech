@@ -93,7 +93,6 @@ export default defineMiddlewares({
     { matcher: "/store/custom/billing-portal", middlewares: [authenticate("customer", ["bearer"])] },
     { matcher: "/admin/commerce*", middlewares: [authenticate("user", ["session", "bearer"])] },
     { matcher: "/admin/custom/subscriptions", middlewares: [authenticate("user", ["session", "bearer"])] },
-    { matcher: "/admin/custom/device-passports*", middlewares: [authenticate("user", ["session", "bearer"])] },
     { matcher: "/hooks/peptech-stripe", bodyParser: { preserveRawBody: true, sizeLimit: "1mb" } },
     {
       matcher: "/images/*",

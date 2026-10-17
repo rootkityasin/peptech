@@ -1,5 +1,4 @@
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
-import { commerce } from "../../../../lib/commerce/http"
 
 // Helper to set CORS headers
 function applyCors(req: MedusaRequest, res: MedusaResponse) {
@@ -47,7 +46,7 @@ const KNOWN_EXACT_BATCHES = new Set([
   "GHK-CU-05B",
 ])
 
-// GET /store/custom/verify?code=PT-26-000184
+// GET /store/custom/verify?code=RT-2609A
 export async function GET(req: MedusaRequest, res: MedusaResponse) {
   applyCors(req, res)
   res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate")
@@ -55,7 +54,6 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
   try {
     const rawQuery =
       (req.query.code as string) ||
-      (req.query.serial as string) ||
       (req.query.batch as string) ||
       (req.query.id as string) ||
       ""
@@ -64,51 +62,13 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
     if (!trimmed) {
       return res.status(400).json({
         verified: false,
-        message: "A device passport serial number or batch lot number is required.",
+        message: "A batch lot number or QR code identifier is required.",
       })
     }
 
     const upper = trimmed.toUpperCase()
-    const ledger = commerce(req)
 
-    // 1. Check Dynamic Device Passports (Managed via Admin Panel)
-    const passport = await ledger.findDevicePassport(trimmed)
-    if (passport) {
-      const isActive = passport.state === "active"
-      if (!isActive) {
-        return res.status(200).json({
-          verified: false,
-          revoked: true,
-          type: "device_passport",
-          serial_number: passport.data?.serial_number || passport.id.replace(/^devpass_/, ""),
-          product_name: passport.data?.product_name || "PEPTECH® Reusable Precision Pen System",
-          batch_number: passport.data?.batch_number || "RT-2609A",
-          status: passport.state === "revoked" ? "Revoked / Flagged" : "Decommissioned",
-          state: passport.state,
-          message: `This device serial (${passport.data?.serial_number || trimmed}) has been marked as ${passport.state} by PEPTECH quality assurance.`,
-        })
-      }
-
-      return res.status(200).json({
-        verified: true,
-        type: "device_passport",
-        serial_number: passport.data?.serial_number || passport.id.replace(/^devpass_/, ""),
-        product_name: passport.data?.product_name || "PEPTECH® Reusable Precision Pen 1.0",
-        batch_number: passport.data?.batch_number || "RT-2609A",
-        manufacture_date: passport.data?.manufacture_date || "01/2026",
-        expiry_date: passport.data?.expiry_date || "01/2029",
-        status: "Authentic & Safe",
-        state: "active",
-        device_type: passport.data?.device_type || "Precision Pen Device",
-        nfc_enabled: passport.data?.nfc_enabled !== false,
-        qr_enabled: passport.data?.qr_enabled !== false,
-        security_seal: passport.data?.security_seal || "HOLOGRAPHIC-VERIFIED",
-        notes: passport.data?.notes || "",
-        verification_date: new Date().toISOString(),
-      })
-    }
-
-    // 2. Check Recognized Batch Lots
+    // Check Recognized Batch Lots
     const isKnownBatch =
       KNOWN_EXACT_BATCHES.has(upper) ||
       KNOWN_BATCH_PREFIXES.some((prefix) => upper.startsWith(prefix))
@@ -117,7 +77,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
       return res.status(200).json({
         verified: true,
         type: "batch_lot",
-        serial_number: "N/A (Lyophilised Batch)",
+        serial_number: "N/A (Laboratory Batch)",
         product_name: "PEPTECH® High-Purity Research Peptide",
         batch_number: upper,
         manufacture_date: "09/2025",
@@ -129,11 +89,11 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
       })
     }
 
-    // 3. Unrecognized / Unverified
+    // Unrecognized / Unverified
     return res.status(200).json({
       verified: false,
       query: trimmed,
-      message: `The lot or serial code "${trimmed}" could not be authenticated in the official PEPTECH® synthesis and device registry.`,
+      message: `The lot or batch code "${trimmed}" could not be authenticated in the official PEPTECH® synthesis registry.`,
     })
   } catch (err: any) {
     console.error("[Verify Route Error]:", err?.message || err)
