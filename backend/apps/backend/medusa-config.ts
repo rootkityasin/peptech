@@ -40,7 +40,7 @@ function loadRootEnv(startDir = __dirname) {
 }
 loadRootEnv()
 
-const { loadStripeEnv, stripeModules, commerceRuntimeModules, commerceEmailModules } = require("./src/lib/stripe-config")
+const { loadStripeEnv, stripeModules, commerceRuntimeModules, commerceEmailModules, resolveRedisUrl } = require("./src/lib/stripe-config")
 loadStripeEnv()
 
 loadEnv(process.env.NODE_ENV || 'development', process.cwd())
@@ -60,10 +60,12 @@ const dbUrl = rawDbUrl.replace(/([?&])sslmode=[^&]*(&|$)/gi, (match: string, pre
 })
 process.env.DATABASE_URL = dbUrl
 
+const resolvedRedisUrl = resolveRedisUrl(process.env)
+
 module.exports = defineConfig({
   projectConfig: {
     databaseUrl: dbUrl,
-    redisUrl: process.env.REDIS_URL,
+    redisUrl: resolvedRedisUrl,
     databaseDriverOptions: dbUrl?.includes('localhost') || dbUrl?.includes('127.0.0.1')
       ? { connection: { ssl: false } }
       : { ssl: { rejectUnauthorized: false }, connection: { ssl: { rejectUnauthorized: false } } },

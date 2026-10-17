@@ -120,12 +120,59 @@ function stripeModules(env = process.env) {
   }
 }
 
+function resolveRedisUrl(env = process.env) {
+  const isProduction = env.NODE_ENV === "production";
+  if (isProduction) {
+    return (env.REDIS_URL || env.REDIS_URL_PRODUCTION || "").trim();
+  }
+  // For local development (file watcher, restarts): use local Redis to prevent connection exhaustion
+  return (env.DEV_REDIS_URL || (env.REDIS_URL && (env.REDIS_URL.includes("localhost") || env.REDIS_URL.includes("127.0.0.1")) ? env.REDIS_URL : "redis://127.0.0.1:6379")).trim();
+}
+
 function commerceRuntimeModules(env = process.env) {
   try {
-    if (!env.REDIS_URL) return [];
+    const activeRedisUrl = resolveRedisUrl(env);
+    if (!activeRedisUrl) return [];
+    const redisClientOptions = {
+      connectTimeout: 10000,
+      keepAlive: 30000,
+      enableReadyCheck: false,
+    };
     return [
-      { resolve: "@medusajs/medusa/event-bus-redis", options: { redisUrl: env.REDIS_URL } },
-      { resolve: "@medusajs/medusa/workflow-engine-redis", options: { redis: { url: env.REDIS_URL } } },
+      {
+        resolve: "@medusajs/medusa/event-bus-redis",
+        options: {
+          redisUrl: activeRedisUrl,
+          workerOptions: { concurrency: 1 },
+          redisOptions: redisClientOptions,
+          jobOptions: {
+            removeOnComplete: 100,
+            removeOnFail: 200,
+          },
+        },
+      },
+      {
+        resolve: "@medusajs/medusa/workflow-engine-redis",
+        options: {
+          redis: {
+            redisUrl: activeRedisUrl,
+            workerOptions: { concurrency: 1 },
+            mainWorkerOptions: { concurrency: 1 },
+            jobWorkerOptions: { concurrency: 1 },
+            cleanerWorkerOptions: { concurrency: 1 },
+            queueOptions: {
+              defaultJobOptions: {
+                removeOnComplete: 100,
+                removeOnFail: 200,
+              },
+            },
+            redisOptions: {
+              ...redisClientOptions,
+              maxRetriesPerRequest: null,
+            },
+          },
+        },
+      },
       {
         resolve: "@medusajs/medusa/locking",
         options: {
@@ -134,7 +181,10 @@ function commerceRuntimeModules(env = process.env) {
               resolve: "@medusajs/medusa/locking-redis",
               id: "locking-redis",
               is_default: true,
-              options: { redisUrl: env.REDIS_URL },
+              options: {
+                redisUrl: activeRedisUrl,
+                redisOptions: redisClientOptions,
+              },
             },
           ],
         },
@@ -183,4 +233,5 @@ module.exports = {
   stripeModules,
   commerceRuntimeModules,
   commerceEmailModules,
+  resolveRedisUrl,
 };

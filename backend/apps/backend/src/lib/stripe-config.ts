@@ -84,14 +84,75 @@ export function stripeModules(env: NodeJS.ProcessEnv = process.env) {
 }
 
 
+export function resolveRedisUrl(env: NodeJS.ProcessEnv = process.env): string {
+  const isProduction = env.NODE_ENV === "production"
+  if (isProduction) {
+    return (env.REDIS_URL || env.REDIS_URL_PRODUCTION || "").trim()
+  }
+  // For local development (file watcher, restarts): use local Redis to prevent connection exhaustion
+  return (env.DEV_REDIS_URL || (env.REDIS_URL && (env.REDIS_URL.includes("localhost") || env.REDIS_URL.includes("127.0.0.1")) ? env.REDIS_URL : "redis://127.0.0.1:6379")).trim()
+}
+
 export function commerceRuntimeModules(env: NodeJS.ProcessEnv = process.env) {
   try {
-    if (!env.REDIS_URL) return []
+    const activeRedisUrl = resolveRedisUrl(env)
+    if (!activeRedisUrl) return []
+    const redisClientOptions = {
+      connectTimeout: 10000,
+      keepAlive: 30000,
+      enableReadyCheck: false,
+    }
     return [
-      { resolve: "@medusajs/medusa/event-bus-redis", options: { redisUrl: env.REDIS_URL } },
-      { resolve: "@medusajs/medusa/workflow-engine-redis", options: { redis: { url: env.REDIS_URL } } },
-      { resolve: "@medusajs/medusa/locking", options: { providers: [{ resolve: "@medusajs/medusa/locking-redis",
-        id: "locking-redis", is_default: true, options: { redisUrl: env.REDIS_URL } }] } },
+      {
+        resolve: "@medusajs/medusa/event-bus-redis",
+        options: {
+          redisUrl: activeRedisUrl,
+          workerOptions: { concurrency: 1 },
+          redisOptions: redisClientOptions,
+          jobOptions: {
+            removeOnComplete: 100,
+            removeOnFail: 200,
+          },
+        },
+      },
+      {
+        resolve: "@medusajs/medusa/workflow-engine-redis",
+        options: {
+          redis: {
+            redisUrl: activeRedisUrl,
+            workerOptions: { concurrency: 1 },
+            mainWorkerOptions: { concurrency: 1 },
+            jobWorkerOptions: { concurrency: 1 },
+            cleanerWorkerOptions: { concurrency: 1 },
+            queueOptions: {
+              defaultJobOptions: {
+                removeOnComplete: 100,
+                removeOnFail: 200,
+              },
+            },
+            redisOptions: {
+              ...redisClientOptions,
+              maxRetriesPerRequest: null,
+            },
+          },
+        },
+      },
+      {
+        resolve: "@medusajs/medusa/locking",
+        options: {
+          providers: [
+            {
+              resolve: "@medusajs/medusa/locking-redis",
+              id: "locking-redis",
+              is_default: true,
+              options: {
+                redisUrl: activeRedisUrl,
+                redisOptions: redisClientOptions,
+              },
+            },
+          ],
+        },
+      },
     ]
   } catch (err: any) {
     console.warn(`[PEPTECH WARN] Commerce runtime modules disabled: ${err.message}`)
