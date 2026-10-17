@@ -8,26 +8,31 @@ export function adminOrderOverrides() {
   const dashboardDist = path.dirname(require.resolve("@medusajs/dashboard"))
   const ordersSourceDir = path.resolve(__dirname, "src/admin/components/orders")
   const productsSourceDir = path.resolve(__dirname, "src/admin/components/products")
-  const orderModule = /^\.\/order-(list|detail)-[^/]+\.mjs$/
-  const variantEditModule = /^\.\/product-variant-edit-[^/]+\.mjs$/
 
   const resolveOverride = (source: string, importer?: string) => {
     if (!importer) return undefined
 
     // 1. Resolve order pages from dashboard dist
-    const isOrder = orderModule.exec(source)
-    if (isOrder && path.dirname(importer) === dashboardDist) {
-      return path.join(ordersSourceDir, isOrder[1] === "list" ? "OrderList.jsx" : "OrderDetail.jsx")
+    if (source.includes("order-list-") && source.endsWith(".mjs") && importer.includes("@medusajs")) {
+      return path.join(ordersSourceDir, "OrderList.jsx")
+    }
+    if (source.includes("order-detail-") && source.endsWith(".mjs") && importer.includes("@medusajs")) {
+      return path.join(ordersSourceDir, "OrderDetail.jsx")
     }
 
     // 2. Resolve product variant edit drawer from dashboard dist
-    const isVariantEdit = variantEditModule.exec(source)
-    if (isVariantEdit && path.dirname(importer) === dashboardDist) {
+    if (source.includes("product-variant-edit-") && source.endsWith(".mjs") && importer.includes("@medusajs")) {
       return path.join(productsSourceDir, "ProductVariantEdit.jsx")
     }
 
-    // 3. Resolve internal relative chunk imports from our custom ProductVariantEdit
-    if (source.startsWith("./chunk-") && importer.startsWith(productsSourceDir)) {
+    // 3. Resolve internal relative chunk imports from our custom components
+    if (source.startsWith("./chunk-") && (
+      importer.includes("ProductVariantEdit") ||
+      importer.includes("OrderList") ||
+      importer.includes("OrderDetail") ||
+      importer.includes("src/admin/components") ||
+      importer.includes("src\\admin\\components")
+    )) {
       return path.join(dashboardDist, source)
     }
 
@@ -42,9 +47,15 @@ export function adminOrderOverrides() {
         ({ path: source, importer }) => {
           const file = resolveOverride(source, importer)
           if (!file) return
-          // Leave application code outside pre-bundled dependencies so Vite can
-          // transform JSX, resolve its imports, and hot-reload edits normally.
           return { path: `/@fs/${file.replace(/\\/g, "/")}`, external: true }
+        }
+      )
+      build.onResolve(
+        { filter: /^\.\/chunk-[^/]+\.mjs$/ },
+        ({ path: source, importer }) => {
+          const file = resolveOverride(source, importer)
+          if (!file) return
+          return { path: file }
         }
       )
     },

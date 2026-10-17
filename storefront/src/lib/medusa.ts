@@ -457,21 +457,41 @@ export function mapMedusaToCatalogProduct(p: StoreProduct): CatalogProduct {
   const howItWorks = (metadata.how_it_works as string[]) || fallbackProfile?.howItWorks
   const keyFeatures = (metadata.key_features as string[]) || fallbackProfile?.keyFeatures
 
-  // Resolve display priority from variant or product metadata
-  const rawPriority =
-    p.variants?.[0]?.metadata?.priority ??
-    p.variants?.[0]?.metadata?.sort_order ??
-    metadata.priority ??
-    metadata.sort_order
+  // Resolve display priority from any variant or product metadata
+  let resolvedPriority: number | undefined = undefined
 
-  const parsedPriority =
-    typeof rawPriority === "number"
-      ? rawPriority
-      : typeof rawPriority === "string" && !isNaN(parseInt(rawPriority, 10))
-      ? parseInt(rawPriority, 10)
-      : undefined
+  // 1. Check all variants for a positive numeric priority
+  if (Array.isArray(p.variants) && p.variants.length > 0) {
+    for (const v of p.variants) {
+      const vPri = v.metadata?.priority ?? v.metadata?.sort_order
+      if (typeof vPri === "number" && vPri > 0) {
+        resolvedPriority = vPri
+        break
+      }
+      if (typeof vPri === "string") {
+        const parsed = parseInt(vPri.trim(), 10)
+        if (!isNaN(parsed) && parsed > 0) {
+          resolvedPriority = parsed
+          break
+        }
+      }
+    }
+  }
 
-  const priority = parsedPriority && parsedPriority > 0 ? parsedPriority : undefined
+  // 2. Fall back to parent product metadata
+  if (resolvedPriority === undefined) {
+    const prodPri = metadata.priority ?? metadata.sort_order
+    if (typeof prodPri === "number" && prodPri > 0) {
+      resolvedPriority = prodPri
+    } else if (typeof prodPri === "string") {
+      const parsed = parseInt(prodPri.trim(), 10)
+      if (!isNaN(parsed) && parsed > 0) {
+        resolvedPriority = parsed
+      }
+    }
+  }
+
+  const priority = resolvedPriority
 
   // Resolve dynamic custom technical specifications if saved in admin
   let customSpecs: Array<{ label: string; value: string }> | undefined = undefined

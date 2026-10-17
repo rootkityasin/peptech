@@ -164,7 +164,7 @@ var ProductEditVariantForm = ({
     const rawPriority = priority !== undefined && priority !== "" ? parseInt(String(priority).trim(), 10) : null;
     const priorityNum = rawPriority && !isNaN(rawPriority) && rawPriority > 0 ? rawPriority : null;
 
-    // Collision check if priority is provided
+    // Collision advisory if priority is provided
     if (priorityNum !== null) {
       try {
         const categoryIds = (product.categories || []).map((c) => c.id).filter(Boolean);
@@ -180,16 +180,11 @@ var ProductEditVariantForm = ({
             return pPri && parseInt(String(pPri), 10) === priorityNum;
           });
           if (existing) {
-            form.setError("priority", {
-              type: "manual",
-              message: `Priority ${priorityNum} is already assigned to "${existing.title}".`,
-            });
-            toast.error(`Priority ${priorityNum} is already assigned to "${existing.title}".`);
-            return;
+            toast.info(`Note: Priority ${priorityNum} is also used by "${existing.title}".`);
           }
         }
       } catch (err) {
-        console.warn("Priority collision check skipped:", err);
+        console.warn("Priority check skipped:", err);
       }
     }
 
@@ -215,11 +210,12 @@ var ProductEditVariantForm = ({
       },
       {
         onSuccess: async () => {
-          // Mirror metadata.priority to the parent product as well
+          // Mirror metadata.priority to the parent product with fresh metadata
           try {
+            const fresh = await sdk.admin.product.retrieve(variant.product_id);
             await sdk.admin.product.update(variant.product_id, {
               metadata: {
-                ...(product.metadata || {}),
+                ...(fresh?.product?.metadata || product.metadata || {}),
                 priority: priorityNum,
               },
             });
