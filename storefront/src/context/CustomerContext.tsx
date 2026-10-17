@@ -35,31 +35,13 @@ const TOKEN_KEY = "peptech_customer_token"
 const PROFILE_KEY = "peptech_customer_profile"
 
 export function CustomerProvider({ children }: { children: React.ReactNode }) {
-  const [customer, setCustomer] = useState<Customer | null>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const cached = localStorage.getItem(PROFILE_KEY)
-        return cached ? JSON.parse(cached) : null
-      } catch {
-        return null
-      }
-    }
-    return null
-  })
-  const [token, setToken] = useState<string | null>(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem(TOKEN_KEY)
-    }
-    return null
-  })
-  const [isLoading, setIsLoading] = useState<boolean>(() => {
-    if (typeof window !== "undefined") {
-      const hasToken = !!localStorage.getItem(TOKEN_KEY)
-      const hasProfile = !!localStorage.getItem(PROFILE_KEY)
-      return hasToken && !hasProfile
-    }
-    return false
-  })
+  // IMPORTANT: initial state MUST be deterministic so the first client render
+  // matches the server-rendered HTML. Reading localStorage here would make the
+  // client hydrate a different tree than the server produced (hydration error).
+  // The cached session is restored from localStorage in the mount effect below.
+  const [customer, setCustomer] = useState<Customer | null>(null)
+  const [token, setToken] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState<boolean>(true)
 
   const setSyncedCustomer = useCallback((cust: Customer | null) => {
     setCustomer(cust)
@@ -94,10 +76,31 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let isMounted = true
-    const savedToken = typeof window !== "undefined" ? localStorage.getItem(TOKEN_KEY) : null
+
+    // Restore the cached session snapshot AFTER mount so the first client render
+    // stays identical to the server render (see note on state initialization).
+    let savedToken: string | null = null
+    let cachedProfile: Customer | null = null
+    try {
+      savedToken = localStorage.getItem(TOKEN_KEY)
+      const raw = localStorage.getItem(PROFILE_KEY)
+      cachedProfile = raw ? (JSON.parse(raw) as Customer) : null
+    } catch {
+      savedToken = null
+      cachedProfile = null
+    }
+
+    if (cachedProfile) setCustomer(cachedProfile)
+    if (savedToken) setToken(savedToken)
+
     if (!savedToken) {
       setIsLoading(false)
       return
+    }
+
+    // We already have a usable cached profile: render immediately, verify in background.
+    if (cachedProfile) {
+      setIsLoading(false)
     }
 
     const fallbackTimer = setTimeout(() => {

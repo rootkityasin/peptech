@@ -323,8 +323,8 @@ export async function buildQuote(
 
   const shipping = freeShippingApplied ? 0 : dynamicCalc.amount_minor
   const shippingName = freeShippingApplied
-    ? (dynamicCalc.shipping_option_name || `${shippingOption.name} (Free)`)
-    : (dynamicCalc.shipping_option_name || shippingOption.name)
+    ? `${shippingOption.name || dynamicCalc.shipping_option_name} (Free)`
+    : (shippingOption.name || dynamicCalc.shipping_option_name)
 
   const subtotal = itemsSubtotalMinor + shipping
   const taxTotal = lines.reduce((sum, l) => sum + taxMinor(l.unit_minor * l.quantity, tax.rate, tax.inclusive), taxMinor(shipping, tax.rate, tax.inclusive))

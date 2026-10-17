@@ -34,7 +34,12 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
     const adjustedOptions = options.map((opt) => ({
       ...opt,
       amount_minor: dynamicCalc.free_shipping ? 0 : dynamicCalc.amount_minor,
-      name: dynamicCalc.shipping_option_name || opt.name,
+      name: opt.name || dynamicCalc.shipping_option_name,
+      description:
+        opt.description ||
+        (countryCode.toLowerCase() === "gb"
+          ? "Royal Mail Tracked 24 · 24-48h Dispatch"
+          : "Royal Mail International Tracked · 3-7 Business Days"),
     }))
 
     const matchedZone = serviceZones.find((z) =>

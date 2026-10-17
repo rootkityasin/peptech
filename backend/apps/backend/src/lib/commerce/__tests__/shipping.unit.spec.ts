@@ -69,6 +69,35 @@ describe("shipping option resolution", () => {
     ])
   })
 
+  it("resolves description from type.label, metadata, or data when type.description is absent", async () => {
+    const fixture: Fixture = {
+      location: { id: "loc_1", fulfillment_sets: [{ id: "fset_1" }] },
+      options: [
+        {
+          id: "so_label",
+          name: "Standard Delivery",
+          price_type: "flat",
+          type: { code: "std", label: "24-48h Tracked" },
+          service_zone: { geo_zones: [{ country_code: "gb" }] },
+        },
+        {
+          id: "so_meta",
+          name: "Express Courier",
+          price_type: "flat",
+          metadata: { description: "Guaranteed Next Day Delivery" },
+          service_zone: { geo_zones: [{ country_code: "gb" }] },
+        },
+      ],
+      rows: [
+        { id: "so_label", calculated_price: { calculated_amount: 4.95 } },
+        { id: "so_meta", calculated_price: { calculated_amount: 8.5 } },
+      ],
+    }
+    const quoted = await listShippingOptions(scopeFor(fixture), policy, "gb")
+    expect(quoted[0].description).toBe("24-48h Tracked")
+    expect(quoted[1].description).toBe("Guaranteed Next Day Delivery")
+  })
+
   it("falls back to a stored GBP or regional price when Pricing resolves nothing", async () => {
     const fixture: Fixture = {
       location: { id: "loc_1", fulfillment_sets: [{ id: "fset_1" }] },

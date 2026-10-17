@@ -118,12 +118,22 @@ async function withAmounts(scope: any, policy: CommercePolicy, options: any[]): 
   for (const option of options) {
     const amount = amountMinorFor(priced.get(option.id), policy, 1)
     if (amount === null) continue
+    const resolvedDescription =
+      (typeof option.type?.description === "string" && option.type.description.trim()) ||
+      (typeof option.type?.label === "string" && option.type.label.trim() !== option.name?.trim() && option.type.label.trim()) ||
+      (typeof option.metadata?.description === "string" && option.metadata.description.trim()) ||
+      (typeof option.metadata?.subheader === "string" && option.metadata.subheader.trim()) ||
+      (typeof option.data?.description === "string" && option.data.description.trim()) ||
+      (typeof option.data?.subheader === "string" && option.data.subheader.trim()) ||
+      (typeof option.description === "string" && option.description.trim()) ||
+      null
+
     resolved.push({
       id: option.id,
       name: option.name,
       price_type: option.price_type,
       amount_minor: amount,
-      description: option.type?.description ?? null,
+      description: resolvedDescription,
       code: option.type?.code ?? null,
       type_id: option.type?.id ?? option.shipping_option_type_id ?? null,
       shipping_option_type_id: option.shipping_option_type_id ?? option.type?.id ?? null,
