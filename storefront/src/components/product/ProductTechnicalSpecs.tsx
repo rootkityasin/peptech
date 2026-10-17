@@ -263,7 +263,7 @@ export function ProductTechnicalSpecs({ product }: ProductTechnicalSpecsProps) {
                   Technical Specifications
                 </h3>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-white text-[#0b1f3a] border border-[#cbd5e1]">
-                  ≥ 99.0% HPLC
+                  {product.customSpecs?.find((s) => s.label.toLowerCase().includes("purity"))?.value || specs?.purity || "≥ 99.0% HPLC"}
                 </span>
               </div>
               <p className="text-[12px] text-[#64748b] mt-1">
@@ -272,93 +272,164 @@ export function ProductTechnicalSpecs({ product }: ProductTechnicalSpecsProps) {
 
               {/* Clean White Specification Table */}
               <div className="bg-white border border-[#e2e8f0] rounded-[12px] divide-y divide-[#edf2f7] text-[12px] sm:text-[12.5px] overflow-hidden mt-4 shadow-2xs">
-                {/* Compound */}
-                <div className="py-2.5 sm:py-3 px-3.5 sm:px-4 flex items-start justify-between gap-3">
-                  <span className="font-bold text-[#0b1f3a] shrink-0">Compound</span>
-                  <span className="text-[#334155] font-semibold text-right break-words flex-1 pl-3">
-                    {specs?.compoundName || product.name}
-                  </span>
-                </div>
+                {product.customSpecs && product.customSpecs.length > 0 ? (
+                  product.customSpecs.map((item, idx) => {
+                    const labelLower = item.label.toLowerCase()
 
-                {/* Ratio (if exists) */}
-                {specs?.ratio && (
-                  <div className="py-2.5 sm:py-3 px-3.5 sm:px-4 flex items-center justify-between gap-3">
-                    <span className="font-bold text-[#0b1f3a] shrink-0">Ratio</span>
-                    <span className="text-[#16a6a3] font-bold text-right">
-                      {specs.ratio}
-                    </span>
-                  </div>
+                    if (labelLower.includes("sequence") || labelLower.includes("formula")) {
+                      return (
+                        <div key={idx} className="py-2.5 sm:py-3 px-3.5 sm:px-4 flex flex-col gap-1.5 bg-[#f8fafc]/50">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-[#0b1f3a]">{item.label}</span>
+                            <span className="text-[10px] font-bold text-[#16a6a3] uppercase tracking-wider">
+                              HPLC Verified
+                            </span>
+                          </div>
+                          <div className="font-mono text-[11px] text-[#334155] leading-relaxed break-words bg-white p-2 rounded-[6px] border border-[#e2e8f0]/80">
+                            {item.value || "Specification Pending"}
+                          </div>
+                        </div>
+                      )
+                    }
+
+                    if (labelLower.includes("storage")) {
+                      return (
+                        <div key={idx} className="py-2.5 sm:py-3 px-3.5 sm:px-4 flex items-center justify-between gap-3">
+                          <span className="font-bold text-[#0b1f3a] shrink-0">{item.label}</span>
+                          <span className="text-[#059669] font-semibold text-right text-[11.5px] inline-flex items-center gap-1.5 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/70">
+                            <span className="size-1.5 rounded-full bg-[#10b981] shrink-0" />
+                            {item.value || "2°C – 8°C Refrigerated"}
+                          </span>
+                        </div>
+                      )
+                    }
+
+                    if (labelLower.includes("cas")) {
+                      return (
+                        <div key={idx} className="py-2.5 sm:py-3 px-3.5 sm:px-4 flex items-center justify-between gap-3">
+                          <span className="font-bold text-[#0b1f3a] shrink-0">{item.label}</span>
+                          <span className="font-mono text-[#334155] font-medium text-[11.5px] text-right bg-slate-50 px-2 py-0.5 rounded border border-slate-200/60">
+                            {item.value || "Specification Pending"}
+                          </span>
+                        </div>
+                      )
+                    }
+
+                    if (labelLower.includes("ratio")) {
+                      return (
+                        <div key={idx} className="py-2.5 sm:py-3 px-3.5 sm:px-4 flex items-center justify-between gap-3">
+                          <span className="font-bold text-[#0b1f3a] shrink-0">{item.label}</span>
+                          <span className="text-[#16a6a3] font-bold text-right">
+                            {item.value}
+                          </span>
+                        </div>
+                      )
+                    }
+
+                    return (
+                      <div key={idx} className="py-2.5 sm:py-3 px-3.5 sm:px-4 flex items-start justify-between gap-3">
+                        <span className="font-bold text-[#0b1f3a] shrink-0">{item.label}</span>
+                        <span className="text-[#334155] font-semibold text-right break-words flex-1 pl-3">
+                          {item.value || "Specification Pending"}
+                        </span>
+                      </div>
+                    )
+                  })
+                ) : (
+                  <>
+                    {/* Compound */}
+                    <div className="py-2.5 sm:py-3 px-3.5 sm:px-4 flex items-start justify-between gap-3">
+                      <span className="font-bold text-[#0b1f3a] shrink-0">Compound</span>
+                      <span className="text-[#334155] font-semibold text-right break-words flex-1 pl-3">
+                        {specs?.compoundName || product.name}
+                      </span>
+                    </div>
+
+                    {/* Ratio (if exists) */}
+                    {specs?.ratio && (
+                      <div className="py-2.5 sm:py-3 px-3.5 sm:px-4 flex items-center justify-between gap-3">
+                        <span className="font-bold text-[#0b1f3a] shrink-0">Ratio</span>
+                        <span className="text-[#16a6a3] font-bold text-right">
+                          {specs.ratio}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Total Content (if exists) */}
+                    {specs?.totalContent && (
+                      <div className="py-2.5 sm:py-3 px-3.5 sm:px-4 flex items-center justify-between gap-3">
+                        <span className="font-bold text-[#0b1f3a] shrink-0">Total Content</span>
+                        <span className="text-[#334155] font-medium text-right">
+                          {specs.totalContent}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Contents / Strength */}
+                    <div className="py-2.5 sm:py-3 px-3.5 sm:px-4 flex items-start justify-between gap-3">
+                      <span className="font-bold text-[#0b1f3a] shrink-0">Contents / Strength</span>
+                      <span className="text-[#334155] font-medium text-right leading-snug break-words flex-1 pl-3">
+                        {specs?.contentsOrStrength || product.contents || "Specification Pending"}
+                      </span>
+                    </div>
+
+                    {/* Peptide Class */}
+                    <div className="py-2.5 sm:py-3 px-3.5 sm:px-4 flex items-start justify-between gap-3">
+                      <span className="font-bold text-[#0b1f3a] shrink-0">Peptide Class</span>
+                      <span className="text-[#334155] font-medium text-right leading-snug break-words flex-1 pl-3">
+                        {specs?.peptideClass || "Specification Pending"}
+                      </span>
+                    </div>
+
+                    {/* Molecular Weight */}
+                    <div className="py-2.5 sm:py-3 px-3.5 sm:px-4 flex items-center justify-between gap-3">
+                      <span className="font-bold text-[#0b1f3a] shrink-0">Molecular Weight</span>
+                      <span className="font-semibold text-[#0b1f3a] text-right">
+                        {specs?.molecularWeight || "Specification Pending"}
+                      </span>
+                    </div>
+
+                    {/* CAS Number */}
+                    <div className="py-2.5 sm:py-3 px-3.5 sm:px-4 flex items-center justify-between gap-3">
+                      <span className="font-bold text-[#0b1f3a] shrink-0">CAS Number</span>
+                      <span className="font-mono text-[#334155] font-medium text-[11.5px] text-right bg-slate-50 px-2 py-0.5 rounded border border-slate-200/60">
+                        {specs?.casNumber || "Specification Pending"}
+                      </span>
+                    </div>
+
+                    {/* Sequence / Formula */}
+                    <div className="py-2.5 sm:py-3 px-3.5 sm:px-4 flex flex-col gap-1.5 bg-[#f8fafc]/50">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-[#0b1f3a]">Sequence / Formula</span>
+                        <span className="text-[10px] font-bold text-[#16a6a3] uppercase tracking-wider">
+                          HPLC Verified
+                        </span>
+                      </div>
+                      <div className="font-mono text-[11px] text-[#334155] leading-relaxed break-words bg-white p-2 rounded-[6px] border border-[#e2e8f0]/80">
+                        {specs?.compositionOrSequence || "Specification Pending"}
+                      </div>
+                    </div>
+
+                    {/* Recommended Storage */}
+                    <div className="py-2.5 sm:py-3 px-3.5 sm:px-4 flex items-center justify-between gap-3">
+                      <span className="font-bold text-[#0b1f3a] shrink-0">Recommended Storage</span>
+                      <span className="text-[#059669] font-semibold text-right text-[11.5px] inline-flex items-center gap-1.5 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/70">
+                        <span className="size-1.5 rounded-full bg-[#10b981] shrink-0" />
+                        {specs?.storage || "2°C – 8°C Refrigerated"}
+                      </span>
+                    </div>
+                  </>
                 )}
-
-                {/* Total Content (if exists) */}
-                {specs?.totalContent && (
-                  <div className="py-2.5 sm:py-3 px-3.5 sm:px-4 flex items-center justify-between gap-3">
-                    <span className="font-bold text-[#0b1f3a] shrink-0">Total Content</span>
-                    <span className="text-[#334155] font-medium text-right">
-                      {specs.totalContent}
-                    </span>
-                  </div>
-                )}
-
-                {/* Contents / Strength */}
-                <div className="py-2.5 sm:py-3 px-3.5 sm:px-4 flex items-start justify-between gap-3">
-                  <span className="font-bold text-[#0b1f3a] shrink-0">Contents / Strength</span>
-                  <span className="text-[#334155] font-medium text-right leading-snug break-words flex-1 pl-3">
-                    {specs?.contentsOrStrength || product.contents || "Specification Pending"}
-                  </span>
-                </div>
-
-                {/* Peptide Class */}
-                <div className="py-2.5 sm:py-3 px-3.5 sm:px-4 flex items-start justify-between gap-3">
-                  <span className="font-bold text-[#0b1f3a] shrink-0">Peptide Class</span>
-                  <span className="text-[#334155] font-medium text-right leading-snug break-words flex-1 pl-3">
-                    {specs?.peptideClass || "Specification Pending"}
-                  </span>
-                </div>
-
-                {/* Molecular Weight */}
-                <div className="py-2.5 sm:py-3 px-3.5 sm:px-4 flex items-center justify-between gap-3">
-                  <span className="font-bold text-[#0b1f3a] shrink-0">Molecular Weight</span>
-                  <span className="font-semibold text-[#0b1f3a] text-right">
-                    {specs?.molecularWeight || "Specification Pending"}
-                  </span>
-                </div>
-
-                {/* CAS Number */}
-                <div className="py-2.5 sm:py-3 px-3.5 sm:px-4 flex items-center justify-between gap-3">
-                  <span className="font-bold text-[#0b1f3a] shrink-0">CAS Number</span>
-                  <span className="font-mono text-[#334155] font-medium text-[11.5px] text-right bg-slate-50 px-2 py-0.5 rounded border border-slate-200/60">
-                    {specs?.casNumber || "Specification Pending"}
-                  </span>
-                </div>
-
-                {/* Sequence / Formula */}
-                <div className="py-2.5 sm:py-3 px-3.5 sm:px-4 flex flex-col gap-1.5 bg-[#f8fafc]/50">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-[#0b1f3a]">Sequence / Formula</span>
-                    <span className="text-[10px] font-bold text-[#16a6a3] uppercase tracking-wider">
-                      HPLC Verified
-                    </span>
-                  </div>
-                  <div className="font-mono text-[11px] text-[#334155] leading-relaxed break-words bg-white p-2 rounded-[6px] border border-[#e2e8f0]/80">
-                    {specs?.compositionOrSequence || "Specification Pending"}
-                  </div>
-                </div>
-
-                {/* Recommended Storage */}
-                <div className="py-2.5 sm:py-3 px-3.5 sm:px-4 flex items-center justify-between gap-3">
-                  <span className="font-bold text-[#0b1f3a] shrink-0">Recommended Storage</span>
-                  <span className="text-[#059669] font-semibold text-right text-[11.5px] inline-flex items-center gap-1.5 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/70">
-                    <span className="size-1.5 rounded-full bg-[#10b981] shrink-0" />
-                    {specs?.storage || "2°C – 8°C Refrigerated"}
-                  </span>
-                </div>
               </div>
             </div>
 
             <div className="pt-4 mt-4 border-t border-[#dce6ee]">
               <Link
-                href={`/lab-reports?search=${encodeURIComponent(specs?.compoundName || product.name)}`}
+                href={`/lab-reports?search=${encodeURIComponent(
+                  product.customSpecs?.find((s) => s.label.toLowerCase().includes("compound"))?.value ||
+                  specs?.compoundName ||
+                  product.name
+                )}`}
                 className="text-[12px] font-bold text-[#0b1f3a] hover:text-[#16a6a3] transition-colors flex items-center justify-between group"
               >
                 <span>Search HPLC Certificate of Analysis</span>

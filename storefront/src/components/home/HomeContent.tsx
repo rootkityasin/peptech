@@ -7,6 +7,7 @@ import { Interactive3DPen } from "@/components/home/Interactive3DPen"
 import { TrustedBySection } from "@/components/common/TrustedBySection"
 import { useLiveProducts } from "@/hooks/useLiveProducts"
 import { resolveProductImage } from "@/lib/product-images"
+import { sortProductsByPriority } from "@/lib/medusa"
 import { CatalogProduct } from "@/data/catalog"
 
 // ---------------------------------------------------------------------------
@@ -267,8 +268,9 @@ export function HomeContent({
 
   const sourceProducts = products
 
-  const displayPenSets = sourceProducts
-    .filter((p) => p.format === "complete-pen-set")
+  const displayPenSets = sortProductsByPriority(
+    sourceProducts.filter((p) => p.format === "complete-pen-set")
+  )
     .slice(0, 6)
     .map((p) => ({
       id: p.id,
@@ -281,8 +283,9 @@ export function HomeContent({
       accentColor: p.accentColor,
     }))
 
-  const displayCartridges = sourceProducts
-    .filter((p) => p.format === "refill-cartridge")
+  const displayCartridges = sortProductsByPriority(
+    sourceProducts.filter((p) => p.format === "refill-cartridge")
+  )
     .slice(0, 6)
     .map((c) => ({
       id: c.id,

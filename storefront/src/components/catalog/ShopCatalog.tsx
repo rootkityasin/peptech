@@ -117,7 +117,11 @@ export function ShopCatalog({ initialCategory = "all", initialProducts }: ShopCa
       if (selectedSort === "price-asc") return a.price - b.price
       if (selectedSort === "price-desc") return b.price - a.price
       if (selectedSort === "name") return a.name.localeCompare(b.name)
-      return 0 // popular / default
+      // default / popular: prioritize items with numeric priority (1, 2, 3...) then A-Z
+      const aPri = typeof a.priority === "number" && a.priority > 0 ? a.priority : 999999
+      const bPri = typeof b.priority === "number" && b.priority > 0 ? b.priority : 999999
+      if (aPri !== bPri) return aPri - bPri
+      return a.name.localeCompare(b.name)
     })
   }, [allProducts, activeTab, searchQuery, availability, selectedFormats, selectedCategories, selectedPurchaseType, selectedSort])
 

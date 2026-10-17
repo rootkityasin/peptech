@@ -22,6 +22,7 @@ export interface StoreProductVariant {
     amount: number
     currency_code: string
   }>
+  metadata?: Record<string, any> | null
 }
 
 export interface StoreProductCategory {
@@ -135,7 +136,7 @@ export async function getProducts(queryParams: Record<string, unknown> = {}, for
   const fetchPromise = (async () => {
     try {
       const response = await medusa.store.product.list({
-        fields: "+metadata,*categories,*variants,*variants.prices,*images,+variants.inventory_quantity",
+        fields: "+metadata,*categories,*variants,*variants.prices,*images,+variants.inventory_quantity,+variants.metadata",
         limit: 100,
         ...queryParams,
       })
@@ -456,6 +457,42 @@ export function mapMedusaToCatalogProduct(p: StoreProduct): CatalogProduct {
   const howItWorks = (metadata.how_it_works as string[]) || fallbackProfile?.howItWorks
   const keyFeatures = (metadata.key_features as string[]) || fallbackProfile?.keyFeatures
 
+  // Resolve display priority from variant or product metadata
+  const rawPriority =
+    p.variants?.[0]?.metadata?.priority ??
+    p.variants?.[0]?.metadata?.sort_order ??
+    metadata.priority ??
+    metadata.sort_order
+
+  const parsedPriority =
+    typeof rawPriority === "number"
+      ? rawPriority
+      : typeof rawPriority === "string" && !isNaN(parseInt(rawPriority, 10))
+      ? parseInt(rawPriority, 10)
+      : undefined
+
+  const priority = parsedPriority && parsedPriority > 0 ? parsedPriority : undefined
+
+  // Resolve dynamic custom technical specifications if saved in admin
+  let customSpecs: Array<{ label: string; value: string }> | undefined = undefined
+  const rawSpecs = metadata.technical_specs || metadata.custom_specs
+  if (rawSpecs) {
+    try {
+      const parsed = typeof rawSpecs === "string" ? JSON.parse(rawSpecs) : rawSpecs
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        customSpecs = parsed
+          .filter((item: any) => item && (item.label || item.key))
+          .map((item: any) => ({
+            label: String(item.label || item.key || "").trim(),
+            value: String(item.value || "").trim(),
+          }))
+          .filter((item: any) => item.label.length > 0 || item.value.length > 0)
+      }
+    } catch {
+      // ignore JSON parse error
+    }
+  }
+
   return {
     id: p.id,
     variantId: p.variants && p.variants.length > 0 ? p.variants[0].id : p.id,
@@ -470,9 +507,11 @@ export function mapMedusaToCatalogProduct(p: StoreProduct): CatalogProduct {
     contents,
     accentColor,
     technicalSpecs,
+    customSpecs,
     description,
     howItWorks,
     keyFeatures,
+    priority,
     price: rawPrice,
     subscribePrice,
     inStock: (() => {
@@ -490,6 +529,24 @@ export function mapMedusaToCatalogProduct(p: StoreProduct): CatalogProduct {
 }
 
 /**
+ * Helper: Sort products prioritizing items with numeric priority (1, 2, 3...)
+ * followed by unranked items sorted alphabetically by name.
+ */
+export function sortProductsByPriority(products: CatalogProduct[]): CatalogProduct[] {
+  return [...products].sort((a, b) => {
+    const aHasPriority = typeof a.priority === "number" && a.priority > 0
+    const bHasPriority = typeof b.priority === "number" && b.priority > 0
+
+    if (aHasPriority && bHasPriority) {
+      return a.priority! - b.priority!
+    }
+    if (aHasPriority) return -1
+    if (bHasPriority) return 1
+    return a.name.localeCompare(b.name)
+  })
+}
+
+/**
  * Helper: Fetch single mapped CatalogProduct by handle or ID
  */
 export async function getCatalogProduct(idOrHandle: string): Promise<CatalogProduct | null> {
@@ -499,11 +556,12 @@ export async function getCatalogProduct(idOrHandle: string): Promise<CatalogProd
 }
 
 /**
- * Helper: Fetch all mapped CatalogProducts from Medusa Store API
+ * Helper: Fetch all mapped CatalogProducts from Medusa Store API sorted by priority
  */
 export async function getCatalogProducts(queryParams: Record<string, unknown> = {}, forceRefresh = false): Promise<CatalogProduct[]> {
   const storeProducts = await getProducts(queryParams, forceRefresh)
-  return storeProducts.map(mapMedusaToCatalogProduct)
+  const mapped = storeProducts.map(mapMedusaToCatalogProduct)
+  return sortProductsByPriority(mapped)
 }
 
 /**

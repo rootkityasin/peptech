@@ -2,38 +2,60 @@ import path from "node:path"
 import type { Plugin as EsbuildPlugin } from "esbuild"
 
 // Medusa's built-in routes win over extension routes with the same URL.
-// Resolve only its two order page modules to our source components instead.
+// Resolve order pages and product variant edit to our source components instead.
 // Never rewrite the installed dashboard or delete a running Vite cache.
 export function adminOrderOverrides() {
   const dashboardDist = path.dirname(require.resolve("@medusajs/dashboard"))
-  const sourceDir = path.resolve(__dirname, "src/admin/components/orders")
+  const ordersSourceDir = path.resolve(__dirname, "src/admin/components/orders")
+  const productsSourceDir = path.resolve(__dirname, "src/admin/components/products")
   const orderModule = /^\.\/order-(list|detail)-[^/]+\.mjs$/
+  const variantEditModule = /^\.\/product-variant-edit-[^/]+\.mjs$/
 
-  const resolveOrder = (source: string, importer: string) => {
-    const match = orderModule.exec(source)
-    if (!match || path.dirname(importer) !== dashboardDist) return
-    return path.join(sourceDir, match[1] === "list" ? "OrderList.jsx" : "OrderDetail.jsx")
+  const resolveOverride = (source: string, importer?: string) => {
+    if (!importer) return undefined
+
+    // 1. Resolve order pages from dashboard dist
+    const isOrder = orderModule.exec(source)
+    if (isOrder && path.dirname(importer) === dashboardDist) {
+      return path.join(ordersSourceDir, isOrder[1] === "list" ? "OrderList.jsx" : "OrderDetail.jsx")
+    }
+
+    // 2. Resolve product variant edit drawer from dashboard dist
+    const isVariantEdit = variantEditModule.exec(source)
+    if (isVariantEdit && path.dirname(importer) === dashboardDist) {
+      return path.join(productsSourceDir, "ProductVariantEdit.jsx")
+    }
+
+    // 3. Resolve internal relative chunk imports from our custom ProductVariantEdit
+    if (source.startsWith("./chunk-") && importer.startsWith(productsSourceDir)) {
+      return path.join(dashboardDist, source)
+    }
+
+    return undefined
   }
 
   const optimizerPlugin: EsbuildPlugin = {
-    name: "peptech-order-source-pages",
+    name: "peptech-admin-source-overrides",
     setup(build) {
-      build.onResolve({ filter: orderModule }, ({ path: source, importer }) => {
-        const file = resolveOrder(source, importer)
-        if (!file) return
-        // Leave application code outside pre-bundled dependencies so Vite can
-        // transform JSX, resolve its imports, and hot-reload edits normally.
-        return { path: `/@fs/${file.replace(/\\/g, "/")}`, external: true }
-      })
+      build.onResolve(
+        { filter: /^\.\/(order-(list|detail)|product-variant-edit)-[^/]+\.mjs$/ },
+        ({ path: source, importer }) => {
+          const file = resolveOverride(source, importer)
+          if (!file) return
+          // Leave application code outside pre-bundled dependencies so Vite can
+          // transform JSX, resolve its imports, and hot-reload edits normally.
+          return { path: `/@fs/${file.replace(/\\/g, "/")}`, external: true }
+        }
+      )
     },
   }
 
   return {
     plugins: [{
-      name: "peptech-order-source-pages",
+      name: "peptech-admin-source-overrides",
       enforce: "pre" as const,
       resolveId(source: string, importer?: string) {
-        return importer ? resolveOrder(source, importer) : undefined
+        return resolveOverride(source, importer)
       },
     }],
     optimizeDeps: {

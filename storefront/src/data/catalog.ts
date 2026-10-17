@@ -38,6 +38,8 @@ export interface CatalogProduct {
   technicalSpecs?: TechnicalSpecs
   howItWorks?: string[]
   keyFeatures?: string[]
+  priority?: number
+  customSpecs?: Array<{ label: string; value: string }>
 }
 
 /**
