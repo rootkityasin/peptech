@@ -121,7 +121,7 @@ export async function reconcileInvoice(scope:any,ledger:CommerceService,invoiceI
   if(invoice.billing_reason!=="subscription_create") {
     const original=subscription.data.quote as Quote
     quote={...original,lines:original.lines.filter(l=>l.recurring).map((l,i)=>({...l,line_id:recordId("ordli",invoice.id,String(i))})),
-      total_minor:original.renewal_minor}
+      shipping_minor:0,total_minor:original.renewal_minor}
   }
   if(attempt.data.quote.tax_policy==="stripe_default")quote=await invoiceTaxQuote(context.stripe,invoice,quote||attempt.data.quote)
   await settleReceipt(scope,ledger,attempt,{reference:invoice.id,invoice_id:invoice.id,amount:evidence.amount,

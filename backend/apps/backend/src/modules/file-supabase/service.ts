@@ -9,7 +9,13 @@ import type {
 import { createClient, SupabaseClient } from "@supabase/supabase-js"
 import { PassThrough, Readable } from "stream"
 import path from "path"
-import sharp from "sharp"
+
+let sharp: any = null
+try {
+  sharp = require("sharp")
+} catch {
+  // sharp is an optional dependency for image optimization
+}
 
 export interface SupabaseFileServiceOptions {
   url?: string
@@ -89,7 +95,7 @@ export class SupabaseFileService extends AbstractFileProviderService {
     filename: string,
     mimeType?: string
   ): Promise<{ buffer: Buffer; mimeType: string }> {
-    if (!this.enableOptimization_) {
+    if (!this.enableOptimization_ || !sharp) {
       return { buffer, mimeType: mimeType || "application/octet-stream" }
     }
 

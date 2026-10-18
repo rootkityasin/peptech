@@ -106,6 +106,7 @@ export async function settleReceipt(
           peptech_attempt: attempt.id,
           payment_gateway: evidence.source || "stripe",
           subscription_id: attempt.data.subscription_id || null,
+          is_subscription_renewal: Boolean(renewal),
           fulfillment_hold: true,
           tax_policy: q.tax_policy,
           order_number_formatted: orderId,
