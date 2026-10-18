@@ -23,6 +23,11 @@ export function Header() {
   const [shopMenuOpen, setShopMenuOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const headerRef = useRef<HTMLElement>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
@@ -445,7 +450,7 @@ export function Header() {
             </button>
 
             {/* Account (Figma Node 52:9001 when authenticated, default icon when unauthenticated) */}
-            {isAuthenticated && customer ? (
+            {mounted && isAuthenticated && customer ? (
               <Link
                 href="/account"
                 className="bg-white border border-[#e2e8f0] flex items-center gap-[8px] p-1 sm:pl-[8px] sm:pr-[12px] sm:py-[5px] rounded-[20px] shadow-2xs hover:border-[#16a6a3] transition-colors group"
@@ -491,7 +496,7 @@ export function Header() {
                 <circle cx="7.5" cy="17.5" r="1" stroke="#0B1F3A" strokeWidth="1.67"/>
                 <circle cx="15.5" cy="17.5" r="1" stroke="#0B1F3A" strokeWidth="1.67"/>
               </svg>
-              {itemCount > 0 && (
+              {mounted && itemCount > 0 && (
                 <span className="cart-icon-pop absolute -top-[2px] -right-[2px] bg-[#16a6a3] border-[1.5px] border-solid border-white text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center shadow-xs">
                   {itemCount}
                 </span>

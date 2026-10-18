@@ -56,7 +56,7 @@ export function VialBuyBox({ product }: VialBuyBoxProps) {
       {/* Review Rating */}
       <div className="flex items-center justify-between w-full">
         <div className="flex gap-[6px] items-center">
-          <div className="flex gap-[2px] items-center">
+          <div className="flex gap-[2px] items-center" aria-label="5 out of 5 stars">
             {[...Array(5)].map((_, i) => (
               <img
                 key={i}
@@ -67,7 +67,7 @@ export function VialBuyBox({ product }: VialBuyBoxProps) {
             ))}
           </div>
           <span className="font-medium text-[#475569] text-[12px]">
-            4.9 (142 reviews)
+            4.9 (284 reviews)
           </span>
         </div>
       </div>

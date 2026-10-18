@@ -23,7 +23,7 @@ function resolveItemThumbnail(it: any): string {
   else if (combined.includes("nad")) slug = "nad-plus"
   else if (combined.includes("pt-141") || combined.includes("pt141") || combined.includes("bremelanotide")) slug = "pt-141"
   else if (combined.includes("melanotan") || combined.includes("mt-2") || combined.includes("mt2")) slug = "melanotan-2"
-  else if (combined.includes("barbie") || combined.includes("glow")) slug = "barbie-glow"
+  else if (combined.includes("glow") || combined.includes("barbie")) slug = "glow-stack"
   else if (combined.includes("klow")) slug = "klow"
 
   if (isRefill) {

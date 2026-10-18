@@ -252,6 +252,9 @@ export async function getProduct(idOrHandle: string, forceRefresh = false): Prom
             "glow-stack-pen-set": "barbie-glow-pen-set",
             "glow-stack-cartridge": "barbie-glow-cartridge",
             "glow-stack-vial": "barbie-glow-vial",
+            "barbie-glow-pen-set": "glow-stack-pen-set",
+            "barbie-glow-cartridge": "glow-stack-cartridge",
+            "barbie-glow-vial": "glow-stack-vial",
             "bpc-157-tb-500-pen-set": "wolverine-stack-pen-set",
             "bpc-157-tb-500-cartridge": "wolverine-cartridge",
             "bpc-157-tb-500-vial": "wolverine-vial",
@@ -398,10 +401,11 @@ export function mapMedusaToCatalogProduct(p: StoreProduct): CatalogProduct {
   const rawImages = (p.images as Array<{ url: string } | string>) || []
   const mappedImages = rawImages
     .map((img) => (typeof img === "string" ? img : img?.url))
-    .filter((url): url is string => Boolean(url && !url.includes("null") && !url.includes("Screenshot") && !url.includes("cartridge.webp") && !url.includes("mockup2.webp")))
+    .filter((url): url is string => Boolean(url && !url.includes("null") && !url.includes("Screenshot") && !url.includes("cartridge.webp") && !url.includes("mockup2.webp") && !url.includes("/static/")))
+    .map((url) => resolveProductImage(url))
 
-  let image = mappedImages[0] || (p.thumbnail as string) || ""
-  if (!image || image === "null" || image.includes("Screenshot") || image.includes("placeholder.png")) {
+  let image = mappedImages[0] || (typeof p.thumbnail === "string" && !p.thumbnail.includes("/static/") ? p.thumbnail : "") || ""
+  if (!image || image === "null" || image.includes("Screenshot") || image.includes("placeholder.png") || image.includes("/static/")) {
     image = resolveProductImage({
       id: p.id,
       title: p.title,
@@ -410,6 +414,8 @@ export function mapMedusaToCatalogProduct(p: StoreProduct): CatalogProduct {
       format,
       metadata: (p.metadata as Record<string, any>) || undefined,
     })
+  } else {
+    image = resolveProductImage(image)
   }
 
   const compoundSlug =
@@ -421,77 +427,6 @@ export function mapMedusaToCatalogProduct(p: StoreProduct): CatalogProduct {
       .replace(/^pen-system-/, "")
 
   const fallbackProfile = getChemicalProfile(compoundSlug)
-
-  const contents =
-    (p.subtitle as string) ||
-    (metadata.contents as string) ||
-    (metadata.subtitle as string) ||
-    fallbackProfile?.contents ||
-    ""
-  const accentColor = (metadata.accentColor as string) || fallbackProfile?.accentColor || "#16a6a3"
-  const technicalSpecs: TechnicalSpecs = {
-    compoundName: (metadata.compound_name as string) || (metadata.technicalSpecs as any)?.compoundName || fallbackProfile?.compoundName || p.title,
-    contentsOrStrength: (metadata.contents as string) || (p.subtitle as string) || (metadata.technicalSpecs as any)?.contentsOrStrength || fallbackProfile?.contents || "Specification Pending",
-    peptideClass: (metadata.peptide_class as string) || (metadata.technicalSpecs as any)?.peptideClass || fallbackProfile?.peptideClass || "Research Peptide Standard",
-    compositionOrSequence: (metadata.sequence as string) || (metadata.formula as string) || (metadata.technicalSpecs as any)?.compositionOrSequence || fallbackProfile?.sequence || "Sequence Confirmed by HPLC",
-    molecularWeight: (metadata.molecular_weight as string) || (metadata.mw as string) || (metadata.technicalSpecs as any)?.molecularWeight || fallbackProfile?.molecularWeight || "Verified Analytical Batch",
-    casNumber: (metadata.cas_number as string) || (metadata.cas as string) || (metadata.technicalSpecs as any)?.casNumber || fallbackProfile?.casNumber || "Reference Standard",
-    form: (metadata.form as string) || (metadata.technicalSpecs as any)?.form || fallbackProfile?.form || (format === "complete-pen-set" ? "1.5 mL Borosilicate Cartridge in Pen System" : format === "refill-cartridge" ? "1.5 mL Pre-filled Glass Cartridge" : "Vacuum Freeze-Dried Lyophilised Cake"),
-    storage: (metadata.storage as string) || (metadata.technicalSpecs as any)?.storage || fallbackProfile?.storage || "2°C – 8°C Refrigerated, protect from direct light",
-    ratio: (metadata.ratio as string) || fallbackProfile?.ratio,
-    totalContent: (metadata.total_content as string) || fallbackProfile?.totalContent,
-    volume: (metadata.volume as string) || "1.5 mL Precision Volume",
-    purity: (metadata.purity as string) || "≥ 99.0% HPLC",
-    accentColor,
-    colorName: (metadata.colorName as string) || (metadata.technicalSpecs as any)?.colorName || "Teal",
-  }
-
-  // Admin description has 100% precedence unless it contains old test placeholder words like "water quality"
-  const adminDesc = (p.description as string) || (metadata.description as string) || ""
-  const description =
-    adminDesc && !adminDesc.toLowerCase().includes("water quality")
-      ? adminDesc
-      : fallbackProfile?.description ||
-        "PEPTECH® analytical reference research peptide verified for laboratory and scientific research. Manufactured under ISO 9001 standards."
-
-  const howItWorks = (metadata.how_it_works as string[]) || fallbackProfile?.howItWorks
-  const keyFeatures = (metadata.key_features as string[]) || fallbackProfile?.keyFeatures
-
-  // Resolve display priority from any variant or product metadata
-  let resolvedPriority: number | undefined = undefined
-
-  // 1. Check all variants for a positive numeric priority
-  if (Array.isArray(p.variants) && p.variants.length > 0) {
-    for (const v of p.variants) {
-      const vPri = v.metadata?.priority ?? v.metadata?.sort_order
-      if (typeof vPri === "number" && vPri > 0) {
-        resolvedPriority = vPri
-        break
-      }
-      if (typeof vPri === "string") {
-        const parsed = parseInt(vPri.trim(), 10)
-        if (!isNaN(parsed) && parsed > 0) {
-          resolvedPriority = parsed
-          break
-        }
-      }
-    }
-  }
-
-  // 2. Fall back to parent product metadata
-  if (resolvedPriority === undefined) {
-    const prodPri = metadata.priority ?? metadata.sort_order
-    if (typeof prodPri === "number" && prodPri > 0) {
-      resolvedPriority = prodPri
-    } else if (typeof prodPri === "string") {
-      const parsed = parseInt(prodPri.trim(), 10)
-      if (!isNaN(parsed) && parsed > 0) {
-        resolvedPriority = parsed
-      }
-    }
-  }
-
-  const priority = resolvedPriority
 
   // Resolve dynamic custom technical specifications if saved in admin
   let customSpecs: Array<{ label: string; value: string }> | undefined = undefined
@@ -512,6 +447,82 @@ export function mapMedusaToCatalogProduct(p: StoreProduct): CatalogProduct {
       // ignore JSON parse error
     }
   }
+
+  const findCustomSpec = (regex: RegExp) => {
+    if (!customSpecs) return undefined
+    const match = customSpecs.find((s) => regex.test(s.label.toLowerCase()))
+    return match ? match.value : undefined
+  }
+
+  const contents =
+    (p.subtitle as string) ||
+    findCustomSpec(/content|strength/) ||
+    (metadata.contents as string) ||
+    (metadata.subtitle as string) ||
+    fallbackProfile?.contents ||
+    ""
+  const accentColor = (metadata.accentColor as string) || fallbackProfile?.accentColor || "#16a6a3"
+  const technicalSpecs: TechnicalSpecs = {
+    compoundName: findCustomSpec(/compound/) || (metadata.compound_name as string) || (metadata.technicalSpecs as any)?.compoundName || fallbackProfile?.compoundName || p.title,
+    contentsOrStrength: findCustomSpec(/content|strength/) || (metadata.contents as string) || (p.subtitle as string) || (metadata.technicalSpecs as any)?.contentsOrStrength || fallbackProfile?.contents || "Specification Pending",
+    peptideClass: findCustomSpec(/peptide\s*class|class/) || (metadata.peptide_class as string) || (metadata.technicalSpecs as any)?.peptideClass || fallbackProfile?.peptideClass || "Research Peptide Standard",
+    compositionOrSequence: findCustomSpec(/sequence|formula/) || (metadata.sequence as string) || (metadata.formula as string) || (metadata.technicalSpecs as any)?.compositionOrSequence || fallbackProfile?.sequence || "Sequence Confirmed by HPLC",
+    molecularWeight: findCustomSpec(/molecular\s*weight|mw/) || (metadata.molecular_weight as string) || (metadata.mw as string) || (metadata.technicalSpecs as any)?.molecularWeight || fallbackProfile?.molecularWeight || "Verified Analytical Batch",
+    casNumber: findCustomSpec(/cas/) || (metadata.cas_number as string) || (metadata.cas as string) || (metadata.technicalSpecs as any)?.casNumber || fallbackProfile?.casNumber || "Reference Standard",
+    form: findCustomSpec(/form/) || (metadata.form as string) || (metadata.technicalSpecs as any)?.form || fallbackProfile?.form || (format === "complete-pen-set" ? "1.5 mL Borosilicate Cartridge in Pen System" : format === "refill-cartridge" ? "1.5 mL Pre-filled Glass Cartridge" : "Vacuum Freeze-Dried Lyophilised Cake"),
+    storage: findCustomSpec(/storage/) || (metadata.storage as string) || (metadata.technicalSpecs as any)?.storage || fallbackProfile?.storage || "2°C – 8°C Refrigerated, protect from direct light",
+    ratio: findCustomSpec(/ratio/) || (metadata.ratio as string) || fallbackProfile?.ratio,
+    totalContent: findCustomSpec(/total\s*content/) || (metadata.total_content as string) || fallbackProfile?.totalContent,
+    volume: findCustomSpec(/volume/) || (metadata.volume as string) || "1.5 mL Precision Volume",
+    purity: findCustomSpec(/purity/) || (metadata.purity as string) || "≥ 99.0% HPLC",
+    accentColor,
+    colorName: (metadata.colorName as string) || (metadata.technicalSpecs as any)?.colorName || "Teal",
+  }
+
+  // Admin description has 100% precedence unless it contains old test placeholder words like "water quality"
+  const adminDesc = (p.description as string) || (metadata.description as string) || ""
+  const description =
+    adminDesc && !adminDesc.toLowerCase().includes("water quality")
+      ? adminDesc
+      : fallbackProfile?.description ||
+        "PEPTECH® analytical reference research peptide verified for laboratory and scientific research. Manufactured under ISO 9001 standards."
+
+  const howItWorks = (metadata.how_it_works as string[]) || fallbackProfile?.howItWorks
+  const keyFeatures = (metadata.key_features as string[]) || fallbackProfile?.keyFeatures
+
+  // Resolve display priority from product metadata (primary) or any variant (fallback)
+  let resolvedPriority: number | undefined = undefined
+
+  // 1. Primary: Parent product metadata priority
+  const prodPri = metadata.priority ?? metadata.sort_order
+  if (typeof prodPri === "number" && prodPri > 0) {
+    resolvedPriority = prodPri
+  } else if (typeof prodPri === "string") {
+    const parsed = parseInt(prodPri.trim(), 10)
+    if (!isNaN(parsed) && parsed > 0) {
+      resolvedPriority = parsed
+    }
+  }
+
+  // 2. Fall back to any variant's metadata priority if not set on parent product
+  if (resolvedPriority === undefined && Array.isArray(p.variants) && p.variants.length > 0) {
+    for (const v of p.variants) {
+      const vPri = v.metadata?.priority ?? v.metadata?.sort_order
+      if (typeof vPri === "number" && vPri > 0) {
+        resolvedPriority = vPri
+        break
+      }
+      if (typeof vPri === "string") {
+        const parsed = parseInt(vPri.trim(), 10)
+        if (!isNaN(parsed) && parsed > 0) {
+          resolvedPriority = parsed
+          break
+        }
+      }
+    }
+  }
+
+  const priority = resolvedPriority
 
   return {
     id: p.id,
@@ -558,7 +569,10 @@ export function sortProductsByPriority(products: CatalogProduct[]): CatalogProdu
     const bHasPriority = typeof b.priority === "number" && b.priority > 0
 
     if (aHasPriority && bHasPriority) {
-      return a.priority! - b.priority!
+      if (a.priority !== b.priority) {
+        return a.priority! - b.priority!
+      }
+      return a.name.localeCompare(b.name)
     }
     if (aHasPriority) return -1
     if (bHasPriority) return 1

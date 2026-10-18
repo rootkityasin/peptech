@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react"
 import { CatalogProduct } from "@/data/catalog"
-import { getProducts, mapMedusaToCatalogProduct } from "@/lib/medusa"
+import { getProducts, mapMedusaToCatalogProduct, sortProductsByPriority } from "@/lib/medusa"
 
 const CATALOG_CACHE_KEY = "peptech_catalog_cache"
 const CACHE_TIMESTAMP_KEY = "peptech_catalog_cache_timestamp"
@@ -107,7 +107,7 @@ export function useLiveProducts(initialFallback: CatalogProduct[] = []) {
     try {
       const medusaProducts = await getProducts({ limit: 100 }, force)
       if (isMountedRef.current) {
-        const mapped = medusaProducts.map(mapMedusaToCatalogProduct)
+        const mapped = sortProductsByPriority(medusaProducts.map(mapMedusaToCatalogProduct))
         if (mapped.length > 0) {
           setProducts(mapped)
           try {

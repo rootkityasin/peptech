@@ -7,6 +7,7 @@ import { useSearchParams } from "next/navigation"
 import { useCart } from "@/components/cart/CartContext"
 import { CatalogProduct } from "@/data/catalog"
 import { useLiveProducts } from "@/hooks/useLiveProducts"
+import { CustomSelect } from "@/components/ui/CustomSelect"
 
 interface ShopCatalogProps {
   initialCategory?: "all" | "pen-sets" | "refills" | "vials"
@@ -412,21 +413,20 @@ export function ShopCatalog({ initialCategory = "all", initialProducts }: ShopCa
             </div>
 
             {/* Sort Box */}
-            <div className="bg-[#f8fafc] border border-[#e2e8f0] flex gap-[6px] items-center px-[12px] py-[8px] rounded-[6px] shrink-0" data-name="Sort Box">
-              <span className="font-medium text-[#64748b] text-[12px] whitespace-nowrap hidden sm:inline">
-                Sort by:
-              </span>
-              <select
-                value={selectedSort}
-                onChange={(e) => setSelectedSort(e.target.value as any)}
-                className="bg-transparent font-semibold text-[#0b1f3a] text-[12px] focus:outline-hidden cursor-pointer"
-              >
-                <option value="popular">Most Popular</option>
-                <option value="price-asc">Price: Low to High</option>
-                <option value="price-desc">Price: High to Low</option>
-                <option value="name">Product Name (A-Z)</option>
-              </select>
-            </div>
+            <CustomSelect
+              value={selectedSort}
+              onChange={(val) => setSelectedSort(val as any)}
+              variant="sort"
+              prefixLabel="Sort by:"
+              align="right"
+              options={[
+                { value: "popular", label: "Most Popular" },
+                { value: "price-asc", label: "Price: Low to High" },
+                { value: "price-desc", label: "Price: High to Low" },
+                { value: "name", label: "Product Name (A-Z)" },
+              ]}
+              aria-label="Sort products by"
+            />
 
             {/* Mobile Filter Toggle Button on Right Side */}
             <button

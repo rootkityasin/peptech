@@ -113,11 +113,12 @@ module.exports = defineConfig({
       options: {
         providers: [
           {
-            resolve: "@medusajs/medusa/file-local",
-            id: "local",
+            resolve: "./src/modules/file-supabase",
+            id: "supabase",
             options: {
-              upload_dir: "static",
-              backend_url: `${process.env.MEDUSA_BACKEND_URL || "http://localhost:9000"}/static`,
+              url: process.env.SUPABASE_URL || "https://ubzoovlhbnztjwemvrwo.supabase.co",
+              apiKey: process.env.SUPABASE_API_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || "",
+              bucket: process.env.SUPABASE_STORAGE_BUCKET || "products",
             },
           },
         ],

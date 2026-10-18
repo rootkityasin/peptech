@@ -15,6 +15,7 @@ import { fetchCountryOptions, formatCountryCode, type CountryOption } from "@/li
 import { AccountSkeleton } from "@/components/ui/Skeletons"
 import { resolveProductImage } from "@/lib/product-images"
 import { useCustomDialog } from "@/components/ui/CustomDialog"
+import { CustomSelect } from "@/components/ui/CustomSelect"
 
 function formatOrderDate(rawDate?: string | Date | null): string {
   if (!rawDate) return new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
@@ -414,6 +415,66 @@ function AccountContent() {
             localStorage.removeItem(`peptech_customer_orders_${custId}`)
           } catch {}
         }
+
+        // Merge offline bank transfer orders placed via UK Faster Payments
+        try {
+          const rawBank = localStorage.getItem("peptech_bank_orders")
+          if (rawBank) {
+            const parsedBank = JSON.parse(rawBank)
+            if (Array.isArray(parsedBank)) {
+              const formattedBankOrders = parsedBank
+                .filter(
+                  (bo: any) =>
+                    !bo.customer?.email ||
+                    !customer?.email ||
+                    bo.customer.email.toLowerCase() === customer.email.toLowerCase()
+                )
+                .map((bo: any) => {
+                  const items = (bo.items || []).map((it: any) => ({
+                    id: it.id,
+                    title: it.title,
+                    subtitle: it.subtitle || "Laboratory RUO Grade",
+                    price: it.price,
+                    quantity: it.quantity || 1,
+                    image: resolveProductImage(it),
+                    options: it.options,
+                  }))
+                  const itemsSum = items.reduce((acc: number, it: any) => acc + (it.price || 0) * (it.quantity || 1), 0)
+                  const total = typeof bo.total === "number" ? bo.total : itemsSum + 4.95
+                  const shippingTotal = total > itemsSum ? total - itemsSum : 4.95
+
+                  return {
+                    id: bo.orderReference,
+                    internalId: bo.orderReference,
+                    displayId: bo.orderReference,
+                    date: bo.placedAt || new Date().toISOString(),
+                    displayDate: formatFullReceiptDateTime(bo.placedAt || new Date().toISOString()),
+                    total,
+                    subtotal: itemsSum > 0 ? itemsSum : total - shippingTotal,
+                    shippingTotal,
+                    shippingMethodName: "Royal Mail Tracked 24",
+                    status: "Awaiting Bank Settlement",
+                    isRefunded: false,
+                    isPartiallyRefunded: false,
+                    refundStatus: null,
+                    refundedAmount: 0,
+                    refundedDate: null,
+                    metadata: { payment_method: "UK Faster Payments (Direct Bank Transfer)" },
+                    trackingNumber: "GB-RM24-SETTLEMENT-PENDING",
+                    paymentMethod: "UK Faster Payments (Direct Bank Transfer)",
+                    stripeReceiptUrl: null,
+                    customerName: bo.customer?.name || `${customer.first_name || ""} ${customer.last_name || ""}`.trim() || undefined,
+                    customerEmail: bo.customer?.email || customer.email,
+                    shippingAddress: bo.address,
+                    billingAddress: bo.address,
+                    items,
+                  }
+                })
+              loadedOrders = [...formattedBankOrders, ...loadedOrders]
+            }
+          }
+        } catch {}
+
         setOrders(loadedOrders)
         return loadedOrders
       } catch (err) {
@@ -1103,17 +1164,12 @@ function AccountContent() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
                 <div className="flex flex-col gap-1">
                   <label className="text-[12px] font-semibold text-[#0b1f3a]">Title</label>
-                  <select
+                  <CustomSelect
                     ref={regTitleRef}
                     defaultValue="Dr."
-                    className="border border-[#cbd5e1] rounded-[8px] px-2.5 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden bg-white"
-                  >
-                    <option value="Dr.">Dr.</option>
-                    <option value="Prof.">Prof.</option>
-                    <option value="Mr.">Mr.</option>
-                    <option value="Ms.">Ms.</option>
-                    <option value="Ph.D.">Ph.D.</option>
-                  </select>
+                    variant="compact"
+                    options={["Dr.", "Prof.", "Mr.", "Ms.", "Ph.D."]}
+                  />
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-[12px] font-semibold text-[#0b1f3a]">First Name *</label>
@@ -2518,16 +2574,12 @@ function AccountContent() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="flex flex-col gap-1">
                   <label className="text-[12px] font-semibold text-[#0b1f3a]">Title</label>
-                  <select
+                  <CustomSelect
                     ref={editTitleRef}
                     defaultValue={customer?.metadata?.title || "Dr."}
-                    className="border border-[#cbd5e1] rounded-[8px] px-2.5 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden bg-white"
-                  >
-                    <option value="Dr.">Dr.</option>
-                    <option value="Prof.">Prof.</option>
-                    <option value="Mr.">Mr.</option>
-                    <option value="Ms.">Ms.</option>
-                  </select>
+                    variant="compact"
+                    options={["Dr.", "Prof.", "Mr.", "Ms.", "Ph.D."]}
+                  />
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-[12px] font-semibold text-[#0b1f3a]">First Name</label>
@@ -2722,19 +2774,17 @@ function AccountContent() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1">
                   <label className="text-[12px] font-semibold text-[#0b1f3a]">Country</label>
-                  <select
+                  <CustomSelect
                     ref={addrCountryRef}
                     defaultValue={countryOptions.find((c) => c.code === "GB")?.code || countryOptions[0]?.code || ""}
                     disabled={countryOptions.length === 0}
-                    className="border border-[#cbd5e1] rounded-[8px] px-2.5 py-2 text-sm text-[#0b1f3a] focus:border-[#16a6a3] outline-hidden bg-white"
-                  >
-                    {countryOptions.length === 0 && <option value="">Loading Medusa countries...</option>}
-                    {countryOptions.map((c) => (
-                      <option key={c.code} value={c.code}>
-                        {c.name} ({c.code})
-                      </option>
-                    ))}
-                  </select>
+                    placeholder={countryOptions.length === 0 ? "Loading Medusa countries..." : "Select country"}
+                    variant="compact"
+                    options={countryOptions.map((c) => ({
+                      value: c.code,
+                      label: `${c.name} (${c.code})`,
+                    }))}
+                  />
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-[12px] font-semibold text-[#0b1f3a]">Phone</label>

@@ -5,7 +5,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { commerceRequest } from "@/lib/stripe-checkout"
 import { ScheduleConfigurationPanel } from "./ScheduleConfigurationPanel"
-import { DosageProtocolModal } from "./DosageProtocolModal"
+import { CartridgeConcentrationModal } from "./CartridgeConcentrationModal"
 import { VisaBadge, MastercardBadge, AmexBadge, JcbBadge } from "@/components/ui/PaymentBadges"
 import { resolveProductImage } from "@/lib/product-images"
 
@@ -77,8 +77,8 @@ export function SubscriptionDashboard({
   // Expanded Inline Schedule State (sub ID)
   const [expandedScheduleSubId, setExpandedScheduleSubId] = useState<string | null>(null)
 
-  // Dosage Modal state
-  const [selectedSubForDosage, setSelectedSubForDosage] = useState<any | null>(null)
+  // Cartridge Concentration Modal state
+  const [selectedSubForConcentration, setSelectedSubForConcentration] = useState<any | null>(null)
 
   const fetchData = useCallback(async () => {
     setIsLoading(true)
@@ -120,7 +120,7 @@ export function SubscriptionDashboard({
     }
   }, [fetchData, initialSubscriptions])
 
-  // Execute subscription command (pause, resume, skip, cancel, change_cadence, change_date, update_dosage)
+  // Execute subscription command (pause, resume, skip, cancel, change_cadence, change_date, update_concentration)
   const handleCommand = async (subId: string, action: string, extraPayload: Record<string, any> = {}) => {
     setBusySubId(subId)
     setError("")
@@ -147,7 +147,7 @@ export function SubscriptionDashboard({
       }
       setSuccessMsg(`Subscription protocol ${action.replace("_", " ")} completed successfully.`)
       setExpandedScheduleSubId(null)
-      setSelectedSubForDosage(null)
+      setSelectedSubForConcentration(null)
     } catch (e: any) {
       setError(e instanceof Error ? e.message : `Failed to execute ${action}`)
     } finally {
@@ -305,7 +305,7 @@ export function SubscriptionDashboard({
                         <div className="space-y-0.5 min-w-0">
                           <h4 className="font-bold text-xs sm:text-sm text-[#0B1F3A] truncate">{sub.product_name || sub.title}</h4>
                           <p className="text-[11.5px] sm:text-xs text-slate-500 leading-snug">
-                            Protocol: {sub.protocol_info || "0.25mg Weekly Escalation Protocol · 4 Doses / Refill"}
+                            Protocol: {sub.protocol_info || "Standard 28-Day Automated Cycle (1.5 mL Borosilicate Cartridge)"}
                           </p>
                           <p className="text-[11px] sm:text-xs text-slate-400 truncate">
                             Ships to: {sub.recipient_facility || "Cambridge Science Park"} ({sub.recipient_name || "Primary Investigator"})
@@ -367,7 +367,7 @@ export function SubscriptionDashboard({
                       <button
                         type="button"
                         disabled={busySubId === sub.id}
-                        onClick={() => setSelectedSubForDosage(sub)}
+                        onClick={() => setSelectedSubForConcentration(sub)}
                         className="bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold text-xs px-4 py-2.5 rounded-lg transition-colors cursor-pointer disabled:opacity-50 text-center w-full sm:w-auto"
                       >
                         Select Concentration & Volume
@@ -558,16 +558,16 @@ export function SubscriptionDashboard({
         </div>
       )}
 
-      {/* Dosage Protocol Switcher Modal */}
-      {selectedSubForDosage && (
-        <DosageProtocolModal
-          subscription={selectedSubForDosage}
-          isOpen={!!selectedSubForDosage}
-          onClose={() => setSelectedSubForDosage(null)}
-          onUpdateDosage={async (strength) => {
-            await handleCommand(selectedSubForDosage.id, "update_dosage", { strength })
+      {/* Concentration Specification Switcher Modal */}
+      {selectedSubForConcentration && (
+        <CartridgeConcentrationModal
+          subscription={selectedSubForConcentration}
+          isOpen={!!selectedSubForConcentration}
+          onClose={() => setSelectedSubForConcentration(null)}
+          onUpdateConcentration={async (strength) => {
+            await handleCommand(selectedSubForConcentration.id, "update_concentration", { strength })
           }}
-          isBusy={busySubId === selectedSubForDosage?.id}
+          isBusy={busySubId === selectedSubForConcentration?.id}
         />
       )}
     </div>

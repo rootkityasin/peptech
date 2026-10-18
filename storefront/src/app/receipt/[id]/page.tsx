@@ -253,8 +253,66 @@ function OrderReceiptContent() {
           const mapped = mapMedusaOrderToReceipt(order, customerRef.current)
           setReceiptData(mapped)
           setErrorMessage(null)
-        } else if (!receiptDataRef.current) {
-          setErrorMessage("Order receipt not found.")
+        } else {
+          // Check local bank transfer orders
+          let bankMatch: ReceiptData | null = null
+          try {
+            const rawBank = localStorage.getItem("peptech_bank_orders")
+            if (rawBank) {
+              const parsed = JSON.parse(rawBank)
+              if (Array.isArray(parsed)) {
+                const cleanTarget = rawId.toLowerCase().replace(/[^a-z0-9]/g, "")
+                const bo = parsed.find((b: any) => {
+                  const bRef = (b.orderReference || "").toLowerCase().replace(/[^a-z0-9]/g, "")
+                  return b.orderReference === rawId || (cleanTarget.length >= 4 && bRef.includes(cleanTarget))
+                })
+                if (bo) {
+                  const items = (bo.items || []).map((it: any) => ({
+                    id: it.id,
+                    title: it.title,
+                    subtitle: it.subtitle || "Laboratory RUO Grade",
+                    price: it.price,
+                    quantity: it.quantity || 1,
+                    image: resolveProductImage(it),
+                    options: it.options,
+                  }))
+                  const itemsSum = items.reduce((acc: number, it: any) => acc + (it.price || 0) * (it.quantity || 1), 0)
+                  const total = typeof bo.total === "number" ? bo.total : itemsSum + 4.95
+                  const shippingTotal = total > itemsSum ? total - itemsSum : 4.95
+
+                  bankMatch = {
+                    id: bo.orderReference,
+                    internalId: bo.orderReference,
+                    displayId: bo.orderReference,
+                    date: bo.placedAt || new Date().toISOString(),
+                    displayDate: formatFullReceiptDateTime(bo.placedAt || new Date().toISOString()),
+                    total,
+                    subtotal: itemsSum > 0 ? itemsSum : total - shippingTotal,
+                    shippingTotal,
+                    shippingMethodName: "Royal Mail Tracked 24",
+                    status: "Cold-Chain Packing",
+                    isRefunded: false,
+                    refundedAmount: 0,
+                    trackingNumber: "GB-RM24-SETTLEMENT-PENDING",
+                    paymentMethod: "UK Faster Payments (Direct Bank Transfer)",
+                    stripeReceiptUrl: null,
+                    customerName: bo.customer?.name || (customerRef.current ? `${customerRef.current.first_name || ""} ${customerRef.current.last_name || ""}`.trim() : undefined),
+                    customerEmail: bo.customer?.email || customerRef.current?.email,
+                    shippingAddress: bo.address,
+                    billingAddress: bo.address,
+                    items,
+                  }
+                }
+              }
+            }
+          } catch {}
+
+          if (bankMatch) {
+            setReceiptData(bankMatch)
+            setErrorMessage(null)
+          } else if (!receiptDataRef.current) {
+            setErrorMessage("Order receipt not found.")
+          }
         }
       } catch {
         if (isMounted && !receiptDataRef.current) {

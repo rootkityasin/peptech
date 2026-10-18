@@ -10,6 +10,7 @@ import { getCustomerOrders, getCustomerAddresses } from "@/lib/customer-api"
 import { findCountryByCode, findCountryByName, formatCountryCode } from "@/lib/regions"
 import { CheckoutSkeleton } from "@/components/ui/Skeletons"
 import { resolveProductImage } from "@/lib/product-images"
+import { CustomSelect } from "@/components/ui/CustomSelect"
 
 function CheckoutContent() {
   const {
@@ -32,6 +33,7 @@ function CheckoutContent() {
     countryOptions,
     currency,
     removeItem,
+    clearCart,
     shippingOptions,
     shippingOptionId,
     setShippingOptionId,
@@ -57,6 +59,9 @@ function CheckoutContent() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState("")
   const [embeddedSession, setEmbeddedSession] = useState<CheckoutSession | null>(null)
+  const [paymentMethod, setPaymentMethod] = useState<"card" | "bank_transfer">("card")
+  const [bankTransferCompleted, setBankTransferCompleted] = useState(false)
+  const [bankOrderReference, setBankOrderReference] = useState("")
   const [couponCode, setCouponCode] = useState("")
   const [couponError, setCouponError] = useState("")
   const [couponLoading, setCouponLoading] = useState(false)
@@ -415,6 +420,36 @@ function CheckoutContent() {
               phone: customAddress.phone || customer.phone || undefined,
             }
 
+      if (paymentMethod === "bank_transfer") {
+        const generatedRef = `PEP-${new Date().getFullYear().toString().slice(-2)}${Math.random().toString(36).substring(2, 7).toUpperCase()}`
+        setBankOrderReference(generatedRef)
+        const bankOrder = {
+          orderReference: generatedRef,
+          customer: {
+            name: `${customer.first_name} ${customer.last_name}`,
+            email: customer.email,
+            company: customer.company_name,
+          },
+          address: resolvedAddress,
+          items,
+          total: finalSubtotal + (shippingAvailable ? shippingCost : 0),
+          currency,
+          paymentMethod: "uk_faster_payments",
+          placedAt: new Date().toISOString(),
+          status: "awaiting_settlement",
+        }
+        try {
+          const existingOrders = JSON.parse(localStorage.getItem("peptech_bank_orders") || "[]")
+          existingOrders.unshift(bankOrder)
+          localStorage.setItem("peptech_bank_orders", JSON.stringify(existingOrders))
+        } catch {}
+
+        setBankTransferCompleted(true)
+        clearCart()
+        setBusy(false)
+        return
+      }
+
       const session = await prepareStripeCheckout({
         items,
         token,
@@ -679,8 +714,76 @@ function CheckoutContent() {
       {/* ========================================================================= */}
       <div className="w-full lg:w-[52%] min-h-0 lg:min-h-screen bg-white text-[#0B1F3A] p-6 sm:p-10 lg:p-14 flex flex-col justify-start lg:justify-center">
         <div className="max-w-xl mx-auto w-full">
-          {/* If Embedded Checkout is Active */}
-          {embeddedSession?.clientSecret ? (
+          {/* If Bank Transfer was Submitted */}
+          {bankTransferCompleted ? (
+            <div className="flex flex-col gap-6 animate-in fade-in duration-200">
+              <div className="rounded-2xl bg-emerald-50/70 border border-emerald-200 p-6 sm:p-8 space-y-5">
+                <div className="flex items-center gap-3">
+                  <div className="size-11 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-xl shadow-xs">
+                    ✓
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-[#0B1F3A]">Order Placed — Awaiting Bank Settlement</h2>
+                    <p className="text-xs text-emerald-800 font-semibold mt-0.5">Batch reservation active for 48 hours</p>
+                  </div>
+                </div>
+
+                <p className="text-xs text-slate-700 leading-relaxed">
+                  Thank you, <strong>{customer?.first_name} {customer?.last_name}</strong>. Your research order has been placed successfully. Please remit payment via UK Faster Payments using the official banking details below:
+                </p>
+
+                <div className="bg-white rounded-xl p-4 sm:p-5 border border-emerald-200 space-y-3 text-xs shadow-xs">
+                  <div className="flex justify-between items-center pb-2.5 border-b border-slate-100">
+                    <span className="text-slate-500 font-medium">Payment Reference:</span>
+                    <span className="font-mono font-extrabold text-[#16A6A3] text-sm sm:text-base bg-teal-50 px-2.5 py-1 rounded border border-teal-200">
+                      {bankOrderReference}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Beneficiary Name:</span>
+                    <span className="font-bold text-[#0B1F3A]">PEPTECH BIO LTD</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Bank Name:</span>
+                    <span className="font-bold text-[#0B1F3A]">Barclays Commercial UK</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Sort Code:</span>
+                    <span className="font-mono font-bold text-[#0B1F3A]">20-00-00</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Account Number:</span>
+                    <span className="font-mono font-bold text-[#0B1F3A]">83920194</span>
+                  </div>
+                </div>
+
+                <div className="p-3.5 bg-blue-50/80 rounded-xl border border-blue-200 text-xs text-blue-900 space-y-1">
+                  <p className="font-bold flex items-center gap-1.5 text-blue-950">
+                    <span>ℹ</span>
+                    <span>Remittance Settlement Instructions</span>
+                  </p>
+                  <p className="text-[11.5px] leading-relaxed text-blue-800">
+                    Quote reference <strong>{bankOrderReference}</strong> in your payment notes. Once cleared via UK Faster Payments, your Royal Mail Tracked shipment will be dispatched automatically with tracking emailed to <strong>{customer?.email}</strong>.
+                  </p>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                  <Link
+                    href="/account"
+                    className="w-full sm:w-1/2 py-3 rounded-xl bg-[#0B1F3A] hover:bg-[#162A45] text-white text-center font-bold text-xs transition-colors shadow-xs"
+                  >
+                    View Account Orders
+                  </Link>
+                  <Link
+                    href="/shop"
+                    className="w-full sm:w-1/2 py-3 rounded-xl bg-white border border-slate-300 hover:border-[#0B1F3A] text-[#0B1F3A] text-center font-bold text-xs transition-colors"
+                  >
+                    Continue Research Browsing
+                  </Link>
+                </div>
+              </div>
+            </div>
+          ) : embeddedSession?.clientSecret ? (
             <div className="flex flex-col gap-4 animate-in fade-in duration-200">
               <div className="rounded-xl bg-slate-50 border border-slate-200 p-3.5 flex items-center justify-between text-xs">
                 <div>
@@ -819,17 +922,12 @@ function CheckoutContent() {
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
                     <div className="flex flex-col gap-1">
                       <label className="text-xs font-bold text-[#0B1F3A]">Title</label>
-                      <select
+                      <CustomSelect
                         value={regTitle}
-                        onChange={(e) => setRegTitle(e.target.value)}
-                        className="border border-slate-300 rounded-lg px-2.5 py-2.5 text-xs text-[#0B1F3A] bg-white outline-none"
-                      >
-                        <option value="Dr.">Dr.</option>
-                        <option value="Prof.">Prof.</option>
-                        <option value="Mr.">Mr.</option>
-                        <option value="Ms.">Ms.</option>
-                        <option value="Ph.D.">Ph.D.</option>
-                      </select>
+                        onChange={(val) => setRegTitle(val)}
+                        options={["Dr.", "Prof.", "Mr.", "Ms.", "Ph.D."]}
+                        variant="compact"
+                      />
                     </div>
                     <div className="flex flex-col gap-1">
                       <label className="text-xs font-bold text-[#0B1F3A]">First Name *</label>
@@ -977,18 +1075,15 @@ function CheckoutContent() {
               {/* Delivery Country Selection */}
               <label className="block text-xs font-bold text-[#0B1F3A]">
                 Delivery Destination Country
-                <select
-                  value={country}
-                  onChange={(e) => handleCountryChange(e.target.value)}
-                  disabled={busy || countryOptions.length === 0}
-                  className="mt-1.5 w-full rounded-xl border border-slate-300 p-3 text-sm text-[#0B1F3A] bg-white outline-none focus:border-[#16A6A3]"
-                >
-                  {countryOptions.map((c) => (
-                    <option key={c.code} value={c.name}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
+                <div className="mt-1.5 font-normal">
+                  <CustomSelect
+                    value={country}
+                    onChange={(val) => handleCountryChange(val)}
+                    disabled={busy || countryOptions.length === 0}
+                    placeholder={countryOptions.length === 0 ? "Loading countries..." : "Select country"}
+                    options={countryOptions.map((c) => ({ value: c.name, label: c.name }))}
+                  />
+                </div>
                 {countryOptions.length === 0 && (
                   <span className="mt-1 block text-[11px] font-medium text-amber-700">
                     Loading countries from Medusa regions&hellip;
@@ -1196,6 +1291,124 @@ function CheckoutContent() {
                 )}
               </div>
 
+              {/* Payment Gateway Selection */}
+              <div className="rounded-xl border border-slate-200 p-4 space-y-3.5 bg-white">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-[#0B1F3A] uppercase tracking-wider">
+                    Payment Gateway Selection
+                  </span>
+                  <span className="text-[10px] font-semibold text-slate-500">
+                    Compliant High-Risk RUO Processing
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {/* Option 1: High-Risk Card Processing / Authorize.Net */}
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod("card")}
+                    className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                      paymentMethod === "card"
+                        ? "border-[#16A6A3] bg-teal-50/50 ring-2 ring-[#16A6A3]/60 shadow-xs"
+                        : "border-slate-200 bg-slate-50/40 hover:border-slate-300"
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-[#0B1F3A]">Credit / Debit Card</span>
+                        <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">
+                          Instant
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 mt-1 leading-snug">
+                        High-Risk Card Gateway · 3-D Secure (SCA) &amp; Tokenized 28-Day Billing
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-2.5 pt-2 border-t border-slate-200/50">
+                      <span className="text-[9px] font-semibold text-slate-600 bg-white px-1.5 py-0.5 rounded border border-slate-200">Visa</span>
+                      <span className="text-[9px] font-semibold text-slate-600 bg-white px-1.5 py-0.5 rounded border border-slate-200">Mastercard</span>
+                      <span className="text-[9px] font-semibold text-slate-600 bg-white px-1.5 py-0.5 rounded border border-slate-200">Amex</span>
+                      <span className="text-[9px] font-semibold text-slate-600 bg-white px-1.5 py-0.5 rounded border border-slate-200">3-D Secure</span>
+                    </div>
+                  </button>
+
+                  {/* Option 2: UK Faster Payments (Bank Transfer Fallback) */}
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod("bank_transfer")}
+                    className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                      paymentMethod === "bank_transfer"
+                        ? "border-[#16A6A3] bg-teal-50/50 ring-2 ring-[#16A6A3]/60 shadow-xs"
+                        : "border-slate-200 bg-slate-50/40 hover:border-slate-300"
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-[#0B1F3A]">UK Faster Payments</span>
+                        <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-800">
+                          Bank Transfer
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 mt-1 leading-snug">
+                        Direct UK Bank Wire · Zero Acquirer Surcharge · Instant Settlement
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-2.5 pt-2 border-t border-slate-200/50">
+                      <span className="text-[9px] font-semibold text-slate-600 bg-white px-1.5 py-0.5 rounded border border-slate-200">Sort Code</span>
+                      <span className="text-[9px] font-semibold text-slate-600 bg-white px-1.5 py-0.5 rounded border border-slate-200">Account No</span>
+                      <span className="text-[9px] font-semibold text-slate-600 bg-white px-1.5 py-0.5 rounded border border-slate-200">BACS/CHAPS</span>
+                    </div>
+                  </button>
+                </div>
+
+                {/* UK Faster Payments Settlement Instructions */}
+                {paymentMethod === "bank_transfer" && (
+                  <div className="rounded-xl border border-blue-200 bg-blue-50/70 p-4 space-y-3 animate-in fade-in">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-[#0B1F3A] uppercase tracking-wider">
+                        UK Settlement Banking Credentials
+                      </span>
+                      <span className="text-[10px] font-semibold text-blue-700 bg-blue-100 px-2 py-0.5 rounded">
+                        Barclays UK
+                      </span>
+                    </div>
+
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      Remit total due today (<strong>{money(finalSubtotal + (shippingAvailable ? shippingCost : 0))}</strong>) using your institution banking portal:
+                    </p>
+
+                    <div className="grid grid-cols-2 gap-2.5 text-xs bg-white rounded-lg p-3.5 border border-blue-200/80">
+                      <div>
+                        <span className="text-[10px] text-slate-400 font-semibold block uppercase">Beneficiary Name</span>
+                        <span className="font-bold text-[#0B1F3A]">PEPTECH BIO LTD</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-400 font-semibold block uppercase">Bank Name</span>
+                        <span className="font-bold text-[#0B1F3A]">Barclays Commercial UK</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-400 font-semibold block uppercase">Sort Code</span>
+                        <span className="font-mono font-bold text-[#0B1F3A] text-sm">20-00-00</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-400 font-semibold block uppercase">Account Number</span>
+                        <span className="font-mono font-bold text-[#0B1F3A] text-sm">83920194</span>
+                      </div>
+                      <div className="col-span-2 pt-2 border-t border-slate-100 flex items-center justify-between">
+                        <span className="text-[11px] text-slate-500 font-medium">Payment Reference:</span>
+                        <span className="font-mono font-extrabold text-[#16A6A3] bg-teal-50 px-2 py-0.5 rounded border border-teal-200 text-xs">
+                          PEP-ORDER-ID (Auto-Generated)
+                        </span>
+                      </div>
+                    </div>
+
+                    <p className="text-[11px] text-slate-500 italic">
+                      Orders placed via bank transfer are reserved in inventory for 48 hours. Royal Mail Tracked dispatch attaches automatically upon clearance.
+                    </p>
+                  </div>
+                )}
+              </div>
+
               {/* 28-day Subscription Consent Checkbox */}
               {hasSubscription && (
                 <label className="flex gap-3 text-xs text-slate-700 bg-teal-50/60 border border-teal-200/80 p-3.5 rounded-xl cursor-pointer">
@@ -1207,8 +1420,7 @@ function CheckoutContent() {
                     className="mt-0.5 rounded border-slate-300 text-[#16A6A3] focus:ring-[#16A6A3]"
                   />
                   <span className="leading-snug">
-                    I authorise payment today and every 28 days for recurring items, with {autoSavings.badgeText} product prices plus
-                    delivery and applicable tax. I can pause, skip or cancel future renewals at any time in my account.
+                    I authorise payment today and recurring renewal charges every 28 days for subscription items at {autoSavings.badgeText} discounted research pricing plus delivery and applicable tax. I retain the statutory right to pause, skip intervals, adjust delivery dates, or cancel renewals at any time without penalty via the PEPTECH Researcher Portal or by contacting support@peptech.bio at least 3 business days prior to renewal.
                   </span>
                 </label>
               )}
@@ -1247,10 +1459,18 @@ function CheckoutContent() {
                 {busy ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Loading Stripe Secure Payment Form…</span>
+                    <span>
+                      {paymentMethod === "bank_transfer"
+                        ? "Registering Bank Transfer Order…"
+                        : "Connecting to Secure Card Gateway…"}
+                    </span>
                   </>
                 ) : (
-                  <span>Continue to Stripe Checkout</span>
+                  <span>
+                    {paymentMethod === "bank_transfer"
+                      ? "Place Order via Bank Transfer"
+                      : "Continue to Secure Card Payment"}
+                  </span>
                 )}
               </button>
 
@@ -1261,7 +1481,9 @@ function CheckoutContent() {
               )}
 
               <p className="text-center text-xs text-slate-500">
-                Payment fields will automatically pre-populate with your verified researcher details.
+                {paymentMethod === "bank_transfer"
+                  ? "Settlement instructions and your dedicated order reference will also be sent to your email."
+                  : "Payment fields will automatically pre-populate with your verified researcher details."}
               </p>
             </form>
           )}

@@ -13,14 +13,14 @@ export const TRUSTED_LOGOS = [
     className: "h-[40px] sm:h-[44px] w-auto max-w-[56px] object-contain",
   },
   {
-    name: "CE Mark",
-    src: "/images/figma/logo-ce.svg",
-    className: "h-[38px] sm:h-[42px] w-auto max-w-[62px] object-contain",
+    name: "ISO 17025 Accredited Laboratory Testing",
+    src: "/images/figma/logo-iso-17025.svg",
+    className: "h-[36px] sm:h-[40px] w-auto max-w-[130px] object-contain",
   },
   {
-    name: "World Health Organization",
-    src: "/images/figma/logo-who.svg",
-    className: "h-[34px] sm:h-[36px] w-auto max-w-[130px] object-contain",
+    name: "RP-HPLC & Mass Spectrometry Certified",
+    src: "/images/figma/logo-hplc-ms.svg",
+    className: "h-[36px] sm:h-[40px] w-auto max-w-[135px] object-contain",
   },
   {
     name: "AOAC International",

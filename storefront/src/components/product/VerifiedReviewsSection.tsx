@@ -1,27 +1,56 @@
 "use client"
 
-import React from "react"
+import React, { useState } from "react"
+import Image from "next/image"
 
 const reviews = [
   {
     quote1: "Excellent product and service. Highly",
     quote2: "recommended for any research lab.",
     name: "Michael T.",
-    avatar: "/images/reviews/reviewer-1.jpg",
+    initials: "MT",
+    avatar: "https://ubzoovlhbnztjwemvrwo.supabase.co/storage/v1/object/public/products/reviews/reviewer-1.jpg",
   },
   {
     quote1: "The quality is outstanding. Fast shipping",
     quote2: "and great customer support.",
     name: "Dr. Emily R.",
-    avatar: "/images/reviews/reviewer-2.jpg",
+    initials: "ER",
+    avatar: "https://ubzoovlhbnztjwemvrwo.supabase.co/storage/v1/object/public/products/reviews/reviewer-2.jpg",
   },
   {
     quote1: "Easy to use and very reliable. Will",
     quote2: "continue to order.",
     name: "James L.",
-    avatar: "/images/reviews/reviewer-3.jpg",
+    initials: "JL",
+    avatar: "https://ubzoovlhbnztjwemvrwo.supabase.co/storage/v1/object/public/products/reviews/reviewer-3.jpg",
   },
 ]
+
+function ReviewAvatar({ src, name, initials }: { src: string; name: string; initials: string }) {
+  const [hasError, setHasError] = useState(false)
+
+  if (hasError) {
+    return (
+      <div className="rounded-[14px] size-[28px] shrink-0 bg-[#0b1f3a] text-white flex items-center justify-center font-bold text-[10.5px]">
+        {initials}
+      </div>
+    )
+  }
+
+  return (
+    <div className="relative rounded-[14px] size-[28px] shrink-0 overflow-hidden bg-slate-100">
+      <Image
+        alt={name}
+        width={28}
+        height={28}
+        className="size-full object-cover rounded-[14px]"
+        src={src}
+        onError={() => setHasError(true)}
+      />
+    </div>
+  )
+}
 
 export function VerifiedReviewsSection() {
   return (
@@ -32,7 +61,7 @@ export function VerifiedReviewsSection() {
           <p className="font-bold leading-[26px] text-[#0b1f3a] text-[20px] whitespace-nowrap">
             Verified Customer Reviews
           </p>
-          <div className="flex gap-[3px] items-start" data-name="Stars">
+          <div className="flex gap-[3px] items-start" data-name="Stars" aria-label="5 out of 5 stars">
             {[...Array(5)].map((_, i) => (
               <div key={i} className="size-[14px] shrink-0">
                 <img alt="" className="size-full" src="/images/figma/88eae9699ccc8253cd275735cdc60b0ad6111f88.svg" />
@@ -53,15 +82,15 @@ export function VerifiedReviewsSection() {
         </div>
 
         {/* 3 Review Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-[15px] w-full lg:w-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[15px] w-full lg:w-auto">
           {reviews.map((r) => (
             <div
               key={r.name}
-              className="bg-white border border-[#e2e8f0] flex flex-col h-[165px] items-start justify-between p-[18px] rounded-[12px] shrink-0 w-full sm:w-[310px]"
+              className="bg-white border border-[#e2e8f0] flex flex-col min-h-[165px] h-auto items-start justify-between p-[18px] rounded-[12px] shrink-0 w-full"
               data-name={`Review Card - ${r.name}`}
             >
               <div className="flex flex-col gap-[8px] items-start w-full" data-name="Top Group">
-                <div className="flex gap-[2px] items-start" data-name="Stars">
+                <div className="flex gap-[2px] items-start" data-name="Stars" aria-label="5 out of 5 stars">
                   {[...Array(5)].map((_, i) => (
                     <div key={i} className="size-[12px] shrink-0">
                       <img alt="" className="size-full" src="/images/figma/5bd97b26a01958d8c69784c4a4ae764ab9860fb1.svg" />
@@ -75,17 +104,11 @@ export function VerifiedReviewsSection() {
               </div>
 
               <div className="flex gap-[8px] items-center w-full" data-name="Author Row">
-                <div className="rounded-[14px] size-[28px] shrink-0 overflow-hidden bg-slate-100">
-                  <img
-                    alt={r.name}
-                    className="size-full object-cover rounded-[14px]"
-                    src={r.avatar}
-                  />
-                </div>
+                <ReviewAvatar src={r.avatar} name={r.name} initials={r.initials} />
                 <p className="font-bold text-[#0b1f3a] text-[12px] whitespace-nowrap">
                   {r.name}
                 </p>
-                <div className="flex gap-[4px] items-center ml-auto sm:ml-0" data-name="Verified Badge">
+                <div className="flex gap-[4px] items-center ml-auto" data-name="Verified Badge">
                   <div className="size-[16px] shrink-0">
                     <img alt="" className="size-full" src="/images/figma/0ee7fe88aee11b9b1b7822b9ae473035446e5d9c.svg" />
                   </div>

@@ -1,51 +1,119 @@
 "use client"
 
-import React, { useState, useEffect, Suspense } from "react"
+import React, { useState, useEffect, useCallback, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { VerifySkeleton } from "@/components/ui/Skeletons"
+import { resolveProductImage } from "@/lib/product-images"
+
+function cleanBatchQuery(input: string): string {
+  let cleaned = input.trim()
+  let depth = 0
+  while (
+    depth < 5 &&
+    (cleaned.startsWith("http://") ||
+      cleaned.startsWith("https://") ||
+      cleaned.startsWith("http%3A%2F%2F") ||
+      cleaned.startsWith("https%3A%2F%2F"))
+  ) {
+    depth++
+    try {
+      const decoded = decodeURIComponent(cleaned)
+      if (decoded !== cleaned && (decoded.startsWith("http://") || decoded.startsWith("https://"))) {
+        cleaned = decoded
+      }
+      const url = new URL(cleaned)
+      const param =
+        url.searchParams.get("batch") ||
+        url.searchParams.get("code") ||
+        url.searchParams.get("serial") ||
+        url.searchParams.get("id")
+      if (param) {
+        cleaned = param.trim()
+      } else {
+        const segments = url.pathname.split("/").filter(Boolean)
+        const last = segments[segments.length - 1]
+        if (last && last.toLowerCase() !== "verify") {
+          cleaned = last.trim()
+          break
+        } else {
+          break
+        }
+      }
+    } catch {
+      cleaned = cleaned.replace(/^https?:\/\/[^\/]+\/?/i, "")
+      break
+    }
+  }
+  return cleaned
+}
+
+const PRODUCTION_BATCH_PREFIXES = [
+  "RT-",
+  "TR-",
+  "TRZ-",
+  "SM-",
+  "SMG-",
+  "CU-",
+  "GHK-",
+  "BC-",
+  "BPC-",
+  "TB-",
+  "TB5-",
+  "NJ-",
+  "CGL-",
+  "PT-",
+  "PEP-",
+  "MT-",
+]
 
 function VerifyContent() {
   const searchParams = useSearchParams()
-  const initialBatch = searchParams.get("batch") || ""
+  const rawQuery =
+    searchParams.get("batch") ||
+    searchParams.get("code") ||
+    searchParams.get("serial") ||
+    searchParams.get("id") ||
+    ""
+  const initialBatch = cleanBatchQuery(rawQuery)
   
   const [batchInput, setBatchInput] = useState(initialBatch)
   const [activeBatch, setActiveBatch] = useState(initialBatch)
-  const [resultState, setResultState] = useState<"none" | "verified" | "unverified">(
-    initialBatch ? "verified" : "none"
-  )
+  const [resultState, setResultState] = useState<"none" | "verified" | "unverified">("none")
 
-  useEffect(() => {
-    const b = searchParams.get("batch")
-    if (b) {
-      setBatchInput(b)
-      setActiveBatch(b)
-      handleVerify(b)
-    }
-  }, [searchParams])
-
-  const handleVerify = (query: string) => {
-    const trimmed = query.trim()
-    if (!trimmed) {
+  const handleVerify = useCallback((query: string) => {
+    const cleaned = cleanBatchQuery(query)
+    if (!cleaned) {
       setResultState("none")
       return
     }
-    setActiveBatch(trimmed)
+    setActiveBatch(cleaned)
 
-    const upper = trimmed.toUpperCase()
-    // Recognized batches in the system
+    const upper = cleaned.toUpperCase()
+    // Recognized batches in the system (16 production prefixes + sample registry)
     if (
       upper === "RT-2609A" ||
-      upper.startsWith("RT-") ||
-      upper.startsWith("TRZ-") ||
-      upper.startsWith("SMG-") ||
-      upper.startsWith("PEP-")
+      PRODUCTION_BATCH_PREFIXES.some((prefix) => upper.startsWith(prefix))
     ) {
       setResultState("verified")
     } else {
       setResultState("unverified")
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    const raw =
+      searchParams.get("batch") ||
+      searchParams.get("code") ||
+      searchParams.get("serial") ||
+      searchParams.get("id")
+    if (raw) {
+      const cleaned = cleanBatchQuery(raw)
+      setBatchInput(cleaned)
+      setActiveBatch(cleaned)
+      handleVerify(cleaned)
+    }
+  }, [searchParams, handleVerify])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -55,11 +123,7 @@ function VerifyContent() {
   return (
     <div className="bg-[#f8fafc] flex flex-col items-center w-full min-h-[calc(100vh-118px)]">
       {/* Verify Batch Hero Section */}
-      <section 
-        className={`w-full flex flex-col gap-[32px] items-center justify-center px-4 sm:px-8 pt-[80px] transition-all duration-300 ${
-          resultState === "none" ? "pb-[380px] lg:pb-[460px]" : "pb-[80px]"
-        }`}
-      >
+      <section className="w-full flex flex-col gap-[32px] items-center justify-center px-4 sm:px-8 pt-[80px] pb-[80px] transition-all duration-300">
         {/* Section Heading */}
         <div className="flex flex-col items-center justify-center text-center space-y-2">
           <span className="inline-block text-[12px] font-bold text-[#16A6A3] tracking-[1.2px] uppercase">
@@ -379,7 +443,7 @@ function VerifyContent() {
                 <img
                   alt="PEPTECH Product Kit"
                   className="w-full h-full object-contain"
-                  src="/images/products/pen-sets/pt-141.png"
+                  src={resolveProductImage(activeBatch)}
                 />
               </div>
 
@@ -434,7 +498,7 @@ function VerifyContent() {
             {/* Bottom Actions Link */}
             <div className="flex items-center justify-between w-full max-w-[656px] pt-2 text-xs">
               <Link
-                href="/lab-reports"
+                href={`/lab-reports?batch=${encodeURIComponent(activeBatch || "RT-2609A")}`}
                 className="text-[#16a6a3] hover:text-[#0b1f3a] font-semibold transition-colors flex items-center gap-1.5"
               >
                 <span>View Full HPLC / Mass Spec Certificate of Analysis</span>
@@ -481,7 +545,7 @@ function VerifyContent() {
                 Try Another Lot Code
               </button>
               <a
-                href="mailto:info@peptech.bio?subject=Counterfeit%20or%20Unverified%20Batch%20Inquiry"
+                href="mailto:support@peptech.bio?subject=Counterfeit%20or%20Unverified%20Batch%20Inquiry"
                 className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs transition-colors"
               >
                 Report Potential Counterfeit

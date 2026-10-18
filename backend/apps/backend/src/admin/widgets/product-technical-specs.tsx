@@ -1,6 +1,6 @@
 import { defineWidgetConfig } from "@medusajs/admin-sdk"
 import { Container, Heading, Text, Button, IconButton, Input, Textarea, Badge, toast, Toaster } from "@medusajs/ui"
-import { Plus, Trash, ArrowPath } from "@medusajs/icons"
+import { Plus, Trash, ArrowPath, ArrowUpMini, ArrowDownMini } from "@medusajs/icons"
 import { useState, useEffect } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { sdk, adminFetch } from "../lib/sdk"
@@ -41,8 +41,8 @@ function parseInitialSpecs(product: any): SpecRow[] {
       const parsed = typeof raw === "string" ? JSON.parse(raw) : raw
       if (Array.isArray(parsed) && parsed.length > 0) {
         return parsed
-          .filter((item) => item && (item.label || item.key))
-          .map((item) => ({
+          .filter((item: any) => item && (item.label || item.key))
+          .map((item: any) => ({
             id: generateRowId(),
             label: String(item.label || item.key || "").trim(),
             value: String(item.value || "").trim(),
@@ -63,6 +63,33 @@ function parseInitialSpecs(product: any): SpecRow[] {
   if (meta.sequence) rows.push({ id: generateRowId(), label: "Sequence / Formula", value: String(meta.sequence) })
   if (meta.storage) rows.push({ id: generateRowId(), label: "Recommended Storage", value: String(meta.storage) })
   if (meta.purity) rows.push({ id: generateRowId(), label: "Purity Standard", value: String(meta.purity) })
+
+  // 3. Object-based technicalSpecs check if flat keys weren't present
+  if (rows.length === 0 && typeof meta.technicalSpecs === "object" && meta.technicalSpecs !== null) {
+    const ts = meta.technicalSpecs
+    const specKeys: Array<{ key: string; label: string }> = [
+      { key: "compoundName", label: "Compound Name" },
+      { key: "contentsOrStrength", label: "Contents / Strength" },
+      { key: "peptideClass", label: "Peptide Class" },
+      { key: "molecularWeight", label: "Molecular Weight" },
+      { key: "casNumber", label: "CAS Number" },
+      { key: "compositionOrSequence", label: "Sequence / Formula" },
+      { key: "storage", label: "Recommended Storage" },
+      { key: "purity", label: "Purity Standard" },
+      { key: "form", label: "Physical Form" },
+      { key: "ratio", label: "Ratio" },
+      { key: "totalContent", label: "Total Content" },
+    ]
+    for (const item of specKeys) {
+      if (ts[item.key]) {
+        rows.push({
+          id: generateRowId(),
+          label: item.label,
+          value: String(ts[item.key]),
+        })
+      }
+    }
+  }
 
   return rows
 }
@@ -99,6 +126,30 @@ const ProductTechnicalSpecsWidget = ({ data: product }: ProductWidgetProps) => {
   // Remove a row by ID
   const handleRemoveRow = (id: string) => {
     setRows((prev) => prev.filter((r) => r.id !== id))
+  }
+
+  // Move row up
+  const handleMoveUp = (index: number) => {
+    if (index <= 0) return
+    setRows((prev) => {
+      const next = [...prev]
+      const temp = next[index]
+      next[index] = next[index - 1]
+      next[index - 1] = temp
+      return next
+    })
+  }
+
+  // Move row down
+  const handleMoveDown = (index: number) => {
+    if (index >= rows.length - 1) return
+    setRows((prev) => {
+      const next = [...prev]
+      const temp = next[index]
+      next[index] = next[index + 1]
+      next[index + 1] = temp
+      return next
+    })
   }
 
   // Update a row's label or value
@@ -170,12 +221,8 @@ const ProductTechnicalSpecsWidget = ({ data: product }: ProductWidgetProps) => {
         value: r.value,
       }))
 
-      // Prepare updated metadata object
+      // Prepare updated metadata object (preserving existing priority and other keys)
       const currentMetadata = (product.metadata || {}) as Record<string, any>
-      const updatedMetadata: Record<string, any> = {
-        ...currentMetadata,
-        technical_specs: JSON.stringify(specsPayload),
-      }
 
       // Sync standard helper keys for backward compatibility
       const findVal = (regex: RegExp) => {
@@ -183,14 +230,35 @@ const ProductTechnicalSpecsWidget = ({ data: product }: ProductWidgetProps) => {
         return item ? item.value : ""
       }
 
-      updatedMetadata.compound_name = findVal(/compound/)
-      updatedMetadata.contents = findVal(/content|strength/)
-      updatedMetadata.peptide_class = findVal(/peptide\s*class|class/)
-      updatedMetadata.molecular_weight = findVal(/molecular\s*weight|mw/)
-      updatedMetadata.cas_number = findVal(/cas/)
-      updatedMetadata.sequence = findVal(/sequence|formula/)
-      updatedMetadata.storage = findVal(/storage/)
-      updatedMetadata.purity = findVal(/purity/)
+      const currentTS = typeof currentMetadata.technicalSpecs === "object" && currentMetadata.technicalSpecs !== null
+        ? currentMetadata.technicalSpecs
+        : {}
+
+      const updatedTechnicalSpecs: Record<string, any> = {
+        ...currentTS,
+        compoundName: findVal(/compound/),
+        contentsOrStrength: findVal(/content|strength/),
+        peptideClass: findVal(/peptide\s*class|class/),
+        molecularWeight: findVal(/molecular\s*weight|mw/),
+        casNumber: findVal(/cas/),
+        compositionOrSequence: findVal(/sequence|formula/),
+        storage: findVal(/storage/),
+        purity: findVal(/purity/),
+      }
+
+      const updatedMetadata: Record<string, any> = {
+        ...currentMetadata,
+        technical_specs: JSON.stringify(specsPayload),
+        technicalSpecs: updatedTechnicalSpecs,
+        compound_name: findVal(/compound/),
+        contents: findVal(/content|strength/),
+        peptide_class: findVal(/peptide\s*class|class/),
+        molecular_weight: findVal(/molecular\s*weight|mw/),
+        cas_number: findVal(/cas/),
+        sequence: findVal(/sequence|formula/),
+        storage: findVal(/storage/),
+        purity: findVal(/purity/),
+      }
 
       // Save via Medusa SDK with adminFetch fallback
       try {
@@ -212,7 +280,7 @@ const ProductTechnicalSpecsWidget = ({ data: product }: ProductWidgetProps) => {
       await queryClient.invalidateQueries({ queryKey: ["products"] })
 
       toast.success("Technical Specifications Saved", {
-        description: `Successfully updated ${specsPayload.length} specifications for this product.`,
+        description: `Updated ${specsPayload.length} specifications.`,
       })
     } catch (err: any) {
       toast.error(err.message || "Failed to save technical specifications")
@@ -237,11 +305,11 @@ const ProductTechnicalSpecsWidget = ({ data: product }: ProductWidgetProps) => {
             </Badge>
           </div>
           <Text size="small" leading="compact" className="text-ui-fg-subtle mt-0.5">
-            Dynamic analytical specifications, chemical formulas, and laboratory characteristics displayed on the storefront.
+            Configure verified molecular data, analytical metrics, and custom specifications.
           </Text>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
           <Button
             size="small"
             variant="secondary"
@@ -249,7 +317,7 @@ const ProductTechnicalSpecsWidget = ({ data: product }: ProductWidgetProps) => {
             disabled={isSaving}
           >
             <ArrowPath className="size-3.5 mr-1" />
-            Load Standard Template
+            Load Template
           </Button>
           <Button
             size="small"
@@ -289,12 +357,12 @@ const ProductTechnicalSpecsWidget = ({ data: product }: ProductWidgetProps) => {
             {/* Table Header labels */}
             <div className="grid grid-cols-12 gap-3 px-2 text-[11px] font-semibold text-ui-fg-muted uppercase tracking-wider">
               <div className="col-span-4">Field Name / Label</div>
-              <div className="col-span-7">Value / Analytical Metric</div>
-              <div className="col-span-1 text-right">Action</div>
+              <div className="col-span-6">Value / Analytical Metric</div>
+              <div className="col-span-2 text-right">Order & Actions</div>
             </div>
 
             {/* List of Spec Rows */}
-            {rows.map((row) => {
+            {rows.map((row, idx) => {
               const isSequence =
                 row.label.toLowerCase().includes("sequence") ||
                 row.label.toLowerCase().includes("formula")
@@ -317,7 +385,7 @@ const ProductTechnicalSpecsWidget = ({ data: product }: ProductWidgetProps) => {
                   </div>
 
                   {/* Field Value Input */}
-                  <div className="col-span-7">
+                  <div className="col-span-6">
                     {isSequence ? (
                       <Textarea
                         rows={2}
@@ -339,11 +407,34 @@ const ProductTechnicalSpecsWidget = ({ data: product }: ProductWidgetProps) => {
                     )}
                   </div>
 
-                  {/* Remove Button */}
-                  <div className="col-span-1 flex items-center justify-end pt-1">
+                  {/* Order & Remove Buttons */}
+                  <div className="col-span-2 flex items-center justify-end gap-1 pt-1">
                     <IconButton
                       size="small"
                       variant="transparent"
+                      type="button"
+                      onClick={() => handleMoveUp(idx)}
+                      disabled={isSaving || idx === 0}
+                      className="text-ui-fg-muted hover:text-ui-fg-base disabled:opacity-25"
+                      title="Move up"
+                    >
+                      <ArrowUpMini className="size-4" />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      variant="transparent"
+                      type="button"
+                      onClick={() => handleMoveDown(idx)}
+                      disabled={isSaving || idx === rows.length - 1}
+                      className="text-ui-fg-muted hover:text-ui-fg-base disabled:opacity-25"
+                      title="Move down"
+                    >
+                      <ArrowDownMini className="size-4" />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      variant="transparent"
+                      type="button"
                       onClick={() => handleRemoveRow(row.id)}
                       disabled={isSaving}
                       className="text-ui-fg-muted hover:text-ui-fg-error"

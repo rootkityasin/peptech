@@ -40,6 +40,7 @@
     "nodemailer": "10.0.11",
     "react-i18next": "13.5.0",
     "react-router-dom": "7.18.2",
+    "sharp": "^0.33.5",
     "stripe": "22.6.0",
     "stripe-checkout-sdk": "npm:stripe@22.6.0",
     "ts-node": "^10.9.2",

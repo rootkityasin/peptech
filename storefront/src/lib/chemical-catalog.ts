@@ -133,7 +133,7 @@ export const CHEMICAL_PROFILES: Record<string, ChemicalProfile> = {
     keyFeatures: [
       "Triple Multi-Target Formula (50mg GHK-Cu, 10mg BPC-157, 10mg TB-500)",
       "Aseptic Fill in Class 100 Cleanroom Environment",
-      "Borosilicate Type I Chamber Designed for 60-Unit Precision Dosing",
+      "Borosilicate Type I Chamber Designed for 60-Increment Precision Metering",
       "Independent HPLC and Mass Spectrometry Verification",
     ],
   },

@@ -1,7 +1,9 @@
 "use client"
 
-import React, { useState, useMemo } from "react"
+import React, { useState, useMemo, useEffect, Suspense } from "react"
 import Link from "next/link"
+import { useSearchParams } from "next/navigation"
+import { CatalogSkeleton } from "@/components/ui/Skeletons"
 
 interface LabReport {
   id: string
@@ -14,10 +16,11 @@ interface LabReport {
   laboratory: string
   methodology: string
   theoreticalMw: number
-  observedMw: number
+  observedMw: number | null
   purityPercent: number | null
   status: "verified" | "pending"
   pdfUrl?: string
+  aliases?: string
 }
 
 const sampleReports: LabReport[] = [
@@ -35,6 +38,7 @@ const sampleReports: LabReport[] = [
     observedMw: 4755.4,
     purityPercent: 99.4,
     status: "verified",
+    aliases: "LY3437943 Retatrutide GIP GLP-1 GCGR Triple Agonist",
   },
   {
     id: "rep-2",
@@ -50,6 +54,7 @@ const sampleReports: LabReport[] = [
     observedMw: 4813.2,
     purityPercent: 99.2,
     status: "verified",
+    aliases: "LY3298176 Tirzepatide GIP GLP-1 Dual Agonist",
   },
   {
     id: "rep-3",
@@ -65,6 +70,7 @@ const sampleReports: LabReport[] = [
     observedMw: 4113.8,
     purityPercent: 99.5,
     status: "verified",
+    aliases: "NN9535 Semaglutide GLP-1 Receptor Agonist",
   },
   {
     id: "rep-4",
@@ -80,6 +86,7 @@ const sampleReports: LabReport[] = [
     observedMw: 404.1,
     purityPercent: 99.1,
     status: "verified",
+    aliases: "Copper Tripeptide-1 GHK Copper KLOW GLOW Stack",
   },
   {
     id: "rep-5",
@@ -95,6 +102,7 @@ const sampleReports: LabReport[] = [
     observedMw: 1419.6,
     purityPercent: 99.6,
     status: "verified",
+    aliases: "PL 14736 PL-10 Bepecin Body Protection Compound Wolverine KLOW GLOW Stack",
   },
   {
     id: "rep-6",
@@ -110,6 +118,7 @@ const sampleReports: LabReport[] = [
     observedMw: 4963.8,
     purityPercent: 99.3,
     status: "verified",
+    aliases: "Thymosin Beta-4 TB500 Wolverine KLOW GLOW Stack",
   },
   {
     id: "rep-7",
@@ -122,25 +131,156 @@ const sampleReports: LabReport[] = [
     laboratory: "Alliance Analytical Testing UK",
     methodology: "HPLC / MS In Progress",
     theoreticalMw: 4078.6,
-    observedMw: 4078.6,
+    observedMw: null,
     purityPercent: null,
     status: "pending",
+    aliases: "NN9838 Cagrilintide Amylin Calcitonin",
+  },
+  {
+    id: "rep-8",
+    productName: "Tesamorelin (trans-3-Hexenoyl GHRH)",
+    category: "pen-sets",
+    compoundCode: "TSM",
+    batchNumber: "TSM-2609A",
+    synthesisDate: "August 2026",
+    testDate: "05 September 2026",
+    laboratory: "Alliance Analytical Testing UK",
+    methodology: "Reversed-Phase HPLC & ESI Mass Spectrometry",
+    theoreticalMw: 5136.0,
+    observedMw: 5136.2,
+    purityPercent: 99.4,
+    status: "verified",
+    aliases: "Tesamorelin trans-3-Hexenoyl-hGHRH GHRH Analogue",
+  },
+  {
+    id: "rep-9",
+    productName: "PT-141 (Bremelanotide MC3R/MC4R)",
+    category: "pen-sets",
+    compoundCode: "PT",
+    batchNumber: "PT-2608D",
+    synthesisDate: "August 2026",
+    testDate: "24 August 2026",
+    laboratory: "Prime BioAnalytics Lab UK",
+    methodology: "HPLC & High-Resolution MS",
+    theoreticalMw: 1025.2,
+    observedMw: 1025.4,
+    purityPercent: 99.3,
+    status: "verified",
+    aliases: "PT-141 PT141 Bremelanotide Melanocortin",
+  },
+  {
+    id: "rep-10",
+    productName: "Melanotan II (MT-2 Cyclic Lactam)",
+    category: "pen-sets",
+    compoundCode: "MT2",
+    batchNumber: "MT-2608E",
+    synthesisDate: "August 2026",
+    testDate: "26 August 2026",
+    laboratory: "Alliance Analytical Testing UK",
+    methodology: "HPLC (0.1% TFA Gradient) & MALDI-TOF MS",
+    theoreticalMw: 1024.2,
+    observedMw: 1024.1,
+    purityPercent: 99.2,
+    status: "verified",
+    aliases: "Melanotan II MT-2 MT2 MT-II Melanocortin",
   },
 ]
 
-export default function LabReportsPage() {
-  const [query, setQuery] = useState("")
+const STOP_WORDS = new Set([
+  "complete", "pen", "set", "sets", "refill", "refills", "vial", "vials",
+  "cartridge", "cartridges", "kit", "stack", "pack", "dose", "mg", "ml", "the", "and"
+])
+
+function matchesTokenized(report: LabReport, queryString: string): boolean {
+  if (!queryString.trim()) return true
+
+  // Strip leading/trailing whitespace, "#", and "Lot #" / "Lot"
+  const normalizedQuery = queryString
+    .replace(/\blot\s*#?\s*/gi, "")
+    .replace(/#/g, "")
+    .trim()
+    .toLowerCase()
+
+  if (!normalizedQuery) return true
+
+  // Check exact substring match on primary fields first
+  const primaryFields = [
+    report.productName,
+    report.batchNumber,
+    report.compoundCode,
+    report.laboratory,
+    report.aliases || "",
+  ].map((f) => f.toLowerCase())
+
+  if (primaryFields.some((f) => f.includes(normalizedQuery))) {
+    return true
+  }
+
+  // Tokenize query by whitespace and delimiters (e.g. "Retatrutide (LY3437943)" -> ["retatrutide", "ly3437943"])
+  const allTokens = normalizedQuery
+    .split(/[\s,()\/[\]+]+/)
+    .map((t) => t.trim())
+    .filter((t) => t.length > 0)
+
+  if (allTokens.length === 0) return true
+
+  // Compound codes match exact token (e.g. "RT", "SM", "TB", "CGL", "TSM", "PT", "MT2")
+  const codeLower = report.compoundCode.toLowerCase()
+  if (allTokens.some((t) => t === codeLower)) {
+    return true
+  }
+
+  // Batch numbers match exact token or hyphen-insensitive token (e.g. "RT2609A" matches "RT-2609A")
+  const batchLower = report.batchNumber.toLowerCase()
+  const cleanBatch = batchLower.replace(/[-_]/g, "")
+  if (allTokens.some((t) => t === batchLower || (t.length >= 4 && cleanBatch === t.replace(/[-_]/g, "")))) {
+    return true
+  }
+
+  // Filter out generic ecommerce descriptors if specific chemical/batch tokens exist
+  const substantiveTokens = allTokens.filter((t) => !STOP_WORDS.has(t))
+  const activeTokens = substantiveTokens.length > 0 ? substantiveTokens : allTokens
+
+  const reportText = `${report.productName} ${report.batchNumber} ${report.compoundCode} ${report.laboratory} ${report.aliases || ""}`.toLowerCase()
+
+  return activeTokens.some((token) => {
+    if (token.length >= 3) {
+      // Avoid false-positive substring matches for common sub-words (e.g. "pen" inside "pentadecapeptide")
+      if (STOP_WORDS.has(token)) {
+        const regex = new RegExp(`\\b${token}\\b`, "i")
+        return regex.test(reportText)
+      }
+      return reportText.includes(token)
+    }
+    return false
+  })
+}
+
+function LabReportsContent() {
+  const searchParams = useSearchParams()
+  const initialQuery = searchParams.get("search") || searchParams.get("batch") || ""
+  const [query, setQuery] = useState(initialQuery)
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
   const [inspectingReport, setInspectingReport] = useState<LabReport | null>(null)
   const [downloadSuccess, setDownloadSuccess] = useState<string | null>(null)
 
+  useEffect(() => {
+    const q = searchParams.get("search") || searchParams.get("batch")
+    if (q) {
+      setQuery(q)
+    }
+    const batch = searchParams.get("batch")
+    if (batch) {
+      const matched = sampleReports.find((r) => r.batchNumber.toLowerCase() === batch.toLowerCase())
+      if (matched && matched.status === "verified") {
+        setInspectingReport(matched)
+      }
+    }
+  }, [searchParams])
+
   const filteredReports = useMemo(() => {
     return sampleReports.filter((r) => {
-      const matchesSearch =
-        r.productName.toLowerCase().includes(query.toLowerCase()) ||
-        r.batchNumber.toLowerCase().includes(query.toLowerCase()) ||
-        r.compoundCode.toLowerCase().includes(query.toLowerCase())
-      
+      const matchesSearch = matchesTokenized(r, query)
       const matchesCat =
         selectedCategory === "all" || r.category === selectedCategory
 
@@ -366,10 +506,12 @@ export default function LabReportsPage() {
             </div>
 
             {/* Test Specifications Summary */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <div className="p-3 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] space-y-0.5">
                 <span className="text-[10px] font-semibold text-[#94a3b8] uppercase">Purity (HPLC)</span>
-                <div className="text-base font-bold text-emerald-600">{inspectingReport.purityPercent}%</div>
+                <div className="text-base font-bold text-emerald-600">
+                  {inspectingReport.purityPercent !== null ? `${inspectingReport.purityPercent}%` : "Pending"}
+                </div>
               </div>
               <div className="p-3 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] space-y-0.5">
                 <span className="text-[10px] font-semibold text-[#94a3b8] uppercase">Theoretical MW</span>
@@ -377,11 +519,23 @@ export default function LabReportsPage() {
               </div>
               <div className="p-3 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] space-y-0.5">
                 <span className="text-[10px] font-semibold text-[#94a3b8] uppercase">Observed MW</span>
-                <div className="text-base font-bold text-[#0b1f3a]">{inspectingReport.observedMw} Da</div>
+                <div className="text-base font-bold text-[#0b1f3a]">
+                  {inspectingReport.observedMw !== null ? `${inspectingReport.observedMw} Da` : "Pending"}
+                </div>
+              </div>
+              <div className="p-3 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] space-y-0.5">
+                <span className="text-[10px] font-semibold text-[#94a3b8] uppercase">Synthesis Date</span>
+                <div className="text-xs font-bold text-[#0b1f3a] pt-1">{inspectingReport.synthesisDate}</div>
               </div>
               <div className="p-3 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] space-y-0.5">
                 <span className="text-[10px] font-semibold text-[#94a3b8] uppercase">Analysis Date</span>
                 <div className="text-xs font-bold text-[#0b1f3a] pt-1">{inspectingReport.testDate}</div>
+              </div>
+              <div className="p-3 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] space-y-0.5 col-span-2 sm:col-span-1">
+                <span className="text-[10px] font-semibold text-[#94a3b8] uppercase">Testing Methodology</span>
+                <div className="text-xs font-bold text-[#0b1f3a] pt-1 truncate" title={inspectingReport.methodology}>
+                  {inspectingReport.methodology}
+                </div>
               </div>
             </div>
 
@@ -411,7 +565,7 @@ export default function LabReportsPage() {
                 </svg>
                 <div className="flex justify-between text-[10px] text-slate-400">
                   <span>0 min</span>
-                  <span>Peak Area: {inspectingReport.purityPercent}%</span>
+                  <span>Peak Area: {inspectingReport.purityPercent !== null ? `${inspectingReport.purityPercent}%` : "Pending"}</span>
                   <span>30 min</span>
                 </div>
               </div>
@@ -451,5 +605,13 @@ export default function LabReportsPage() {
         </div>
       )}
     </main>
+  )
+}
+
+export default function LabReportsPage() {
+  return (
+    <Suspense fallback={<CatalogSkeleton category="lab-reports" />}>
+      <LabReportsContent />
+    </Suspense>
   )
 }

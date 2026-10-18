@@ -2,6 +2,7 @@
 
 import React, { useState } from "react"
 import Link from "next/link"
+import { CustomSelect } from "@/components/ui/CustomSelect"
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -157,18 +158,18 @@ export default function ContactPage() {
                       <label className="text-xs font-bold text-[#0b1f3a] uppercase tracking-wider block">
                         Inquiry Category *
                       </label>
-                      <select
+                      <CustomSelect
                         value={formData.inquiryType}
-                        onChange={(e) => setFormData({ ...formData, inquiryType: e.target.value })}
-                        className="w-full px-4 py-2.5 rounded-xl border border-[#e2e8f0] text-xs bg-white focus:outline-hidden focus:border-[#16a6a3] focus:ring-1 focus:ring-[#16a6a3]"
-                      >
-                        <option value="order_support">Active Order &amp; Delivery Status</option>
-                        <option value="coa_batch">Certificate of Analysis (COA) / Batch Verification</option>
-                        <option value="institutional_po">Institutional Purchase Order (Net-30 PO)</option>
-                        <option value="hardware_specs">Reusable Pen Hardware &amp; Cartridge Specs</option>
-                        <option value="bulk_trial">Bulk Research Trial Procurement</option>
-                        <option value="other">General Scientific Support</option>
-                      </select>
+                        onChange={(val) => setFormData({ ...formData, inquiryType: val })}
+                        options={[
+                          { value: "order_support", label: "Active Order & Delivery Status" },
+                          { value: "coa_batch", label: "Certificate of Analysis (COA) / Batch Verification" },
+                          { value: "institutional_po", label: "Institutional Purchase Order (Net-30 PO)" },
+                          { value: "hardware_specs", label: "Reusable Pen Hardware & Cartridge Specs" },
+                          { value: "bulk_trial", label: "Bulk Research Trial Procurement" },
+                          { value: "other", label: "General Scientific Support" },
+                        ]}
+                      />
                     </div>
                   </div>
 

@@ -38,24 +38,24 @@ export function ProductTechnicalSpecs({ product }: ProductTechnicalSpecsProps) {
 
   return (
     <section className="bg-white py-[48px] sm:py-[64px] flex items-center justify-center border-t border-[#e2e8f0]">
-      <div className="w-full max-w-[1240px] mx-auto px-4 sm:px-6">
+      <div className="w-full max-w-[1520px] mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
         <div className="flex flex-col items-center text-center mb-[36px] sm:mb-[48px]">
           <h2 className="font-extrabold text-[#0b1f3a] text-[26px] sm:text-[34px] tracking-tight">
             {sectionHeading}
           </h2>
-          <p className="text-[13px] sm:text-[14px] text-[#64748b] max-w-[680px] mt-2 leading-[22px]">
+          <p className="text-[13px] sm:text-[14px] text-[#64748b] max-w-[720px] mt-2 leading-[22px]">
             {sectionSubtitle}
           </p>
         </div>
 
         {/* 3-Card Technical Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-7 items-stretch">
           
           {/* Card 1: Hardware / Delivery System / Formulation */}
           {format === "complete-pen-set" && (
-            <div className="bg-[#f0f6fa] rounded-[16px] p-[24px] sm:p-[28px] flex flex-col justify-between min-h-[460px] border border-[#e2e8f0]/80 shadow-2xs">
+            <div className="bg-[#f0f6fa] rounded-[16px] p-[24px] sm:p-[28px] lg:p-[32px] flex flex-col justify-between min-h-[460px] border border-[#e2e8f0]/80 shadow-2xs">
               <div>
                 <div className="flex items-center justify-between">
                   <h3 className="font-bold text-[#0b1f3a] text-[18px]">
@@ -128,7 +128,7 @@ export function ProductTechnicalSpecs({ product }: ProductTechnicalSpecsProps) {
           )}
 
           {format === "refill-cartridge" && (
-            <div className="bg-[#f0f6fa] rounded-[16px] p-[24px] sm:p-[28px] flex flex-col justify-between min-h-[460px] border border-[#e2e8f0]/80 shadow-2xs">
+            <div className="bg-[#f0f6fa] rounded-[16px] p-[24px] sm:p-[28px] lg:p-[32px] flex flex-col justify-between min-h-[460px] border border-[#e2e8f0]/80 shadow-2xs">
               <div>
                 <div className="flex items-center justify-between">
                   <h3 className="font-bold text-[#0b1f3a] text-[18px]">
@@ -143,7 +143,7 @@ export function ProductTechnicalSpecs({ product }: ProductTechnicalSpecsProps) {
                 </p>
 
                 <div className="flex flex-col gap-[20px] sm:gap-[24px] mt-6">
-                  <div className="flex items-start gap-3.5">
+                  <div className="flex items-start gap-3.5 sm:gap-4">
                     <div className="size-[22px] shrink-0 mt-0.5 flex items-center justify-center">
                       <img src={KIT_ICONS.cartridge} alt="" className="size-full object-contain" />
                     </div>
@@ -152,7 +152,7 @@ export function ProductTechnicalSpecs({ product }: ProductTechnicalSpecsProps) {
                       <p className="text-[#64748b] text-[11.5px] leading-relaxed">Chemically inert, zero-leaching pharmaceutical glass chamber</p>
                     </div>
                   </div>
-                  <div className="flex items-start gap-3.5">
+                  <div className="flex items-start gap-3.5 sm:gap-4">
                     <div className="size-[22px] shrink-0 mt-0.5 flex items-center justify-center">
                       <img src={KIT_ICONS.cartridge} alt="" className="size-full object-contain" />
                     </div>
@@ -161,7 +161,7 @@ export function ProductTechnicalSpecs({ product }: ProductTechnicalSpecsProps) {
                       <p className="text-[#64748b] text-[11.5px] leading-relaxed">Pre-filled under sterile ISO 5 laminar airflow environment</p>
                     </div>
                   </div>
-                  <div className="flex items-start gap-3.5">
+                  <div className="flex items-start gap-3.5 sm:gap-4">
                     <div className="size-[22px] shrink-0 mt-0.5 flex items-center justify-center">
                       <img src={KIT_ICONS.pen} alt="" className="size-full object-contain" />
                     </div>
@@ -170,7 +170,7 @@ export function ProductTechnicalSpecs({ product }: ProductTechnicalSpecsProps) {
                       <p className="text-[#64748b] text-[11.5px] leading-relaxed">Exact mechanical match for PEPTECH reusable pen dial</p>
                     </div>
                   </div>
-                  <div className="flex items-start gap-3.5">
+                  <div className="flex items-start gap-3.5 sm:gap-4">
                     <div className="size-[22px] shrink-0 mt-0.5 flex items-center justify-center">
                       <img src={KIT_ICONS.needle} alt="" className="size-full object-contain" />
                     </div>
@@ -192,7 +192,7 @@ export function ProductTechnicalSpecs({ product }: ProductTechnicalSpecsProps) {
           )}
 
           {format === "freeze-dried-vial" && (
-            <div className="bg-[#f0f6fa] rounded-[16px] p-[24px] sm:p-[28px] flex flex-col justify-between min-h-[460px] border border-[#e2e8f0]/80 shadow-2xs">
+            <div className="bg-[#f0f6fa] rounded-[16px] p-[24px] sm:p-[28px] lg:p-[32px] flex flex-col justify-between min-h-[460px] border border-[#e2e8f0]/80 shadow-2xs">
               <div>
                 <div className="flex items-center justify-between">
                   <h3 className="font-bold text-[#0b1f3a] text-[18px]">
@@ -256,7 +256,7 @@ export function ProductTechnicalSpecs({ product }: ProductTechnicalSpecsProps) {
           )}
 
           {/* Card 2: Technical Specifications Table */}
-          <div className="bg-[#f0f6fa] rounded-[16px] p-[24px] sm:p-[28px] flex flex-col justify-between min-h-[460px] border border-[#e2e8f0]/80 shadow-2xs">
+          <div className="bg-[#f0f6fa] rounded-[16px] p-[24px] sm:p-[28px] lg:p-[32px] flex flex-col justify-between min-h-[460px] border border-[#e2e8f0]/80 shadow-2xs">
             <div>
               <div className="flex items-center justify-between">
                 <h3 className="font-bold text-[#0b1f3a] text-[18px]">
@@ -271,7 +271,7 @@ export function ProductTechnicalSpecs({ product }: ProductTechnicalSpecsProps) {
               </p>
 
               {/* Clean White Specification Table */}
-              <div className="bg-white border border-[#e2e8f0] rounded-[12px] divide-y divide-[#edf2f7] text-[12px] sm:text-[12.5px] overflow-hidden mt-4 shadow-2xs">
+              <div className="bg-white border border-[#e2e8f0] rounded-[12px] divide-y divide-[#edf2f7] text-[12px] sm:text-[13px] overflow-hidden mt-4 shadow-2xs">
                 {product.customSpecs && product.customSpecs.length > 0 ? (
                   product.customSpecs.map((item, idx) => {
                     const labelLower = item.label.toLowerCase()
@@ -439,7 +439,7 @@ export function ProductTechnicalSpecs({ product }: ProductTechnicalSpecsProps) {
           </div>
 
           {/* Card 3: Quality Certified & Verified Worldwide (Unified Figma Styling) */}
-          <div className="bg-[#f0f6fa] rounded-[16px] p-[24px] sm:p-[28px] flex flex-col justify-between min-h-[460px] border border-[#e2e8f0]/80 shadow-2xs">
+          <div className="bg-[#f0f6fa] rounded-[16px] p-[24px] sm:p-[28px] lg:p-[32px] flex flex-col justify-between min-h-[460px] border border-[#e2e8f0]/80 shadow-2xs">
             <div>
               {/* Header with Quality Shield Icon */}
               <div className="flex gap-[14px] items-center">
@@ -502,11 +502,11 @@ export function ProductTechnicalSpecs({ product }: ProductTechnicalSpecsProps) {
                   />
                 </div>
                 <div className="w-px h-[28px] bg-[#d1e0ed]" />
-                <div className="h-[40px] w-[55px] flex items-center justify-center shrink-0">
+                <div className="h-[40px] w-[80px] flex items-center justify-center shrink-0">
                   <img
-                    src="/images/figma/logo-ce.svg"
-                    alt="CE Mark"
-                    className="h-[32px] w-auto max-w-[50px] object-contain"
+                    src="/images/figma/logo-iso-17025.svg"
+                    alt="ISO 17025 Accredited Laboratory Testing"
+                    className="h-[32px] w-auto max-w-[80px] object-contain"
                   />
                 </div>
               </div>

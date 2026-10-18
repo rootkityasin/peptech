@@ -35,11 +35,16 @@ const COMPOUND_SLUGS = [
   "nad-plus",
   "pt-141",
   "melanotan-2",
+  "glow-stack",
   "barbie-glow",
   "klow",
 ] as const
 
 export type CompoundSlug = typeof COMPOUND_SLUGS[number]
+
+export const SUPABASE_STORAGE_BASE =
+  process.env.NEXT_PUBLIC_SUPABASE_STORAGE_URL ||
+  "https://ubzoovlhbnztjwemvrwo.supabase.co/storage/v1/object/public/products"
 
 /**
  * Normalizes an existing URL/path if valid
@@ -52,13 +57,25 @@ function cleanExistingUrl(url?: string | null): string | null {
     trimmed === "null" ||
     trimmed === "undefined" ||
     trimmed.includes("placeholder.png") ||
-    trimmed.includes("Screenshot")
+    trimmed.includes("Screenshot") ||
+    trimmed.includes("/static/") // Ignore dead local/ephemeral uploads
   ) {
     return null
   }
   // Strip localhost origin if present
   let clean = trimmed.replace(/^https?:\/\/localhost:\d+/, "")
-  // If it's a valid relative path starting with /images/products/, return it
+  if (clean.includes("/static/")) {
+    return null
+  }
+  // If it's already a Supabase Storage CDN URL, return as is
+  if (clean.includes("supabase.co")) {
+    return clean
+  }
+  // Map local /images/products paths to Supabase CDN
+  const match = clean.match(/\/images\/products\/(pen-sets|refills|vials)\/([a-zA-Z0-9_.-]+)/)
+  if (match) {
+    return `${SUPABASE_STORAGE_BASE}/${match[1]}/${match[2]}`
+  }
   if (clean.startsWith("/images/products/")) {
     return clean
   }
@@ -160,7 +177,7 @@ export function resolveCompoundSlug(item?: ProductLike | string): CompoundSlug {
   if (text.includes("nad+") || text.includes("nad plus") || text.includes("nad-plus") || text.includes("nicotinamide")) return "nad-plus"
   if (text.includes("pt-141") || text.includes("pt141") || text.includes("bremelanotide")) return "pt-141"
   if (text.includes("melanotan") || text.includes("mt-2") || text.includes("mt2")) return "melanotan-2"
-  if (text.includes("barbie") || text.includes("glow")) return "barbie-glow"
+  if (text.includes("glow") || text.includes("barbie")) return "glow-stack"
   if (text.includes("klow")) return "klow"
 
   return "ghk-cu"
@@ -170,22 +187,24 @@ export function resolveCompoundSlug(item?: ProductLike | string): CompoundSlug {
  * Returns the exact public asset path for the compound in the given category
  */
 export function getProductImagePath(category: ProductCategory, slug: CompoundSlug): string {
+  const assetSlug = slug === "glow-stack" ? "barbie-glow" : slug
+
   if (category === "pen-sets") {
     // Note: ghk-cu and tesamorelin pen sets use .jpg; others use .png
-    if (slug === "ghk-cu") return "/images/products/pen-sets/ghk-cu.jpg"
-    if (slug === "tesamorelin") return "/images/products/pen-sets/tesamorelin.jpg"
-    return `/images/products/pen-sets/${slug}.png`
+    if (slug === "ghk-cu") return `${SUPABASE_STORAGE_BASE}/pen-sets/ghk-cu.jpg`
+    if (slug === "tesamorelin") return `${SUPABASE_STORAGE_BASE}/pen-sets/tesamorelin.jpg`
+    return `${SUPABASE_STORAGE_BASE}/pen-sets/${assetSlug}.png`
   }
 
   if (category === "refills") {
-    return `/images/products/refills/${slug}.png`
+    return `${SUPABASE_STORAGE_BASE}/refills/${assetSlug}.png`
   }
 
   if (category === "vials") {
-    return `/images/products/vials/${slug}.png`
+    return `${SUPABASE_STORAGE_BASE}/vials/${assetSlug}.png`
   }
 
-  return "/images/products/pen-sets/ghk-cu.jpg"
+  return `${SUPABASE_STORAGE_BASE}/pen-sets/ghk-cu.jpg`
 }
 
 /**
@@ -193,7 +212,7 @@ export function getProductImagePath(category: ProductCategory, slug: CompoundSlu
  * Guaranteed to return a valid, existing product image URL for any item.
  */
 export function resolveProductImage(item?: ProductLike | string | null): string {
-  if (!item) return "/images/products/pen-sets/ghk-cu.jpg"
+  if (!item) return `${SUPABASE_STORAGE_BASE}/pen-sets/ghk-cu.jpg`
 
   if (typeof item === "string") {
     const clean = cleanExistingUrl(item)

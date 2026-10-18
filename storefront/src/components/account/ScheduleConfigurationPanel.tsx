@@ -133,7 +133,7 @@ export function ScheduleConfigurationPanel({
                 </div>
                 <div>
                   <span className="font-bold text-[#0B1F3A] text-xs sm:text-sm block">Every 28 Days (Standard Cycle)</span>
-                  <span className="text-[11.5px] sm:text-xs text-slate-500">Weekly 0.25mg titration protocol · 4 doses per cycle</span>
+                  <span className="text-[11.5px] sm:text-xs text-slate-500">Standard 28-day laboratory cycle</span>
                 </div>
               </div>
               {selectedCadence === 28 && (
@@ -203,7 +203,7 @@ export function ScheduleConfigurationPanel({
                 </div>
                 <div>
                   <span className="font-bold text-[#0B1F3A] text-xs sm:text-sm block">Every 56 Days (8-Week Maintenance)</span>
-                  <span className="text-[11.5px] sm:text-xs text-slate-500">Extended bimonthly replenishment for steady-state dosage maintenance</span>
+                  <span className="text-[11.5px] sm:text-xs text-slate-500">Extended bimonthly replenishment for ongoing research projects</span>
                 </div>
               </div>
               {selectedCadence === 56 && (

@@ -98,7 +98,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: "Permissions-Policy",
-            value: "camera=(), microphone=(), geolocation=(), browsing-topics=()",
+            value: "camera=(self), microphone=(), geolocation=(), browsing-topics=()",
           },
           {
             key: "Strict-Transport-Security",
@@ -179,6 +179,10 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       {
+        source: "/images/:path*",
+        destination: "https://ubzoovlhbnztjwemvrwo.supabase.co/storage/v1/object/public/products/images/:path*",
+      },
+      {
         source: "/store/:path*",
         destination: `${medusaBackendUrl}/store/:path*`,
       },
@@ -188,7 +192,7 @@ const nextConfig: NextConfig = {
       },
       {
         source: "/static/:path*",
-        destination: `${medusaBackendUrl}/static/:path*`,
+        destination: "https://ubzoovlhbnztjwemvrwo.supabase.co/storage/v1/object/public/products/:path*",
       },
     ];
   },

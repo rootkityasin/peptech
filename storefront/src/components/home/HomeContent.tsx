@@ -367,7 +367,7 @@ export function HomeContent({
               <div className="relative w-full max-w-[580px] h-[300px] sm:h-[400px] lg:h-[440px] min-h-[300px] flex items-center justify-center">
                 <Image
                   src="/images/figma/hero-presentation-box.png"
-                  alt="PEPTECH® Reusable Injection Pen System Kit Presentation"
+                  alt="PEPTECH® Reusable Precision Pen System Presentation"
                   fill
                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 580px"
                   className="object-contain drop-shadow-xl"

@@ -21,46 +21,36 @@ const handleStoreCors = (req: MedusaRequest, res: MedusaResponse, next: MedusaNe
   next()
 }
 
+const SUPABASE_STORAGE_URL =
+  process.env.SUPABASE_STORAGE_URL ||
+  "https://ubzoovlhbnztjwemvrwo.supabase.co/storage/v1/object/public/products"
+
 const serveStaticImage = (req: MedusaRequest, res: MedusaResponse, next: MedusaNextFunction) => {
   const urlPath = req.originalUrl?.split("?")[0] || req.url?.split("?")[0] || ""
-  let imagePath = urlPath.replace(/^\/images\/?/, "")
+  let imagePath = urlPath
+    .replace(/^\/images\/?/, "")
+    .replace(/^\/app\/images\/?/, "")
+    .replace(/^\/static\/?/, "")
+    .replace(/^\/app\/static\/?/, "")
+
   if (urlPath === "/logo.webp" || urlPath === "/app/logo.webp") {
     imagePath = "logo.webp"
   }
 
   if (!imagePath || imagePath.split(/[\\/]/).includes("..")) return next()
 
-  // 1. Check in public/images/
-  const fullPath1 = path.resolve(process.cwd(), "public/images", imagePath)
-  if (fs.existsSync(fullPath1) && fs.statSync(fullPath1).isFile()) {
-    return res.sendFile(fullPath1)
+  // 1. Check in local public/ (e.g. logo.webp)
+  const fullPath = path.resolve(process.cwd(), "public", imagePath)
+  if (fs.existsSync(fullPath) && fs.statSync(fullPath).isFile()) {
+    return res.sendFile(fullPath)
   }
 
-  // 2. Check in public/
-  const fullPath2 = path.resolve(process.cwd(), "public", imagePath)
-  if (fs.existsSync(fullPath2) && fs.statSync(fullPath2).isFile()) {
-    return res.sendFile(fullPath2)
-  }
-
-  // 3. Check in public/admin/
-  const fullPathAdmin = path.resolve(process.cwd(), "public/admin", imagePath)
-  if (fs.existsSync(fullPathAdmin) && fs.statSync(fullPathAdmin).isFile()) {
-    return res.sendFile(fullPathAdmin)
-  }
-
-  // 4. Check in storefront/public/images/
-  const fullPath3 = path.resolve(process.cwd(), "../../../storefront/public/images", imagePath)
-  if (fs.existsSync(fullPath3) && fs.statSync(fullPath3).isFile()) {
-    return res.sendFile(fullPath3)
-  }
-
-  // 5. Check in storefront/public/
-  const fullPath4 = path.resolve(process.cwd(), "../../../storefront/public", imagePath)
-  if (fs.existsSync(fullPath4) && fs.statSync(fullPath4).isFile()) {
-    return res.sendFile(fullPath4)
-  }
-
-  next()
+  // 2. Redirect to Supabase Storage CDN
+  const cleanKey = imagePath.replace(/^\/+/, "")
+  const destination = cleanKey.startsWith("images/")
+    ? `${SUPABASE_STORAGE_URL}/${cleanKey}`
+    : `${SUPABASE_STORAGE_URL}/images/${cleanKey}`
+  return res.redirect(302, destination)
 }
 
 const ensureVerifyPublishableKey = (req: MedusaRequest, res: MedusaResponse, next: MedusaNextFunction) => {
@@ -93,6 +83,7 @@ export default defineMiddlewares({
     { matcher: "/store/custom/billing-portal", middlewares: [authenticate("customer", ["bearer"])] },
     { matcher: "/admin/commerce*", middlewares: [authenticate("user", ["session", "bearer"])] },
     { matcher: "/admin/custom/subscriptions", middlewares: [authenticate("user", ["session", "bearer"])] },
+    { matcher: "/admin/custom/products*", middlewares: [authenticate("user", ["session", "bearer"])] },
     { matcher: "/hooks/peptech-stripe", bodyParser: { preserveRawBody: true, sizeLimit: "1mb" } },
     {
       matcher: "/images/*",
@@ -100,6 +91,14 @@ export default defineMiddlewares({
     },
     {
       matcher: "/app/images/*",
+      middlewares: [serveStaticImage],
+    },
+    {
+      matcher: "/static/*",
+      middlewares: [serveStaticImage],
+    },
+    {
+      matcher: "/app/static/*",
       middlewares: [serveStaticImage],
     },
     {

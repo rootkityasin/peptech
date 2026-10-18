@@ -6,7 +6,8 @@ export interface CartridgeConcentrationModalProps {
   subscription: any
   isOpen: boolean
   onClose: () => void
-  onUpdateDosage: (variantId: string) => Promise<void>
+  onUpdateConcentration?: (strength: string) => Promise<void>
+  onUpdateDosage?: (strength: string) => Promise<void>
   isBusy: boolean
 }
 
@@ -14,6 +15,7 @@ export function CartridgeConcentrationModal({
   subscription,
   isOpen,
   onClose,
+  onUpdateConcentration,
   onUpdateDosage,
   isBusy,
 }: CartridgeConcentrationModalProps) {
@@ -43,7 +45,11 @@ export function CartridgeConcentrationModal({
   ]
 
   const handleConfirm = async () => {
-    await onUpdateDosage(selectedStrength)
+    if (onUpdateConcentration) {
+      await onUpdateConcentration(selectedStrength)
+    } else if (onUpdateDosage) {
+      await onUpdateDosage(selectedStrength)
+    }
     onClose()
   }
 

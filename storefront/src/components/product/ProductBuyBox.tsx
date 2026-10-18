@@ -190,7 +190,7 @@ export function ProductBuyBox({
         )}
         
         <div className="flex gap-[8px] items-center pt-0.5">
-          <div className="flex gap-[2px] items-center">
+          <div className="flex gap-[2px] items-center" aria-label="5 out of 5 stars">
             {[...Array(5)].map((_, i) => (
               <img
                 key={i}
@@ -504,8 +504,8 @@ export function ProductBuyBox({
 
         <div className="flex flex-col gap-[4px] items-center text-center w-full p-1">
           <img src="/images/figma/5a5cf195bb5ca3a772d64cd94711197cd2748bd6.svg" alt="" className="size-[20px]" />
-          <span className="font-bold text-[#0b1f3a] text-[12px]">30-Day Returns</span>
-          <span className="font-normal text-[#64748b] text-[10px]">Hassle-free</span>
+          <span className="font-bold text-[#0b1f3a] text-[12px]">14-Day Hardware Return</span>
+          <span className="font-normal text-[#64748b] text-[10px]">Tamper-Sealed</span>
         </div>
 
         <div className="flex flex-col gap-[4px] items-center text-center w-full p-1">

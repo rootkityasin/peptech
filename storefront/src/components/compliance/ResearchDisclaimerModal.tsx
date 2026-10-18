@@ -16,6 +16,18 @@ export function ResearchDisclaimerModal() {
     }
   }, [])
 
+  useEffect(() => {
+    if (isOpen) {
+      const originalOverflow = document.body.style.overflow
+      document.body.style.overflow = "hidden"
+      return () => {
+        document.body.style.overflow = originalOverflow || ""
+      }
+    } else {
+      document.body.style.overflow = ""
+    }
+  }, [isOpen])
+
   const handleAccept = () => {
     try {
       localStorage.setItem("peptech_ruo_ack", "true")
@@ -32,8 +44,14 @@ export function ResearchDisclaimerModal() {
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-300">
-      <div className="bg-[#0b1523] border border-white/10 rounded-2xl sm:rounded-3xl max-w-[420px] w-full p-6 sm:p-8 shadow-2xl relative overflow-hidden text-center flex flex-col items-center gap-5 animate-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-[9998] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-300">
+      <div
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="ruo-modal-title"
+        aria-describedby="ruo-modal-desc"
+        className="bg-[#0b1523] border border-white/10 rounded-2xl sm:rounded-3xl max-w-[420px] w-full p-6 sm:p-8 shadow-2xl relative overflow-hidden text-center flex flex-col items-center gap-5 animate-in zoom-in-95 duration-200"
+      >
         
         {/* Subtle Top Teal Accent Hairline */}
         <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#00c5a0] to-transparent" />
@@ -57,18 +75,18 @@ export function ResearchDisclaimerModal() {
 
         {/* Title */}
         <div className="space-y-1">
-          <h2 className="text-white text-[22px] sm:text-[24px] font-extrabold uppercase tracking-tight leading-tight">
+          <h2 id="ruo-modal-title" className="text-white text-[22px] sm:text-[24px] font-extrabold uppercase tracking-tight leading-tight">
             RESEARCH ACCESS ONLY
           </h2>
         </div>
 
         {/* Structured Body Notice */}
-        <div className="space-y-2 text-slate-300 text-[13px] sm:text-[14px] leading-relaxed max-w-[340px]">
+        <div id="ruo-modal-desc" className="space-y-2 text-slate-300 text-[13px] sm:text-[14px] leading-relaxed max-w-[340px]">
           <p>
             This site contains research-grade compounds for in-vitro laboratory use.
           </p>
           <p className="text-slate-400 text-[12px] sm:text-[13px]">
-            You must be <strong className="text-white font-bold">21 years or older</strong> and a qualified researcher to enter.
+            You must be <strong className="text-white font-bold">18 years or older</strong> and a qualified researcher to enter.
           </p>
         </div>
 
@@ -79,14 +97,14 @@ export function ResearchDisclaimerModal() {
             onClick={handleAccept}
             className="btn-press bg-white hover:bg-slate-100 text-[#0b1523] font-bold text-[12px] sm:text-[13px] py-3.5 px-2 sm:px-3 rounded-full transition-all shadow-md flex items-center justify-center text-center cursor-pointer leading-snug"
           >
-            <span>I am 21+ &amp; a researcher</span>
+            <span>I am 18+ &amp; a researcher</span>
           </button>
           <button
             type="button"
             onClick={handleDecline}
             className="btn-press bg-transparent border border-white/20 hover:border-white/40 hover:bg-white/5 text-slate-300 hover:text-white font-medium text-[12px] sm:text-[13px] py-3.5 px-2 sm:px-3 rounded-full transition-all flex items-center justify-center text-center cursor-pointer leading-snug"
           >
-            <span>I am under 21</span>
+            <span>I am under 18</span>
           </button>
         </div>
 

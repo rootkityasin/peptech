@@ -168,31 +168,43 @@ export function CompleteSetsSection({ excludeHandle, products: propProducts }: C
               ))}
             </div>
 
-            {/* Testimonial Card */}
-            <div className="bg-gradient-to-r from-[#f0f7fc] to-[rgba(227,242,250,0.7)] p-[20px] rounded-[14px] flex flex-col gap-[12px]">
-              <p className="font-medium text-[#0b1f3a] text-[13px] leading-[20px]">
-                &quot;Exceptional quality and easy to use. The complete set had everything I needed and the instructions were clear.&quot;
-              </p>
-              
-              <div className="flex gap-[2px]">
-                {[...Array(5)].map((_, i) => (
-                  <img
-                    key={i}
-                    src="/images/figma/5bd97b26a01958d8c69784c4a4ae764ab9860fb1.svg"
-                    alt=""
-                    className="size-[12px]"
-                  />
-                ))}
+            {/* Analytical Purity & Cold-Chain Packing Guarantee */}
+            <div className="bg-gradient-to-r from-[#f0f7fc] to-[rgba(227,242,250,0.7)] p-[18px] sm:p-[20px] rounded-[14px] flex flex-col justify-between gap-[12px] border border-[#e2e8f0]/60">
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#16a6a3]/10 text-[#16a6a3] uppercase tracking-wider">
+                    ANALYTICAL ASSURANCE
+                  </span>
+                  <span className="text-emerald-700 text-[11px] font-bold flex items-center gap-1">
+                    <span>✓</span>
+                    <span>≥99.0% HPLC Purity</span>
+                  </span>
+                </div>
+                <p className="font-bold text-[#0b1f3a] text-[13px] leading-[18px]">
+                  Batch-Verified Reagents &amp; Thermal Cold-Chain Packaging
+                </p>
+                <p className="font-normal text-[#64748b] text-[11px] leading-[16px]">
+                  Every peptide cartridge formulation undergoes independent HPLC and Mass Spectrometry validation. Reagents are packed in discreet insulated thermal parceling with cold packs.
+                </p>
               </div>
 
-              <div className="flex items-center gap-[10px]">
-                <div className="bg-[#0b1f3a] text-white font-bold text-[12px] size-[36px] rounded-full flex items-center justify-center shrink-0">
-                  SM
+              <div className="flex items-center justify-between pt-1 border-t border-[#e2e8f0]/60 text-xs">
+                <div className="flex items-center gap-2">
+                  <div className="bg-[#0b1f3a] text-white font-bold text-[10px] size-[28px] rounded-full flex items-center justify-center shrink-0">
+                    QA
+                  </div>
+                  <div className="flex flex-col leading-tight">
+                    <span className="font-bold text-[#0b1f3a] text-[11px]">Third-Party Certified</span>
+                    <span className="font-normal text-[#64748b] text-[10px]">Alliance Analytical UK</span>
+                  </div>
                 </div>
-                <div className="flex flex-col leading-tight">
-                  <span className="font-bold text-[#0b1f3a] text-[12px]">Dr. Sarah M.</span>
-                  <span className="font-normal text-[#64748b] text-[11px]">Research Laboratory</span>
-                </div>
+                <Link
+                  href="/lab-reports"
+                  className="font-bold text-[#16a6a3] hover:text-[#0b1f3a] text-[11px] transition-colors flex items-center gap-1 hover:underline"
+                >
+                  <span>Explore COA Library</span>
+                  <span>→</span>
+                </Link>
               </div>
             </div>
 

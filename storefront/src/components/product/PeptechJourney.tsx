@@ -32,7 +32,7 @@ const STEPS: StepItem[] = [
     number: 2,
     title: "Use your reusable PEPTECH® pen",
     subtitle: "Accurate. Reliable. Built to last.",
-    detail: "Permanent hardware with Swiss 0.01ml micro-dial dosing mechanism. Never discarded.",
+    detail: "Permanent hardware with Swiss 0.01ml micro-dial metering mechanism. Never discarded.",
     badge: "LIFETIME HARDWARE",
     icon: "/images/figma/f048e39ad3c157a714574a1cd54c3b7ebe55819f.svg",
     iconAlt: "Reusable precision pen",
