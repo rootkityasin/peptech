@@ -86,7 +86,7 @@ export async function reconcileSession(scope:any,ledger:CommerceService,sessionI
     currency:pi.currency,payment_intent_id:pi.id,receipt_url:receiptUrl})
 }
 export async function reconcileInvoice(scope:any,ledger:CommerceService,invoiceId:string) {
-  const context=stripeContext();const invoice=await context.stripe.invoices.retrieve(invoiceId)
+  const context=stripeContext();const invoice=await context.stripe.invoices.retrieve(invoiceId, { expand: ["payments.data.payment.payment_intent"] })
   const subscriptionId=objectId((invoice as any).parent?.subscription_details?.subscription || (invoice as any).subscription)
   if(!subscriptionId) return
   const subscription=await syncSubscription(ledger,subscriptionId)
