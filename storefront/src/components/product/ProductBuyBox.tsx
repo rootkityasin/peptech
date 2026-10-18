@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from "react"
 import Link from "next/link"
-import { useCart } from "@/components/cart/CartContext"
+import { useCart, type CartConflict } from "@/components/cart/CartContext"
 import { CatalogProduct } from "@/data/catalog"
 import { useLiveProducts } from "@/hooks/useLiveProducts"
 import { ProductAccordions } from "./ProductAccordions"
@@ -29,8 +29,9 @@ export function ProductBuyBox({
   tag = "PEN SYSTEM",
   allProducts,
 }: ProductBuyBoxProps) {
-  const { addItem, setIsDrawerOpen, autoSavings } = useCart()
+  const { addItem, switchItemSubscription, setIsDrawerOpen, autoSavings } = useCart()
   const [purchaseType, setPurchaseType] = useState<"one-time" | "subscription">("one-time")
+  const [conflictError, setConflictError] = useState<CartConflict | null>(null)
   
   const isRefill =
     product?.format === "refill-cartridge" ||
@@ -131,7 +132,11 @@ export function ProductBuyBox({
   const displaySubtitle = (product?.contents || subtitle || "").trim()
   const displayDescription = (product?.description || description || "").trim()
 
-  const handleAddToCart = () => {
+  useEffect(() => {
+    setConflictError(null)
+  }, [purchaseType, selectedCartridgeId])
+
+  const getCandidateItem = () => {
     const targetVariantId = product?.variantId || product?.id || ""
     const recurring = isRefill && purchaseType === "subscription"
     
@@ -142,12 +147,12 @@ export function ProductBuyBox({
         ]
       : undefined
 
-    addItem({
+    return {
       id: `${targetVariantId}-${recurring ? "subscription" : "one-time"}${activeCartridge && !isRefill ? `-${activeCartridge.id}` : ""}`,
       variantId: targetVariantId,
       productHandle: product?.handle || "pen-system",
       title: displayTitle.replace("\n", " "),
-      format: isRefill ? "refill" : "pen-set",
+      format: (isRefill ? "refill" : "pen-set") as "refill" | "pen-set",
       strength: product?.categoryLabel || "Precision Research",
       price: recurring ? currentSubscribePrice : currentOneTimePrice,
       isSubscription: recurring,
@@ -156,8 +161,24 @@ export function ProductBuyBox({
       sku: product?.sku || "",
       image: resolveProductImage(product),
       options,
-    })
-    setIsDrawerOpen(true)
+    }
+  }
+
+  const handleAddToCart = () => {
+    const candidate = getCandidateItem()
+    const res = addItem(candidate)
+    if (!res.success && res.conflict) {
+      setConflictError(res.conflict)
+    } else {
+      setConflictError(null)
+    }
+  }
+
+  const handleSwitchOption = () => {
+    if (!conflictError) return
+    const candidate = getCandidateItem()
+    switchItemSubscription(conflictError.existingItem, candidate)
+    setConflictError(null)
   }
 
   return (
@@ -465,6 +486,37 @@ export function ProductBuyBox({
           >
             Need the pen? →
           </Link>
+        </div>
+      )}
+
+      {/* Mutual Exclusivity Error Alert */}
+      {conflictError && (
+        <div className="w-full bg-amber-50/95 border border-amber-300 rounded-xl p-3.5 flex flex-col gap-2.5 animate-in fade-in slide-in-from-top-1 shadow-xs">
+          <div className="flex items-start gap-2.5">
+            <div className="size-5 rounded-full bg-amber-500 text-white flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold shadow-xs">
+              !
+            </div>
+            <div className="flex-1 text-[12.5px] text-amber-950 leading-snug font-medium">
+              {conflictError.message}
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-3 pt-2 border-t border-amber-200/80">
+            <button
+              type="button"
+              onClick={handleSwitchOption}
+              className="text-xs font-bold text-amber-950 bg-amber-200/90 hover:bg-amber-300 px-3 py-1.5 rounded-lg transition-colors cursor-pointer shadow-xs active:scale-95"
+            >
+              {conflictError.actionLabel}
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsDrawerOpen(true)}
+              className="text-xs font-semibold text-amber-900 hover:text-amber-950 underline cursor-pointer"
+            >
+              View Basket
+            </button>
+          </div>
         </div>
       )}
 

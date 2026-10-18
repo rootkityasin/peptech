@@ -189,10 +189,109 @@ export function getItemSubtitle(item: CartItem): string {
     : "99.8% HPLC Certified • Sterile Lyophilised Cake"
 }
 
+export interface CartConflict {
+  existingItem: CartItem
+  message: string
+  actionLabel: string
+  existingType: "one-time" | "subscription"
+  candidateType: "one-time" | "subscription"
+}
+
+export interface AddItemResult {
+  success: boolean
+  conflict?: CartConflict
+}
+
+export function findCartConflict(
+  items: CartItem[],
+  candidate: {
+    id?: string
+    variantId?: string
+    productHandle?: string
+    format?: string
+    sku?: string
+    title?: string
+    isSubscription: boolean
+  }
+): CartConflict | null {
+  const format = candidate.format
+  if (format !== "refill" && format !== "vial") {
+    return null
+  }
+
+  const existing = items.find((item) => {
+    if (item.format !== format) return false
+    if (item.isSubscription === candidate.isSubscription) return false
+
+    if (candidate.variantId && item.variantId && candidate.variantId === item.variantId) {
+      return true
+    }
+    if (
+      candidate.productHandle &&
+      item.productHandle &&
+      candidate.productHandle !== "pen-system" &&
+      item.productHandle !== "pen-system" &&
+      candidate.productHandle === item.productHandle
+    ) {
+      return true
+    }
+    if (candidate.sku && item.sku && candidate.sku === item.sku) {
+      return true
+    }
+    if (candidate.title && item.title) {
+      const clean = (s: string) =>
+        s.toLowerCase().replace(/refill|cartridge|freeze-dried|vial|\s+/g, " ").trim()
+      const cTitle = clean(candidate.title)
+      const eTitle = clean(item.title)
+      if (cTitle && eTitle && (cTitle === eTitle || cTitle.includes(eTitle) || eTitle.includes(cTitle))) {
+        return true
+      }
+    }
+
+    return false
+  })
+
+  if (!existing) return null
+
+  const itemNoun = format === "refill" ? "cartridge" : "vial"
+
+  if (candidate.isSubscription) {
+    return {
+      existingItem: existing,
+      existingType: "one-time",
+      candidateType: "subscription",
+      message: `This ${itemNoun} is already in your basket as a One-Time Purchase. You cannot combine One-Time and Subscription orders for the same product. To subscribe, switch below or remove the one-time item first.`,
+      actionLabel: "Switch to 28-Day Subscription",
+    }
+  } else {
+    return {
+      existingItem: existing,
+      existingType: "subscription",
+      candidateType: "one-time",
+      message: `This ${itemNoun} is already in your basket as a 28-Day Subscription. You cannot combine Subscription and One-Time orders for the same product. To purchase one-time, switch below or remove the subscription item first.`,
+      actionLabel: "Switch to One-Time Purchase",
+    }
+  }
+}
+
 interface CartContextType {
 
   items: CartItem[]
-  addItem: (item: Omit<CartItem, "quantity">, quantity?: number) => void
+  addItem: (item: Omit<CartItem, "quantity">, quantity?: number) => AddItemResult
+  checkCartConflict: (candidate: {
+    id?: string
+    variantId?: string
+    productHandle?: string
+    format?: string
+    sku?: string
+    title?: string
+    isSubscription: boolean
+  }) => CartConflict | null
+  switchItemSubscription: (
+    existingItem: CartItem,
+    newItem: Omit<CartItem, "quantity">,
+    quantity?: number
+  ) => void
   removeItem: (id: string, isSubscription: boolean) => void
   updateQuantity: (id: string, isSubscription: boolean, delta: number) => void
   clearCart: () => void
@@ -520,7 +619,27 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setShippingOptionIdState(id)
   }
 
-  const addItem = (itemData: Omit<CartItem, "quantity">, quantity = 1) => {
+  const checkCartConflict = useCallback(
+    (candidate: {
+      id?: string
+      variantId?: string
+      productHandle?: string
+      format?: string
+      sku?: string
+      title?: string
+      isSubscription: boolean
+    }) => {
+      return findCartConflict(items, candidate)
+    },
+    [items]
+  )
+
+  const addItem = (itemData: Omit<CartItem, "quantity">, quantity = 1): AddItemResult => {
+    const conflict = findCartConflict(items, itemData)
+    if (conflict) {
+      return { success: false, conflict }
+    }
+
     setItems((prev) => {
       const existingIndex = prev.findIndex(
         (i) => i.id === itemData.id && i.isSubscription === itemData.isSubscription
@@ -531,6 +650,29 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         return next
       }
       return [...prev, { ...itemData, quantity }]
+    })
+    setIsDrawerOpen(true)
+    return { success: true }
+  }
+
+  const switchItemSubscription = (
+    existingItem: CartItem,
+    newItem: Omit<CartItem, "quantity">,
+    quantity = 1
+  ) => {
+    setItems((prev) => {
+      const filtered = prev.filter(
+        (i) => !(i.id === existingItem.id && i.isSubscription === existingItem.isSubscription)
+      )
+      const existingNewIndex = filtered.findIndex(
+        (i) => i.id === newItem.id && i.isSubscription === newItem.isSubscription
+      )
+      if (existingNewIndex > -1) {
+        const next = [...filtered]
+        next[existingNewIndex].quantity += quantity
+        return next
+      }
+      return [...filtered, { ...newItem, quantity }]
     })
     setIsDrawerOpen(true)
   }
@@ -760,6 +902,8 @@ function getItemFormat(item: CartItem): "pen_set" | "refill" | "vial" {
       value={{
         items,
         addItem,
+        checkCartConflict,
+        switchItemSubscription,
         removeItem,
         updateQuantity,
         clearCart,
