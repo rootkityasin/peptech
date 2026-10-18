@@ -10,6 +10,7 @@ yarn-error.log
 coverage
 
 !src/**
+src/api/hooks/peptech-simulation/
 
 ./tsconfig.tsbuildinfo
 medusa-db.sql

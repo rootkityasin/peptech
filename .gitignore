@@ -55,3 +55,7 @@ backend/scripts/
 supabase/.temp/
 supabase/.branches/
 
+# Simulation & Local Testing
+test-files/
+backend/apps/backend/src/api/hooks/peptech-simulation/
+

@@ -35,7 +35,7 @@ async function preflightInvoice(scope:any,ledger:CommerceService,record:LedgerRe
     const customer=await scope.resolve(Modules.CUSTOMER).retrieveCustomer(record.owner_id)
     assertEligibility(customer)
     const quote=record.data.quote as Quote
-    let renewal={...quote,lines:quote.lines.filter(l=>l.recurring).map((l,i)=>({...l,line_id:recordId("ordli",invoice.id,String(i))})),total_minor:quote.renewal_minor}
+    let renewal={...quote,lines:quote.lines.filter(l=>l.recurring).map((l,i)=>({...l,line_id:recordId("ordli",invoice.id,String(i))})),shipping_minor:0,total_minor:quote.renewal_minor}
     for(const line of renewal.lines) assertProduct(await ledger.get(recordId("catalog",line.variant_id)),quote.address.country_code,true)
     if(quote.tax_policy==="stripe_default")renewal=await invoiceTaxQuote(context.stripe,current,renewal)
     if(current.total!==renewal.total_minor || current.currency!==renewal.currency) fail("Renewal amount differs from authorised quote",409)
