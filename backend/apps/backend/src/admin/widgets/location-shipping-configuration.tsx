@@ -226,16 +226,12 @@ const LocationShippingConfigurationWidget = () => {
                 </Table.Header>
                 <Table.Body>
                   {serviceZones.map((zone) => {
-                    const isUkZone = zone.countries.includes("gb")
                     return (
                       <Table.Row key={zone.id}>
                         <Table.Cell>
                           <div className="flex flex-col gap-1">
                             <div className="flex items-center gap-2">
                               <span className="font-semibold text-sm text-ui-fg-base">{zone.name}</span>
-                              {isUkZone && (
-                                <Badge color="green" size="small">UK Domestic</Badge>
-                              )}
                             </div>
                             <div className="text-xs text-ui-fg-muted flex flex-wrap gap-1 items-center">
                               {zone.countries.length === 0 ? (
