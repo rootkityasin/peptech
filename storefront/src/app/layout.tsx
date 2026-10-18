@@ -8,6 +8,7 @@ import { ResearchDisclaimerModal } from "@/components/compliance/ResearchDisclai
 import { CustomDialogProvider } from "@/components/ui/CustomDialog"
 import { Header } from "@/components/layout/Header"
 import { Footer } from "@/components/layout/Footer"
+import { WhatsAppWidget } from "@/components/layout/WhatsAppWidget"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -40,6 +41,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <div className="flex-1">{children}</div>
               <Footer />
               <CartDrawer />
+              <WhatsAppWidget />
             </CartProvider>
           </CustomerProvider>
         </CustomDialogProvider>
