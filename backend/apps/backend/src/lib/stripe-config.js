@@ -121,15 +121,12 @@ function stripeModules(env = process.env) {
 }
 
 function resolveRedisUrl(env = process.env) {
-  if (env.DISABLE_REDIS === "true" || env.NO_REDIS === "true") {
-    return "";
-  }
   const isProduction = env.NODE_ENV === "production";
   if (isProduction) {
     return (env.REDIS_URL || env.REDIS_URL_PRODUCTION || "").trim();
   }
-  // For local development: only use Redis if explicitly provided
-  return (env.DEV_REDIS_URL || env.REDIS_URL || "").trim();
+  // For local development (file watcher, restarts): use local Redis to prevent connection exhaustion
+  return (env.DEV_REDIS_URL || (env.REDIS_URL && (env.REDIS_URL.includes("localhost") || env.REDIS_URL.includes("127.0.0.1")) ? env.REDIS_URL : "redis://127.0.0.1:6379")).trim();
 }
 
 function commerceRuntimeModules(env = process.env) {
