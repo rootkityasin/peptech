@@ -185,13 +185,6 @@ export function Header() {
             <Link href="/lab-reports" className="hover:text-white transition-colors hidden md:inline">
               Resources
             </Link>
-            <span className="text-[#64748b] hidden sm:inline">|</span>
-            <div className="flex items-center gap-[6px] cursor-pointer hover:text-white">
-              <div className="w-[14px] h-[14px]">
-                <img src="/images/figma/d3ec4cde5ca0a92f851ec4f47cdf9bbd626b88c1.svg" alt="Globe" className="w-full h-full" />
-              </div>
-              <span className="font-medium text-white text-[12px]">EN</span>
-            </div>
           </div>
         </div>
       </div>

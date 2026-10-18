@@ -46,48 +46,52 @@ export function VialsSection({ excludeHandle, products: propProducts }: VialsSec
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
           
           {/* Left Feature Box */}
-          <div className="lg:col-span-3 bg-[#f0f6fa] rounded-[12px] p-[20px] sm:p-[24px] flex flex-col justify-between min-h-[360px] h-full shadow-xs">
-            <div className="flex items-start gap-4 h-full">
-              <div className="w-[88px] h-[300px] min-h-[300px] relative shrink-0">
-                <Image
-                  src={displayVials[0]?.image || "/images/products/vials/pt-141.png"}
-                  alt="PEPTECH Freeze-Dried Vial"
-                  fill
-                  sizes="88px"
-                  className="object-contain"
-                />
-              </div>
-              <div className="flex flex-col justify-between h-full py-2">
-                <div>
-                  <h3 className="font-bold text-[#0b1f3a] text-[16px] leading-[22px]">
-                    Freeze-Dried<br />Vials
-                  </h3>
-                  
-                  <div className="flex flex-col gap-[10px] pt-4 text-[11px] text-[#475469]">
-                    <div className="flex items-start gap-2">
-                      <span className="text-[#16a6a3] font-bold">✓</span>
-                      <span>High purity research grade</span>
+          <div className="lg:col-span-3 bg-[#f0f6fa] rounded-[12px] p-4 sm:p-5 lg:p-[24px] flex flex-col justify-between shadow-xs lg:min-h-[360px] h-full">
+            <div className="flex flex-col h-full justify-between">
+              <div>
+                <h3 className="font-bold text-[#0b1f3a] text-[16px] leading-[22px] mb-3">
+                  Freeze-Dried<br className="hidden lg:inline" /> Vials
+                </h3>
+                
+                <div className="flex items-start gap-3.5 sm:gap-4">
+                  <div className="w-[84px] h-[84px] sm:w-[92px] sm:h-[92px] lg:w-[88px] lg:h-[220px] relative shrink-0 rounded-lg bg-white/60 lg:bg-transparent p-1 lg:p-0">
+                    <Image
+                      src={displayVials[0]?.image || "/images/products/vials/pt-141.png"}
+                      alt="PEPTECH Freeze-Dried Vial"
+                      fill
+                      sizes="(max-width: 1024px) 92px, 88px"
+                      className="object-contain"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-2 text-[11.5px] sm:text-[12px] lg:text-[11px] text-[#475469] grow">
+                    <div className="flex items-start gap-1.5">
+                      <span className="text-[#16a6a3] font-bold shrink-0">✓</span>
+                      <span className="leading-snug">High purity research grade</span>
                     </div>
-                    <div className="flex items-start gap-2">
-                      <span className="text-[#16a6a3] font-bold">✓</span>
-                      <span>Third-party tested &amp; verified</span>
+                    <div className="flex items-start gap-1.5">
+                      <span className="text-[#16a6a3] font-bold shrink-0">✓</span>
+                      <span className="leading-snug">Third-party tested &amp; verified</span>
                     </div>
-                    <div className="flex items-start gap-2">
-                      <span className="text-[#16a6a3] font-bold">✓</span>
-                      <span>28-Day subscription available</span>
+                    <div className="flex items-start gap-1.5">
+                      <span className="text-[#16a6a3] font-bold shrink-0">✓</span>
+                      <span className="leading-snug">28-Day subscription available</span>
                     </div>
-                    <div className="flex items-start gap-2">
-                      <span className="text-[#16a6a3] font-bold">✓</span>
-                      <span>Discreet protective packaging</span>
+                    <div className="flex items-start gap-1.5">
+                      <span className="text-[#16a6a3] font-bold shrink-0">✓</span>
+                      <span className="leading-snug">Discreet protective packaging</span>
                     </div>
                   </div>
                 </div>
+              </div>
 
+              <div className="pt-3 mt-3 border-t border-[#dce8f2] lg:border-t-0 lg:mt-auto">
                 <Link
                   href="/vials"
-                  className="text-[12px] font-bold text-[#0b1f3a] hover:text-[#16a6a3] transition-colors"
+                  className="text-[12px] font-bold text-[#0b1f3a] hover:text-[#16a6a3] transition-colors inline-flex items-center gap-1 group"
                 >
-                  Shop All Vials →
+                  <span>Shop All Vials</span>
+                  <span className="group-hover:translate-x-0.5 transition-transform">→</span>
                 </Link>
               </div>
             </div>

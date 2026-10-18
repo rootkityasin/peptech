@@ -48,48 +48,52 @@ export function RefillsSection({ excludeHandle, products: propProducts }: Refill
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
           
           {/* Left Feature Box (lg:col-span-3) - Figma Node 8:41444 */}
-          <div className="lg:col-span-3 bg-[#f0f6fa] rounded-[12px] p-[20px] sm:p-[24px] flex flex-col justify-between min-h-[360px] h-full shadow-xs">
-            <div className="flex items-start gap-4 h-full">
-              <div className="w-[88px] h-[300px] min-h-[300px] relative shrink-0">
-                <Image
-                  src={displayRefills[0]?.image || "/images/products/refills/pt-141.png"}
-                  alt="PEPTECH Refill Cartridge"
-                  fill
-                  sizes="88px"
-                  className="object-contain"
-                />
-              </div>
-              <div className="flex flex-col justify-between h-full py-2">
-                <div>
-                  <h3 className="font-bold text-[#0b1f3a] text-[16px] leading-[22px]">
-                    PEPTECH®<br />Refill Cartridge
-                  </h3>
-                  
-                  <div className="flex flex-col gap-[10px] pt-4 text-[11px] text-[#475469]">
-                    <div className="flex items-start gap-2">
-                      <span className="text-[#16a6a3] font-bold">✓</span>
-                      <span>Compatible with PEPTECH® pen</span>
+          <div className="lg:col-span-3 bg-[#f0f6fa] rounded-[12px] p-4 sm:p-5 lg:p-[24px] flex flex-col justify-between shadow-xs lg:min-h-[360px] h-full">
+            <div className="flex flex-col h-full justify-between">
+              <div>
+                <h3 className="font-bold text-[#0b1f3a] text-[16px] leading-[22px] mb-3">
+                  PEPTECH®<br className="hidden lg:inline" /> Refill Cartridge
+                </h3>
+                
+                <div className="flex items-start gap-3.5 sm:gap-4">
+                  <div className="w-[84px] h-[84px] sm:w-[92px] sm:h-[92px] lg:w-[88px] lg:h-[220px] relative shrink-0 rounded-lg bg-white/60 lg:bg-transparent p-1 lg:p-0">
+                    <Image
+                      src={displayRefills[0]?.image || "/images/products/refills/pt-141.png"}
+                      alt="PEPTECH Refill Cartridge"
+                      fill
+                      sizes="(max-width: 1024px) 92px, 88px"
+                      className="object-contain"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-2 text-[11.5px] sm:text-[12px] lg:text-[11px] text-[#475469] grow">
+                    <div className="flex items-start gap-1.5">
+                      <span className="text-[#16a6a3] font-bold shrink-0">✓</span>
+                      <span className="leading-snug">Compatible with PEPTECH® pen</span>
                     </div>
-                    <div className="flex items-start gap-2">
-                      <span className="text-[#16a6a3] font-bold">✓</span>
-                      <span>Multiple strengths available</span>
+                    <div className="flex items-start gap-1.5">
+                      <span className="text-[#16a6a3] font-bold shrink-0">✓</span>
+                      <span className="leading-snug">Multiple strengths available</span>
                     </div>
-                    <div className="flex items-start gap-2">
-                      <span className="text-[#16a6a3] font-bold">✓</span>
-                      <span>Save with subscription</span>
+                    <div className="flex items-start gap-1.5">
+                      <span className="text-[#16a6a3] font-bold shrink-0">✓</span>
+                      <span className="leading-snug">Save with subscription</span>
                     </div>
-                    <div className="flex items-start gap-2">
-                      <span className="text-[#16a6a3] font-bold">✓</span>
-                      <span>Same high quality standards</span>
+                    <div className="flex items-start gap-1.5">
+                      <span className="text-[#16a6a3] font-bold shrink-0">✓</span>
+                      <span className="leading-snug">Same high quality standards</span>
                     </div>
                   </div>
                 </div>
+              </div>
 
+              <div className="pt-3 mt-3 border-t border-[#dce8f2] lg:border-t-0 lg:mt-auto">
                 <Link
                   href="/refills"
-                  className="text-[12px] font-bold text-[#0b1f3a] hover:text-[#16a6a3] transition-colors"
+                  className="text-[12px] font-bold text-[#0b1f3a] hover:text-[#16a6a3] transition-colors inline-flex items-center gap-1 group"
                 >
-                  Shop All Refills →
+                  <span>Shop All Refills</span>
+                  <span className="group-hover:translate-x-0.5 transition-transform">→</span>
                 </Link>
               </div>
             </div>

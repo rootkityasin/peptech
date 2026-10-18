@@ -22,8 +22,7 @@ const handleStoreCors = (req: MedusaRequest, res: MedusaResponse, next: MedusaNe
 }
 
 const SUPABASE_STORAGE_URL =
-  process.env.SUPABASE_STORAGE_URL ||
-  "https://ubzoovlhbnztjwemvrwo.supabase.co/storage/v1/object/public/products"
+  process.env.SUPABASE_STORAGE_URL
 
 const serveStaticImage = (req: MedusaRequest, res: MedusaResponse, next: MedusaNextFunction) => {
   const urlPath = req.originalUrl?.split("?")[0] || req.url?.split("?")[0] || ""
@@ -54,10 +53,8 @@ const serveStaticImage = (req: MedusaRequest, res: MedusaResponse, next: MedusaN
 }
 
 const ensureVerifyPublishableKey = (req: MedusaRequest, res: MedusaResponse, next: MedusaNextFunction) => {
-  if (!req.headers["x-publishable-api-key"]) {
-    req.headers["x-publishable-api-key"] =
-      process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY ||
-      "pk_556de0f5ea4724394f147569c8b5066ecda7a0d39bd60eb15b2550b2d5c52246"
+  if (!req.headers["x-publishable-api-key"] && process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY) {
+    req.headers["x-publishable-api-key"] = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
   }
   next()
 }

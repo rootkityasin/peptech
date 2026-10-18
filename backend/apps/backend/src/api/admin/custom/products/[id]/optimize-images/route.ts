@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js"
 import sharp from "sharp"
 import path from "path"
 
-const SUPABASE_URL = process.env.SUPABASE_URL || "https://ubzoovlhbnztjwemvrwo.supabase.co"
+const SUPABASE_URL = process.env.SUPABASE_URL 
 const SUPABASE_KEY =
   process.env.SUPABASE_API_KEY ||
   process.env.SUPABASE_SERVICE_ROLE_KEY ||
@@ -61,11 +61,14 @@ async function optimizeBuffer(buf: Buffer, ext: string, maxDim = 1600, quality =
     return { optimized: buf, contentType: "application/octet-stream", isOptimized: false, meta: initialMeta }
   }
 
+  const maxSide = Math.max(initialMeta.width, initialMeta.height)
+  const targetDim = Math.min(maxSide, maxDim)
+
   const pipeline = sharp(buf).resize({
-    width: maxDim,
-    height: maxDim,
-    fit: "inside",
-    withoutEnlargement: true,
+    width: targetDim,
+    height: targetDim,
+    fit: "contain",
+    background: { r: 255, g: 255, b: 255, alpha: 1 },
   })
 
   let optimized: Buffer | null = null

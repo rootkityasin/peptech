@@ -118,9 +118,9 @@ module.exports = defineConfig({
             resolve: "./src/modules/file-supabase",
             id: "supabase",
             options: {
-              url: process.env.SUPABASE_URL || "https://ubzoovlhbnztjwemvrwo.supabase.co",
-              apiKey: process.env.SUPABASE_API_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || "",
-              bucket: process.env.SUPABASE_STORAGE_BUCKET || "products",
+              url: process.env.SUPABASE_URL,
+              apiKey: process.env.SUPABASE_SERVICE_ROLE_KEY ,
+              bucket: process.env.SUPABASE_STORAGE_BUCKET,
             },
           },
         ],

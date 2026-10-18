@@ -58,7 +58,7 @@ export class SupabaseFileService extends AbstractFileProviderService {
   constructor({ logger }: any, options: SupabaseFileServiceOptions) {
     super()
     this.logger_ = logger
-    const url = options?.url || process.env.SUPABASE_URL || "https://ubzoovlhbnztjwemvrwo.supabase.co"
+    const url = options?.url || process.env.SUPABASE_URL 
     const apiKey =
       options?.apiKey ||
       process.env.SUPABASE_API_KEY ||
@@ -115,12 +115,16 @@ export class SupabaseFileService extends AbstractFileProviderService {
         return { buffer, mimeType: mimeType || "application/octet-stream" }
       }
 
-      // Constrain to maximum retina dimension without enlarging smaller images
+      // Enforce 1:1 square aspect ratio with clinical white background (#FFFFFF)
+      // Caps maximum dimension at this.maxDimension_ (default 1600px retina)
+      const maxSide = Math.max(meta.width, meta.height)
+      const targetDim = Math.min(maxSide, this.maxDimension_)
+
       const pipeline = sharp(buffer).resize({
-        width: this.maxDimension_,
-        height: this.maxDimension_,
-        fit: "inside",
-        withoutEnlargement: true,
+        width: targetDim,
+        height: targetDim,
+        fit: "contain",
+        background: { r: 255, g: 255, b: 255, alpha: 1 },
       })
 
       let optimizedBuffer: Buffer | null = null
