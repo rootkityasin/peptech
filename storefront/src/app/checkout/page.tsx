@@ -1,16 +1,23 @@
-"use client"
+"use client";
 
-import React, { useState, useEffect, Suspense } from "react"
-import Link from "next/link"
-import { useCart, getItemSubtitle } from "@/components/cart/CartContext"
-import { useCustomer } from "@/context/CustomerContext"
-import { prepareStripeCheckout, type CheckoutSession } from "@/lib/stripe-checkout"
-import { EmbeddedStripeCheckout } from "@/components/checkout/EmbeddedStripeCheckout"
-import { getCustomerOrders, getCustomerAddresses } from "@/lib/customer-api"
-import { findCountryByCode, findCountryByName, formatCountryCode } from "@/lib/regions"
-import { CheckoutSkeleton } from "@/components/ui/Skeletons"
-import { resolveProductImage } from "@/lib/product-images"
-import { CustomSelect } from "@/components/ui/CustomSelect"
+import React, { useState, useEffect, Suspense } from "react";
+import Link from "next/link";
+import { useCart, getItemSubtitle } from "@/components/cart/CartContext";
+import { useCustomer } from "@/context/CustomerContext";
+import {
+  prepareStripeCheckout,
+  type CheckoutSession,
+} from "@/lib/stripe-checkout";
+import { EmbeddedStripeCheckout } from "@/components/checkout/EmbeddedStripeCheckout";
+import { getCustomerOrders, getCustomerAddresses } from "@/lib/customer-api";
+import {
+  findCountryByCode,
+  findCountryByName,
+  formatCountryCode,
+} from "@/lib/regions";
+import { CheckoutSkeleton } from "@/components/ui/Skeletons";
+import { resolveProductImage } from "@/lib/product-images";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 function CheckoutContent() {
   const {
@@ -41,7 +48,7 @@ function CheckoutContent() {
     shippingAvailable,
     shippingReady,
     isOptionEligibleForFree,
-  } = useCart()
+  } = useCart();
 
   const {
     customer,
@@ -51,53 +58,51 @@ function CheckoutContent() {
     login,
     register,
     logout,
-  } = useCustomer()
+  } = useCustomer();
 
   // Checkout states
-  const [ruo, setRuo] = useState(false)
-  const [recurring, setRecurring] = useState(false)
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState("")
-  const [embeddedSession, setEmbeddedSession] = useState<CheckoutSession | null>(null)
-  const [paymentMethod, setPaymentMethod] = useState<"card" | "bank_transfer">("card")
-  const [bankTransferCompleted, setBankTransferCompleted] = useState(false)
-  const [bankOrderReference, setBankOrderReference] = useState("")
-  const [couponCode, setCouponCode] = useState("")
-  const [couponError, setCouponError] = useState("")
-  const [couponLoading, setCouponLoading] = useState(false)
+  const [ruo, setRuo] = useState(false);
+  const [recurring, setRecurring] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [embeddedSession, setEmbeddedSession] =
+    useState<CheckoutSession | null>(null);
+  const [couponCode, setCouponCode] = useState("");
+  const [couponError, setCouponError] = useState("");
+  const [couponLoading, setCouponLoading] = useState(false);
 
   // Keep coupon input in sync with applied promo code
   useEffect(() => {
     if (appliedPromo?.code && !couponCode) {
-      setCouponCode(appliedPromo.code)
+      setCouponCode(appliedPromo.code);
     }
-  }, [appliedPromo?.code])
+  }, [appliedPromo?.code]);
 
   // Auth Portal States (Inline Sign In / Register)
-  const [authMode, setAuthMode] = useState<"signin" | "register">("signin")
-  const [loginEmail, setLoginEmail] = useState("")
-  const [loginPassword, setLoginPassword] = useState("")
-  const [authError, setAuthError] = useState<string | null>(null)
-  const [authSubmitting, setAuthSubmitting] = useState(false)
-  const [failedAttempts, setFailedAttempts] = useState(0)
-  const [lockedUntil, setLockedUntil] = useState<number | null>(null)
-  const [lockCountdown, setLockCountdown] = useState(0)
+  const [authMode, setAuthMode] = useState<"signin" | "register">("signin");
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [authSubmitting, setAuthSubmitting] = useState(false);
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [lockedUntil, setLockedUntil] = useState<number | null>(null);
+  const [lockCountdown, setLockCountdown] = useState(0);
 
   // Registration Form States
-  const [regTitle, setRegTitle] = useState("Dr.")
-  const [regFirstName, setRegFirstName] = useState("")
-  const [regLastName, setRegLastName] = useState("")
-  const [regEmail, setRegEmail] = useState("")
-  const [regCompany, setRegCompany] = useState("")
-  const [regPhone, setRegPhone] = useState("")
-  const [regPassword, setRegPassword] = useState("")
-  const [regConfirmPassword, setRegConfirmPassword] = useState("")
-  const [regAgreeCompliance, setRegAgreeCompliance] = useState(false)
+  const [regTitle, setRegTitle] = useState("Dr.");
+  const [regFirstName, setRegFirstName] = useState("");
+  const [regLastName, setRegLastName] = useState("");
+  const [regEmail, setRegEmail] = useState("");
+  const [regCompany, setRegCompany] = useState("");
+  const [regPhone, setRegPhone] = useState("");
+  const [regPassword, setRegPassword] = useState("");
+  const [regConfirmPassword, setRegConfirmPassword] = useState("");
+  const [regAgreeCompliance, setRegAgreeCompliance] = useState(false);
 
   // Selected Address State (Auto-filled from customer)
-  const [selectedAddressIndex, setSelectedAddressIndex] = useState(0)
-  const [remoteOrders, setRemoteOrders] = useState<any[]>([])
-  const [remoteAddresses, setRemoteAddresses] = useState<any[]>([])
+  const [selectedAddressIndex, setSelectedAddressIndex] = useState(0);
+  const [remoteOrders, setRemoteOrders] = useState<any[]>([]);
+  const [remoteAddresses, setRemoteAddresses] = useState<any[]>([]);
   const [customAddress, setCustomAddress] = useState({
     first_name: "",
     last_name: "",
@@ -107,82 +112,99 @@ function CheckoutContent() {
     postal_code: "",
     province: "",
     phone: "",
-  })
-  const [useCustomAddress, setUseCustomAddress] = useState(false)
-  const isUserManualCountryChangeRef = React.useRef(false)
+  });
+  const [useCustomAddress, setUseCustomAddress] = useState(false);
+  const isUserManualCountryChangeRef = React.useRef(false);
 
   const handleCountryChange = (newCountryName: string) => {
-    isUserManualCountryChangeRef.current = true
-    setCountry(newCountryName)
+    isUserManualCountryChangeRef.current = true;
+    setCountry(newCountryName);
 
-    const newCountryCode = (findCountryByName(countryOptions, newCountryName)?.code || countryCode).toLowerCase()
+    const newCountryCode = (
+      findCountryByName(countryOptions, newCountryName)?.code || countryCode
+    ).toLowerCase();
 
     // Check if researcher has a saved address in this selected country
     const matchingSavedIndex = availableAddresses.findIndex(
-      (addr) => addr.country_code && addr.country_code.toLowerCase() === newCountryCode
-    )
+      (addr) =>
+        addr.country_code && addr.country_code.toLowerCase() === newCountryCode,
+    );
 
     if (matchingSavedIndex !== -1) {
-      setSelectedAddressIndex(matchingSavedIndex)
-      setUseCustomAddress(false)
+      setSelectedAddressIndex(matchingSavedIndex);
+      setUseCustomAddress(false);
     } else {
       // Switching to a destination country without a saved profile address:
       // Enable custom address entry so researcher can provide the destination address
-      setUseCustomAddress(true)
+      setUseCustomAddress(true);
     }
-  }
+  };
 
   // Fetch remote orders and addresses when customer or token is active
   useEffect(() => {
-    if (!customer?.id) return
-    const activeToken = token || (typeof window !== "undefined" ? localStorage.getItem("peptech_customer_token") : null)
+    if (!customer?.id) return;
+    const activeToken =
+      token ||
+      (typeof window !== "undefined"
+        ? localStorage.getItem("peptech_customer_token")
+        : null);
 
     // Load customer order history to extract delivery destinations
     getCustomerOrders(activeToken || undefined, customer.id, customer.email)
       .then((orders) => {
         if (Array.isArray(orders) && orders.length > 0) {
-          setRemoteOrders(orders)
+          setRemoteOrders(orders);
         }
       })
-      .catch(() => {})
+      .catch(() => {});
 
     // Load registered customer addresses
     if (activeToken) {
       getCustomerAddresses(activeToken)
         .then((addrs) => {
           if (Array.isArray(addrs) && addrs.length > 0) {
-            setRemoteAddresses(addrs)
+            setRemoteAddresses(addrs);
           }
         })
-        .catch(() => {})
+        .catch(() => {});
     }
-  }, [customer?.id, customer?.email, token])
+  }, [customer?.id, customer?.email, token]);
 
   // Derived available addresses from customer profile, remote addresses, orders, or local fallback
   const availableAddresses = React.useMemo(() => {
-    const direct = [
-      ...(customer?.addresses || []),
-      ...remoteAddresses,
-    ]
+    const direct = [...(customer?.addresses || []), ...remoteAddresses];
 
-    const allSources: any[] = [...direct]
+    const allSources: any[] = [...direct];
 
     // Add addresses extracted from remote orders
     for (const o of remoteOrders) {
-      const addr = typeof o.shippingAddress === "object" ? o.shippingAddress : (typeof o.shipping_address === "object" ? o.shipping_address : null)
+      const addr =
+        typeof o.shippingAddress === "object"
+          ? o.shippingAddress
+          : typeof o.shipping_address === "object"
+            ? o.shipping_address
+            : null;
       if (addr && (addr.address_1 || addr.address1)) {
-        allSources.push(addr)
+        allSources.push(addr);
       }
     }
 
     // Add cached local storage orders
     if (typeof window !== "undefined" && customer?.id) {
       try {
-        const stored = JSON.parse(localStorage.getItem(`peptech_customer_orders_${customer.id}`) || "[]")
+        const stored = JSON.parse(
+          localStorage.getItem(`peptech_customer_orders_${customer.id}`) ||
+            "[]",
+        );
         for (const o of stored) {
-          const addr = typeof o.shippingAddress === "object" ? o.shippingAddress : (typeof o.shipping_address === "object" ? o.shipping_address : null)
+          const addr =
+            typeof o.shippingAddress === "object"
+              ? o.shippingAddress
+              : typeof o.shipping_address === "object"
+                ? o.shipping_address
+                : null;
           if (addr && (addr.address_1 || addr.address1)) {
-            allSources.push(addr)
+            allSources.push(addr);
           }
         }
       } catch {}
@@ -191,22 +213,24 @@ function CheckoutContent() {
     // Add last saved delivery address fallback
     if (typeof window !== "undefined") {
       try {
-        const last = JSON.parse(localStorage.getItem("peptech_last_delivery_address") || "null")
+        const last = JSON.parse(
+          localStorage.getItem("peptech_last_delivery_address") || "null",
+        );
         if (last && (last.address_1 || last.address1)) {
-          allSources.push(last)
+          allSources.push(last);
         }
       } catch {}
     }
 
-    const extracted: any[] = []
-    const seen = new Set<string>()
+    const extracted: any[] = [];
+    const seen = new Set<string>();
     for (const addr of allSources) {
-      const addr1 = addr.address_1 || addr.address1 || ""
-      const postCode = addr.postal_code || addr.postalCode || ""
-      if (!addr1 && !postCode) continue
-      const key = `${addr1.trim().toLowerCase()}_${postCode.trim().toLowerCase()}`
+      const addr1 = addr.address_1 || addr.address1 || "";
+      const postCode = addr.postal_code || addr.postalCode || "";
+      if (!addr1 && !postCode) continue;
+      const key = `${addr1.trim().toLowerCase()}_${postCode.trim().toLowerCase()}`;
       if (!seen.has(key)) {
-        seen.add(key)
+        seen.add(key);
         extracted.push({
           id: addr.id || `addr_${extracted.length + 1}`,
           first_name: addr.first_name || customer?.first_name || "",
@@ -219,26 +243,39 @@ function CheckoutContent() {
           province: addr.province || "",
           country_code: addr.country_code || "gb",
           phone: addr.phone || customer?.phone || "",
-        })
+        });
       }
     }
 
-    return extracted
-  }, [customer?.addresses, remoteAddresses, remoteOrders, customer?.id, customer?.first_name, customer?.last_name, customer?.company_name, customer?.phone])
+    return extracted;
+  }, [
+    customer?.addresses,
+    remoteAddresses,
+    remoteOrders,
+    customer?.id,
+    customer?.first_name,
+    customer?.last_name,
+    customer?.company_name,
+    customer?.phone,
+  ]);
 
   // Auto-fill address from customer profile when customer or availableAddresses load
   useEffect(() => {
     if (customer) {
       if (availableAddresses.length > 0) {
-        const defaultShippingIdx = availableAddresses.findIndex((a) => a.is_default_shipping)
+        const defaultShippingIdx = availableAddresses.findIndex(
+          (a) => a.is_default_shipping,
+        );
         const activeIdx =
-          selectedAddressIndex >= 0 && selectedAddressIndex < availableAddresses.length
+          selectedAddressIndex >= 0 &&
+          selectedAddressIndex < availableAddresses.length
             ? selectedAddressIndex
             : defaultShippingIdx !== -1
-            ? defaultShippingIdx
-            : 0
+              ? defaultShippingIdx
+              : 0;
 
-        const defaultAddr = availableAddresses[activeIdx] || availableAddresses[0]
+        const defaultAddr =
+          availableAddresses[activeIdx] || availableAddresses[0];
         setCustomAddress({
           first_name: defaultAddr.first_name || customer.first_name || "",
           last_name: defaultAddr.last_name || customer.last_name || "",
@@ -248,10 +285,13 @@ function CheckoutContent() {
           postal_code: defaultAddr.postal_code || "",
           province: defaultAddr.province || "",
           phone: defaultAddr.phone || customer.phone || "",
-        })
+        });
         if (!isUserManualCountryChangeRef.current && defaultAddr.country_code) {
-          const matched = findCountryByCode(countryOptions, defaultAddr.country_code)
-          if (matched && country !== matched.name) setCountry(matched.name)
+          const matched = findCountryByCode(
+            countryOptions,
+            defaultAddr.country_code,
+          );
+          if (matched && country !== matched.name) setCountry(matched.name);
         }
       } else {
         setCustomAddress((prev) => ({
@@ -259,93 +299,106 @@ function CheckoutContent() {
           first_name: prev.first_name || customer.first_name || "",
           last_name: prev.last_name || customer.last_name || "",
           phone: prev.phone || customer.phone || "",
-        }))
+        }));
       }
     }
-  }, [customer, availableAddresses, selectedAddressIndex, countryOptions])
+  }, [customer, availableAddresses, selectedAddressIndex, countryOptions]);
 
   // Rate Limiting Security Cooldown
   useEffect(() => {
-    if (!lockedUntil) return
+    if (!lockedUntil) return;
     const interval = setInterval(() => {
-      const diff = Math.ceil((lockedUntil - Date.now()) / 1000)
+      const diff = Math.ceil((lockedUntil - Date.now()) / 1000);
       if (diff <= 0) {
-        setLockedUntil(null)
-        setLockCountdown(0)
-        setFailedAttempts(0)
+        setLockedUntil(null);
+        setLockCountdown(0);
+        setFailedAttempts(0);
       } else {
-        setLockCountdown(diff)
+        setLockCountdown(diff);
       }
-    }, 1000)
-    return () => clearInterval(interval)
-  }, [lockedUntil])
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [lockedUntil]);
 
-  const hasSubscription = items.some((i) => i.isSubscription)
+  const hasSubscription = items.some((i) => i.isSubscription);
   const money = (n: number) =>
-    new Intl.NumberFormat("en-GB", { style: "currency", currency }).format(n)
+    new Intl.NumberFormat("en-GB", { style: "currency", currency }).format(n);
 
   // Inline Sign-In Handler
   async function handleInlineLogin(e: React.FormEvent) {
-    e.preventDefault()
-    setAuthError(null)
+    e.preventDefault();
+    setAuthError(null);
     if (lockedUntil && Date.now() < lockedUntil) {
-      setAuthError(`Security pause active. Please wait ${lockCountdown}s before attempting again.`)
-      return
+      setAuthError(
+        `Security pause active. Please wait ${lockCountdown}s before attempting again.`,
+      );
+      return;
     }
 
-    const cleanEmail = loginEmail.trim().toLowerCase()
+    const cleanEmail = loginEmail.trim().toLowerCase();
     if (!cleanEmail || !loginPassword) {
-      setAuthError("Please enter your email and password.")
-      return
+      setAuthError("Please enter your email and password.");
+      return;
     }
 
-    setAuthSubmitting(true)
+    setAuthSubmitting(true);
     try {
-      await login(cleanEmail, loginPassword)
-      setFailedAttempts(0)
-      setLockedUntil(null)
+      await login(cleanEmail, loginPassword);
+      setFailedAttempts(0);
+      setLockedUntil(null);
     } catch (err: any) {
-      const nextFailed = failedAttempts + 1
-      setFailedAttempts(nextFailed)
+      const nextFailed = failedAttempts + 1;
+      setFailedAttempts(nextFailed);
       if (nextFailed >= 5) {
-        setLockedUntil(Date.now() + 60000)
-        setLockCountdown(60)
-        setAuthError("Security threshold reached (5 failed attempts). Account access paused for 60s.")
+        setLockedUntil(Date.now() + 60000);
+        setLockCountdown(60);
+        setAuthError(
+          "Security threshold reached (5 failed attempts). Account access paused for 60s.",
+        );
       } else {
-        setAuthError(err.message || "Invalid credentials. Please verify and try again.")
+        setAuthError(
+          err.message || "Invalid credentials. Please verify and try again.",
+        );
       }
     } finally {
-      setAuthSubmitting(false)
+      setAuthSubmitting(false);
     }
   }
 
   // Inline Registration Handler
   async function handleInlineRegister(e: React.FormEvent) {
-    e.preventDefault()
-    setAuthError(null)
+    e.preventDefault();
+    setAuthError(null);
 
-    const cleanEmail = regEmail.trim().toLowerCase()
-    if (!cleanEmail || !regFirstName.trim() || !regLastName.trim() || !regCompany.trim()) {
-      setAuthError("All required researcher fields (*) must be completed.")
-      return
+    const cleanEmail = regEmail.trim().toLowerCase();
+    if (
+      !cleanEmail ||
+      !regFirstName.trim() ||
+      !regLastName.trim() ||
+      !regCompany.trim()
+    ) {
+      setAuthError("All required researcher fields (*) must be completed.");
+      return;
     }
 
     if (regPassword.length < 8) {
-      setAuthError("Password must be at least 8 characters long.")
-      return
+      setAuthError("Password must be at least 8 characters long.");
+      return;
     }
 
     if (regPassword !== regConfirmPassword) {
-      setAuthError("Passwords do not match.")
-      return
+      setAuthError("Passwords do not match.");
+      return;
     }
 
     if (!regAgreeCompliance) {
-      setAuthError("You must certify that you are 18+ and orders are for In-Vitro Laboratory Research Use Only (RUO).")
-      return
+      setAuthError(
+        "You must certify that you are 18+ and orders are for In-Vitro Laboratory Research Use Only (RUO).",
+      );
+      return;
     }
 
-    setAuthSubmitting(true)
+    setAuthSubmitting(true);
     try {
       await register({
         email: cleanEmail,
@@ -359,96 +412,78 @@ function CheckoutContent() {
           role: "Research account",
           compliance_ack: true,
         },
-      })
+      });
     } catch (err: any) {
-      setAuthError(err.message || "Registration failed.")
+      setAuthError(err.message || "Registration failed.");
     } finally {
-      setAuthSubmitting(false)
+      setAuthSubmitting(false);
     }
   }
 
   // Start Stripe Checkout Process
   async function handleProceedToPayment(e: React.FormEvent) {
-    e.preventDefault()
-    if (busy || !token || !customer) return
-    setBusy(true)
-    setError("")
+    e.preventDefault();
+    if (busy || !token || !customer) return;
+    setBusy(true);
+    setError("");
 
     try {
       if (!shippingReady) {
-        throw new Error("Shipping rates are still loading. Please try again in a moment.")
+        throw new Error(
+          "Shipping rates are still loading. Please try again in a moment.",
+        );
       }
       if (countryOptions.length === 0) {
-        throw new Error("Delivery countries could not be loaded from Medusa regions. Please refresh and try again.")
+        throw new Error(
+          "Delivery countries could not be loaded from Medusa regions. Please refresh and try again.",
+        );
       }
       if (!shippingAvailable || !shippingOptionId) {
-        throw new Error("Shipping is unavailable for this destination. Choose another destination.")
+        throw new Error(
+          "Shipping is unavailable for this destination. Choose another destination.",
+        );
       }
 
-      const currentCountryCode = (findCountryByName(countryOptions, country)?.code || countryCode).toLowerCase()
-      const selectedAddr = availableAddresses[selectedAddressIndex]
+      const currentCountryCode = (
+        findCountryByName(countryOptions, country)?.code || countryCode
+      ).toLowerCase();
+      const selectedAddr = availableAddresses[selectedAddressIndex];
       const isSavedAddrCountryMatching =
-        selectedAddr?.country_code && selectedAddr.country_code.toLowerCase() === currentCountryCode
-      const useSaved = availableAddresses.length > 0 && !useCustomAddress && isSavedAddrCountryMatching
-      const deliveryCountryCode = currentCountryCode
+        selectedAddr?.country_code &&
+        selectedAddr.country_code.toLowerCase() === currentCountryCode;
+      const useSaved =
+        availableAddresses.length > 0 &&
+        !useCustomAddress &&
+        isSavedAddrCountryMatching;
+      const deliveryCountryCode = currentCountryCode;
 
-      const resolvedAddress =
-        useSaved
-          ? {
-              id: selectedAddr?.id,
-              first_name: selectedAddr?.first_name || customer.first_name || "",
-              last_name: selectedAddr?.last_name || customer.last_name || "",
-              company: selectedAddr?.company || customer.company_name || undefined,
-              address_1: selectedAddr?.address_1 || "",
-              address_2: selectedAddr?.address_2 || undefined,
-              city: selectedAddr?.city || "",
-              postal_code: selectedAddr?.postal_code || "",
-              country_code: deliveryCountryCode,
-              province: selectedAddr?.province || undefined,
-              phone: selectedAddr?.phone || customer.phone || undefined,
-            }
-          : {
-              first_name: customAddress.first_name || customer.first_name || "",
-              last_name: customAddress.last_name || customer.last_name || "",
-              company: customer.company_name || undefined,
-              address_1: customAddress.address_1,
-              address_2: customAddress.address_2 || undefined,
-              city: customAddress.city,
-              postal_code: customAddress.postal_code,
-              country_code: deliveryCountryCode,
-              province: customAddress.province || undefined,
-              phone: customAddress.phone || customer.phone || undefined,
-            }
-
-      if (paymentMethod === "bank_transfer") {
-        const generatedRef = `PEP-${new Date().getFullYear().toString().slice(-2)}${Math.random().toString(36).substring(2, 7).toUpperCase()}`
-        setBankOrderReference(generatedRef)
-        const bankOrder = {
-          orderReference: generatedRef,
-          customer: {
-            name: `${customer.first_name} ${customer.last_name}`,
-            email: customer.email,
-            company: customer.company_name,
-          },
-          address: resolvedAddress,
-          items,
-          total: finalSubtotal + (shippingAvailable ? shippingCost : 0),
-          currency,
-          paymentMethod: "uk_faster_payments",
-          placedAt: new Date().toISOString(),
-          status: "awaiting_settlement",
-        }
-        try {
-          const existingOrders = JSON.parse(localStorage.getItem("peptech_bank_orders") || "[]")
-          existingOrders.unshift(bankOrder)
-          localStorage.setItem("peptech_bank_orders", JSON.stringify(existingOrders))
-        } catch {}
-
-        setBankTransferCompleted(true)
-        clearCart()
-        setBusy(false)
-        return
-      }
+      const resolvedAddress = useSaved
+        ? {
+            id: selectedAddr?.id,
+            first_name: selectedAddr?.first_name || customer.first_name || "",
+            last_name: selectedAddr?.last_name || customer.last_name || "",
+            company:
+              selectedAddr?.company || customer.company_name || undefined,
+            address_1: selectedAddr?.address_1 || "",
+            address_2: selectedAddr?.address_2 || undefined,
+            city: selectedAddr?.city || "",
+            postal_code: selectedAddr?.postal_code || "",
+            country_code: deliveryCountryCode,
+            province: selectedAddr?.province || undefined,
+            phone: selectedAddr?.phone || customer.phone || undefined,
+          }
+        : {
+            first_name: customAddress.first_name || customer.first_name || "",
+            last_name: customAddress.last_name || customer.last_name || "",
+            company: customer.company_name || undefined,
+            address_1: customAddress.address_1,
+            address_2: customAddress.address_2 || undefined,
+            city: customAddress.city,
+            postal_code: customAddress.postal_code,
+            country_code: deliveryCountryCode,
+            province: customAddress.province || undefined,
+            phone: customAddress.phone || customer.phone || undefined,
+          };
 
       const session = await prepareStripeCheckout({
         items,
@@ -462,21 +497,31 @@ function CheckoutContent() {
         uiMode: "embedded",
         shippingOptionId,
         promoCode: appliedPromo?.code || undefined,
-      })
+      });
 
       if (session.clientSecret) {
-        setEmbeddedSession(session)
-        setBusy(false)
+        setEmbeddedSession(session);
+        setBusy(false);
       } else if (session.checkoutUrl) {
-        window.location.assign(session.checkoutUrl)
-      } else if (["processing", "paid", "confirmed", "held"].includes(session.state)) {
-        window.location.assign(`/checkout/success?attempt_id=${encodeURIComponent(session.attemptId)}`)
+        window.location.assign(session.checkoutUrl);
+      } else if (
+        ["processing", "paid", "confirmed", "held"].includes(session.state)
+      ) {
+        window.location.assign(
+          `/checkout/success?attempt_id=${encodeURIComponent(session.attemptId)}`,
+        );
       } else {
-        throw new Error("This checkout session could not be opened. Please refresh and retry.")
+        throw new Error(
+          "This checkout session could not be opened. Please refresh and retry.",
+        );
       }
     } catch (e: any) {
-      setError(e instanceof Error ? e.message : "Checkout could not open. Please retry.")
-      setBusy(false)
+      setError(
+        e instanceof Error
+          ? e.message
+          : "Checkout could not open. Please retry.",
+      );
+      setBusy(false);
     }
   }
 
@@ -494,7 +539,9 @@ function CheckoutContent() {
               className="inline-flex items-center gap-2 text-sm font-semibold text-slate-300 hover:text-white transition-colors"
             >
               <span>←</span>
-              <span className="tracking-widest font-extrabold text-lg text-white">PEPTECH®</span>
+              <span className="tracking-widest font-extrabold text-lg text-white">
+                PEPTECH®
+              </span>
             </Link>
             <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-[#16A6A3]/20 text-[#00C5A0] border border-[#16A6A3]/30">
               Laboratory Research Checkout
@@ -503,7 +550,9 @@ function CheckoutContent() {
 
           {/* Total Due Big Display */}
           <div className="pt-2">
-            <p className="text-sm font-medium text-slate-400">Total due today</p>
+            <p className="text-sm font-medium text-slate-400">
+              Total due today
+            </p>
             <h2 className="text-4xl sm:text-5xl font-extrabold text-white tracking-tight mt-1">
               {money(finalSubtotal + (shippingAvailable ? shippingCost : 0))}
             </h2>
@@ -513,31 +562,39 @@ function CheckoutContent() {
           {!items.length ? (
             <div className="py-8 text-center text-slate-400">
               <p>Your research basket is empty.</p>
-              <Link href="/shop" className="inline-block mt-3 text-sm text-[#00C5A0] underline">
+              <Link
+                href="/shop"
+                className="inline-block mt-3 text-sm text-[#00C5A0] underline"
+              >
                 Browse catalogue
               </Link>
             </div>
           ) : (
             <ul className="divide-y divide-slate-800/80 my-2">
               {items.map((item) => (
-                <li key={`${item.id}:${item.isSubscription}`} className="py-4 flex gap-4 items-center">
+                <li
+                  key={`${item.id}:${item.isSubscription}`}
+                  className="py-4 flex gap-4 items-center"
+                >
                   <div className="w-14 h-14 rounded-xl bg-slate-800/60 border border-slate-700/60 overflow-hidden flex items-center justify-center p-1.5 shrink-0">
                     <img
                       src={resolveProductImage(item)}
                       alt={item.title}
                       className="w-full h-full object-contain"
                       onError={(e) => {
-                        const target = e.currentTarget as HTMLImageElement
-                        const fallback = "/images/products/pen-sets/ghk-cu.jpg"
+                        const target = e.currentTarget as HTMLImageElement;
+                        const fallback = "/images/products/pen-sets/ghk-cu.jpg";
                         if (!target.src.endsWith(fallback)) {
-                          target.src = fallback
+                          target.src = fallback;
                         }
                       }}
                     />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
-                      <p className="font-semibold text-white text-sm truncate">{item.title}</p>
+                      <p className="font-semibold text-white text-sm truncate">
+                        {item.title}
+                      </p>
                       <p className="font-bold text-white text-sm whitespace-nowrap">
                         {money(item.price * item.quantity)}
                       </p>
@@ -547,14 +604,27 @@ function CheckoutContent() {
                     </p>
                     {item.isSubscription && (
                       <p className="text-[11px] text-[#00C5A0] mt-0.5 font-medium">
-                        Every 28 days · {item.discountPercent ? `${item.discountPercent}% auto-savings` : autoSavings.text}
+                        Every 28 days ·{" "}
+                        {item.discountPercent
+                          ? `${item.discountPercent}% auto-savings`
+                          : autoSavings.text}
                       </p>
                     )}
-                    {item.options?.filter((o) => !o.label.toLowerCase().includes("cartridge")).map((opt, idx) => (
-                      <p key={idx} className="text-[11px] text-slate-400 mt-0.5">
-                        <span className="text-slate-300 font-medium">{opt.label}:</span> <span className="text-[#00C5A0]">{opt.value}</span>
-                      </p>
-                    ))}
+                    {item.options
+                      ?.filter(
+                        (o) => !o.label.toLowerCase().includes("cartridge"),
+                      )
+                      .map((opt, idx) => (
+                        <p
+                          key={idx}
+                          className="text-[11px] text-slate-400 mt-0.5"
+                        >
+                          <span className="text-slate-300 font-medium">
+                            {opt.label}:
+                          </span>{" "}
+                          <span className="text-[#00C5A0]">{opt.value}</span>
+                        </p>
+                      ))}
 
                     <div className="flex items-center gap-3 mt-1.5 text-xs text-slate-400">
                       <span>Qty: {item.quantity}</span>
@@ -577,22 +647,26 @@ function CheckoutContent() {
             {featuredPromo && !appliedPromo && (
               <div className="rounded-xl bg-slate-900/60 border border-slate-700/60 p-2.5 flex items-center justify-between">
                 <div className="flex items-center gap-2 min-w-0">
-                  <span className="bg-[#16A6A3] text-white text-[10px] font-bold px-1.5 py-0.5 rounded">CODE</span>
+                  <span className="bg-[#16A6A3] text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
+                    CODE
+                  </span>
                   <span className="text-xs text-slate-300 truncate">
-                    Active promo: <strong className="text-white">{featuredPromo.code}</strong> ({featuredPromo.badgeText})
+                    Active promo:{" "}
+                    <strong className="text-white">{featuredPromo.code}</strong>{" "}
+                    ({featuredPromo.badgeText})
                   </span>
                 </div>
                 <button
                   type="button"
                   onClick={async () => {
-                    setCouponLoading(true)
-                    setCouponError("")
-                    const res = await applyPromoCode(featuredPromo.code)
-                    setCouponLoading(false)
+                    setCouponLoading(true);
+                    setCouponError("");
+                    const res = await applyPromoCode(featuredPromo.code);
+                    setCouponLoading(false);
                     if (!res.success) {
-                      setCouponError(res.message || "Failed to apply code.")
+                      setCouponError(res.message || "Failed to apply code.");
                     } else {
-                      setCouponCode(featuredPromo.code)
+                      setCouponCode(featuredPromo.code);
                     }
                   }}
                   className="text-xs text-[#00C5A0] hover:underline font-semibold shrink-0 ml-2 cursor-pointer"
@@ -606,19 +680,22 @@ function CheckoutContent() {
                 type="text"
                 value={couponCode}
                 onChange={(e) => {
-                  setCouponCode(e.target.value)
-                  if (couponError) setCouponError("")
+                  setCouponCode(e.target.value);
+                  if (couponError) setCouponError("");
                 }}
                 placeholder="Add promo or coupon code"
                 className="flex-1 rounded-xl bg-slate-900/60 border border-slate-700/80 px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#16A6A3]"
               />
-              {appliedPromo && (!couponCode.trim() || couponCode.trim().toUpperCase() === appliedPromo.code.toUpperCase()) ? (
+              {appliedPromo &&
+              (!couponCode.trim() ||
+                couponCode.trim().toUpperCase() ===
+                  appliedPromo.code.toUpperCase()) ? (
                 <button
                   type="button"
                   onClick={() => {
-                    removePromoCode()
-                    setCouponCode("")
-                    setCouponError("")
+                    removePromoCode();
+                    setCouponCode("");
+                    setCouponError("");
                   }}
                   className="rounded-xl bg-slate-800 hover:bg-slate-700 hover:text-rose-300 text-slate-300 px-5 py-2.5 text-xs font-semibold tracking-wide border border-slate-700 transition-colors cursor-pointer"
                 >
@@ -629,15 +706,17 @@ function CheckoutContent() {
                   type="button"
                   disabled={couponLoading || !couponCode.trim()}
                   onClick={async () => {
-                    if (!couponCode.trim()) return
-                    setCouponLoading(true)
-                    setCouponError("")
-                    const res = await applyPromoCode(couponCode)
-                    setCouponLoading(false)
+                    if (!couponCode.trim()) return;
+                    setCouponLoading(true);
+                    setCouponError("");
+                    const res = await applyPromoCode(couponCode);
+                    setCouponLoading(false);
                     if (!res.success) {
-                      setCouponError(res.message || "Invalid promotional code.")
+                      setCouponError(
+                        res.message || "Invalid promotional code.",
+                      );
                     } else {
-                      setCouponCode(couponCode.trim().toUpperCase())
+                      setCouponCode(couponCode.trim().toUpperCase());
                     }
                   }}
                   className="rounded-xl bg-slate-800 hover:bg-slate-700 text-white px-5 py-2.5 text-xs font-semibold tracking-wide border border-slate-700 transition-colors cursor-pointer disabled:opacity-50"
@@ -651,7 +730,11 @@ function CheckoutContent() {
               <p className="text-xs text-[#00C5A0] font-medium flex items-center gap-1.5 pt-0.5">
                 <span>✓</span>
                 <span>
-                  {appliedPromo.code} applied ({appliedPromo.discountType === "percentage" ? `${appliedPromo.discountValue}% Off` : money(appliedPromo.discountValue)})
+                  {appliedPromo.code} applied (
+                  {appliedPromo.discountType === "percentage"
+                    ? `${appliedPromo.discountValue}% Off`
+                    : money(appliedPromo.discountValue)}
+                  )
                 </span>
               </p>
             )}
@@ -665,14 +748,18 @@ function CheckoutContent() {
           <div className="space-y-2.5 pt-4 border-t border-slate-800/80 text-sm">
             <div className="flex justify-between text-slate-300">
               <span>Subtotal</span>
-              <span className="font-semibold text-white">{money(subtotal)}</span>
+              <span className="font-semibold text-white">
+                {money(subtotal)}
+              </span>
             </div>
 
             {/* Automatic Subscribe & Save Auto-Savings */}
             {subscriptionSavings > 0 && (
               <div className="flex justify-between text-[#00C5A0]">
                 <span>Subscribe &amp; Save ({autoSavings.text})</span>
-                <span className="font-semibold">-{money(subscriptionSavings)}</span>
+                <span className="font-semibold">
+                  -{money(subscriptionSavings)}
+                </span>
               </div>
             )}
 
@@ -684,7 +771,6 @@ function CheckoutContent() {
               </div>
             )}
 
-
             <div className="flex justify-between text-slate-300">
               <span>
                 {shippingAvailable
@@ -692,7 +778,11 @@ function CheckoutContent() {
                   : "Shipping unavailable"}
               </span>
               <span className="font-semibold text-white">
-                {!shippingAvailable ? "—" : shippingCost === 0 ? "FREE" : money(shippingCost)}
+                {!shippingAvailable
+                  ? "—"
+                  : shippingCost === 0
+                    ? "FREE"
+                    : money(shippingCost)}
               </span>
             </div>
             <div className="flex justify-between text-slate-400 text-xs items-center">
@@ -714,84 +804,17 @@ function CheckoutContent() {
       {/* ========================================================================= */}
       <div className="w-full lg:w-[52%] min-h-0 lg:min-h-screen bg-white text-[#0B1F3A] p-6 sm:p-10 lg:p-14 flex flex-col justify-start lg:justify-center">
         <div className="max-w-xl mx-auto w-full">
-          {/* If Bank Transfer was Submitted */}
-          {bankTransferCompleted ? (
-            <div className="flex flex-col gap-6 animate-in fade-in duration-200">
-              <div className="rounded-2xl bg-emerald-50/70 border border-emerald-200 p-6 sm:p-8 space-y-5">
-                <div className="flex items-center gap-3">
-                  <div className="size-11 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-xl shadow-xs">
-                    ✓
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-bold text-[#0B1F3A]">Order Placed — Awaiting Bank Settlement</h2>
-                    <p className="text-xs text-emerald-800 font-semibold mt-0.5">Batch reservation active for 48 hours</p>
-                  </div>
-                </div>
-
-                <p className="text-xs text-slate-700 leading-relaxed">
-                  Thank you, <strong>{customer?.first_name} {customer?.last_name}</strong>. Your research order has been placed successfully. Please remit payment via UK Faster Payments using the official banking details below:
-                </p>
-
-                <div className="bg-white rounded-xl p-4 sm:p-5 border border-emerald-200 space-y-3 text-xs shadow-xs">
-                  <div className="flex justify-between items-center pb-2.5 border-b border-slate-100">
-                    <span className="text-slate-500 font-medium">Payment Reference:</span>
-                    <span className="font-mono font-extrabold text-[#16A6A3] text-sm sm:text-base bg-teal-50 px-2.5 py-1 rounded border border-teal-200">
-                      {bankOrderReference}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Beneficiary Name:</span>
-                    <span className="font-bold text-[#0B1F3A]">PEPTECH BIO LTD</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Bank Name:</span>
-                    <span className="font-bold text-[#0B1F3A]">Barclays Commercial UK</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Sort Code:</span>
-                    <span className="font-mono font-bold text-[#0B1F3A]">20-00-00</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Account Number:</span>
-                    <span className="font-mono font-bold text-[#0B1F3A]">83920194</span>
-                  </div>
-                </div>
-
-                <div className="p-3.5 bg-blue-50/80 rounded-xl border border-blue-200 text-xs text-blue-900 space-y-1">
-                  <p className="font-bold flex items-center gap-1.5 text-blue-950">
-                    <span>ℹ</span>
-                    <span>Remittance Settlement Instructions</span>
-                  </p>
-                  <p className="text-[11.5px] leading-relaxed text-blue-800">
-                    Quote reference <strong>{bankOrderReference}</strong> in your payment notes. Once cleared via UK Faster Payments, your Royal Mail Tracked shipment will be dispatched automatically with tracking emailed to <strong>{customer?.email}</strong>.
-                  </p>
-                </div>
-
-                <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                  <Link
-                    href="/account"
-                    className="w-full sm:w-1/2 py-3 rounded-xl bg-[#0B1F3A] hover:bg-[#162A45] text-white text-center font-bold text-xs transition-colors shadow-xs"
-                  >
-                    View Account Orders
-                  </Link>
-                  <Link
-                    href="/shop"
-                    className="w-full sm:w-1/2 py-3 rounded-xl bg-white border border-slate-300 hover:border-[#0B1F3A] text-[#0B1F3A] text-center font-bold text-xs transition-colors"
-                  >
-                    Continue Research Browsing
-                  </Link>
-                </div>
-              </div>
-            </div>
-          ) : embeddedSession?.clientSecret ? (
+          {embeddedSession?.clientSecret ? (
             <div className="flex flex-col gap-4 animate-in fade-in duration-200">
               <div className="rounded-xl bg-slate-50 border border-slate-200 p-3.5 flex items-center justify-between text-xs">
                 <div>
                   <p className="font-bold text-[#0B1F3A]">
-                    {customer?.first_name} {customer?.last_name} · {customer?.email}
+                    {customer?.first_name} {customer?.last_name} ·{" "}
+                    {customer?.email}
                   </p>
                   <p className="text-slate-500 mt-0.5">
-                    Delivery: {country} · {selectedShippingOption?.name || "Shipping"}
+                    Delivery: {country} ·{" "}
+                    {selectedShippingOption?.name || "Shipping"}
                   </p>
                 </div>
                 <button
@@ -811,7 +834,9 @@ function CheckoutContent() {
           ) : isAuthLoading ? (
             <div className="py-20 flex flex-col items-center justify-center gap-3">
               <div className="w-8 h-8 border-3 border-[#16A6A3] border-t-transparent rounded-full animate-spin" />
-              <p className="text-sm font-semibold text-slate-600">Verifying researcher session...</p>
+              <p className="text-sm font-semibold text-slate-600">
+                Verifying researcher session...
+              </p>
             </div>
           ) : !isAuthenticated || !customer ? (
             /* ===================================================================== */
@@ -823,8 +848,10 @@ function CheckoutContent() {
                   Researcher Authentication Required
                 </h1>
                 <p className="text-sm text-slate-600 mt-2 leading-relaxed">
-                  Per UK &amp; international laboratory peptide regulations, all orders must be associated with an
-                  authenticated institutional researcher or authorized laboratory account. Guest checkout is disabled.
+                  Per UK &amp; international laboratory peptide regulations, all
+                  orders must be associated with an authenticated institutional
+                  researcher or authorized laboratory account. Guest checkout is
+                  disabled.
                 </p>
               </div>
 
@@ -833,8 +860,8 @@ function CheckoutContent() {
                 <button
                   type="button"
                   onClick={() => {
-                    setAuthMode("signin")
-                    setAuthError(null)
+                    setAuthMode("signin");
+                    setAuthError(null);
                   }}
                   className={`py-2.5 text-xs sm:text-sm font-semibold rounded-lg transition-all cursor-pointer ${
                     authMode === "signin"
@@ -847,8 +874,8 @@ function CheckoutContent() {
                 <button
                   type="button"
                   onClick={() => {
-                    setAuthMode("register")
-                    setAuthError(null)
+                    setAuthMode("register");
+                    setAuthError(null);
                   }}
                   className={`py-2.5 text-xs sm:text-sm font-semibold rounded-lg transition-all cursor-pointer ${
                     authMode === "register"
@@ -870,9 +897,14 @@ function CheckoutContent() {
 
               {/* Form 1: Inline Sign In */}
               {authMode === "signin" ? (
-                <form onSubmit={handleInlineLogin} className="flex flex-col gap-4">
+                <form
+                  onSubmit={handleInlineLogin}
+                  className="flex flex-col gap-4"
+                >
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-bold text-[#0B1F3A]">Institutional Researcher Email</label>
+                    <label className="text-xs font-bold text-[#0B1F3A]">
+                      Institutional Researcher Email
+                    </label>
                     <input
                       type="email"
                       required
@@ -884,7 +916,9 @@ function CheckoutContent() {
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-bold text-[#0B1F3A]">Account Password</label>
+                    <label className="text-xs font-bold text-[#0B1F3A]">
+                      Account Password
+                    </label>
                     <input
                       type="password"
                       required
@@ -903,7 +937,10 @@ function CheckoutContent() {
 
                   <button
                     type="submit"
-                    disabled={authSubmitting || (!!lockedUntil && Date.now() < lockedUntil)}
+                    disabled={
+                      authSubmitting ||
+                      (!!lockedUntil && Date.now() < lockedUntil)
+                    }
                     className="mt-2 w-full rounded-xl bg-[#0B1F3A] hover:bg-[#162A45] text-white p-4 font-semibold text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer shadow-sm"
                   >
                     {authSubmitting ? (
@@ -918,10 +955,15 @@ function CheckoutContent() {
                 </form>
               ) : (
                 /* Form 2: Inline Registration */
-                <form onSubmit={handleInlineRegister} className="flex flex-col gap-3.5">
+                <form
+                  onSubmit={handleInlineRegister}
+                  className="flex flex-col gap-3.5"
+                >
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
                     <div className="flex flex-col gap-1">
-                      <label className="text-xs font-bold text-[#0B1F3A]">Title</label>
+                      <label className="text-xs font-bold text-[#0B1F3A]">
+                        Title
+                      </label>
                       <CustomSelect
                         value={regTitle}
                         onChange={(val) => setRegTitle(val)}
@@ -930,7 +972,9 @@ function CheckoutContent() {
                       />
                     </div>
                     <div className="flex flex-col gap-1">
-                      <label className="text-xs font-bold text-[#0B1F3A]">First Name *</label>
+                      <label className="text-xs font-bold text-[#0B1F3A]">
+                        First Name *
+                      </label>
                       <input
                         type="text"
                         required
@@ -941,7 +985,9 @@ function CheckoutContent() {
                       />
                     </div>
                     <div className="flex flex-col gap-1">
-                      <label className="text-xs font-bold text-[#0B1F3A]">Last Name *</label>
+                      <label className="text-xs font-bold text-[#0B1F3A]">
+                        Last Name *
+                      </label>
                       <input
                         type="text"
                         required
@@ -954,7 +1000,9 @@ function CheckoutContent() {
                   </div>
 
                   <div className="flex flex-col gap-1">
-                    <label className="text-xs font-bold text-[#0B1F3A]">Institution / Facility Name *</label>
+                    <label className="text-xs font-bold text-[#0B1F3A]">
+                      Institution / Facility Name *
+                    </label>
                     <input
                       type="text"
                       required
@@ -966,7 +1014,9 @@ function CheckoutContent() {
                   </div>
 
                   <div className="flex flex-col gap-1">
-                    <label className="text-xs font-bold text-[#0B1F3A]">Institutional Email *</label>
+                    <label className="text-xs font-bold text-[#0B1F3A]">
+                      Institutional Email *
+                    </label>
                     <input
                       type="email"
                       required
@@ -979,7 +1029,10 @@ function CheckoutContent() {
 
                   <div className="flex flex-col gap-1">
                     <label className="text-xs font-bold text-[#0B1F3A]">
-                      Direct Phone / Lab Ext. <span className="font-normal text-slate-400">(optional)</span>
+                      Direct Phone / Lab Ext.{" "}
+                      <span className="font-normal text-slate-400">
+                        (optional)
+                      </span>
                     </label>
                     <input
                       type="tel"
@@ -992,7 +1045,9 @@ function CheckoutContent() {
 
                   <div className="grid grid-cols-2 gap-2">
                     <div className="flex flex-col gap-1">
-                      <label className="text-xs font-bold text-[#0B1F3A]">Password *</label>
+                      <label className="text-xs font-bold text-[#0B1F3A]">
+                        Password *
+                      </label>
                       <input
                         type="password"
                         required
@@ -1003,7 +1058,9 @@ function CheckoutContent() {
                       />
                     </div>
                     <div className="flex flex-col gap-1">
-                      <label className="text-xs font-bold text-[#0B1F3A]">Confirm *</label>
+                      <label className="text-xs font-bold text-[#0B1F3A]">
+                        Confirm *
+                      </label>
                       <input
                         type="password"
                         required
@@ -1024,9 +1081,13 @@ function CheckoutContent() {
                       className="mt-0.5 rounded border-slate-300 text-[#16A6A3] focus:ring-[#16A6A3]"
                     />
                     <span>
-                      I certify that I am at least 18 years old and represent an accredited laboratory or scientific
-                      facility. All purchases are strictly for{" "}
-                      <strong className="text-[#0B1F3A]">In-Vitro Laboratory Research Use Only (RUO)</strong>.
+                      I certify that I am at least 18 years old and represent an
+                      accredited laboratory or scientific facility. All
+                      purchases are strictly for{" "}
+                      <strong className="text-[#0B1F3A]">
+                        In-Vitro Laboratory Research Use Only (RUO)
+                      </strong>
+                      .
                     </span>
                   </label>
 
@@ -1051,13 +1112,20 @@ function CheckoutContent() {
             /* ===================================================================== */
             /* STATE B: AUTHENTICATED CHECKOUT (AUTO-FILLED FIELDS & STRIPE MOUNT)   */
             /* ===================================================================== */
-            <form onSubmit={handleProceedToPayment} className="flex flex-col gap-5 animate-in fade-in duration-200">
+            <form
+              onSubmit={handleProceedToPayment}
+              className="flex flex-col gap-5 animate-in fade-in duration-200"
+            >
               {/* Authenticated Researcher Badge */}
               <div className="rounded-xl bg-slate-50 border border-slate-200 p-4 flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-slate-500 font-medium">Signed in researcher</p>
+                  <p className="text-xs text-slate-500 font-medium">
+                    Signed in researcher
+                  </p>
                   <p className="text-sm font-bold text-[#0B1F3A]">
-                    {customer.metadata?.title ? `${customer.metadata.title} ` : ""}
+                    {customer.metadata?.title
+                      ? `${customer.metadata.title} `
+                      : ""}
                     {customer.first_name} {customer.last_name}
                     {customer.company_name ? ` · ${customer.company_name}` : ""}
                   </p>
@@ -1086,14 +1154,16 @@ function CheckoutContent() {
                 </div>
                 {countryOptions.length === 0 && (
                   <span className="mt-1 block text-[11px] font-medium text-amber-700">
-                    Loading countries from Medusa regions&hellip;
+                    Loading countries&hellip;
                   </span>
                 )}
                 {destination === "INTL" && (
                   <div className="mt-2.5 flex items-center gap-2 p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600">
                     <span className="text-[#16A6A3] font-bold">ℹ</span>
                     <span>
-                      International orders are processed securely in <strong>GBP (£)</strong>. Your card provider will convert automatically at live interbank exchange rates.
+                      International orders are processed securely in{" "}
+                      <strong>GBP (£)</strong>. Your card provider will convert
+                      automatically at live interbank exchange rates.
                     </span>
                   </div>
                 )}
@@ -1108,12 +1178,13 @@ function CheckoutContent() {
                   </div>
                 ) : shippingOptions.length === 0 ? (
                   <div className="mt-1.5 rounded-xl border border-amber-300 bg-amber-50 p-3.5 text-sm text-amber-800 font-medium">
-                    No shipping method is available for this destination. Choose another country to continue.
+                    No shipping method is available for this destination. Choose
+                    another country to continue.
                   </div>
                 ) : (
                   <div className="mt-1.5 flex flex-col gap-2">
                     {shippingOptions.map((option) => {
-                      const active = option.id === shippingOptionId
+                      const active = option.id === shippingOptionId;
                       return (
                         <button
                           key={option.id}
@@ -1129,37 +1200,46 @@ function CheckoutContent() {
                           <span className="flex items-center gap-3 min-w-0">
                             <span
                               className={`inline-block h-3.5 w-3.5 shrink-0 rounded-full border-2 ${
-                                active ? "border-[#16A6A3] bg-[#16A6A3]" : "border-slate-300"
+                                active
+                                  ? "border-[#16A6A3] bg-[#16A6A3]"
+                                  : "border-slate-300"
                               }`}
                             />
                             <span className="min-w-0">
-                              <span className="block text-sm font-bold text-[#0B1F3A] truncate">{option.name}</span>
+                              <span className="block text-sm font-bold text-[#0B1F3A] truncate">
+                                {option.name}
+                              </span>
                               {option.description ? (
-                                <span className="block text-xs text-slate-500 truncate">{option.description}</span>
+                                <span className="block text-xs text-slate-500 truncate">
+                                  {option.description}
+                                </span>
                               ) : null}
                             </span>
                           </span>
                           {(() => {
-                            const isFree = isOptionEligibleForFree(option)
+                            const isFree = isOptionEligibleForFree(option);
                             if (isFree) {
                               return (
                                 <span className="text-sm font-bold text-[#00C5A0] shrink-0 flex items-center gap-1.5">
                                   <span>FREE</span>
                                   {option.amount > 0 && (
-                                    <span className="text-xs line-through text-slate-400 font-normal">{money(option.amount)}</span>
+                                    <span className="text-xs line-through text-slate-400 font-normal">
+                                      {money(option.amount)}
+                                    </span>
                                   )}
                                 </span>
-                              )
+                              );
                             }
                             return (
                               <span className="text-sm font-bold text-[#0B1F3A] shrink-0">
-                                {option.amount === 0 ? "FREE" : money(option.amount)}
+                                {option.amount === 0
+                                  ? "FREE"
+                                  : money(option.amount)}
                               </span>
-                            )
+                            );
                           })()}
                         </button>
-
-                      )
+                      );
                     })}
                   </div>
                 )}
@@ -1168,30 +1248,43 @@ function CheckoutContent() {
               {/* Auto-filled Delivery Address Details */}
               <div className="rounded-xl border border-slate-200 p-4 space-y-3 bg-white">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-[#0B1F3A]">Laboratory Delivery Address</span>
+                  <span className="text-xs font-bold text-[#0B1F3A]">
+                    Laboratory Delivery Address
+                  </span>
                   {availableAddresses.length > 0 && !useCustomAddress ? (
-                    <span className="text-[11px] text-[#00C5A0] font-semibold">● Auto-filled from Profile</span>
+                    <span className="text-[11px] text-[#00C5A0] font-semibold">
+                      ● Auto-filled from Profile
+                    </span>
                   ) : customAddress.address_1 ? (
-                    <span className="text-[11px] text-[#00C5A0] font-semibold">● Saved Details Loaded</span>
+                    <span className="text-[11px] text-[#00C5A0] font-semibold">
+                      ● Saved Details Loaded
+                    </span>
                   ) : (
-                    <span className="text-[11px] text-slate-400 font-medium">● Enter Laboratory Destination</span>
+                    <span className="text-[11px] text-slate-400 font-medium">
+                      ● Enter Laboratory Destination
+                    </span>
                   )}
                 </div>
 
                 {availableAddresses.length > 1 && !useCustomAddress && (
                   <div className="flex gap-2 items-center overflow-x-auto pb-1">
-                    <span className="text-[11px] text-slate-500 shrink-0 font-medium">Saved Addresses:</span>
+                    <span className="text-[11px] text-slate-500 shrink-0 font-medium">
+                      Saved Addresses:
+                    </span>
                     {availableAddresses.map((addr, idx) => (
                       <button
                         key={addr.id || idx}
                         type="button"
                         onClick={() => {
-                          setSelectedAddressIndex(idx)
-                          isUserManualCountryChangeRef.current = false
-                          setUseCustomAddress(false)
+                          setSelectedAddressIndex(idx);
+                          isUserManualCountryChangeRef.current = false;
+                          setUseCustomAddress(false);
                           if (addr.country_code) {
-                            const matched = findCountryByCode(countryOptions, addr.country_code)
-                            if (matched) setCountry(matched.name)
+                            const matched = findCountryByCode(
+                              countryOptions,
+                              addr.country_code,
+                            );
+                            if (matched) setCountry(matched.name);
                           }
                         }}
                         className={`text-xs px-2.5 py-1 rounded-md transition-colors cursor-pointer shrink-0 border ${
@@ -1200,7 +1293,8 @@ function CheckoutContent() {
                             : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
                         }`}
                       >
-                        {addr.address_1?.slice(0, 18) || `Address #${idx + 1}`} ({addr.city || addr.postal_code})
+                        {addr.address_1?.slice(0, 18) || `Address #${idx + 1}`}{" "}
+                        ({addr.city || addr.postal_code})
                       </button>
                     ))}
                   </div>
@@ -1217,17 +1311,26 @@ function CheckoutContent() {
                         DEFAULT DESTINATION
                       </span>
                     </div>
-                    <p className="font-medium text-[#0f172a]">{availableAddresses[selectedAddressIndex]?.address_1}</p>
+                    <p className="font-medium text-[#0f172a]">
+                      {availableAddresses[selectedAddressIndex]?.address_1}
+                    </p>
                     {availableAddresses[selectedAddressIndex]?.address_2 && (
-                      <p className="text-slate-600">{availableAddresses[selectedAddressIndex]?.address_2}</p>
+                      <p className="text-slate-600">
+                        {availableAddresses[selectedAddressIndex]?.address_2}
+                      </p>
                     )}
                     <p className="text-slate-600">
-                      {availableAddresses[selectedAddressIndex]?.city}{availableAddresses[selectedAddressIndex]?.city ? ", " : ""}
+                      {availableAddresses[selectedAddressIndex]?.city}
+                      {availableAddresses[selectedAddressIndex]?.city
+                        ? ", "
+                        : ""}
                       {availableAddresses[selectedAddressIndex]?.postal_code}
                       {(() => {
-                        const cCode = availableAddresses[selectedAddressIndex]?.country_code
-                        const cName = formatCountryCode(cCode, countryOptions)
-                        return cName ? ` · ${cName}` : ""
+                        const cCode =
+                          availableAddresses[selectedAddressIndex]
+                            ?.country_code;
+                        const cName = formatCountryCode(cCode, countryOptions);
+                        return cName ? ` · ${cName}` : "";
                       })()}
                     </p>
                     <div className="pt-1.5 border-t border-slate-200/60 flex items-center justify-between">
@@ -1244,7 +1347,9 @@ function CheckoutContent() {
                   <div className="space-y-2.5 pt-1">
                     {availableAddresses.length > 0 && (
                       <div className="flex items-center justify-between pb-1">
-                        <span className="text-[11.5px] text-slate-500 font-medium">Custom Destination</span>
+                        <span className="text-[11.5px] text-slate-500 font-medium">
+                          Custom Destination
+                        </span>
                         <button
                           type="button"
                           onClick={() => setUseCustomAddress(false)}
@@ -1258,7 +1363,12 @@ function CheckoutContent() {
                       type="text"
                       placeholder="Street Address (Line 1)"
                       value={customAddress.address_1}
-                      onChange={(e) => setCustomAddress({ ...customAddress, address_1: e.target.value })}
+                      onChange={(e) =>
+                        setCustomAddress({
+                          ...customAddress,
+                          address_1: e.target.value,
+                        })
+                      }
                       required
                       className="w-full border border-slate-300 rounded-lg p-2.5 text-xs text-[#0B1F3A] outline-none focus:border-[#16A6A3]"
                     />
@@ -1266,7 +1376,12 @@ function CheckoutContent() {
                       type="text"
                       placeholder="Suite / Lab Wing (Line 2)"
                       value={customAddress.address_2}
-                      onChange={(e) => setCustomAddress({ ...customAddress, address_2: e.target.value })}
+                      onChange={(e) =>
+                        setCustomAddress({
+                          ...customAddress,
+                          address_2: e.target.value,
+                        })
+                      }
                       className="w-full border border-slate-300 rounded-lg p-2.5 text-xs text-[#0B1F3A] outline-none focus:border-[#16A6A3]"
                     />
                     <div className="grid grid-cols-2 gap-2">
@@ -1274,7 +1389,12 @@ function CheckoutContent() {
                         type="text"
                         placeholder="City"
                         value={customAddress.city}
-                        onChange={(e) => setCustomAddress({ ...customAddress, city: e.target.value })}
+                        onChange={(e) =>
+                          setCustomAddress({
+                            ...customAddress,
+                            city: e.target.value,
+                          })
+                        }
                         required
                         className="border border-slate-300 rounded-lg p-2.5 text-xs text-[#0B1F3A] outline-none focus:border-[#16A6A3]"
                       />
@@ -1282,7 +1402,12 @@ function CheckoutContent() {
                         type="text"
                         placeholder="Postal Code"
                         value={customAddress.postal_code}
-                        onChange={(e) => setCustomAddress({ ...customAddress, postal_code: e.target.value })}
+                        onChange={(e) =>
+                          setCustomAddress({
+                            ...customAddress,
+                            postal_code: e.target.value,
+                          })
+                        }
                         required
                         className="border border-slate-300 rounded-lg p-2.5 text-xs text-[#0B1F3A] outline-none focus:border-[#16A6A3]"
                       />
@@ -1290,125 +1415,6 @@ function CheckoutContent() {
                   </div>
                 )}
               </div>
-
-              {/* Payment Gateway Selection */}
-              <div className="rounded-xl border border-slate-200 p-4 space-y-3.5 bg-white">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-[#0B1F3A] uppercase tracking-wider">
-                    Payment Gateway Selection
-                  </span>
-                  <span className="text-[10px] font-semibold text-slate-500">
-                    Compliant High-Risk RUO Processing
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  {/* Option 1: High-Risk Card Processing / Authorize.Net */}
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod("card")}
-                    className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
-                      paymentMethod === "card"
-                        ? "border-[#16A6A3] bg-teal-50/50 ring-2 ring-[#16A6A3]/60 shadow-xs"
-                        : "border-slate-200 bg-slate-50/40 hover:border-slate-300"
-                    }`}
-                  >
-                    <div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-[#0B1F3A]">Credit / Debit Card</span>
-                        <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">
-                          Instant
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-slate-500 mt-1 leading-snug">
-                        High-Risk Card Gateway · 3-D Secure (SCA) &amp; Tokenized 28-Day Billing
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-1.5 mt-2.5 pt-2 border-t border-slate-200/50">
-                      <span className="text-[9px] font-semibold text-slate-600 bg-white px-1.5 py-0.5 rounded border border-slate-200">Visa</span>
-                      <span className="text-[9px] font-semibold text-slate-600 bg-white px-1.5 py-0.5 rounded border border-slate-200">Mastercard</span>
-                      <span className="text-[9px] font-semibold text-slate-600 bg-white px-1.5 py-0.5 rounded border border-slate-200">Amex</span>
-                      <span className="text-[9px] font-semibold text-slate-600 bg-white px-1.5 py-0.5 rounded border border-slate-200">3-D Secure</span>
-                    </div>
-                  </button>
-
-                  {/* Option 2: UK Faster Payments (Bank Transfer Fallback) */}
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod("bank_transfer")}
-                    className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
-                      paymentMethod === "bank_transfer"
-                        ? "border-[#16A6A3] bg-teal-50/50 ring-2 ring-[#16A6A3]/60 shadow-xs"
-                        : "border-slate-200 bg-slate-50/40 hover:border-slate-300"
-                    }`}
-                  >
-                    <div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-[#0B1F3A]">UK Faster Payments</span>
-                        <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-800">
-                          Bank Transfer
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-slate-500 mt-1 leading-snug">
-                        Direct UK Bank Wire · Zero Acquirer Surcharge · Instant Settlement
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-1.5 mt-2.5 pt-2 border-t border-slate-200/50">
-                      <span className="text-[9px] font-semibold text-slate-600 bg-white px-1.5 py-0.5 rounded border border-slate-200">Sort Code</span>
-                      <span className="text-[9px] font-semibold text-slate-600 bg-white px-1.5 py-0.5 rounded border border-slate-200">Account No</span>
-                      <span className="text-[9px] font-semibold text-slate-600 bg-white px-1.5 py-0.5 rounded border border-slate-200">BACS/CHAPS</span>
-                    </div>
-                  </button>
-                </div>
-
-                {/* UK Faster Payments Settlement Instructions */}
-                {paymentMethod === "bank_transfer" && (
-                  <div className="rounded-xl border border-blue-200 bg-blue-50/70 p-4 space-y-3 animate-in fade-in">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-bold text-[#0B1F3A] uppercase tracking-wider">
-                        UK Settlement Banking Credentials
-                      </span>
-                      <span className="text-[10px] font-semibold text-blue-700 bg-blue-100 px-2 py-0.5 rounded">
-                        Barclays UK
-                      </span>
-                    </div>
-
-                    <p className="text-xs text-slate-600 leading-relaxed">
-                      Remit total due today (<strong>{money(finalSubtotal + (shippingAvailable ? shippingCost : 0))}</strong>) using your institution banking portal:
-                    </p>
-
-                    <div className="grid grid-cols-2 gap-2.5 text-xs bg-white rounded-lg p-3.5 border border-blue-200/80">
-                      <div>
-                        <span className="text-[10px] text-slate-400 font-semibold block uppercase">Beneficiary Name</span>
-                        <span className="font-bold text-[#0B1F3A]">PEPTECH BIO LTD</span>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-slate-400 font-semibold block uppercase">Bank Name</span>
-                        <span className="font-bold text-[#0B1F3A]">Barclays Commercial UK</span>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-slate-400 font-semibold block uppercase">Sort Code</span>
-                        <span className="font-mono font-bold text-[#0B1F3A] text-sm">20-00-00</span>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-slate-400 font-semibold block uppercase">Account Number</span>
-                        <span className="font-mono font-bold text-[#0B1F3A] text-sm">83920194</span>
-                      </div>
-                      <div className="col-span-2 pt-2 border-t border-slate-100 flex items-center justify-between">
-                        <span className="text-[11px] text-slate-500 font-medium">Payment Reference:</span>
-                        <span className="font-mono font-extrabold text-[#16A6A3] bg-teal-50 px-2 py-0.5 rounded border border-teal-200 text-xs">
-                          PEP-ORDER-ID (Auto-Generated)
-                        </span>
-                      </div>
-                    </div>
-
-                    <p className="text-[11px] text-slate-500 italic">
-                      Orders placed via bank transfer are reserved in inventory for 48 hours. Royal Mail Tracked dispatch attaches automatically upon clearance.
-                    </p>
-                  </div>
-                )}
-              </div>
-
               {/* 28-day Subscription Consent Checkbox */}
               {hasSubscription && (
                 <label className="flex gap-3 text-xs text-slate-700 bg-teal-50/60 border border-teal-200/80 p-3.5 rounded-xl cursor-pointer">
@@ -1436,11 +1442,17 @@ function CheckoutContent() {
                 />
                 <span className="leading-snug">
                   I agree to the{" "}
-                  <Link href="/terms-of-sale" className="underline font-medium text-[#0B1F3A]">
+                  <Link
+                    href="/terms-of-sale"
+                    className="underline font-medium text-[#0B1F3A]"
+                  >
                     Terms of Sale
                   </Link>
                   ,{" "}
-                  <Link href="/privacy-policy" className="underline font-medium text-[#0B1F3A]">
+                  <Link
+                    href="/privacy-policy"
+                    className="underline font-medium text-[#0B1F3A]"
+                  >
                     Privacy Policy
                   </Link>{" "}
                   and strictly In-Vitro Laboratory Research Use Only conditions.
@@ -1448,49 +1460,57 @@ function CheckoutContent() {
               </label>
 
               {/* Error Message */}
-              {error && <p role="alert" className="text-xs text-red-600 bg-red-50 p-3 rounded-lg border border-red-200">{error}</p>}
+              {error && (
+                <p
+                  role="alert"
+                  className="text-xs text-red-600 bg-red-50 p-3 rounded-lg border border-red-200"
+                >
+                  {error}
+                </p>
+              )}
 
               {/* Submit CTA Button */}
               <button
-                disabled={busy || !ruo || (hasSubscription && !recurring) || !shippingReady || !shippingAvailable}
+                disabled={
+                  busy ||
+                  !ruo ||
+                  (hasSubscription && !recurring) ||
+                  !shippingReady ||
+                  !shippingAvailable
+                }
                 type="submit"
                 className="w-full rounded-xl bg-[#0B1F3A] hover:bg-[#162A45] p-4 font-bold text-sm text-white disabled:opacity-50 transition-colors shadow-sm cursor-pointer flex items-center justify-center gap-2"
               >
                 {busy ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>
-                      {paymentMethod === "bank_transfer"
-                        ? "Registering Bank Transfer Order…"
-                        : "Connecting to Secure Card Gateway…"}
-                    </span>
+                    <span>Connecting to Secure Card Gateway…</span>
                   </>
                 ) : (
-                  <span>
-                    {paymentMethod === "bank_transfer"
-                      ? "Place Order via Bank Transfer"
-                      : "Continue to Secure Card Payment"}
-                  </span>
+                  <span>Continue to Secure Card Payment</span>
                 )}
               </button>
 
               {shippingReady && !shippingAvailable && (
-                <p role="alert" className="text-xs text-amber-700 bg-amber-50 p-3 rounded-lg border border-amber-200">
-                  No shipping method is available for this destination. Select a different delivery country.
+                <p
+                  role="alert"
+                  className="text-xs text-amber-700 bg-amber-50 p-3 rounded-lg border border-amber-200"
+                >
+                  No shipping method is available for this destination. Select a
+                  different delivery country.
                 </p>
               )}
 
               <p className="text-center text-xs text-slate-500">
-                {paymentMethod === "bank_transfer"
-                  ? "Settlement instructions and your dedicated order reference will also be sent to your email."
-                  : "Payment fields will automatically pre-populate with your verified researcher details."}
+                Payment fields will automatically pre-populate with your
+                verified researcher details.
               </p>
             </form>
           )}
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 export default function CheckoutPage() {
@@ -1498,5 +1518,5 @@ export default function CheckoutPage() {
     <Suspense fallback={<CheckoutSkeleton />}>
       <CheckoutContent />
     </Suspense>
-  )
+  );
 }

@@ -118,12 +118,22 @@ async function withAmounts(scope: any, policy: CommercePolicy, options: any[]): 
   for (const option of options) {
     const amount = amountMinorFor(priced.get(option.id), policy, 1)
     if (amount === null) continue
+    const resolvedDescription =
+      (typeof option.type?.description === "string" && option.type.description.trim()) ||
+      (typeof option.type?.label === "string" && option.type.label.trim() !== option.name?.trim() && option.type.label.trim()) ||
+      (typeof option.metadata?.description === "string" && option.metadata.description.trim()) ||
+      (typeof option.metadata?.subheader === "string" && option.metadata.subheader.trim()) ||
+      (typeof option.data?.description === "string" && option.data.description.trim()) ||
+      (typeof option.data?.subheader === "string" && option.data.subheader.trim()) ||
+      (typeof option.description === "string" && option.description.trim()) ||
+      null
+
     resolved.push({
       id: option.id,
       name: option.name,
       price_type: option.price_type,
       amount_minor: amount,
-      description: option.type?.description ?? null,
+      description: resolvedDescription,
       code: option.type?.code ?? null,
       type_id: option.type?.id ?? option.shipping_option_type_id ?? null,
       shipping_option_type_id: option.shipping_option_type_id ?? option.type?.id ?? null,
@@ -182,3 +192,260 @@ export async function resolveShippingOption(
   if (!chosen) fail("The selected shipping method is unavailable for this destination", 409)
   return chosen
 }
+
+export type ProductShippingFormat = "pen_set" | "refill" | "vial"
+
+export type DynamicShippingItem = {
+  format?: string | null
+  metadata?: Record<string, any> | null
+  handle?: string | null
+  title?: string | null
+  quantity?: number
+  unit_minor?: number
+  recurring?: boolean
+}
+
+export type DynamicShippingCalculation = {
+  amount_minor: number
+  free_shipping: boolean
+  reason: "free_threshold" | "renewal_free" | "subscription_free" | "category_rate"
+  rate_tier: ProductShippingFormat
+  is_uk: boolean
+  shipping_option_name: string
+}
+
+export function resolveItemFormat(item: {
+  format?: string | null
+  metadata?: Record<string, any> | null
+  handle?: string | null
+  title?: string | null
+}): ProductShippingFormat {
+  const candidate = String(
+    item.format ||
+    item.metadata?.format ||
+    item.metadata?.category ||
+    item.handle ||
+    item.title ||
+    ""
+  ).toLowerCase()
+
+  if (
+    candidate.includes("pen") ||
+    candidate.includes("device") ||
+    candidate.includes("starter-set") ||
+    candidate.includes("complete-pen")
+  ) {
+    return "pen_set"
+  }
+  if (candidate.includes("cartridge") || candidate.includes("refill")) {
+    return "refill"
+  }
+  return "vial"
+}
+
+export type ShippingServiceZone = {
+  id: string
+  name: string
+  countries: string[]
+  rates?: {
+    pen_set_minor?: number
+    refill_minor?: number
+    vial_minor?: number
+  }
+}
+
+export async function listLocationServiceZones(
+  scope: any,
+  policy: CommercePolicy
+): Promise<ShippingServiceZone[]> {
+  try {
+    const query = scope.resolve(ContainerRegistrationKeys.QUERY)
+    let locations: any[] = []
+    const result = await query.graph({
+      entity: "stock_locations",
+      fields: [
+        "id",
+        "name",
+        "fulfillment_sets.id",
+        "fulfillment_sets.name",
+        "fulfillment_sets.service_zones.id",
+        "fulfillment_sets.service_zones.name",
+        "fulfillment_sets.service_zones.geo_zones.id",
+        "fulfillment_sets.service_zones.geo_zones.country_code",
+      ],
+      filters: policy?.location_id ? { id: policy.location_id } : {},
+    })
+    locations = result?.data || []
+    if (locations.length === 0 && policy?.location_id) {
+      const fallback = await query.graph({
+        entity: "stock_locations",
+        fields: [
+          "id",
+          "name",
+          "fulfillment_sets.id",
+          "fulfillment_sets.name",
+          "fulfillment_sets.service_zones.id",
+          "fulfillment_sets.service_zones.name",
+          "fulfillment_sets.service_zones.geo_zones.id",
+          "fulfillment_sets.service_zones.geo_zones.country_code",
+        ],
+      })
+      locations = fallback?.data || []
+    }
+
+    const zoneMap = new Map<string, ShippingServiceZone>()
+    for (const loc of locations) {
+      for (const fset of loc.fulfillment_sets || []) {
+        for (const sz of fset.service_zones || []) {
+          if (!sz?.id || zoneMap.has(sz.id)) continue
+          const countries = (sz.geo_zones || [])
+            .map((gz: any) => String(gz?.country_code || "").toLowerCase())
+            .filter(Boolean)
+          const savedRates = policy?.service_zone_rates?.[sz.id]
+          const isUkZone = countries.includes("gb")
+          const rates = savedRates
+            ? {
+                pen_set_minor: Number(savedRates.pen_set_minor ?? (isUkZone ? 495 : 1800)),
+                refill_minor: Number(savedRates.refill_minor ?? (isUkZone ? 395 : 1000)),
+                vial_minor: Number(savedRates.vial_minor ?? (isUkZone ? 395 : 1000)),
+              }
+            : {
+                pen_set_minor: isUkZone ? 495 : 1800,
+                refill_minor: isUkZone ? 395 : 1000,
+                vial_minor: isUkZone ? 395 : 1000,
+              }
+          zoneMap.set(sz.id, {
+            id: sz.id,
+            name: sz.name,
+            countries,
+            rates,
+          })
+        }
+      }
+    }
+    return Array.from(zoneMap.values())
+  } catch (err: any) {
+    console.warn("[PEPTECH Commerce] listLocationServiceZones error:", err?.message || err)
+    return []
+  }
+}
+
+export function calculateDynamicShipping({
+  items,
+  countryCode,
+  policy,
+  isRenewal = false,
+  itemsSubtotalMinor,
+  serviceZones,
+}: {
+  items: DynamicShippingItem[]
+  countryCode: string
+  policy?: CommercePolicy | null
+  isRenewal?: boolean
+  itemsSubtotalMinor?: number
+  serviceZones?: ShippingServiceZone[]
+}): DynamicShippingCalculation {
+  const cleanCountry = String(countryCode || "gb").trim().toLowerCase()
+  const isUk = cleanCountry === "gb"
+
+  let penSetMinor = isUk
+    ? (policy?.shipping_rates?.pen_set_uk_minor ?? 495)
+    : (policy?.shipping_rates?.pen_set_intl_minor ?? 1800)
+  let refillMinor = isUk
+    ? (policy?.shipping_rates?.refill_uk_minor ?? 395)
+    : (policy?.shipping_rates?.refill_intl_minor ?? 1000)
+  let vialMinor = isUk
+    ? (policy?.shipping_rates?.vial_uk_minor ?? 395)
+    : (policy?.shipping_rates?.vial_intl_minor ?? 1000)
+
+  // Service Zone matching if provided
+  if (serviceZones && serviceZones.length > 0) {
+    const matchedZone = serviceZones.find((z) =>
+      z.countries.map((c) => c.toLowerCase()).includes(cleanCountry)
+    )
+    if (matchedZone) {
+      const isUkZone = matchedZone.countries.map((c) => c.toLowerCase()).includes("gb")
+      const savedRate = policy?.service_zone_rates?.[matchedZone.id] || matchedZone.rates
+      if (savedRate) {
+        penSetMinor = Number(savedRate.pen_set_minor ?? (isUkZone ? 495 : 1800))
+        refillMinor = Number(savedRate.refill_minor ?? (isUkZone ? 395 : 1000))
+        vialMinor = Number(savedRate.vial_minor ?? (isUkZone ? 395 : 1000))
+      } else {
+        penSetMinor = isUkZone ? 495 : 1800
+        refillMinor = isUkZone ? 395 : 1000
+        vialMinor = isUkZone ? 395 : 1000
+      }
+    }
+  }
+
+  const thresholdMinor = Number(policy?.free_shipping_threshold_minor ?? 15000)
+  const subtotal = itemsSubtotalMinor ?? items.reduce((sum, item) => sum + (item.unit_minor ?? 0) * (item.quantity ?? 1), 0)
+
+  // 1. Spend threshold >= £150 -> Free shipping everywhere
+  if (subtotal >= thresholdMinor) {
+    return {
+      amount_minor: 0,
+      free_shipping: true,
+      reason: "free_threshold",
+      rate_tier: "pen_set",
+      is_uk: isUk,
+      shipping_option_name: isUk ? "Royal Mail Tracked 24 (Free)" : "Royal Mail International Tracked (Free)",
+    }
+  }
+
+  // 2. Automatic renewals are always free everywhere
+  if (isRenewal) {
+    return {
+      amount_minor: 0,
+      free_shipping: true,
+      reason: "renewal_free",
+      rate_tier: "refill",
+      is_uk: isUk,
+      shipping_option_name: isUk ? "Royal Mail Tracked 24 (Free)" : "Royal Mail International Tracked (Free)",
+    }
+  }
+
+  // 3. Pure Subscribe & Save cart (all items recurring)
+  const isPureSubscription = items.length > 0 && items.every((i) => Boolean(i.recurring))
+  const subscriptionFirstOrderFree = policy?.subscription_first_order_free !== false
+
+  if (isPureSubscription && subscriptionFirstOrderFree) {
+    return {
+      amount_minor: 0,
+      free_shipping: true,
+      reason: "subscription_free",
+      rate_tier: "refill",
+      is_uk: isUk,
+      shipping_option_name: isUk ? "Royal Mail Tracked 24 (Free)" : "Royal Mail International Tracked (Free)",
+    }
+  }
+
+  // 4. Category-based rate evaluation
+  // If any item is a pen set, highest tier applies
+  const hasPenSet = items.some((item) => resolveItemFormat(item) === "pen_set")
+  const hasRefill = items.some((item) => resolveItemFormat(item) === "refill")
+
+  let rateTier: ProductShippingFormat = "vial"
+  let amountMinor = 0
+
+  if (hasPenSet || items.length === 0) {
+    rateTier = "pen_set"
+    amountMinor = penSetMinor
+  } else if (hasRefill) {
+    rateTier = "refill"
+    amountMinor = refillMinor
+  } else {
+    rateTier = "vial"
+    amountMinor = vialMinor
+  }
+
+  return {
+    amount_minor: amountMinor,
+    free_shipping: false,
+    reason: "category_rate",
+    rate_tier: rateTier,
+    is_uk: isUk,
+    shipping_option_name: isUk ? "Royal Mail Tracked 24" : "Royal Mail International Tracked",
+  }
+}
+

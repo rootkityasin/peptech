@@ -7,7 +7,7 @@ export function applyStripeLines(original:Quote,rows:any[],total:number,invoice=
  const expected=[...quote.lines.map(line=>({line,shipping:false})),{line:null,shipping:true}]
  const seen=new Set<number>();let tax=0,renewal=0,sum=0
  for(const row of rows){
-  const priceId=invoice?row.pricing?.price_details?.price:row.price?.id
+  const priceId=invoice?(row.pricing?.price_details?.price||row.price?.id):row.price?.id
   const product=row.price?.product
   const index=expected.findIndex(({line,shipping},i)=>!seen.has(i)&&(invoice
    ?priceId===(shipping?quote.shipping_price_id:line!.stripe_price_id)
@@ -15,7 +15,7 @@ export function applyStripeLines(original:Quote,rows:any[],total:number,invoice=
   if(index<0)fail("Stripe line identity requires reconciliation",409)
   seen.add(index);const {line,shipping}=expected[index]
   const quantity=shipping?1:line!.quantity;const unit=shipping?quote.shipping_minor:line!.unit_minor
-  if(row.quantity!==quantity||Number(invoice?row.pricing?.unit_amount_decimal:row.price?.unit_amount)!==unit||row.currency!==quote.currency||row.amount_discount||row.discount_amounts?.length)fail("Stripe base price or quantity differs from the agreed basket",409)
+  if(row.quantity!==quantity||Number(invoice?(row.pricing?.unit_amount_decimal||row.price?.unit_amount):row.price?.unit_amount)!==unit||row.currency!==quote.currency||row.amount_discount||row.discount_amounts?.length)fail("Stripe base price or quantity differs from the agreed basket",409)
   const taxes=row.taxes||[]
   const lineTax=invoice?taxes.reduce((n:number,t:any)=>n+t.amount,0):row.amount_tax
   const inclusive=invoice?taxes.every((t:any)=>t.tax_behavior==="inclusive"):row.price.tax_behavior==="inclusive"

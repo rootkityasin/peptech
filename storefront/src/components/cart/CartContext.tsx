@@ -1,7 +1,7 @@
 "use client"
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react"
-import { getShippingOptions, type ShippingOption } from "@/lib/shipping-options"
+import { getShippingOptionsWithConfig, type ShippingOption, type ShippingRatesConfig } from "@/lib/shipping-options"
 import { getBackendUrl, PUBLISHABLE_KEY } from "@/lib/customer-api"
 import { fetchCountryOptions, findCountryByName, type CountryOption } from "@/lib/regions"
 import { fetchRegionVariantPrices } from "@/lib/region-pricing"
@@ -248,6 +248,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>([])
   const [shippingOptionId, setShippingOptionIdState] = useState<string | null>(null)
   const [shippingLoaded, setShippingLoaded] = useState(false)
+  const [shippingRatesConfig, setShippingRatesConfig] = useState<ShippingRatesConfig>({
+    pen_set_uk_minor: 495,
+    pen_set_intl_minor: 1800,
+    refill_uk_minor: 395,
+    refill_intl_minor: 1000,
+    vial_uk_minor: 395,
+    vial_intl_minor: 1000,
+  })
+  const [subscriptionFirstOrderFree, setSubscriptionFirstOrderFree] = useState<boolean>(true)
   const [appliedPromo, setAppliedPromo] = useState<AppliedPromotion | null>(null)
   const [autoSavings, setAutoSavings] = useState<AutoSavingsConfig>(DEFAULT_AUTO_SAVINGS)
   const [featuredPromo, setFeaturedPromo] = useState<FeaturedPromoConfig | null>(null)
@@ -453,13 +462,17 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setShippingLoaded(false)
     const selectedCountry = findCountryByName(countryOptions, country)
     const countryCode = (selectedCountry?.code || "GB").toLowerCase()
-    getShippingOptions(countryCode).then((options) => {
+    getShippingOptionsWithConfig(countryCode).then((res) => {
       if (cancelled) return
-      setShippingOptions(options)
+      setShippingOptions(res.options)
+      if (res.shipping_rates) setShippingRatesConfig(res.shipping_rates)
+      if (res.subscription_first_order_free !== undefined) {
+        setSubscriptionFirstOrderFree(res.subscription_first_order_free)
+      }
       setShippingOptionIdState((current) =>
-        current && options.some((option) => option.id === current)
+        current && res.options.some((option) => option.id === current)
           ? current
-          : options[0]?.id || null
+          : res.options[0]?.id || null
       )
       setShippingLoaded(true)
     })
@@ -671,13 +684,70 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     } catch {}
   }
 
+function getItemFormat(item: CartItem): "pen_set" | "refill" | "vial" {
+  const candidate = String(
+    item.format ||
+    item.productHandle ||
+    item.title ||
+    ""
+  ).toLowerCase()
+
+  if (
+    candidate.includes("pen") ||
+    candidate.includes("device") ||
+    candidate.includes("starter-set") ||
+    candidate.includes("complete-pen")
+  ) {
+    return "pen_set"
+  }
+  if (candidate.includes("cartridge") || candidate.includes("refill")) {
+    return "refill"
+  }
+  return "vial"
+}
+
   // Authoritative rates come from Medusa; an empty list means no option is
   // configured for this destination and checkout will refuse to price it.
-  const selectedShippingOption = shippingOptions.find((option) => option.id === shippingOptionId) || null
-  const shippingAvailable = shippingLoaded && shippingOptions.length > 0
-  const isFreeShippingUnlocked = freeShipping?.enabled && finalSubtotal >= (freeShipping?.threshold || 150)
+  const isUk = (countryCode || "gb").toLowerCase() === "gb"
+  const isPureSubscription = items.length > 0 && items.every((i) => Boolean(i.isSubscription))
+  const isSubscriptionFree = isPureSubscription && subscriptionFirstOrderFree
+
+  const isFreeShippingUnlocked = (freeShipping?.enabled && finalSubtotal >= (freeShipping?.threshold || 150)) || isSubscriptionFree
   const isOptionEligibleForFree = (opt: ShippingOption | null | undefined) =>
-    isShippingOptionEligibleForFree(opt, freeShipping, finalSubtotal)
+    isSubscriptionFree || isShippingOptionEligibleForFree(opt, freeShipping, finalSubtotal)
+
+  let dynamicRateMinor = isUk
+    ? (shippingRatesConfig.pen_set_uk_minor ?? 495)
+    : (shippingRatesConfig.pen_set_intl_minor ?? 1800)
+
+  if (items.length > 0) {
+    const hasPenSet = items.some((item) => getItemFormat(item) === "pen_set")
+    const hasRefill = items.some((item) => getItemFormat(item) === "refill")
+
+    if (hasPenSet) {
+      dynamicRateMinor = isUk
+        ? (shippingRatesConfig.pen_set_uk_minor ?? 495)
+        : (shippingRatesConfig.pen_set_intl_minor ?? 1800)
+    } else if (hasRefill) {
+      dynamicRateMinor = isUk
+        ? (shippingRatesConfig.refill_uk_minor ?? 395)
+        : (shippingRatesConfig.refill_intl_minor ?? 1000)
+    } else {
+      dynamicRateMinor = isUk
+        ? (shippingRatesConfig.vial_uk_minor ?? 395)
+        : (shippingRatesConfig.vial_intl_minor ?? 1000)
+    }
+  }
+
+  const dynamicRate = dynamicRateMinor / 100
+
+  const adjustedShippingOptions: ShippingOption[] = shippingOptions.map((opt) => ({
+    ...opt,
+    amount: dynamicRate,
+  }))
+
+  const selectedShippingOption = adjustedShippingOptions.find((option) => option.id === shippingOptionId) || null
+  const shippingAvailable = shippingLoaded && adjustedShippingOptions.length > 0
 
   const selectedIsFree = isOptionEligibleForFree(selectedShippingOption)
   const shippingCost = items.length > 0 && selectedShippingOption
@@ -722,7 +792,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         regionId,
         countryOptions,
         currency,
-        shippingOptions,
+        shippingOptions: adjustedShippingOptions,
         shippingOptionId,
         setShippingOptionId,
         selectedShippingOption,

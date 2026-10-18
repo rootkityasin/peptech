@@ -3,7 +3,7 @@ import {taxMinor,taxPolicy,stripeTaxDefaults} from "./tax"
 import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
 import CommerceService, { recordId } from "../../modules/peptech-commerce/service"
 import { assertEligibility, assertProduct, discounted, fail, toMinor } from "./policy"
-import { resolveShippingOption, type ShippingOptionQuote } from "./shipping"
+import { resolveShippingOption, calculateDynamicShipping, listLocationServiceZones, type ShippingOptionQuote } from "./shipping"
 
 export type QuoteLine = {
   variant_id: string
@@ -12,6 +12,7 @@ export type QuoteLine = {
   sku: string
   quantity: number
   recurring: boolean
+  format?: string
   tax_code?: string
   tax_lines?: any[]
   tax_minor?: number
@@ -153,6 +154,7 @@ export async function buildQuote(
     if (base <= 0) fail("Product price requires review", 409)
     if (!variant.manage_inventory || !variant.inventory_items?.length) fail("Tracked inventory is required before sale", 409)
     const unitMinor = item.recurring ? discounted(base) : base
+    const itemFormat = approval!.data.format || (item.metadata?.format as string) || "vial"
     lines.push({
       variant_id: item.variant_id,
       line_id: recordId("ordli", attemptId, String(lines.length)),
@@ -160,11 +162,12 @@ export async function buildQuote(
       sku: approval!.data.canonical_sku,
       quantity: item.quantity,
       recurring: item.recurring,
+      format: itemFormat,
       tax_code: approval!.data.tax_code || defaults?.code,
       base_minor: base,
       unit_minor: unitMinor,
       catalog_version: approval!.data.version,
-      metadata: item.metadata || {},
+      metadata: { ...(item.metadata || {}), format: itemFormat },
       inventory: variant.inventory_items.map((i: any) => ({
         id: i.inventory_item_id,
         quantity: Number(i.required_quantity || 1) * item.quantity
@@ -259,51 +262,79 @@ export async function buildQuote(
   const recurring = lines.some((l) => l.recurring)
   if (recurring && !input.recurring_accepted) fail("Explicit recurring payment consent is required")
 
-  // Free shipping auto-waiver: Check if basket subtotal meets active threshold
+  // Dynamic Category, Region & Subscription Shipping Calculation
   const itemsSubtotalMinor = lines.reduce((sum, l) => sum + l.unit_minor * l.quantity, 0)
-  let freeShippingApplied = false
-  try {
-    const { data: shippingPromos = [] } = await query.graph({
-      entity: "promotion",
-      fields: ["id", "code", "status", "is_automatic", "metadata", "application_method.*"],
-      filters: {
-        status: "active",
-      },
-    })
-    const activeFreeShip = shippingPromos.find(
-      (p: any) => p.application_method?.target_type === "shipping_methods" || p.code === "FREESHIP150"
-    )
-    if (activeFreeShip && activeFreeShip.status === "active") {
-      let threshold = 150
-      if (activeFreeShip.metadata?.threshold) {
-        threshold = Number(activeFreeShip.metadata.threshold)
-      } else {
-        const title = String(activeFreeShip.metadata?.title || activeFreeShip.title || "")
-        const match = title.match(/(?:over|spend|above|min|minimum)\s*[£$€]?\s*(\d+(?:\.\d+)?)/i)
-        if (match && Number(match[1]) > 0) {
-          threshold = Number(match[1])
+  const serviceZones = await listLocationServiceZones(scope, policy)
+  const dynamicCalc = calculateDynamicShipping({
+    items: lines.map((l) => ({
+      format: l.format,
+      metadata: l.metadata,
+      title: l.name,
+      quantity: l.quantity,
+      unit_minor: l.unit_minor,
+      recurring: l.recurring,
+    })),
+    countryCode: input.address.country_code,
+    policy,
+    itemsSubtotalMinor,
+    serviceZones,
+  })
+
+  let freeShippingApplied = dynamicCalc.free_shipping
+
+  // Also respect any active Promotion module rules (e.g. FREESHIP150 or promo metadata threshold)
+  if (!freeShippingApplied) {
+    try {
+      const { data: shippingPromos = [] } = await query.graph({
+        entity: "promotion",
+        fields: ["id", "code", "status", "is_automatic", "metadata", "application_method.*"],
+        filters: {
+          status: "active",
+        },
+      })
+      const activeFreeShip = shippingPromos.find(
+        (p: any) => p.application_method?.target_type === "shipping_methods" || p.code === "FREESHIP150"
+      )
+      if (activeFreeShip && activeFreeShip.status === "active") {
+        let threshold = 150
+        if (activeFreeShip.metadata?.threshold) {
+          threshold = Number(activeFreeShip.metadata.threshold)
         } else {
-          const codeMatch = String(activeFreeShip.code || "").match(/(\d+)/)
-          if (codeMatch && Number(codeMatch[1]) > 0) {
-            threshold = Number(codeMatch[1])
+          const title = String(activeFreeShip.metadata?.title || activeFreeShip.title || "")
+          const match = title.match(/(?:over|spend|above|min|minimum)\s*[£$€]?\s*(\d+(?:\.\d+)?)/i)
+          if (match && Number(match[1]) > 0) {
+            threshold = Number(match[1])
+          } else {
+            const codeMatch = String(activeFreeShip.code || "").match(/(\d+)/)
+            if (codeMatch && Number(codeMatch[1]) > 0) {
+              threshold = Number(codeMatch[1])
+            }
           }
         }
+        const thresholdMinor = Math.round(threshold * 100)
+        if (itemsSubtotalMinor >= thresholdMinor) {
+          freeShippingApplied = true
+        }
       }
-      const thresholdMinor = Math.round(threshold * 100)
-      if (itemsSubtotalMinor >= thresholdMinor) {
-        freeShippingApplied = true
-      }
+    } catch (fsErr) {
+      console.warn("[PEPTECH Quote] Free shipping query error:", fsErr)
     }
-  } catch (fsErr) {
-    console.warn("[PEPTECH Quote] Free shipping query error:", fsErr)
   }
 
-  const shipping = freeShippingApplied ? 0 : shippingOption.amount_minor
+  const shipping = freeShippingApplied ? 0 : dynamicCalc.amount_minor
+  const shippingName = freeShippingApplied
+    ? `${shippingOption.name || dynamicCalc.shipping_option_name} (Free)`
+    : (shippingOption.name || dynamicCalc.shipping_option_name)
+
   const subtotal = itemsSubtotalMinor + shipping
   const taxTotal = lines.reduce((sum, l) => sum + taxMinor(l.unit_minor * l.quantity, tax.rate, tax.inclusive), taxMinor(shipping, tax.rate, tax.inclusive))
+
+  // Recurring renewals always have £0 shipping everywhere
   const recurringLines = lines.filter((l) => l.recurring)
-  const recurringSubtotal = recurringLines.reduce((sum, l) => sum + l.unit_minor * l.quantity, shipping)
-  const recurringTax = recurringLines.reduce((sum, l) => sum + taxMinor(l.unit_minor * l.quantity, tax.rate, tax.inclusive), taxMinor(shipping, tax.rate, tax.inclusive))
+  const recurringShipping = 0
+  const recurringSubtotal = recurringLines.reduce((sum, l) => sum + l.unit_minor * l.quantity, recurringShipping)
+  const recurringTax = recurringLines.reduce((sum, l) => sum + taxMinor(l.unit_minor * l.quantity, tax.rate, tax.inclusive), taxMinor(recurringShipping, tax.rate, tax.inclusive))
+
   return {
     customer_id: customerId,
     email: customer.email,
@@ -318,7 +349,7 @@ export async function buildQuote(
     sales_channel_id: policy.sales_channel_id,
     location_id: policy.location_id,
     shipping_option_id: shippingOption.id,
-    shipping_option_name: shippingOption.name,
+    shipping_option_name: shippingName,
     tax_policy: policy.tax_policy,
     policy_version: policy.version,
     stripe_tax_enabled: defaults?.enabled,

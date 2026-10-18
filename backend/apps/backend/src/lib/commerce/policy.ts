@@ -20,6 +20,25 @@ export const checkoutItemSchema = z.object({
   metadata: z.record(z.string(), z.any()).optional().nullable(),
 })
 
+export const shippingRatesSchema = z.object({
+  pen_set_uk_minor: z.number().int().nonnegative().default(495),
+  pen_set_intl_minor: z.number().int().nonnegative().default(1800),
+  refill_uk_minor: z.number().int().nonnegative().default(395),
+  refill_intl_minor: z.number().int().nonnegative().default(1000),
+  vial_uk_minor: z.number().int().nonnegative().default(395),
+  vial_intl_minor: z.number().int().nonnegative().default(1000),
+})
+
+export type ShippingRates = z.infer<typeof shippingRatesSchema>
+
+export const serviceZoneRateTierSchema = z.object({
+  pen_set_minor: z.coerce.number().int().nonnegative().default(495),
+  refill_minor: z.coerce.number().int().nonnegative().default(395),
+  vial_minor: z.coerce.number().int().nonnegative().default(395),
+})
+
+export type ServiceZoneRateTier = z.infer<typeof serviceZoneRateTierSchema>
+
 export const checkoutSchema = z.object({
   revision: z.string().uuid(),
   address: addressSchema.optional().nullable(),

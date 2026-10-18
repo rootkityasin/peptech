@@ -2,7 +2,7 @@ import type { AuthenticatedMedusaRequest, MedusaResponse } from "@medusajs/frame
 import { z } from "zod"
 import { operator, commerce, endpoint } from "../../../../lib/commerce/http"
 import { getStripeConfig } from "../../../../lib/stripe-config"
-import { fail } from "../../../../lib/commerce/policy"
+import { fail, shippingRatesSchema, serviceZoneRateTierSchema } from "../../../../lib/commerce/policy"
 
 const schema = z.object({
   enabled: z.boolean(),
@@ -23,6 +23,10 @@ const schema = z.object({
     sort_code: z.string().regex(/^\d{2}-?\d{2}-?\d{2}$/),
     account_number: z.string().regex(/^\d{8}$/),
   }).optional(),
+  shipping_rates: shippingRatesSchema.optional(),
+  service_zone_rates: z.record(z.string(), serviceZoneRateTierSchema).optional(),
+  subscription_first_order_free: z.boolean().optional(),
+  free_shipping_threshold_minor: z.number().int().nonnegative().optional(),
 }).strict()
 
 export async function GET(req: AuthenticatedMedusaRequest, res: MedusaResponse) {
