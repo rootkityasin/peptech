@@ -68,6 +68,7 @@ export function ShopCatalog({ initialCategory = "all", initialProducts }: ShopCa
   const [selectedFormats, setSelectedFormats] = useState<string[]>([])
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [selectedPurchaseType, setSelectedPurchaseType] = useState<"all" | "sub" | "one-time">("all")
+  const [conflictNotice, setConflictNotice] = useState<string | null>(null)
 
   // Live products from Medusa API with instant static fallback & SSR hydration
   const { products: allProducts } = useLiveProducts(initialProducts)
@@ -181,8 +182,8 @@ export function ShopCatalog({ initialCategory = "all", initialProducts }: ShopCa
   }
 
   const handleAddToCart = (product: CatalogProduct) => {
-    if(!product.variantId || !product.inStock) return
-    addItem({
+    if (!product.variantId || !product.inStock) return
+    const res = addItem({
       id: product.id,
       variantId: product.variantId,
       productHandle: product.handle,
@@ -194,7 +195,10 @@ export function ShopCatalog({ initialCategory = "all", initialProducts }: ShopCa
       subscriptionIntervalDays: product.isSubscriptionEligible ? 28 : undefined,
       sku: product.sku || "",
     })
-    setIsDrawerOpen(true)
+    if (!res.success && res.conflict) {
+      setConflictNotice(res.conflict.message)
+      setTimeout(() => setConflictNotice(null), 6000)
+    }
   }
 
   return (
@@ -1060,6 +1064,26 @@ export function ShopCatalog({ initialCategory = "all", initialProducts }: ShopCa
 
         </main>
       </div>
+
+      {/* Catalog Mutual Exclusivity Toast */}
+      {conflictNotice && (
+        <div className="fixed bottom-6 right-6 z-50 max-w-md bg-amber-50/95 border border-amber-300 text-amber-950 p-4 rounded-xl shadow-2xl flex items-start gap-3 animate-in fade-in slide-in-from-bottom-2">
+          <span className="size-5 rounded-full bg-amber-500 text-white flex items-center justify-center shrink-0 font-bold text-xs mt-0.5 shadow-xs">
+            !
+          </span>
+          <div className="flex-1 text-xs font-medium leading-relaxed">
+            {conflictNotice}
+          </div>
+          <button
+            type="button"
+            onClick={() => setConflictNotice(null)}
+            className="text-amber-700 hover:text-amber-950 text-sm font-bold cursor-pointer p-0.5"
+            aria-label="Dismiss"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
     </div>
   )

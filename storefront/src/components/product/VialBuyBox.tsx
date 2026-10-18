@@ -1,8 +1,8 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import Link from "next/link"
-import { useCart } from "@/components/cart/CartContext"
+import { useCart, type CartConflict } from "@/components/cart/CartContext"
 import { CatalogProduct } from "@/data/catalog"
 import { ProductAccordions } from "./ProductAccordions"
 
@@ -11,9 +11,14 @@ interface VialBuyBoxProps {
 }
 
 export function VialBuyBox({ product }: VialBuyBoxProps) {
-  const { addItem, setIsDrawerOpen, autoSavings } = useCart()
+  const { addItem, switchItemSubscription, setIsDrawerOpen, autoSavings } = useCart()
   const [purchaseType, setPurchaseType] = useState<"one-time" | "subscription">("one-time")
   const [quantity, setQuantity] = useState(1)
+  const [conflictError, setConflictError] = useState<CartConflict | null>(null)
+
+  useEffect(() => {
+    setConflictError(null)
+  }, [purchaseType])
 
   const oneTimePrice = product.price
   const subscribePrice = autoSavings.discountType === "percentage"
@@ -24,30 +29,41 @@ export function VialBuyBox({ product }: VialBuyBoxProps) {
 
   const batchCode = product.sku || (product.handle ? `VIAL-${product.handle.toUpperCase()}` : "PEPTECH-VIAL")
 
-  const handleAddToCart = () => {
-    if(!product.variantId || !product.inStock) return
-    for (let i = 0; i < quantity; i++) {
-      addItem({
-        id: `${product.id}-${purchaseType}`,
-        title: product.name,
-        variantId: product.variantId,
-        productHandle: product.handle,
-        format: "vial",
-        strength: product.categoryLabel,
-        price: purchaseType === "subscription" ? subscribePrice : product.price,
-        isSubscription: purchaseType === "subscription",
-        subscriptionIntervalDays: purchaseType === "subscription" ? 28 : undefined,
-        discountPercent: autoSavings.discountType === "percentage" ? autoSavings.discountValue : undefined,
-        sku: product.sku||"",
+  const getCandidateItem = () => ({
+    id: `${product.id}-${purchaseType}`,
+    title: product.name,
+    variantId: product.variantId,
+    productHandle: product.handle,
+    format: "vial" as const,
+    strength: product.categoryLabel,
+    price: purchaseType === "subscription" ? subscribePrice : product.price,
+    isSubscription: purchaseType === "subscription",
+    subscriptionIntervalDays: purchaseType === "subscription" ? 28 : undefined,
+    discountPercent: autoSavings.discountType === "percentage" ? autoSavings.discountValue : undefined,
+    sku: product.sku || "",
+    image: product.image,
+    options: [
+      { label: "Purchase Type", value: purchaseType === "subscription" ? "28-Day Automated Protocol" : "One-Time Order" },
+      { label: "Format", value: product.formatLabel || "Freeze-Dried Vial" },
+    ],
+  })
 
-        image: product.image,
-        options: [
-          { label: "Purchase Type", value: purchaseType === "subscription" ? "28-Day Automated Protocol" : "One-Time Order" },
-          { label: "Format", value: product.formatLabel || "Freeze-Dried Vial" },
-        ],
-      })
+  const handleAddToCart = () => {
+    if (!product.variantId || !product.inStock) return
+    const candidate = getCandidateItem()
+    const res = addItem(candidate, quantity)
+    if (!res.success && res.conflict) {
+      setConflictError(res.conflict)
+    } else {
+      setConflictError(null)
     }
-    setIsDrawerOpen(true)
+  }
+
+  const handleSwitchOption = () => {
+    if (!conflictError) return
+    const candidate = getCandidateItem()
+    switchItemSubscription(conflictError.existingItem, candidate, quantity)
+    setConflictError(null)
   }
 
   return (
@@ -216,6 +232,37 @@ export function VialBuyBox({ product }: VialBuyBoxProps) {
         </div>
 
       </div>
+
+      {/* Mutual Exclusivity Error Alert */}
+      {conflictError && (
+        <div className="w-full bg-amber-50/95 border border-amber-300 rounded-xl p-3.5 flex flex-col gap-2.5 animate-in fade-in slide-in-from-top-1 shadow-xs">
+          <div className="flex items-start gap-2.5">
+            <div className="size-5 rounded-full bg-amber-500 text-white flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold shadow-xs">
+              !
+            </div>
+            <div className="flex-1 text-[12.5px] text-amber-950 leading-snug font-medium">
+              {conflictError.message}
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-3 pt-2 border-t border-amber-200/80">
+            <button
+              type="button"
+              onClick={handleSwitchOption}
+              className="text-xs font-bold text-amber-950 bg-amber-200/90 hover:bg-amber-300 px-3 py-1.5 rounded-lg transition-colors cursor-pointer shadow-xs active:scale-95"
+            >
+              {conflictError.actionLabel}
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsDrawerOpen(true)}
+              className="text-xs font-semibold text-amber-900 hover:text-amber-950 underline cursor-pointer"
+            >
+              View Basket
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Quantity & Add to Cart Controls */}
       <div className="flex items-center gap-3 w-full pt-1">
