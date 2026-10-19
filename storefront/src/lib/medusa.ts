@@ -90,31 +90,34 @@ function ensureRuntimeBaseUrl() {
   }
 }
 
-// In-memory caching and promise deduplication
-const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes in-memory TTL (Hostinger & local session)
-
+// ==============================================================================
+// Persistent Event-Driven In-Memory Caching (Zero Rolling Timers)
+// The catalog is cached statically in memory and ONLY invalidated when
+// invalidateProductsCache() is called via Medusa Admin webhook/subscriber.
+// ==============================================================================
 let cachedStoreProducts: StoreProduct[] | null = null
 let cachedCatalogProducts: CatalogProduct[] | null = null
-let lastFetchedTimestamp = 0
 let inFlightProductsPromise: Promise<StoreProduct[]> | null = null
 
-const productByHandleCache = new Map<string, { data: StoreProduct; timestamp: number }>()
+const productByHandleCache = new Map<string, StoreProduct>()
 const inFlightHandlePromises = new Map<string, Promise<StoreProduct | null>>()
 
 /**
- * Invalidate in-memory product cache (e.g. after cart mutation or manual reload)
+ * Invalidate in-memory product cache on-demand (e.g. after admin update or cart mutation).
+ * Bumps catalog revision to notify all clients and clears memory.
  */
 export function invalidateProductsCache(): void {
   cachedStoreProducts = null
   cachedCatalogProducts = null
-  lastFetchedTimestamp = 0
   productByHandleCache.clear()
+  inFlightProductsPromise = null
+  inFlightHandlePromises.clear()
   bumpCatalogRevision()
 }
 
 /**
- * Helper: Fetch all published products with variants and categories
- * Uses in-memory TTL caching and deduplicates concurrent in-flight requests.
+ * Helper: Fetch all published products with variants and categories.
+ * Statically caches in memory with zero background timer expiration.
  */
 export async function getProducts(queryParams: Record<string, unknown> = {}, forceRefresh = false): Promise<StoreProduct[]> {
   ensureRuntimeBaseUrl()
@@ -124,8 +127,9 @@ export async function getProducts(queryParams: Record<string, unknown> = {}, for
     Object.keys(queryParams).length === 0 ||
     (Object.keys(queryParams).length === 1 && queryParams.limit === 100)
 
+  // Pure on-demand: if already cached and not force refreshing, return immediately (0 DB queries!)
   if (!forceRefresh && isDefaultList) {
-    if (cachedStoreProducts && Date.now() - lastFetchedTimestamp < CACHE_TTL_MS) {
+    if (cachedStoreProducts && cachedStoreProducts.length > 0) {
       return cachedStoreProducts
     }
     if (inFlightProductsPromise) {
@@ -144,11 +148,10 @@ export async function getProducts(queryParams: Record<string, unknown> = {}, for
       if (isDefaultList && products.length > 0) {
         cachedStoreProducts = products
         cachedCatalogProducts = products.map(mapMedusaToCatalogProduct)
-        lastFetchedTimestamp = Date.now()
         // Prime handle cache with all retrieved products
         products.forEach((p) => {
-          if (p.id) productByHandleCache.set(p.id, { data: p, timestamp: Date.now() })
-          if (p.handle) productByHandleCache.set(p.handle, { data: p, timestamp: Date.now() })
+          if (p.id) productByHandleCache.set(p.id, p)
+          if (p.handle) productByHandleCache.set(p.handle, p)
         })
       }
       return products
@@ -178,14 +181,14 @@ export async function getProductsByCategory(categoryHandle: string): Promise<Sto
 }
 
 /**
- * Helper: Synchronously get product from memory cache if available
+ * Helper: Synchronously get product from memory cache if available (0ms lookup)
  */
 export function getCachedProduct(idOrHandle: string): CatalogProduct | null {
   const cached = productByHandleCache.get(idOrHandle)
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
-    return mapMedusaToCatalogProduct(cached.data)
+  if (cached) {
+    return mapMedusaToCatalogProduct(cached)
   }
-  if (cachedStoreProducts && Date.now() - lastFetchedTimestamp < CACHE_TTL_MS) {
+  if (cachedStoreProducts) {
     const found = cachedStoreProducts.find((p) => p.id === idOrHandle || p.handle === idOrHandle)
     if (found) {
       return mapMedusaToCatalogProduct(found)
@@ -195,22 +198,22 @@ export function getCachedProduct(idOrHandle: string): CatalogProduct | null {
 }
 
 /**
- * Helper: Fetch product by handle or ID
+ * Helper: Fetch product by handle or ID.
  * Fast-paths to in-memory cached catalog if already populated.
  */
 export async function getProduct(idOrHandle: string, forceRefresh = false): Promise<StoreProduct | null> {
   if (!forceRefresh) {
     // 1. Check direct handle/id cache
     const cached = productByHandleCache.get(idOrHandle)
-    if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
-      return cached.data
+    if (cached) {
+      return cached
     }
 
     // 2. Check full product list cache
-    if (cachedStoreProducts && Date.now() - lastFetchedTimestamp < CACHE_TTL_MS) {
+    if (cachedStoreProducts) {
       const found = cachedStoreProducts.find((p) => p.id === idOrHandle || p.handle === idOrHandle)
       if (found) {
-        productByHandleCache.set(idOrHandle, { data: found, timestamp: Date.now() })
+        productByHandleCache.set(idOrHandle, found)
         return found
       }
     }
@@ -279,9 +282,9 @@ export async function getProduct(idOrHandle: string, forceRefresh = false): Prom
       }
 
       if (product) {
-        productByHandleCache.set(idOrHandle, { data: product, timestamp: Date.now() })
-        if (product.id) productByHandleCache.set(product.id, { data: product, timestamp: Date.now() })
-        if (product.handle) productByHandleCache.set(product.handle, { data: product, timestamp: Date.now() })
+        productByHandleCache.set(idOrHandle, product)
+        if (product.id) productByHandleCache.set(product.id, product)
+        if (product.handle) productByHandleCache.set(product.handle, product)
       }
       return product
     } catch (error) {

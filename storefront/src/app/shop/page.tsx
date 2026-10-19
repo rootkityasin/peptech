@@ -3,7 +3,7 @@ import { ShopCatalog } from "@/components/catalog/ShopCatalog"
 import { CatalogSkeleton } from "@/components/ui/Skeletons"
 import { getCatalogProducts } from "@/lib/medusa"
 
-export const revalidate = 60
+export const revalidate = false
 
 export const metadata = {
   title: "PEPTECH® Shop Catalog | Research Peptide Systems & Cartridges",

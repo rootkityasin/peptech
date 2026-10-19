@@ -133,15 +133,15 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: "Cache-Control",
-            value: "public, max-age=0, must-revalidate, s-maxage=120, stale-while-revalidate=300",
+            value: "public, max-age=0, must-revalidate, s-maxage=604800, stale-while-revalidate=86400",
           },
           {
             key: "CDN-Cache-Control",
-            value: "public, s-maxage=120",
+            value: "public, s-maxage=604800",
           },
           {
             key: "X-LiteSpeed-Cache-Control",
-            value: "public, max-age=120, stale-while-revalidate=300",
+            value: "public, max-age=604800, stale-while-revalidate=86400",
           },
         ],
       },
@@ -150,15 +150,15 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: "Cache-Control",
-            value: "public, max-age=0, must-revalidate, s-maxage=60, stale-while-revalidate=120",
+            value: "public, max-age=0, must-revalidate, s-maxage=604800, stale-while-revalidate=86400",
           },
           {
             key: "CDN-Cache-Control",
-            value: "public, s-maxage=60",
+            value: "public, s-maxage=604800",
           },
           {
             key: "X-LiteSpeed-Cache-Control",
-            value: "public, max-age=60, stale-while-revalidate=120",
+            value: "public, max-age=604800, stale-while-revalidate=86400",
           },
         ],
       },
@@ -167,15 +167,15 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: "Cache-Control",
-            value: "public, max-age=0, must-revalidate, s-maxage=60, stale-while-revalidate=120",
+            value: "public, max-age=0, must-revalidate, s-maxage=604800, stale-while-revalidate=86400",
           },
           {
             key: "CDN-Cache-Control",
-            value: "public, s-maxage=60",
+            value: "public, s-maxage=604800",
           },
           {
             key: "X-LiteSpeed-Cache-Control",
-            value: "public, max-age=60, stale-while-revalidate=120",
+            value: "public, max-age=604800, stale-while-revalidate=86400",
           },
         ],
       },
