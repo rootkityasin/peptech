@@ -9,13 +9,23 @@ function isAuthorized(request: Request): boolean {
   const secretHeader = request.headers.get("x-revalidate-secret")
   const { searchParams } = new URL(request.url)
   const secretQuery = searchParams.get("secret")
-  const expectedSecret = process.env.REVALIDATION_SECRET
+  const candidateSecret = secretHeader || secretQuery
 
-  if (!expectedSecret) {
+  if (!candidateSecret) {
     return false
   }
 
-  return secretHeader === expectedSecret || secretQuery === expectedSecret
+  const validSecrets = [
+    process.env.REVALIDATION_SECRET,
+    process.env.COMMERCE_CRON_SECRET,
+    process.env.STRIPE_COMMERCE_SIGNING_SECRET,
+  ].filter((s): s is string => Boolean(s && s.length >= 8))
+
+  if (validSecrets.length === 0) {
+    return false
+  }
+
+  return validSecrets.includes(candidateSecret)
 }
 
 async function handleRevalidation(request: Request) {

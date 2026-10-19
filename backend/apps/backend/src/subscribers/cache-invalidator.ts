@@ -18,16 +18,24 @@ export default async function cacheInvalidationSubscriber({
     }. Triggering instant storefront cache purge...`
   )
 
-  const storefrontUrl =
-    process.env.STOREFRONT_INTERNAL_URL ||
-    process.env.STRIPE_STOREFRONT_URL ||
-    "http://localhost:3000"
+  const isProd =
+    process.env.NODE_ENV === "production" ||
+    process.env.MEDUSA_ADMIN_ONBOARDING_TYPE === "default" ||
+    Boolean(process.env.MEDUSA_BACKEND_URL?.includes("peptech.bio"))
 
-  const revalidateSecret = process.env.REVALIDATION_SECRET
+  const storefrontUrl =
+    process.env.STRIPE_STOREFRONT_URL ||
+    process.env.NEXT_PUBLIC_STOREFRONT_URL ||
+    (isProd ? "https://peptech.bio" : "http://localhost:3000")
+
+  const revalidateSecret =
+    process.env.REVALIDATION_SECRET ||
+    process.env.COMMERCE_CRON_SECRET ||
+    process.env.STRIPE_COMMERCE_SIGNING_SECRET
 
   if (!revalidateSecret) {
     logger.warn(
-      "[PEPTECH CACHE INVALIDATOR] REVALIDATION_SECRET is not configured in environment. Skipping cache invalidation request."
+      "[PEPTECH CACHE INVALIDATOR] Neither REVALIDATION_SECRET, COMMERCE_CRON_SECRET, nor STRIPE_COMMERCE_SIGNING_SECRET is configured. Skipping cache invalidation request."
     )
     return
   }
