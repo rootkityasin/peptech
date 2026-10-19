@@ -106,7 +106,7 @@ export default function AboutPage() {
             <div className="bg-white rounded-3xl overflow-hidden border border-[#e2e8f0] shadow-xs flex flex-col justify-between group hover:shadow-xl hover:border-[#16a6a3]/40 transition-all min-h-[460px]">
               <div className="relative h-52 min-h-[208px] w-full overflow-hidden bg-slate-100 shrink-0">
                 <Image
-                  src="https://ubzoovlhbnztjwemvrwo.supabase.co/storage/v1/object/public/products/about/pillar-purity.jpg"
+                  src="/images/about/pillar-purity.jpg"
                   alt="Absolute Chemical Purity"
                   fill
                   sizes="(max-width: 768px) 100vw, 33vw"
@@ -132,7 +132,7 @@ export default function AboutPage() {
             <div className="bg-white rounded-3xl overflow-hidden border border-[#e2e8f0] shadow-xs flex flex-col justify-between group hover:shadow-xl hover:border-[#16a6a3]/40 transition-all min-h-[460px]">
               <div className="relative h-52 min-h-[208px] w-full overflow-hidden bg-slate-100 shrink-0">
                 <Image
-                  src="https://ubzoovlhbnztjwemvrwo.supabase.co/storage/v1/object/public/products/about/cnc-lathe.jpg"
+                  src="/images/about/cnc-lathe.jpg"
                   alt="Reusable Aluminum Architecture"
                   fill
                   sizes="(max-width: 768px) 100vw, 33vw"
@@ -158,7 +158,7 @@ export default function AboutPage() {
             <div className="bg-white rounded-3xl overflow-hidden border border-[#e2e8f0] shadow-xs flex flex-col justify-between group hover:shadow-xl hover:border-[#16a6a3]/40 transition-all min-h-[460px]">
               <div className="relative h-52 min-h-[208px] w-full overflow-hidden bg-slate-100 shrink-0">
                 <Image
-                  src="https://ubzoovlhbnztjwemvrwo.supabase.co/storage/v1/object/public/products/about/hologram-textured.jpg"
+                  src="/images/about/hologram-textured.jpg"
                   alt="Cryptographic Traceability"
                   fill
                   sizes="(max-width: 768px) 100vw, 33vw"

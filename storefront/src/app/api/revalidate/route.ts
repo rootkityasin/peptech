@@ -9,13 +9,13 @@ function isAuthorized(request: Request): boolean {
   const secretHeader = request.headers.get("x-revalidate-secret")
   const { searchParams } = new URL(request.url)
   const secretQuery = searchParams.get("secret")
-  const expectedSecret =
-    process.env.REVALIDATION_SECRET || "peptech_revalidate_secret_8f49a7c2b3d1490e91a0"
+  const expectedSecret = process.env.REVALIDATION_SECRET
 
-  return (
-    Boolean(expectedSecret) &&
-    (secretHeader === expectedSecret || secretQuery === expectedSecret)
-  )
+  if (!expectedSecret) {
+    return false
+  }
+
+  return secretHeader === expectedSecret || secretQuery === expectedSecret
 }
 
 async function handleRevalidation(request: Request) {
@@ -32,9 +32,30 @@ async function handleRevalidation(request: Request) {
 
   // 2. Next.js App Router ISR Invalidation
   try {
-    // Purges the entire site's pre-rendered pages (Homepage, Shop, Category routes, Product detail pages)
+    let entityId: string | undefined
+    try {
+      const cloned = request.clone()
+      const body = await cloned.json().catch(() => null)
+      entityId = body?.data?.id || body?.data?.handle
+    } catch {}
+
+    // Purge dynamic product route templates & layouts
+    revalidatePath("/products/[handle]", "page")
+    revalidatePath("/products/[handle]", "layout")
+
+    // Purge category & catalog pages
+    revalidatePath("/shop", "page")
+    revalidatePath("/refills", "page")
+    revalidatePath("/pen-sets", "page")
+    revalidatePath("/vials", "page")
+    revalidatePath("/", "page")
     revalidatePath("/", "layout")
     revalidatePath("/api/catalog")
+
+    // If specific product handle or ID is present, revalidate its literal path
+    if (entityId) {
+      revalidatePath(`/products/${entityId}`, "page")
+    }
   } catch (err) {
     console.warn("[REVALIDATE] Next.js ISR path revalidation warning:", err)
   }

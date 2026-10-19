@@ -176,7 +176,7 @@ export default function HowItWorksPage() {
             <div className="bg-white rounded-3xl overflow-hidden border border-[#e2e8f0] shadow-xs flex flex-col group hover:shadow-xl hover:border-[#16a6a3]/40 transition-all">
               <div className="relative h-44 min-h-[176px] w-full overflow-hidden bg-slate-900 shrink-0 border-b border-slate-100">
                 <Image
-                  src="https://ubzoovlhbnztjwemvrwo.supabase.co/storage/v1/object/public/products/how-it-works/precision-dialing.jpg"
+                  src="/images/how-it-works/precision-dialing.jpg"
                   alt="Precision Dialing Mechanism"
                   fill
                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
@@ -195,7 +195,7 @@ export default function HowItWorksPage() {
             <div className="bg-white rounded-3xl overflow-hidden border border-[#e2e8f0] shadow-xs flex flex-col group hover:shadow-xl hover:border-[#16a6a3]/40 transition-all">
               <div className="relative h-44 min-h-[176px] w-full overflow-hidden bg-slate-900 shrink-0 border-b border-slate-100">
                 <Image
-                  src="https://ubzoovlhbnztjwemvrwo.supabase.co/storage/v1/object/public/products/about/cnc-lathe.jpg"
+                  src="/images/about/cnc-lathe.jpg"
                   alt="6061-T6 Anodized Aluminum Alloy"
                   fill
                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
@@ -214,7 +214,7 @@ export default function HowItWorksPage() {
             <div className="bg-white rounded-3xl overflow-hidden border border-[#e2e8f0] shadow-xs flex flex-col group hover:shadow-xl hover:border-[#16a6a3]/40 transition-all">
               <div className="relative h-44 min-h-[176px] w-full overflow-hidden bg-slate-900 shrink-0 border-b border-slate-100">
                 <Image
-                  src="https://ubzoovlhbnztjwemvrwo.supabase.co/storage/v1/object/public/products/how-it-works/borosilicate-vials.jpg"
+                  src="/images/how-it-works/borosilicate-vials.jpg"
                   alt="Type I Neutral Borosilicate Cartridge"
                   fill
                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
@@ -233,7 +233,7 @@ export default function HowItWorksPage() {
             <div className="bg-white rounded-3xl overflow-hidden border border-[#e2e8f0] shadow-xs flex flex-col group hover:shadow-xl hover:border-[#16a6a3]/40 transition-all">
               <div className="relative h-44 min-h-[176px] w-full overflow-hidden bg-slate-900 shrink-0 border-b border-slate-100">
                 <Image
-                  src="https://ubzoovlhbnztjwemvrwo.supabase.co/storage/v1/object/public/products/how-it-works/cold-chain-packaging.jpg"
+                  src="/images/how-it-works/cold-chain-packaging.jpg"
                   alt="Thermal Insulated Cold-Chain Transit"
                   fill
                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"

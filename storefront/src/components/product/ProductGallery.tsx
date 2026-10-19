@@ -12,12 +12,19 @@ interface ProductGalleryProps {
 export function ProductGallery({ images, title }: ProductGalleryProps) {
   const validImages = (images || [])
     .filter(Boolean)
-    .filter((img) => !img.includes("cartridge.webp") && !img.includes("mockup2.webp") && !img.includes("placeholder.png"))
+    .filter(
+      (img) =>
+        !img.includes("/images/peptech/cartridge.webp") &&
+        !img.endsWith("/cartridge.webp") &&
+        !img.endsWith("/cartridge.png") &&
+        !img.includes("mockup2.webp") &&
+        !img.includes("placeholder.png")
+    )
   const cleanedImages = validImages.map((img) => resolveProductImage(img))
   const displayImages =
     cleanedImages.length > 0
       ? Array.from(new Set(cleanedImages))
-      : [resolveProductImage({ title })]
+      : ["/images/placeholder.svg"]
   const [activeIndex, setActiveIndex] = useState(0)
 
   const handlePrev = () => {

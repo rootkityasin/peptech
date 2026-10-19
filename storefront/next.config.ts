@@ -12,7 +12,14 @@ loadEnvConfig(workspaceRoot);
 const rootEnvPath = path.join(workspaceRoot, ".env");
 if (fs.existsSync(rootEnvPath)) {
   const rootEnv = fs.readFileSync(rootEnvPath, "utf8");
-  for (const key of ["NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY", "NEXT_PUBLIC_MEDUSA_BACKEND_URL"]) {
+  for (const key of [
+    "NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY",
+    "NEXT_PUBLIC_MEDUSA_BACKEND_URL",
+    "NEXT_PUBLIC_SUPABASE_URL",
+    "SUPABASE_URL",
+    "SUPABASE_STORAGE_URL",
+    "NEXT_PUBLIC_WHATSAPP_NUMBER",
+  ]) {
     const match = rootEnv.match(new RegExp(`^${key}=([^\\r\\n]*)`, "m"));
     const value = match?.[1]?.replace(/^['\"]|['\"]$/g, "").trim();
     if (value) {
@@ -27,10 +34,21 @@ const medusaBackendUrl =
   process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL ||
   (isProd ? "https://admin.peptech.bio" : "http://localhost:9000");
 
+const supabaseStorageBase =
+  process.env.SUPABASE_STORAGE_URL ||
+  (process.env.NEXT_PUBLIC_SUPABASE_URL
+    ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/products`
+    : process.env.SUPABASE_URL
+    ? `${process.env.SUPABASE_URL}/storage/v1/object/public/products`
+    : "");
+
 const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "",
     NEXT_PUBLIC_MEDUSA_BACKEND_URL: process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "",
+    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL || "",
+    NEXT_PUBLIC_SUPABASE_STORAGE_URL: supabaseStorageBase,
+    NEXT_PUBLIC_WHATSAPP_NUMBER: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "",
   },
   turbopack: {
     root: path.resolve(__dirname),
@@ -115,7 +133,7 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: "Cache-Control",
-            value: "public, max-age=60, s-maxage=3600, stale-while-revalidate=86400",
+            value: "public, max-age=0, must-revalidate, s-maxage=3600, stale-while-revalidate=86400",
           },
           {
             key: "CDN-Cache-Control",
@@ -179,8 +197,12 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       {
-        source: "/images/:path*",
-        destination: "https://ubzoovlhbnztjwemvrwo.supabase.co/storage/v1/object/public/products/images/:path*",
+        source: "/static/products/:path*",
+        destination: "/images/products/:path*",
+      },
+      {
+        source: "/static/:path*",
+        destination: "/images/:path*",
       },
       {
         source: "/store/:path*",
@@ -189,10 +211,6 @@ const nextConfig: NextConfig = {
       {
         source: "/auth/:path*",
         destination: `${medusaBackendUrl}/auth/:path*`,
-      },
-      {
-        source: "/static/:path*",
-        destination: "https://ubzoovlhbnztjwemvrwo.supabase.co/storage/v1/object/public/products/:path*",
       },
     ];
   },

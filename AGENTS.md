@@ -13,3 +13,5 @@ Key highlights:
 - **Payments**: High-risk peptide compliance, tokenized 28-day subscriptions via Authorize.Net / approved acquirers + UK Bank Transfer.
 - **Logistics**: Royal Mail Tracked (£4.95 UK / £15 Worldwide), discreet outer packaging.
 - **COA & QR**: Central searchable lab report library + packaging QR verification (`/verify`).
+- **Security & Secrets**: Strict Zero-Exposure rule. NEVER hardcode secrets, fallback tokens, or commit `.env` files. Read strictly from `process.env`.
+

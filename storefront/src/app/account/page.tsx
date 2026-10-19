@@ -1638,7 +1638,7 @@ function AccountContent() {
                                 src={resolveProductImage(item)}
                                 onError={(e) => {
                                   const target = e.currentTarget as HTMLImageElement
-                                  const fallback = "/images/products/pen-sets/ghk-cu.jpg"
+                                  const fallback = "/images/placeholder.svg"
                                   if (!target.src.endsWith(fallback)) {
                                     target.src = fallback
                                   }
@@ -2184,7 +2184,7 @@ function AccountContent() {
                                     src={resolveProductImage(item)}
                                     onError={(e) => {
                                       const target = e.currentTarget as HTMLImageElement
-                                      const fallback = "/images/products/pen-sets/ghk-cu.jpg"
+                                      const fallback = "/images/placeholder.svg"
                                       if (!target.src.endsWith(fallback)) {
                                         target.src = fallback
                                       }

@@ -9,14 +9,17 @@ export interface WhatsappFloatingCardProps {
 }
 
 export function WhatsappFloatingCard({
-  phoneNumber = "+447756915215",
+  phoneNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "",
   defaultText = "Need help!",
   hoverText = "Whatsapp us!",
 }: WhatsappFloatingCardProps) {
   const [isHovered, setIsHovered] = useState(false)
 
   // Clean phone number for WhatsApp URL (digits only)
-  const cleanNumber = phoneNumber.replace(/[^0-9]/g, "")
+  const cleanNumber = (phoneNumber || "").replace(/[^0-9]/g, "")
+  if (!cleanNumber) {
+    return null
+  }
   const whatsappUrl = `https://wa.me/${cleanNumber}`
 
   const handleClick = (e: React.MouseEvent) => {

@@ -223,7 +223,7 @@ export function CartDrawer() {
                         className="size-full object-contain pointer-events-none rounded-[6px] p-1 transition-transform duration-200 hover:scale-105"
                         onError={(e) => {
                           const target = e.currentTarget as HTMLImageElement
-                          const fallback = "/images/products/pen-sets/ghk-cu.jpg"
+                          const fallback = "/images/placeholder.svg"
                           if (!target.src.endsWith(fallback)) {
                             target.src = fallback
                           }

@@ -13,16 +13,6 @@ export const TRUSTED_LOGOS = [
     className: "h-[40px] sm:h-[44px] w-auto max-w-[56px] object-contain",
   },
   {
-    name: "ISO 17025 Accredited Laboratory Testing",
-    src: "/images/figma/logo-iso-17025.svg",
-    className: "h-[36px] sm:h-[40px] w-auto max-w-[130px] object-contain",
-  },
-  {
-    name: "RP-HPLC & Mass Spectrometry Certified",
-    src: "/images/figma/logo-hplc-ms.svg",
-    className: "h-[36px] sm:h-[40px] w-auto max-w-[135px] object-contain",
-  },
-  {
     name: "AOAC International",
     src: "/images/figma/logo-aoac-official.png",
     className: "h-[42px] sm:h-[46px] w-auto max-w-[60px] object-contain",
@@ -40,9 +30,8 @@ export function TrustedBySection({
   showBorderTop = true,
   showBorderBottom = false,
 }: TrustedBySectionProps) {
-  // We double the set for the first half, and repeat again for the second half
-  // so the marquee loops infinitely at -50% with zero stutter on screens of any width.
-  const logoSet = [...TRUSTED_LOGOS, ...TRUSTED_LOGOS]
+  // Repeat the set to ensure smooth continuous marquee looping across wide screens
+  const logoSet = [...TRUSTED_LOGOS, ...TRUSTED_LOGOS, ...TRUSTED_LOGOS]
 
   return (
     <section

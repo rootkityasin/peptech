@@ -397,25 +397,28 @@ export function mapMedusaToCatalogProduct(p: StoreProduct): CatalogProduct {
       : Number((rawPrice * (1 - discountPercent / 100)).toFixed(2))
     : undefined
 
-  // 5. Resolve image thumbnail & gallery images from Admin Media
   const rawImages = (p.images as Array<{ url: string } | string>) || []
   const mappedImages = rawImages
     .map((img) => (typeof img === "string" ? img : img?.url))
-    .filter((url): url is string => Boolean(url && !url.includes("null") && !url.includes("Screenshot") && !url.includes("cartridge.webp") && !url.includes("mockup2.webp") && !url.includes("/static/")))
+    .filter((url): url is string => Boolean(
+      url &&
+      !url.includes("null") &&
+      !url.includes("undefined") &&
+      !url.includes("Screenshot") &&
+      !url.includes("placeholder.png") &&
+      !url.includes("/images/peptech/cartridge.webp") &&
+      !url.endsWith("/cartridge.webp") &&
+      !url.endsWith("/cartridge.png") &&
+      !url.includes("/mockup2.webp") &&
+      !url.includes("/static/")
+    ))
     .map((url) => resolveProductImage(url))
 
   let image = mappedImages[0] || (typeof p.thumbnail === "string" && !p.thumbnail.includes("/static/") ? p.thumbnail : "") || ""
-  if (!image || image === "null" || image.includes("Screenshot") || image.includes("placeholder.png") || image.includes("/static/")) {
-    image = resolveProductImage({
-      id: p.id,
-      title: p.title,
-      handle: p.handle,
-      subtitle: typeof p.subtitle === "string" ? p.subtitle : undefined,
-      format,
-      metadata: (p.metadata as Record<string, any>) || undefined,
-    })
-  } else {
+  if (image && image !== "null" && !image.includes("Screenshot") && !image.includes("/static/")) {
     image = resolveProductImage(image)
+  } else {
+    image = "/images/placeholder.svg"
   }
 
   const compoundSlug =

@@ -21,6 +21,9 @@ export function Footer() {
     }
   }
 
+  const whatsappNumber = (process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "").replace(/[^0-9]/g, "")
+  const whatsappUrl = whatsappNumber ? `https://wa.me/${whatsappNumber}` : null
+
   return (
     <footer className="bg-white border-t border-[#E2E8F0] pt-10 sm:pt-16 pb-8 sm:pb-10 text-[#64748B] text-xs print:hidden">
       {/* Main 4-Column Footer Container - Figma Node 2:29623 */}
@@ -49,17 +52,19 @@ export function Footer() {
             </p>
             {/* Social Icons */}
             <div className="flex items-center gap-3 pt-1.5">
-              <a
-                href="https://linkedin.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-8 h-8 rounded-full border border-[#E2E8F0] bg-[#F8FAFC] flex items-center justify-center text-[#0B1F3A] hover:bg-[#16A6A3] hover:border-[#16A6A3] hover:text-white transition-all duration-200 hover:scale-110 shadow-2xs cursor-pointer"
-                aria-label="LinkedIn"
-              >
-                <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M11.0833 1.75C11.3928 1.75 11.6895 1.87292 11.9083 2.09171C12.1271 2.3105 12.25 2.60725 12.25 2.91667V11.0833C12.25 11.3928 12.1271 11.6895 11.9083 11.9083C11.6895 12.1271 11.3928 12.25 11.0833 12.25H2.91667C2.60725 12.25 2.3105 12.1271 2.09171 11.9083C1.87292 11.6895 1.75 11.3928 1.75 11.0833V2.91667C1.75 2.60725 1.87292 2.3105 2.09171 2.09171C2.3105 1.87292 2.60725 1.75 2.91667 1.75H11.0833ZM10.7917 10.7917V7.7C10.7917 7.19565 10.5913 6.71195 10.2347 6.35532C9.87805 5.99869 9.39435 5.79833 8.89 5.79833C8.39417 5.79833 7.81667 6.10167 7.56 6.55667V5.90917H5.9325V10.7917H7.56V7.91583C7.56 7.46667 7.92167 7.09917 8.37083 7.09917C8.58743 7.09917 8.79515 7.18521 8.9483 7.33836C9.10146 7.49152 9.1875 7.69924 9.1875 7.91583V10.7917H10.7917ZM3.76833 5.11C4.33417 5.11 4.78917 4.64917 4.78917 4.08333C4.78917 3.5175 4.33417 3.0625 3.76833 3.0625C3.2025 3.0625 2.74167 3.5175 2.74167 4.08333C2.74167 4.64917 3.2025 5.11 3.76833 5.11ZM4.57917 10.7917V5.90917H2.9575V10.7917H4.57917Z" />
-                </svg>
-              </a>
+              {whatsappUrl && (
+                <a
+                  href={whatsappUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-8 h-8 rounded-full border border-[#E2E8F0] bg-[#F8FAFC] flex items-center justify-center text-[#0B1F3A] hover:bg-[#16A6A3] hover:border-[#16A6A3] hover:text-white transition-all duration-200 hover:scale-110 shadow-2xs cursor-pointer"
+                  aria-label="WhatsApp"
+                >
+                  <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M16 2a13.93 13.93 0 0 0-12.07 20.92L2 30l7.26-1.9A13.93 13.93 0 1 0 16 2zm0 25.55a11.58 11.58 0 0 1-5.9-1.62l-.42-.25-4.38 1.15 1.17-4.27-.27-.44A11.62 11.62 0 1 1 16 27.55zm6.37-8.68c-.35-.18-2.07-1-2.39-1.12s-.56-.17-.79.17-.91 1.12-1.11 1.36-.41.26-.76.09a9.58 9.58 0 0 1-2.82-1.74 10.57 10.57 0 0 1-1.95-2.43c-.2-.35 0-.54.16-.71s.35-.41.53-.61a2.38 2.38 0 0 0 .35-.59.65.65 0 0 0 0-.62c-.09-.17-.79-1.91-1.08-2.61s-.58-.59-.79-.6h-.68a1.3 1.3 0 0 0-.94.44 3.94 3.94 0 0 0-1.23 2.93c0 1.73 1.26 3.4 1.44 3.64s2.48 3.79 6 5.31c.84.36 1.49.58 2 .74.84.27 1.61.23 2.22.14.68-.1 2.07-.85 2.36-1.66s.29-1.52.21-1.66-.33-.24-.68-.42z" />
+                  </svg>
+                </a>
+              )}
               <a
                 href="https://facebook.com"
                 target="_blank"

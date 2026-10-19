@@ -55,7 +55,7 @@ function extractStorageKey(rawUrl: string): string | null {
   return null
 }
 
-async function optimizeBuffer(buf: Buffer, ext: string, maxDim = 1600, quality = 82) {
+async function optimizeBuffer(buf: Buffer, ext: string, maxDim = 1200, quality = 80) {
   const initialMeta = await sharp(buf).metadata()
   if (!initialMeta.width || !initialMeta.height) {
     return { optimized: buf, contentType: "application/octet-stream", isOptimized: false, meta: initialMeta }
@@ -71,37 +71,14 @@ async function optimizeBuffer(buf: Buffer, ext: string, maxDim = 1600, quality =
     background: { r: 255, g: 255, b: 255, alpha: 1 },
   })
 
-  let optimized: Buffer | null = null
-  let contentType = "application/octet-stream"
-
-  if (ext === ".png") {
-    optimized = await pipeline
-      .png({
-        quality: 85,
-        compressionLevel: 9,
-        effort: 7,
-      })
-      .toBuffer()
-    contentType = "image/png"
-  } else if (ext === ".jpg" || ext === ".jpeg") {
-    optimized = await pipeline
-      .jpeg({
-        quality,
-        mozjpeg: true,
-      })
-      .toBuffer()
-    contentType = "image/jpeg"
-  } else if (ext === ".webp") {
-    optimized = await pipeline
-      .webp({
-        quality: 85,
-        effort: 6,
-      })
-      .toBuffer()
-    contentType = "image/webp"
-  } else {
-    optimized = await pipeline.toBuffer()
-  }
+  // Encode to WebP @ 80% for maximum size reduction
+  const optimized = await pipeline
+    .webp({
+      quality,
+      effort: 6,
+    })
+    .toBuffer()
+  const contentType = "image/webp"
 
   const isOptimized = optimized !== null && optimized.length < buf.length
   const finalMeta = isOptimized ? await sharp(optimized).metadata() : initialMeta
@@ -197,8 +174,8 @@ export async function POST(req: AuthenticatedMedusaRequest, res: MedusaResponse)
       return res.status(400).json({ message: "Product ID is required" })
     }
 
-    const maxDimension = Number((req.body as any)?.maxDimension) || 1600
-    const quality = Number((req.body as any)?.quality) || 82
+    const maxDimension = Number((req.body as any)?.maxDimension) || 1200
+    const quality = Number((req.body as any)?.quality) || 80
 
     const query = req.scope.resolve("query")
     const { data: [product] } = await query.graph({

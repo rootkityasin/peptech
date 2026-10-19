@@ -9,21 +9,21 @@ const reviews = [
     quote2: "recommended for any research lab.",
     name: "Michael T.",
     initials: "MT",
-    avatar: "https://ubzoovlhbnztjwemvrwo.supabase.co/storage/v1/object/public/products/reviews/reviewer-1.jpg",
+    avatar: "/images/reviews/reviewer-1.jpg",
   },
   {
     quote1: "The quality is outstanding. Fast shipping",
     quote2: "and great customer support.",
     name: "Dr. Emily R.",
     initials: "ER",
-    avatar: "https://ubzoovlhbnztjwemvrwo.supabase.co/storage/v1/object/public/products/reviews/reviewer-2.jpg",
+    avatar: "/images/reviews/reviewer-2.jpg",
   },
   {
     quote1: "Easy to use and very reliable. Will",
     quote2: "continue to order.",
     name: "James L.",
     initials: "JL",
-    avatar: "https://ubzoovlhbnztjwemvrwo.supabase.co/storage/v1/object/public/products/reviews/reviewer-3.jpg",
+    avatar: "/images/reviews/reviewer-3.jpg",
   },
 ]
 

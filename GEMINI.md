@@ -92,3 +92,14 @@ Display the 3-step lifecycle:
 - Only display genuine, verified-purchase reviews linked to real order records.
 - **Strictly prohibit** AI-generated or fictional customer testimonials.
 - Implement admin moderation to prevent spam or unauthorized medical/dosing claims in review text.
+
+---
+
+## 9. Zero Environment & Secret Data Exposure Rule
+- **Strictly Prohibited**:
+  - NEVER hardcode secrets, API keys, passwords, private tokens, webhook secrets, database connection strings, or private URLs in any source code, tests, scripts, or commit messages.
+  - NEVER supply hardcoded fallback strings for sensitive environment variables (e.g. `process.env.SECRET || "my_secret"`). Always read strictly from `process.env`. If a variable is missing, gracefully fail or log a generic warning without exposing credentials.
+  - NEVER commit or track `.env`, `.env.local`, `.env.*`, or any credential file to Git.
+  - NEVER put actual production or staging secrets in documentation, README files, or curl command examples. Use obvious dummy placeholders (`YOUR_API_KEY`).
+  - **Pre-Commit & Pre-Push Verification**: Always inspect git diffs prior to committing or pushing to ensure zero secrets are present.
+

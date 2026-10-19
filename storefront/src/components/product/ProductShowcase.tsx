@@ -1,7 +1,8 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { CatalogProduct } from "@/data/catalog"
 import { ProductGallery } from "./ProductGallery"
 import { ProductBuyBox } from "./ProductBuyBox"
@@ -32,7 +33,22 @@ export function ProductShowcase({
   vialProduct,
   allProducts,
 }: ProductShowcaseProps) {
+  const router = useRouter()
   const [currentProduct, setCurrentProduct] = useState<CatalogProduct>(initialProduct)
+
+  // Sync state if initialProduct changes (e.g. from server component revalidation)
+  useEffect(() => {
+    setCurrentProduct(initialProduct)
+  }, [initialProduct])
+
+  // Automatically refresh server props when admin tabs back into the browser
+  useEffect(() => {
+    const handleFocus = () => {
+      router.refresh()
+    }
+    window.addEventListener("focus", handleFocus)
+    return () => window.removeEventListener("focus", handleFocus)
+  }, [router])
 
   const handleSelectFormat = (newProduct: CatalogProduct) => {
     setCurrentProduct(newProduct)

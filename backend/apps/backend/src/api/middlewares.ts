@@ -21,8 +21,25 @@ const handleStoreCors = (req: MedusaRequest, res: MedusaResponse, next: MedusaNe
   next()
 }
 
-const SUPABASE_STORAGE_URL =
-  process.env.SUPABASE_STORAGE_URL
+function getWorkspaceRoot() {
+  let dir = __dirname
+  while (true) {
+    const pkg = path.join(dir, "package.json")
+    if (fs.existsSync(pkg)) {
+      try {
+        const p = JSON.parse(fs.readFileSync(pkg, "utf8"))
+        if (p.name === "peptech") return dir
+      } catch {}
+    }
+    const parent = path.dirname(dir)
+    if (parent === dir) break
+    dir = parent
+  }
+  return path.resolve(__dirname, "../../../..")
+}
+
+const workspaceRoot = getWorkspaceRoot()
+const SUPABASE_STORAGE_URL = process.env.SUPABASE_STORAGE_URL || ""
 
 const serveStaticImage = (req: MedusaRequest, res: MedusaResponse, next: MedusaNextFunction) => {
   const urlPath = req.originalUrl?.split("?")[0] || req.url?.split("?")[0] || ""
@@ -38,18 +55,36 @@ const serveStaticImage = (req: MedusaRequest, res: MedusaResponse, next: MedusaN
 
   if (!imagePath || imagePath.split(/[\\/]/).includes("..")) return next()
 
-  // 1. Check in local public/ (e.g. logo.webp)
-  const fullPath = path.resolve(process.cwd(), "public", imagePath)
-  if (fs.existsSync(fullPath) && fs.statSync(fullPath).isFile()) {
-    return res.sendFile(fullPath)
+  // 1. Check local filesystem across all workspace static directories
+  const cleanRel = imagePath.replace(/^\/+/, "")
+  const candidatePaths = [
+    path.join(workspaceRoot, "storefront", "public", "images", cleanRel),
+    path.join(workspaceRoot, "storefront", "public", cleanRel),
+    path.resolve(process.cwd(), "public", cleanRel),
+    path.resolve(process.cwd(), "public", "images", cleanRel),
+  ]
+
+  if (cleanRel.startsWith("products/")) {
+    const sub = cleanRel.replace(/^products\//, "")
+    candidatePaths.push(path.join(workspaceRoot, "storefront", "public", "images", "products", sub))
   }
 
-  // 2. Redirect to Supabase Storage CDN
-  const cleanKey = imagePath.replace(/^\/+/, "")
-  const destination = cleanKey.startsWith("images/")
-    ? `${SUPABASE_STORAGE_URL}/${cleanKey}`
-    : `${SUPABASE_STORAGE_URL}/images/${cleanKey}`
-  return res.redirect(302, destination)
+  for (const candidate of candidatePaths) {
+    try {
+      if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
+        return res.sendFile(candidate)
+      }
+    } catch {}
+  }
+
+  // 2. Fallback: redirect cleanly to Supabase Storage CDN without duplicated path segments
+  if (SUPABASE_STORAGE_URL) {
+    const key = cleanRel.replace(/^(images\/products|products|images)\//, "")
+    const destination = `${SUPABASE_STORAGE_URL}/${key}`
+    return res.redirect(302, destination)
+  }
+
+  return next()
 }
 
 const ensureVerifyPublishableKey = (req: MedusaRequest, res: MedusaResponse, next: MedusaNextFunction) => {

@@ -125,7 +125,7 @@ Because Hostinger shared hosting spins down inactive Node.js processes, set up a
 3. Frequency: `*/15 * * * *` (Every 15 minutes).
 4. Command:
    ```bash
-   curl -s -X POST https://admin.peptech.bio/hooks/peptech-commerce-tick -H "x-cron-secret: eac8278a003786636b14efec0dee6cc4"
+   curl -s -X POST https://admin.peptech.bio/hooks/peptech-commerce-tick -H "x-cron-secret: YOUR_COMMERCE_CRON_SECRET"
    ```
 
 ---

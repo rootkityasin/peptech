@@ -23,8 +23,14 @@ export default async function cacheInvalidationSubscriber({
     process.env.STRIPE_STOREFRONT_URL ||
     "http://localhost:3000"
 
-  const revalidateSecret =
-    process.env.REVALIDATION_SECRET || "peptech_revalidate_secret_8f49a7c2b3d1490e91a0"
+  const revalidateSecret = process.env.REVALIDATION_SECRET
+
+  if (!revalidateSecret) {
+    logger.warn(
+      "[PEPTECH CACHE INVALIDATOR] REVALIDATION_SECRET is not configured in environment. Skipping cache invalidation request."
+    )
+    return
+  }
 
   try {
     const res = await fetch(`${storefrontUrl}/api/revalidate`, {

@@ -44,7 +44,9 @@ export type CompoundSlug = typeof COMPOUND_SLUGS[number]
 
 export const SUPABASE_STORAGE_BASE =
   process.env.NEXT_PUBLIC_SUPABASE_STORAGE_URL ||
-  "https://ubzoovlhbnztjwemvrwo.supabase.co/storage/v1/object/public/products"
+  (process.env.NEXT_PUBLIC_SUPABASE_URL
+    ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/products`
+    : "/images/products")
 
 /**
  * Normalizes an existing URL/path if valid
@@ -67,14 +69,32 @@ function cleanExistingUrl(url?: string | null): string | null {
   if (clean.includes("/static/")) {
     return null
   }
-  // If it's already a Supabase Storage CDN URL, return as is
+
+  // Map any Supabase Storage URL directly to local static assets to eliminate Supabase bandwidth/egress
+  const supabaseStorageMatch = clean.match(
+    /\/storage\/v1\/object\/public\/products\/(.+)$/
+  )
+  if (supabaseStorageMatch) {
+    const rawPath = supabaseStorageMatch[1].split("?")[0]
+    if (rawPath.startsWith("pen-sets/") || rawPath.startsWith("refills/") || rawPath.startsWith("vials/")) {
+      return `/images/products/${rawPath}`
+    }
+    if (rawPath.startsWith("about/") || rawPath.startsWith("how-it-works/") || rawPath.startsWith("reviews/") || rawPath.startsWith("figma/") || rawPath.startsWith("payment/")) {
+      return `/images/${rawPath}`
+    }
+    // Newly uploaded images return the Supabase public CDN URL.
+    // Next.js Image optimizer automatically caches it on Hostinger's disk after the first view.
+    return clean
+  }
+
+  // If it's already a Supabase Storage CDN URL (e.g. ad-hoc new upload not yet on disk), return as is
   if (clean.includes("supabase.co")) {
     return clean
   }
-  // Map local /images/products paths to Supabase CDN
+  // Keep local /images/products paths local (ZERO Supabase egress)
   const match = clean.match(/\/images\/products\/(pen-sets|refills|vials)\/([a-zA-Z0-9_.-]+)/)
   if (match) {
-    return `${SUPABASE_STORAGE_BASE}/${match[1]}/${match[2]}`
+    return `/images/products/${match[1]}/${match[2]}`
   }
   if (clean.startsWith("/images/products/")) {
     return clean
@@ -191,35 +211,34 @@ export function getProductImagePath(category: ProductCategory, slug: CompoundSlu
 
   if (category === "pen-sets") {
     // Note: ghk-cu and tesamorelin pen sets use .jpg; others use .png
-    if (slug === "ghk-cu") return `${SUPABASE_STORAGE_BASE}/pen-sets/ghk-cu.jpg`
-    if (slug === "tesamorelin") return `${SUPABASE_STORAGE_BASE}/pen-sets/tesamorelin.jpg`
-    return `${SUPABASE_STORAGE_BASE}/pen-sets/${assetSlug}.png`
+    if (slug === "ghk-cu") return `/images/products/pen-sets/ghk-cu.jpg`
+    if (slug === "tesamorelin") return `/images/products/pen-sets/tesamorelin.jpg`
+    return `/images/products/pen-sets/${assetSlug}.png`
   }
 
   if (category === "refills") {
-    return `${SUPABASE_STORAGE_BASE}/refills/${assetSlug}.png`
+    return `/images/products/refills/${assetSlug}.png`
   }
 
   if (category === "vials") {
-    return `${SUPABASE_STORAGE_BASE}/vials/${assetSlug}.png`
+    return `/images/products/vials/${assetSlug}.png`
   }
 
-  return `${SUPABASE_STORAGE_BASE}/pen-sets/ghk-cu.jpg`
+  return `/images/placeholder.svg`
 }
 
 /**
  * Master Product Image Resolver.
- * Guaranteed to return a valid, existing product image URL for any item.
+ * Uses the product's explicit Medusa image/thumbnail, or returns a clean placeholder.
+ * Never guesses or forces hardcoded seeded compound images if the merchant deleted the image.
  */
 export function resolveProductImage(item?: ProductLike | string | null): string {
-  if (!item) return `${SUPABASE_STORAGE_BASE}/pen-sets/ghk-cu.jpg`
+  if (!item) return `/images/placeholder.svg`
 
   if (typeof item === "string") {
     const clean = cleanExistingUrl(item)
     if (clean) return clean
-    const category = resolveItemCategory(item)
-    const slug = resolveCompoundSlug(item)
-    return getProductImagePath(category, slug)
+    return `/images/placeholder.svg`
   }
 
   // 1. Try explicit image or thumbnail first if valid
@@ -229,9 +248,6 @@ export function resolveProductImage(item?: ProductLike | string | null): string 
   const existingThumb = cleanExistingUrl(item.thumbnail)
   if (existingThumb) return existingThumb
 
-  // 2. Intelligent resolution based on title, format, options, etc.
-  const category = resolveItemCategory(item)
-  const slug = resolveCompoundSlug(item)
-
-  return getProductImagePath(category, slug)
+  // 2. If no image or thumbnail is set in Medusa, return placeholder (no fake seeded image)
+  return `/images/placeholder.svg`
 }

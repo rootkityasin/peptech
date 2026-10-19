@@ -62,7 +62,7 @@ export function useLiveProducts(initialFallback: CatalogProduct[] = []) {
     try {
       const url = force ? "/api/catalog?refresh=1" : "/api/catalog"
       const res = await fetch(url, {
-        cache: force ? "no-store" : "default",
+        cache: force ? "no-store" : "no-cache",
       })
 
       if (res.ok) {

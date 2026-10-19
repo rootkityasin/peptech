@@ -9,6 +9,7 @@ import type {
 import { createClient, SupabaseClient } from "@supabase/supabase-js"
 import { PassThrough, Readable } from "stream"
 import path from "path"
+import fs from "fs"
 
 let sharp: any = null
 try {
@@ -46,6 +47,55 @@ function sanitizeFileName(filename: string): string {
   return clean.replace(/[^a-zA-Z0-9._/-]/g, "_")
 }
 
+function getWorkspaceRoot(startDir = process.cwd()) {
+  let dir = path.resolve(startDir)
+  while (true) {
+    const pkgPath = path.join(dir, "package.json")
+    if (fs.existsSync(pkgPath)) {
+      try {
+        const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8"))
+        if (pkg.name === "peptech") return dir
+      } catch {}
+    }
+    const parent = path.dirname(dir)
+    if (parent === dir) break
+    dir = parent
+  }
+  return null
+}
+
+function syncToLocalDisk(fileKey: string, buffer: Buffer, logger?: any) {
+  try {
+    const root = getWorkspaceRoot()
+    if (!root) return
+    const targetPath = path.join(root, "storefront", "public", "images", "products", fileKey)
+    const targetDir = path.dirname(targetPath)
+    if (!fs.existsSync(targetDir)) {
+      fs.mkdirSync(targetDir, { recursive: true })
+    }
+    fs.writeFileSync(targetPath, buffer)
+    logger?.info?.(
+      `[SupabaseFileService] 💾 Mirrored to local storefront disk: ${fileKey} (${(buffer.length / 1024).toFixed(1)}KB)`
+    )
+  } catch (err: any) {
+    logger?.warn?.(`[SupabaseFileService] ⚠️ Local disk mirror failed for ${fileKey}: ${err?.message}`)
+  }
+}
+
+function removeFromLocalDisk(fileKey: string, logger?: any) {
+  try {
+    const root = getWorkspaceRoot()
+    if (!root) return
+    const targetPath = path.join(root, "storefront", "public", "images", "products", fileKey)
+    if (fs.existsSync(targetPath)) {
+      fs.unlinkSync(targetPath)
+      logger?.info?.(`[SupabaseFileService] 🗑️ Removed from local storefront disk: ${fileKey}`)
+    }
+  } catch (err: any) {
+    logger?.warn?.(`[SupabaseFileService] ⚠️ Local disk deletion failed for ${fileKey}: ${err?.message}`)
+  }
+}
+
 export class SupabaseFileService extends AbstractFileProviderService {
   static identifier = "supabase"
   protected client_: SupabaseClient
@@ -69,9 +119,9 @@ export class SupabaseFileService extends AbstractFileProviderService {
     this.enableOptimization_ =
       options?.enableOptimization ?? (process.env.IMAGE_AUTO_OPTIMIZE !== "false")
     this.maxDimension_ =
-      options?.maxDimension ?? (Number(process.env.IMAGE_MAX_DIMENSION) || 1600)
+      options?.maxDimension ?? (Number(process.env.IMAGE_MAX_DIMENSION) || 1200)
     this.quality_ =
-      options?.quality ?? (Number(process.env.IMAGE_QUALITY) || 82)
+      options?.quality ?? (Number(process.env.IMAGE_QUALITY) || 80)
 
     if (!url || !apiKey) {
       throw new MedusaError(
@@ -87,7 +137,7 @@ export class SupabaseFileService extends AbstractFileProviderService {
 
   /**
    * Pre-upload image optimization using Sharp.
-   * Resizes large photos to max 1600px retina standard and applies MozJPEG / PNG-9 / WebP compression.
+   * Resizes large photos to max 1200px retina standard and encodes to WebP @ 80%.
    * Guarantees massive Supabase storage space savings before upload.
    */
   async optimizeImage(
@@ -116,7 +166,7 @@ export class SupabaseFileService extends AbstractFileProviderService {
       }
 
       // Enforce 1:1 square aspect ratio with clinical white background (#FFFFFF)
-      // Caps maximum dimension at this.maxDimension_ (default 1600px retina)
+      // Caps maximum dimension at this.maxDimension_ (default 1200px retina)
       const maxSide = Math.max(meta.width, meta.height)
       const targetDim = Math.min(maxSide, this.maxDimension_)
 
@@ -127,42 +177,21 @@ export class SupabaseFileService extends AbstractFileProviderService {
         background: { r: 255, g: 255, b: 255, alpha: 1 },
       })
 
-      let optimizedBuffer: Buffer | null = null
-      let outputMime = mimeType || "application/octet-stream"
+      // Convert all raster images to WebP @ 80% for maximum bandwidth & storage efficiency
+      const optimizedBuffer = await pipeline
+        .webp({
+          quality: this.quality_,
+          effort: 6,
+        })
+        .toBuffer()
+      const outputMime = "image/webp"
 
-      if (ext === ".png" || mimeType === "image/png") {
-        optimizedBuffer = await pipeline
-          .png({
-            quality: 85,
-            compressionLevel: 9,
-            effort: 7,
-          })
-          .toBuffer()
-        outputMime = "image/png"
-      } else if (ext === ".jpg" || ext === ".jpeg" || mimeType === "image/jpeg") {
-        optimizedBuffer = await pipeline
-          .jpeg({
-            quality: this.quality_,
-            mozjpeg: true,
-          })
-          .toBuffer()
-        outputMime = "image/jpeg"
-      } else if (ext === ".webp" || mimeType === "image/webp") {
-        optimizedBuffer = await pipeline
-          .webp({
-            quality: 85,
-            effort: 6,
-          })
-          .toBuffer()
-        outputMime = "image/webp"
-      } else {
-        optimizedBuffer = await pipeline.toBuffer()
-      }
-
-      if (optimizedBuffer && optimizedBuffer.length < buffer.length) {
-        const savedPct = (((buffer.length - optimizedBuffer.length) / buffer.length) * 100).toFixed(1)
+      if (optimizedBuffer && (optimizedBuffer.length < buffer.length || ext !== ".webp")) {
+        const savedPct = buffer.length > optimizedBuffer.length
+          ? (((buffer.length - optimizedBuffer.length) / buffer.length) * 100).toFixed(1)
+          : "0"
         this.logger_?.info?.(
-          `[SupabaseFileService] ⚡ Auto-optimized ${filename} (${meta.width}x${meta.height}): ${(buffer.length / 1024).toFixed(1)}KB -> ${(optimizedBuffer.length / 1024).toFixed(1)}KB (-${savedPct}%)`
+          `[SupabaseFileService] ⚡ Auto-optimized ${filename} (${meta.width}x${meta.height}): ${(buffer.length / 1024).toFixed(1)}KB -> ${(optimizedBuffer.length / 1024).toFixed(1)}KB (-${savedPct}%) [WebP 1200px]`
         )
         return { buffer: optimizedBuffer, mimeType: outputMime }
       } else {
@@ -195,11 +224,16 @@ export class SupabaseFileService extends AbstractFileProviderService {
       throw new MedusaError(MedusaError.Types.INVALID_DATA, "No filename provided")
     }
 
-    const fileKey = this.getFileKey(file.filename, file.access || "public")
     const rawBuffer = decodeFileContent(file.content, file.mimeType)
 
     // Automatically optimize image before uploading to Supabase Storage
     const { buffer, mimeType } = await this.optimizeImage(rawBuffer, file.filename, file.mimeType)
+    const effectiveFilename =
+      mimeType === "image/webp" && !file.filename.toLowerCase().endsWith(".webp")
+        ? file.filename.replace(/\.[^.]+$/, ".webp")
+        : file.filename
+
+    const fileKey = this.getFileKey(effectiveFilename, file.access || "public")
 
     const { error } = await this.client_.storage
       .from(this.bucket_)
@@ -214,6 +248,10 @@ export class SupabaseFileService extends AbstractFileProviderService {
     }
 
     const { data } = this.client_.storage.from(this.bucket_).getPublicUrl(fileKey)
+
+    // Mirror to local storefront disk immediately (ZERO Supabase egress on storefront views)
+    syncToLocalDisk(fileKey, buffer, this.logger_)
+
     return {
       url: data.publicUrl,
       key: fileKey,
@@ -230,15 +268,18 @@ export class SupabaseFileService extends AbstractFileProviderService {
       throw new MedusaError(MedusaError.Types.INVALID_DATA, "No filename provided")
     }
 
-    const fileKey = this.getFileKey(fileData.filename, fileData.access || "public")
+    const initialKey = this.getFileKey(
+      fileData.filename.replace(/\.[^.]+$/, ".webp"),
+      fileData.access || "public"
+    )
+    const { data: initialUrl } = this.client_.storage.from(this.bucket_).getPublicUrl(initialKey)
+
     const pass = new PassThrough()
     const chunks: Buffer[] = []
 
     pass.on("data", (chunk) => {
       chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
     })
-
-    const { data: initialUrl } = this.client_.storage.from(this.bucket_).getPublicUrl(fileKey)
 
     const promise = new Promise<ProviderFileResultDTO>((resolve, reject) => {
       pass.on("end", async () => {
@@ -250,7 +291,7 @@ export class SupabaseFileService extends AbstractFileProviderService {
 
           const { error } = await this.client_.storage
             .from(this.bucket_)
-            .upload(fileKey, buffer, {
+            .upload(initialKey, buffer, {
               contentType: mimeType || "application/octet-stream",
               upsert: true,
             })
@@ -260,10 +301,13 @@ export class SupabaseFileService extends AbstractFileProviderService {
             return
           }
 
-          const { data } = this.client_.storage.from(this.bucket_).getPublicUrl(fileKey)
+          // Mirror to local storefront disk immediately (ZERO Supabase egress on storefront views)
+          syncToLocalDisk(initialKey, buffer, this.logger_)
+
+          const { data } = this.client_.storage.from(this.bucket_).getPublicUrl(initialKey)
           resolve({
             url: data.publicUrl,
-            key: fileKey,
+            key: initialKey,
           })
         } catch (err) {
           reject(err)
@@ -277,7 +321,7 @@ export class SupabaseFileService extends AbstractFileProviderService {
       writeStream: pass,
       promise,
       url: initialUrl.publicUrl,
-      fileKey,
+      fileKey: initialKey,
     }
   }
 
@@ -291,6 +335,11 @@ export class SupabaseFileService extends AbstractFileProviderService {
       await this.client_.storage.from(this.bucket_).remove(keys)
     } catch (e: any) {
       this.logger_?.error?.(`Supabase delete failed: ${e?.message}`)
+    }
+
+    // Mirror deletion to local storefront disk immediately
+    for (const key of keys) {
+      removeFromLocalDisk(key, this.logger_)
     }
   }
 

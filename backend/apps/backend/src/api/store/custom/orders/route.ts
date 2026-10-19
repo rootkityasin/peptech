@@ -7,34 +7,7 @@ function resolveItemThumbnail(it: any): string {
   if (thumb && typeof thumb === "string" && !thumb.includes("null") && !thumb.includes("placeholder")) {
     return thumb.replace(/^https?:\/\/localhost:\d+/, "")
   }
-  const title = (it?.title || it?.name || "").toLowerCase()
-  const sub = (it?.variant_title || it?.subtitle || "").toLowerCase()
-  const combined = `${title} ${sub}`
-
-  const isVial = combined.includes("vial") || combined.includes("lyophilised") || combined.includes("freeze-dried")
-  const isRefill = combined.includes("refill") || combined.includes("cartridge")
-  
-  let slug = "ghk-cu"
-  if (combined.includes("ghk") || combined.includes("copper")) slug = "ghk-cu"
-  else if (combined.includes("tesamorelin") || combined.includes("tesa")) slug = "tesamorelin"
-  else if (combined.includes("tirzepatide") || combined.includes("tirz") || combined.includes("retatrutide")) slug = "tirzepatide"
-  else if (combined.includes("bpc") || combined.includes("tb-500") || combined.includes("wolverine")) slug = "bpc-157-tb-500"
-  else if (combined.includes("mots")) slug = "mots-c"
-  else if (combined.includes("nad")) slug = "nad-plus"
-  else if (combined.includes("pt-141") || combined.includes("pt141") || combined.includes("bremelanotide")) slug = "pt-141"
-  else if (combined.includes("melanotan") || combined.includes("mt-2") || combined.includes("mt2")) slug = "melanotan-2"
-  else if (combined.includes("glow") || combined.includes("barbie")) slug = "glow-stack"
-  else if (combined.includes("klow")) slug = "klow"
-
-  if (isRefill) {
-    return `/images/products/refills/${slug}.png`
-  }
-  if (isVial) {
-    return `/images/products/vials/${slug}.png`
-  }
-  if (slug === "ghk-cu") return "/images/products/pen-sets/ghk-cu.jpg"
-  if (slug === "tesamorelin") return "/images/products/pen-sets/tesamorelin.jpg"
-  return `/images/products/pen-sets/${slug}.png`
+  return "/images/placeholder.svg"
 }
 
 export async function GET(req: AuthenticatedMedusaRequest, res: MedusaResponse) {

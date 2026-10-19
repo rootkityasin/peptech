@@ -68,7 +68,15 @@ module.exports = defineConfig({
     redisUrl: resolvedRedisUrl,
     databaseDriverOptions: dbUrl?.includes('localhost') || dbUrl?.includes('127.0.0.1')
       ? { connection: { ssl: false } }
-      : { ssl: { rejectUnauthorized: false }, connection: { ssl: { rejectUnauthorized: false } } },
+      : {
+          ssl: { rejectUnauthorized: false },
+          connection: { ssl: { rejectUnauthorized: false } },
+          pool: {
+            min: 1,
+            max: 5,
+            idleTimeoutMillis: 30000,
+          },
+        },
     http: {
       storeCors: process.env.STORE_CORS || '/^https?:\\/\\/(localhost|127\\.0\\.0\\.1)(:\\d+)?$|^https?:\\/\\/(?:[a-zA-Z0-9-]+\\.)*peptech\\.bio$|^https?:\\/\\/docs\\.medusajs\\.com$/',
       adminCors: process.env.ADMIN_CORS || '/^https?:\\/\\/(localhost|127\\.0\\.0\\.1)(:\\d+)?$|^https?:\\/\\/(?:[a-zA-Z0-9-]+\\.)*peptech\\.bio$|^https?:\\/\\/docs\\.medusajs\\.com$/',
