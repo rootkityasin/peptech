@@ -150,15 +150,15 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: "Cache-Control",
-            value: "public, max-age=60, s-maxage=300, stale-while-revalidate=86400",
+            value: "public, max-age=0, must-revalidate, s-maxage=60, stale-while-revalidate=120",
           },
           {
             key: "CDN-Cache-Control",
-            value: "public, s-maxage=300",
+            value: "public, s-maxage=60",
           },
           {
             key: "X-LiteSpeed-Cache-Control",
-            value: "public, max-age=300, stale-while-revalidate=86400",
+            value: "public, max-age=60, stale-while-revalidate=120",
           },
         ],
       },
@@ -167,15 +167,15 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: "Cache-Control",
-            value: "public, max-age=60, s-maxage=300, stale-while-revalidate=86400",
+            value: "public, max-age=0, must-revalidate, s-maxage=60, stale-while-revalidate=120",
           },
           {
             key: "CDN-Cache-Control",
-            value: "public, s-maxage=300",
+            value: "public, s-maxage=60",
           },
           {
             key: "X-LiteSpeed-Cache-Control",
-            value: "public, max-age=300, stale-while-revalidate=86400",
+            value: "public, max-age=60, stale-while-revalidate=120",
           },
         ],
       },

@@ -40,15 +40,22 @@ async function handleRevalidation(request: Request) {
   invalidateProductsCache()
   const newRevision = bumpCatalogRevision()
 
+  let entityId: string | undefined
+  let handle: string | undefined
+  let categories: string[] = []
+
+  try {
+    const cloned = request.clone()
+    const body = await cloned.json().catch(() => null)
+    entityId = body?.productId || body?.data?.id
+    handle = body?.handle || body?.data?.handle
+    if (Array.isArray(body?.categories)) {
+      categories = body.categories
+    }
+  } catch {}
+
   // 2. Next.js App Router ISR Invalidation
   try {
-    let entityId: string | undefined
-    try {
-      const cloned = request.clone()
-      const body = await cloned.json().catch(() => null)
-      entityId = body?.data?.id || body?.data?.handle
-    } catch {}
-
     // Purge dynamic product route templates & layouts
     revalidatePath("/products/[handle]", "page")
     revalidatePath("/products/[handle]", "layout")
@@ -63,6 +70,10 @@ async function handleRevalidation(request: Request) {
     revalidatePath("/api/catalog")
 
     // If specific product handle or ID is present, revalidate its literal path
+    if (handle) {
+      revalidatePath(`/products/${handle}`, "page")
+      revalidatePath(`/products/${handle}`, "layout")
+    }
     if (entityId) {
       revalidatePath(`/products/${entityId}`, "page")
     }
@@ -70,13 +81,48 @@ async function handleRevalidation(request: Request) {
     console.warn("[REVALIDATE] Next.js ISR path revalidation warning:", err)
   }
 
-  // 3. Respond with LiteSpeed & Hostinger Edge cache purge directives
+  // 3. Eager Cache Warming: Pre-fetch refreshed catalog and product page in the background
+  // This guarantees the next visitor gets 100% freshly rendered HTML in 0ms without waiting for stale-while-revalidate
+  const origin = new URL(request.url).origin
+  const warmTargets: string[] = [
+    `${origin}/api/catalog?refresh=1`,
+    `${origin}/shop`,
+  ]
+
+  if (handle) {
+    warmTargets.push(`${origin}/products/${handle}`)
+  }
+
+  if (Array.isArray(categories) && categories.length > 0) {
+    for (const cat of categories) {
+      if (cat.includes("refill")) warmTargets.push(`${origin}/refills`)
+      if (cat.includes("pen")) warmTargets.push(`${origin}/pen-sets`)
+      if (cat.includes("vial")) warmTargets.push(`${origin}/vials`)
+    }
+  } else {
+    warmTargets.push(`${origin}/refills`, `${origin}/pen-sets`, `${origin}/vials`)
+  }
+
+  // Fire eager warming in background without blocking the revalidation HTTP response
+  Promise.allSettled(
+    warmTargets.map((url) =>
+      fetch(url, {
+        headers: { "x-eager-warm": "1", "Cache-Control": "no-cache" },
+        cache: "no-store",
+      }).catch(() => null)
+    )
+  ).catch(() => null)
+
+  // 4. Respond with LiteSpeed & Hostinger Edge cache purge directives
   return NextResponse.json(
     {
       revalidated: true,
       revision: newRevision,
+      entityId,
+      handle,
+      warmedTargets: warmTargets,
       timestamp: Date.now(),
-      message: "Storefront caches, ISR paths, and Hostinger LiteSpeed edge cache purged successfully.",
+      message: "Storefront caches, ISR paths, and Hostinger LiteSpeed edge cache purged and eagerly re-warmed.",
     },
     {
       status: 200,

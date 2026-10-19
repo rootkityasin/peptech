@@ -40,6 +40,33 @@ export default async function cacheInvalidationSubscriber({
     return
   }
 
+  let handle: string | undefined
+  let categories: string[] = []
+
+  const productId =
+    typeof data?.id === "string" && data.id.startsWith("prod_")
+      ? data.id
+      : typeof data?.product_id === "string"
+      ? data.product_id
+      : undefined
+
+  if (productId) {
+    try {
+      const query = container.resolve(ContainerRegistrationKeys.QUERY)
+      const { data: products } = await query.graph({
+        entity: "product",
+        fields: ["id", "handle", "categories.handle"],
+        filters: { id: productId },
+      })
+      if (products && products[0]) {
+        handle = products[0].handle
+        categories = (products[0].categories || []).map((c: any) => c.handle).filter(Boolean)
+      }
+    } catch {
+      // Continue gracefully if query resolution is not available
+    }
+  }
+
   try {
     const res = await fetch(`${storefrontUrl}/api/revalidate`, {
       method: "POST",
@@ -50,6 +77,9 @@ export default async function cacheInvalidationSubscriber({
       body: JSON.stringify({
         event: name,
         data,
+        productId,
+        handle,
+        categories,
         timestamp: Date.now(),
       }),
     })

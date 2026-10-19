@@ -5,8 +5,8 @@ import { getCatalogProduct, getCatalogProducts } from "@/lib/medusa"
 import { ProductShowcase } from "@/components/product/ProductShowcase"
 import { ProductDetailSkeleton } from "@/components/product/ProductDetailSkeleton"
 
-// Hostinger Cache Manager & Edge CDN ISR: Revalidate every 5 minutes in background
-export const revalidate = 300
+// Hostinger Cache Manager & Edge CDN ISR: Revalidate every 60 seconds in background
+export const revalidate = 60
 
 interface PageProps {
   params: Promise<{ handle: string }>
