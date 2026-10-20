@@ -925,13 +925,7 @@ export function ShopCatalog({ initialCategory = "all", initialProducts }: ShopCa
                         <span className="bg-white/90 backdrop-blur-xs text-[#0b1f3a] border border-[#e2e8f0] text-[9.5px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">
                           {product.formatLabel}
                         </span>
-                        {product.accentColor && (
-                          <span
-                            className="size-2 rounded-full border border-white shrink-0"
-                            style={{ backgroundColor: product.accentColor }}
-                            title={product.categoryLabel}
-                          />
-                        )}
+
                       </div>
 
                       <div className="relative w-full h-[130px] min-h-[130px] flex items-center justify-center">
@@ -1014,12 +1008,7 @@ export function ShopCatalog({ initialCategory = "all", initialProducts }: ShopCa
                         <span className="text-[10px] font-semibold text-[#64748b] tracking-wide uppercase">
                           {product.formatLabel}
                         </span>
-                        {product.accentColor && (
-                          <span
-                            className="size-2 rounded-full shrink-0"
-                            style={{ backgroundColor: product.accentColor }}
-                          />
-                        )}
+
                       </div>
                       <h4 className="text-[15px] font-bold text-[#0b1f3a] group-hover:text-[#16a6a3] transition-colors">{product.name}</h4>
                       {product.contents && (
