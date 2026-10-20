@@ -90,7 +90,7 @@ export function resolveRedisUrl(env: NodeJS.ProcessEnv = process.env): string {
     return (env.REDIS_URL || env.REDIS_URL_PRODUCTION || "").trim()
   }
   // For local development (file watcher, restarts): use local Redis to prevent connection exhaustion
-  return (env.DEV_REDIS_URL || (env.REDIS_URL && (env.REDIS_URL.includes("localhost") || env.REDIS_URL.includes("127.0.0.1")) ? env.REDIS_URL : "redis://127.0.0.1:6379")).trim()
+  return (env.DEV_REDIS_URL || env.REDIS_URL || "").trim();
 }
 
 export function commerceRuntimeModules(env: NodeJS.ProcessEnv = process.env) {

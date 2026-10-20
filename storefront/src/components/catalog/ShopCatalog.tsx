@@ -911,13 +911,7 @@ export function ShopCatalog({ initialCategory = "all", initialProducts }: ShopCa
                   key={product.id}
                   className="bg-white border border-[#e2e8f0] rounded-[10px] p-[12px] flex flex-col justify-between h-full min-h-[360px] sm:min-h-[380px] hover:shadow-md transition-shadow text-center group relative overflow-hidden"
                 >
-                  {/* Subtle top accent border if product has accentColor */}
-                  {product.accentColor && (
-                    <div
-                      className="absolute top-0 left-0 right-0 h-[3px]"
-                      style={{ backgroundColor: product.accentColor }}
-                    />
-                  )}
+
 
                   {/* Clickable Card Body: Image, Title, Specs & Price */}
                   <Link
@@ -1009,12 +1003,7 @@ export function ShopCatalog({ initialCategory = "all", initialProducts }: ShopCa
                   key={product.id}
                   className="bg-white border border-[#e2e8f0] rounded-[8px] p-4 flex flex-col sm:flex-row items-center justify-between gap-4 hover:shadow-md transition-shadow group relative overflow-hidden"
                 >
-                  {product.accentColor && (
-                    <div
-                      className="absolute top-0 bottom-0 left-0 w-[3px]"
-                      style={{ backgroundColor: product.accentColor }}
-                    />
-                  )}
+
 
                   <Link href={`/products/${product.handle}`} className="flex items-center gap-4 flex-1">
                     <div className="bg-[#f8fafc] rounded-[6px] size-[80px] relative shrink-0 p-1 group-hover:bg-slate-100 transition-colors">
