@@ -341,6 +341,63 @@ export class SupabaseFileService extends AbstractFileProviderService {
     for (const key of keys) {
       removeFromLocalDisk(key, this.logger_)
     }
+
+    // Trigger instant storefront & LiteSpeed cache invalidation
+    await this.notifyStorefront("file.deleted", keys)
+  }
+
+  protected async notifyStorefront(event: string, keys: string[]): Promise<void> {
+    const isProd =
+      process.env.NODE_ENV === "production" ||
+      process.env.MEDUSA_ADMIN_ONBOARDING_TYPE === "default" ||
+      Boolean(process.env.MEDUSA_BACKEND_URL?.includes("peptech.bio"))
+
+    const storefrontUrl =
+      process.env.STRIPE_STOREFRONT_URL ||
+      process.env.NEXT_PUBLIC_STOREFRONT_URL ||
+      (isProd ? "https://peptech.bio" : "http://localhost:3000")
+
+    const revalidateSecret =
+      process.env.REVALIDATION_SECRET ||
+      process.env.COMMERCE_CRON_SECRET ||
+      process.env.STRIPE_COMMERCE_SIGNING_SECRET
+
+    if (!revalidateSecret) {
+      this.logger_?.warn?.(
+        "[SupabaseFileService] Neither REVALIDATION_SECRET, COMMERCE_CRON_SECRET, nor STRIPE_COMMERCE_SIGNING_SECRET is configured. Skipping storefront cache purge."
+      )
+      return
+    }
+
+    try {
+      const res = await fetch(`${storefrontUrl}/api/revalidate`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-revalidate-secret": revalidateSecret,
+        },
+        body: JSON.stringify({
+          event,
+          fileKeys: keys,
+          timestamp: Date.now(),
+        }),
+      })
+
+      if (res.ok) {
+        this.logger_?.info?.(
+          `[SupabaseFileService] ✓ Storefront & LiteSpeed edge cache purged for file change (${event}): ${keys.join(", ")}`
+        )
+      } else {
+        const text = await res.text()
+        this.logger_?.warn?.(
+          `[SupabaseFileService] ⚠️ Storefront cache purge returned status ${res.status}: ${text}`
+        )
+      }
+    } catch (err: any) {
+      this.logger_?.warn?.(
+        `[SupabaseFileService] ⚠️ Failed to reach storefront revalidate endpoint at ${storefrontUrl}: ${err?.message || err}`
+      )
+    }
   }
 
   async getAsBuffer(fileData: ProviderGetFileDTO): Promise<Buffer> {

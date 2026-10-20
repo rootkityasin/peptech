@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { revalidatePath } from "next/cache"
 import { invalidateProductsCache } from "@/lib/medusa"
-import { getCatalogRevision, bumpCatalogRevision } from "@/lib/catalog-version"
+import { bumpCatalogRevision } from "@/lib/catalog-version"
 
 export const dynamic = "force-dynamic"
 
@@ -40,6 +40,8 @@ async function handleRevalidation(request: Request) {
   invalidateProductsCache()
   const newRevision = bumpCatalogRevision()
 
+  let event: string | undefined
+  let fileKeys: string[] = []
   let entityId: string | undefined
   let handle: string | undefined
   let categories: string[] = []
@@ -47,12 +49,20 @@ async function handleRevalidation(request: Request) {
   try {
     const cloned = request.clone()
     const body = await cloned.json().catch(() => null)
+    event = body?.event
+    if (Array.isArray(body?.fileKeys)) {
+      fileKeys = body.fileKeys
+    }
     entityId = body?.productId || body?.data?.id
     handle = body?.handle || body?.data?.handle
     if (Array.isArray(body?.categories)) {
       categories = body.categories
     }
   } catch {}
+
+  console.log(
+    `[REVALIDATE] Purging storefront cache for event: ${event || "manual"} (entity: ${entityId || "none"}, handle: ${handle || "all"}, fileKeys: ${fileKeys.join(", ") || "none"})`
+  )
 
   // 2. Next.js App Router ISR Invalidation
   try {
@@ -118,6 +128,8 @@ async function handleRevalidation(request: Request) {
     {
       revalidated: true,
       revision: newRevision,
+      event,
+      fileKeys,
       entityId,
       handle,
       warmedTargets: warmTargets,

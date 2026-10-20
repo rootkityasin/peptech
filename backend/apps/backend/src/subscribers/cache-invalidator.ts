@@ -3,7 +3,7 @@ import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
 
 /**
  * PEPTECH® Instant Storefront Cache Invalidator Subscriber
- * Listens to all admin modifications (products, variants, inventory, pricing, collections)
+ * Listens to all admin modifications (products, variants, inventory, pricing, collections, media, files)
  * and immediately purges Next.js ISR and Hostinger LiteSpeed edge caches.
  */
 export default async function cacheInvalidationSubscriber({
@@ -43,14 +43,35 @@ export default async function cacheInvalidationSubscriber({
   let handle: string | undefined
   let categories: string[] = []
 
-  const productId =
+  let productId: string | undefined =
     typeof data?.id === "string" && data.id.startsWith("prod_")
       ? data.id
       : typeof data?.product_id === "string"
       ? data.product_id
       : undefined
 
-  if (productId) {
+  // If the event is for an image (e.g. img_...), resolve the parent product
+  if (!productId && typeof data?.id === "string" && data.id.startsWith("img_")) {
+    try {
+      const query = container.resolve(ContainerRegistrationKeys.QUERY)
+      const { data: images } = await query.graph({
+        entity: "image",
+        fields: ["id", "product_id", "product.id", "product.handle", "product.categories.handle"],
+        filters: { id: data.id },
+      })
+      if (images && images[0]) {
+        productId = images[0].product_id || images[0].product?.id
+        if (images[0].product?.handle) {
+          handle = images[0].product.handle
+          categories = (images[0].product.categories || []).map((c: any) => c.handle).filter(Boolean)
+        }
+      }
+    } catch {
+      // Continue gracefully if image entity query fails
+    }
+  }
+
+  if (productId && !handle) {
     try {
       const query = container.resolve(ContainerRegistrationKeys.QUERY)
       const { data: products } = await query.graph({
@@ -129,6 +150,25 @@ export const config: SubscriberConfig = {
     "product.product-collection.created",
     "product.product-collection.updated",
     "product.product-collection.deleted",
+
+    // Media & Product-Image lifecycle events
+    "product.product-image.created",
+    "product.product-image.updated",
+    "product.product-image.deleted",
+    "product-image.created",
+    "product-image.updated",
+    "product-image.deleted",
+    "product.image.created",
+    "product.image.updated",
+    "product.image.deleted",
+
+    // File Module lifecycle events
+    "file.created",
+    "file.updated",
+    "file.deleted",
+    "file.file.created",
+    "file.file.updated",
+    "file.file.deleted",
 
     // Inventory levels and item updates (stock adjustments)
     "inventory-item.created",

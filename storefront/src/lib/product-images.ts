@@ -1,3 +1,4 @@
+import { getCatalogRevision } from "./catalog-version"
 /**
  * PEPTECH® Product Image Resolver
  * 
@@ -228,6 +229,27 @@ export function getProductImagePath(category: ProductCategory, slug: CompoundSlu
 }
 
 /**
+ * Appends the active catalog revision to product image URLs.
+ * Bypasses Next.js Image Optimizer and browser immutable caches whenever an image is updated or deleted.
+ */
+export function appendRevision(url?: string | null): string {
+  if (!url || typeof url !== "string") return "/images/placeholder.svg"
+  if (url === "/images/placeholder.svg" || url.endsWith(".svg")) return url
+  // Only remote / uploaded images (e.g. Supabase storage, CDN) need query cache-busting
+  // Local static bundled assets in /public do not change at runtime without a redeploy
+  if (url.startsWith("/") && !url.startsWith("/api/")) return url
+  try {
+    const rev = getCatalogRevision()
+    if (!rev) return url
+    const separator = url.includes("?") ? "&" : "?"
+    if (url.includes("v=") || url.includes("rev=")) return url
+    return `${url}${separator}v=${rev}`
+  } catch {
+    return url
+  }
+}
+
+/**
  * Master Product Image Resolver.
  * Uses the product's explicit Medusa image/thumbnail, or returns a clean placeholder.
  * Never guesses or forces hardcoded seeded compound images if the merchant deleted the image.
@@ -237,16 +259,16 @@ export function resolveProductImage(item?: ProductLike | string | null): string 
 
   if (typeof item === "string") {
     const clean = cleanExistingUrl(item)
-    if (clean) return clean
+    if (clean) return appendRevision(clean)
     return `/images/placeholder.svg`
   }
 
   // 1. Try explicit image or thumbnail first if valid
   const existingImage = cleanExistingUrl(item.image)
-  if (existingImage) return existingImage
+  if (existingImage) return appendRevision(existingImage)
 
   const existingThumb = cleanExistingUrl(item.thumbnail)
-  if (existingThumb) return existingThumb
+  if (existingThumb) return appendRevision(existingThumb)
 
   // 2. If no image or thumbnail is set in Medusa, return placeholder (no fake seeded image)
   return `/images/placeholder.svg`
