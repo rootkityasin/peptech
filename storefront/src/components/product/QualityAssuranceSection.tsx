@@ -3,7 +3,7 @@
 import React from "react"
 import Link from "next/link"
 
-export function VerifiedReviewsSection() {
+export function QualityAssuranceSection() {
   const pillars = [
     {
       title: "Analytical Purity Guaranteed",
@@ -26,7 +26,7 @@ export function VerifiedReviewsSection() {
   ]
 
   return (
-    <div className="bg-white flex items-center justify-center pb-[40px] pt-[36px] w-full border-t border-slate-100" data-name="Verified Customer Reviews Section">
+    <div className="bg-white flex items-center justify-center pb-[40px] pt-[36px] w-full border-t border-slate-100" data-name="Quality Assurance Section">
       <div className="flex flex-col lg:flex-row items-center justify-between max-w-[1240px] w-full px-4 sm:px-6 gap-6">
         {/* Reviews Summary Column */}
         <div className="flex flex-col gap-[10px] items-start w-full lg:w-[280px] shrink-0">

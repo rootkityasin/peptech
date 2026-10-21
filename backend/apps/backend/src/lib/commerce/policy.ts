@@ -20,21 +20,43 @@ export const checkoutItemSchema = z.object({
   metadata: z.record(z.string(), z.any()).optional().nullable(),
 })
 
+export const DEFAULT_COMMERCE_SHIPPING_RATES = {
+  pen_set_uk_minor: 495,
+  pen_set_intl_minor: 1500,
+  refill_uk_minor: 395,
+  refill_intl_minor: 1000,
+  vial_uk_minor: 395,
+  vial_intl_minor: 1000,
+} as const
+
+export const DEFAULT_SERVICE_ZONE_RATES = {
+  uk: {
+    pen_set_minor: 495,
+    refill_minor: 395,
+    vial_minor: 395,
+  },
+  intl: {
+    pen_set_minor: 1500,
+    refill_minor: 1000,
+    vial_minor: 1000,
+  },
+} as const
+
 export const shippingRatesSchema = z.object({
-  pen_set_uk_minor: z.number().int().nonnegative().default(495),
-  pen_set_intl_minor: z.number().int().nonnegative().default(1500),
-  refill_uk_minor: z.number().int().nonnegative().default(395),
-  refill_intl_minor: z.number().int().nonnegative().default(1000),
-  vial_uk_minor: z.number().int().nonnegative().default(395),
-  vial_intl_minor: z.number().int().nonnegative().default(1000),
+  pen_set_uk_minor: z.number().int().nonnegative().default(DEFAULT_COMMERCE_SHIPPING_RATES.pen_set_uk_minor),
+  pen_set_intl_minor: z.number().int().nonnegative().default(DEFAULT_COMMERCE_SHIPPING_RATES.pen_set_intl_minor),
+  refill_uk_minor: z.number().int().nonnegative().default(DEFAULT_COMMERCE_SHIPPING_RATES.refill_uk_minor),
+  refill_intl_minor: z.number().int().nonnegative().default(DEFAULT_COMMERCE_SHIPPING_RATES.refill_intl_minor),
+  vial_uk_minor: z.number().int().nonnegative().default(DEFAULT_COMMERCE_SHIPPING_RATES.vial_uk_minor),
+  vial_intl_minor: z.number().int().nonnegative().default(DEFAULT_COMMERCE_SHIPPING_RATES.vial_intl_minor),
 })
 
 export type ShippingRates = z.infer<typeof shippingRatesSchema>
 
 export const serviceZoneRateTierSchema = z.object({
-  pen_set_minor: z.coerce.number().int().nonnegative().default(495),
-  refill_minor: z.coerce.number().int().nonnegative().default(395),
-  vial_minor: z.coerce.number().int().nonnegative().default(395),
+  pen_set_minor: z.coerce.number().int().nonnegative().default(DEFAULT_SERVICE_ZONE_RATES.uk.pen_set_minor),
+  refill_minor: z.coerce.number().int().nonnegative().default(DEFAULT_SERVICE_ZONE_RATES.uk.refill_minor),
+  vial_minor: z.coerce.number().int().nonnegative().default(DEFAULT_SERVICE_ZONE_RATES.uk.vial_minor),
 })
 
 export type ServiceZoneRateTier = z.infer<typeof serviceZoneRateTierSchema>
@@ -46,7 +68,7 @@ export const checkoutSchema = z.object({
   items: z.array(checkoutItemSchema).min(1).max(30),
   ruo_accepted: z.literal(true),
   recurring_accepted: z.boolean(),
-  payment_method: z.enum(["stripe"]).default("stripe"),
+  payment_method: z.literal("stripe").default("stripe"),
   shipping_option_id: z.string().trim().min(3).max(100).optional(),
   ui_mode: z.enum(["embedded", "hosted", "embedded_page", "hosted_page"]).default("embedded").optional(),
   promo_code: z.string().trim().max(50).optional().nullable(),

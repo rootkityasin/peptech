@@ -15,7 +15,7 @@ import { CompleteSetsSection } from "./CompleteSetsSection"
 import { RefillsSection } from "./RefillsSection"
 import { VialsSection } from "./VialsSection"
 import { TrustBadgesStrip } from "./TrustBadgesStrip"
-import { VerifiedReviewsSection } from "./VerifiedReviewsSection"
+import { QualityAssuranceSection } from "./QualityAssuranceSection"
 import { ResourceCardsSection } from "./ResourceCardsSection"
 
 interface ProductShowcaseProps {
@@ -182,8 +182,8 @@ export function ProductShowcase({
       {/* 5 Guarantee Badges Strip */}
       <TrustBadgesStrip />
 
-      {/* Verified Customer Reviews */}
-      <VerifiedReviewsSection />
+      {/* Quality Assurance & Analytical Standards */}
+      <QualityAssuranceSection />
 
       {/* Action Resource Cards */}
       <ResourceCardsSection />

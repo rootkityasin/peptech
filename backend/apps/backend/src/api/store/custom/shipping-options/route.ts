@@ -1,6 +1,7 @@
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { commerce, endpoint } from "../../../../lib/commerce/http"
 import { listShippingOptions, calculateDynamicShipping, listLocationServiceZones } from "../../../../lib/commerce/shipping"
+import { DEFAULT_COMMERCE_SHIPPING_RATES, DEFAULT_SERVICE_ZONE_RATES } from "../../../../lib/commerce/policy"
 
 function destinationCountry(value: unknown): string {
   const country = String(value || "").trim().toLowerCase()
@@ -46,21 +47,22 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
       z.countries.map((c) => c.toLowerCase()).includes(countryCode.toLowerCase())
     )
     const isUk = countryCode.toLowerCase() === "gb"
-    let penSetMinor = isUk ? 495 : 1500
-    let refillMinor = isUk ? 395 : 1000
-    let vialMinor = isUk ? 395 : 1000
+    const defaultZoneRates = isUk ? DEFAULT_SERVICE_ZONE_RATES.uk : DEFAULT_SERVICE_ZONE_RATES.intl
+    let penSetMinor: number = defaultZoneRates.pen_set_minor
+    let refillMinor: number = defaultZoneRates.refill_minor
+    let vialMinor: number = defaultZoneRates.vial_minor
 
     if (matchedZone) {
       const isUkZone = matchedZone.countries.includes("gb")
       const savedRate = policy?.service_zone_rates?.[matchedZone.id] || matchedZone.rates
       if (savedRate) {
-        penSetMinor = Number(savedRate.pen_set_minor ?? (isUkZone ? 495 : 1500))
-        refillMinor = Number(savedRate.refill_minor ?? (isUkZone ? 395 : 1000))
-        vialMinor = Number(savedRate.vial_minor ?? (isUkZone ? 395 : 1000))
+        penSetMinor = Number(savedRate.pen_set_minor ?? (isUkZone ? DEFAULT_SERVICE_ZONE_RATES.uk.pen_set_minor : DEFAULT_SERVICE_ZONE_RATES.intl.pen_set_minor))
+        refillMinor = Number(savedRate.refill_minor ?? (isUkZone ? DEFAULT_SERVICE_ZONE_RATES.uk.refill_minor : DEFAULT_SERVICE_ZONE_RATES.intl.refill_minor))
+        vialMinor = Number(savedRate.vial_minor ?? (isUkZone ? DEFAULT_SERVICE_ZONE_RATES.uk.vial_minor : DEFAULT_SERVICE_ZONE_RATES.intl.vial_minor))
       } else {
-        penSetMinor = isUkZone ? 495 : 1500
-        refillMinor = isUkZone ? 395 : 1000
-        vialMinor = isUkZone ? 395 : 1000
+        penSetMinor = (isUkZone ? DEFAULT_SERVICE_ZONE_RATES.uk : DEFAULT_SERVICE_ZONE_RATES.intl).pen_set_minor
+        refillMinor = (isUkZone ? DEFAULT_SERVICE_ZONE_RATES.uk : DEFAULT_SERVICE_ZONE_RATES.intl).refill_minor
+        vialMinor = (isUkZone ? DEFAULT_SERVICE_ZONE_RATES.uk : DEFAULT_SERVICE_ZONE_RATES.intl).vial_minor
       }
     } else if (policy?.shipping_rates) {
       penSetMinor = isUk ? policy.shipping_rates.pen_set_uk_minor : policy.shipping_rates.pen_set_intl_minor

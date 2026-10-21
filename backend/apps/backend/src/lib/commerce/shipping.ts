@@ -1,5 +1,5 @@
 import { ContainerRegistrationKeys, Modules, QueryContext } from "@medusajs/framework/utils"
-import { fail, toMinor } from "./policy"
+import { fail, toMinor, DEFAULT_COMMERCE_SHIPPING_RATES, DEFAULT_SERVICE_ZONE_RATES } from "./policy"
 
 export type ShippingOptionQuote = {
   id: string
@@ -349,14 +349,14 @@ export function calculateDynamicShipping({
   const isUk = cleanCountry === "gb"
 
   let penSetMinor = isUk
-    ? (policy?.shipping_rates?.pen_set_uk_minor ?? 495)
-    : (policy?.shipping_rates?.pen_set_intl_minor ?? 1500)
+    ? (policy?.shipping_rates?.pen_set_uk_minor ?? DEFAULT_COMMERCE_SHIPPING_RATES.pen_set_uk_minor)
+    : (policy?.shipping_rates?.pen_set_intl_minor ?? DEFAULT_COMMERCE_SHIPPING_RATES.pen_set_intl_minor)
   let refillMinor = isUk
-    ? (policy?.shipping_rates?.refill_uk_minor ?? 395)
-    : (policy?.shipping_rates?.refill_intl_minor ?? 1000)
+    ? (policy?.shipping_rates?.refill_uk_minor ?? DEFAULT_COMMERCE_SHIPPING_RATES.refill_uk_minor)
+    : (policy?.shipping_rates?.refill_intl_minor ?? DEFAULT_COMMERCE_SHIPPING_RATES.refill_intl_minor)
   let vialMinor = isUk
-    ? (policy?.shipping_rates?.vial_uk_minor ?? 395)
-    : (policy?.shipping_rates?.vial_intl_minor ?? 1000)
+    ? (policy?.shipping_rates?.vial_uk_minor ?? DEFAULT_COMMERCE_SHIPPING_RATES.vial_uk_minor)
+    : (policy?.shipping_rates?.vial_intl_minor ?? DEFAULT_COMMERCE_SHIPPING_RATES.vial_intl_minor)
 
   // Service Zone matching if provided
   if (serviceZones && serviceZones.length > 0) {
@@ -367,13 +367,13 @@ export function calculateDynamicShipping({
       const isUkZone = matchedZone.countries.map((c) => c.toLowerCase()).includes("gb")
       const savedRate = policy?.service_zone_rates?.[matchedZone.id] || matchedZone.rates
       if (savedRate) {
-        penSetMinor = Number(savedRate.pen_set_minor ?? (isUkZone ? 495 : 1500))
-        refillMinor = Number(savedRate.refill_minor ?? (isUkZone ? 395 : 1000))
-        vialMinor = Number(savedRate.vial_minor ?? (isUkZone ? 395 : 1000))
+        penSetMinor = Number(savedRate.pen_set_minor ?? (isUkZone ? DEFAULT_SERVICE_ZONE_RATES.uk.pen_set_minor : DEFAULT_SERVICE_ZONE_RATES.intl.pen_set_minor))
+        refillMinor = Number(savedRate.refill_minor ?? (isUkZone ? DEFAULT_SERVICE_ZONE_RATES.uk.refill_minor : DEFAULT_SERVICE_ZONE_RATES.intl.refill_minor))
+        vialMinor = Number(savedRate.vial_minor ?? (isUkZone ? DEFAULT_SERVICE_ZONE_RATES.uk.vial_minor : DEFAULT_SERVICE_ZONE_RATES.intl.vial_minor))
       } else {
-        penSetMinor = isUkZone ? 495 : 1500
-        refillMinor = isUkZone ? 395 : 1000
-        vialMinor = isUkZone ? 395 : 1000
+        penSetMinor = (isUkZone ? DEFAULT_SERVICE_ZONE_RATES.uk : DEFAULT_SERVICE_ZONE_RATES.intl).pen_set_minor
+        refillMinor = (isUkZone ? DEFAULT_SERVICE_ZONE_RATES.uk : DEFAULT_SERVICE_ZONE_RATES.intl).refill_minor
+        vialMinor = (isUkZone ? DEFAULT_SERVICE_ZONE_RATES.uk : DEFAULT_SERVICE_ZONE_RATES.intl).vial_minor
       }
     }
   }

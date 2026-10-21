@@ -125,11 +125,6 @@ const CommercePage = () => {
     accountId?: string
     configured?: boolean
   } | null>(null)
-  const [bankSettings, setBankSettings] = useState({
-    account_name: "",
-    sort_code: "",
-    account_number: "",
-  })
   const [shippingOptions, setShippingOptions] = useState<any[]>([])
   const [shippingDefaults, setShippingDefaults] = useState({
     shipping_option_id: "",
@@ -175,13 +170,6 @@ const CommercePage = () => {
       const data = await apiRequest("/admin/commerce/settings")
       if (data?.stripe) {
         setStripeConfig(data.stripe)
-      }
-      if (data?.settings?.data?.bank_instructions) {
-        setBankSettings({
-          account_name: data.settings.data.bank_instructions.account_name || "",
-          sort_code: data.settings.data.bank_instructions.sort_code || "",
-          account_number: data.settings.data.bank_instructions.account_number || "",
-        })
       }
     } catch (e: any) {
       console.error("Failed to load settings:", e)
@@ -387,19 +375,6 @@ const CommercePage = () => {
     return apiRequest("/admin/commerce/settings", payload)
   }
 
-  // Save bank transfer settings
-  const handleSaveBankSettings = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setBusy(true)
-    try {
-      await saveSettings({ bank_instructions: bankSettings })
-      showNotification("success", "Bank transfer instructions updated successfully.")
-    } catch (e: any) {
-      showNotification("error", e?.message || "Failed to save bank settings")
-    } finally {
-      setBusy(false)
-    }
-  }
 
   // Save the default shipping option used when a customer makes no selection
   const handleSaveShippingSettings = async (e: React.FormEvent) => {
@@ -560,7 +535,7 @@ const CommercePage = () => {
             <span>Batch Release & Fulfillment</span>
           </Tabs.Trigger>
           <Tabs.Trigger value="settings" className="flex items-center gap-2">
-            <span>Gateway & Bank Settings</span>
+            <span>Gateway & Shipping Settings</span>
           </Tabs.Trigger>
           <Tabs.Trigger value="diagnostics" className="flex items-center gap-2 text-ui-fg-muted">
             <span>Diagnostics</span>
@@ -1057,56 +1032,6 @@ const CommercePage = () => {
               <div className="pt-1">
                 <Button disabled={busy} variant="primary">
                   {busy ? "Saving..." : "Save Shipping Configuration"}
-                </Button>
-              </div>
-            </form>
-          </div>
-
-          {/* Bank Instructions Card */}
-          <div className="rounded-xl border border-ui-border-base bg-ui-bg-subtle p-5">
-            <div className="pb-3 border-b border-ui-border-base mb-4">
-              <Heading level="h2" className="text-base font-semibold text-ui-fg-base">
-                UK Bank Transfer Instructions
-              </Heading>
-              <Text className="text-sm text-ui-fg-muted">
-                These banking credentials are displayed to verified institutional customers paying via UK Faster Payments.
-              </Text>
-            </div>
-
-            <form onSubmit={handleSaveBankSettings} className="flex flex-col gap-4 max-w-md">
-              <div>
-                <Label>Beneficiary Account Name</Label>
-                <Input
-                  required
-                  value={bankSettings.account_name}
-                  onChange={(e) => setBankSettings({ ...bankSettings, account_name: e.target.value })}
-                  placeholder="PEPTECH BIO LTD"
-                />
-              </div>
-
-              <div>
-                <Label>Sort Code</Label>
-                <Input
-                  required
-                  value={bankSettings.sort_code}
-                  onChange={(e) => setBankSettings({ ...bankSettings, sort_code: e.target.value })}
-                  placeholder="20-00-00"
-                />
-              </div>
-
-              <div>
-                <Label>Account Number</Label>
-                <Input
-                  required
-                  value={bankSettings.account_number}
-                  onChange={(e) => setBankSettings({ ...bankSettings, account_number: e.target.value })}
-                  placeholder="12345678"
-                />
-              </div>
-
-              <div className="pt-2">
-                <Button disabled={busy} variant="primary">
-                  {busy ? "Saving..." : "Save Bank Transfer Details"}
                 </Button>
               </div>
             </form>

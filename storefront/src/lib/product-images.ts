@@ -241,11 +241,11 @@ export function appendRevision(url?: string | null): string {
   try {
     const rev = getCatalogRevision()
     if (!rev) return url
-    if (url.includes("v=")) {
-      return url.replace(/([?&])v=[^&]*/, `$1v=${rev}`)
-    }
-    const separator = url.includes("?") ? "&" : "?"
-    return `${url}${separator}v=${rev}`
+    const isAbsolute = /^https?:\/\//i.test(url)
+    const base = isAbsolute ? undefined : "https://peptech.bio"
+    const parsed = new URL(url, base)
+    parsed.searchParams.set("v", String(rev))
+    return isAbsolute ? parsed.toString() : `${parsed.pathname}${parsed.search}`
   } catch {
     return url
   }
