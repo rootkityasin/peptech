@@ -17,7 +17,7 @@ async function voidSkippedInvoice(scope:any,ledger:CommerceService,cycle:LedgerR
  cycle.state="skipped";await ledger.save(cycle)
  await ledger.audit(cycle.data.subscription_id,"worker","cycle-skipped",{invoice_id:invoice.id})
 }
-async function preflightInvoice(scope:any,ledger:CommerceService,record:LedgerRecord,invoice:any) {
+export async function preflightInvoice(scope:any,ledger:CommerceService,record:LedgerRecord,invoice:any) {
   const context=stripeContext()
   return ledger.locked(record.id,async()=>{
     const latest=await ledger.get(record.id)

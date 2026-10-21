@@ -104,11 +104,23 @@ export async function prepareStripeCheckout(input: {
         const handle = item.productHandle || item.id.replace(/-(one-time|subscription)$/, " ").trim()
         if (handle.includes("?")) throw new Error(`Please re-add ${item.title} from the current catalogue.`)
         const selector = handle.startsWith("prod_") ? `id=${encodeURIComponent(handle)}` : `handle=${encodeURIComponent(handle)}`
-        const result = await commerceRequest(`/store/products?${selector}&fields=*variants&limit=2`, input.token)
-        if (result.products.length !== 1 || result.products[0].variants?.length !== 1) {
+        const result = await commerceRequest(`/store/products?${selector}&fields=*variants&limit=5`, input.token)
+        const product = result.products?.[0]
+        if (!product || !product.variants?.length) {
           throw new Error(`${item.title} is no longer available in the connected catalogue. Remove it from your basket and choose a current product.`)
         }
-        variantId = result.products[0].variants[0].id
+        let matchedVariant = product.variants[0]
+        if (product.variants.length > 1) {
+          const strength = item.strength?.toLowerCase()
+          const matched = product.variants.find((v: any) => {
+            const vTitle = (v.title || "").toLowerCase()
+            if (strength && vTitle.includes(strength)) return true
+            if (item.options?.some((opt) => vTitle.includes(opt.value?.toLowerCase()))) return true
+            return false
+          })
+          if (matched) matchedVariant = matched
+        }
+        variantId = matchedVariant.id
       }
       return {
         variant_id: variantId,

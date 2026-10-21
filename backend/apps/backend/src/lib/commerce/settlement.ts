@@ -245,19 +245,7 @@ export async function settleReceipt(
     })
     let paymentRecord: any
     if (evidence.source === "bank_transfer") {
-      if (!evidence.verified_by) fail("Verified bank evidence is required", 409)
-      paymentRecord = collection.payments?.[0]
-      if (!paymentRecord?.captured_at) {
-        paymentRecord = (
-          await markPaymentCollectionAsPaid(scope).run({
-            input: {
-              order_id: orderId,
-              payment_collection_id: collectionId,
-              captured_by: evidence.verified_by,
-            },
-          })
-        ).result
-      }
+      fail("Offline bank transfer rail is disabled. All settlements require tokenized Stripe SCA.", 410)
     } else {
       let session = collection.payment_sessions?.[0]
       if (!session) {

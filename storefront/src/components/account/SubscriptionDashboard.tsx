@@ -308,7 +308,7 @@ export function SubscriptionDashboard({
                             Protocol: {sub.protocol_info || "Standard 28-Day Automated Cycle (1.5 mL Borosilicate Cartridge)"}
                           </p>
                           <p className="text-[11px] sm:text-xs text-slate-400 truncate">
-                            Ships to: {sub.recipient_facility || "Cambridge Science Park"} ({sub.recipient_name || "Primary Investigator"})
+                            Ships to: {sub.recipient_facility || "Authorized Facility"} ({sub.recipient_name || "Primary Investigator"})
                           </p>
                         </div>
                       </div>
@@ -503,14 +503,14 @@ export function SubscriptionDashboard({
                   {primarySub?.recipient_name || `${defaultAddress?.first_name || "Dr. Alexander"} ${defaultAddress?.last_name || "Wright"}`}
                 </p>
                 <p className="text-slate-500">
-                  {primarySub?.recipient_facility || defaultAddress?.company || "Dept. of Molecular Pharmacology"}
+                  {primarySub?.recipient_facility || defaultAddress?.company || "Authorized Laboratory Facility"}
                 </p>
                 <p>
-                  {defaultAddress?.address_1 || primarySub?.shipping_address?.address_1 || "Cambridge Science Park, Milton Rd"}
+                  {defaultAddress?.address_1 || primarySub?.shipping_address?.address_1 || "Designated Laboratory Address"}
                 </p>
                 <p>
-                  {defaultAddress?.city || primarySub?.shipping_address?.city || "Cambridge"},{" "}
-                  {defaultAddress?.postal_code || primarySub?.shipping_address?.postal_code || "CB4 0GZ"}
+                  {defaultAddress?.city || primarySub?.shipping_address?.city || ""}{defaultAddress?.city || primarySub?.shipping_address?.city ? ", " : ""}
+                  {defaultAddress?.postal_code || primarySub?.shipping_address?.postal_code || ""}
                 </p>
                 <p className="text-slate-400">United Kingdom</p>
               </div>

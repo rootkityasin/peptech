@@ -73,7 +73,7 @@ export function ScheduleConfigurationPanel({
     subscription.shipping_address?.company ||
     (subscription.shipping_address?.address_1
       ? `${subscription.shipping_address.address_1}, ${subscription.shipping_address.postal_code || ""}`
-      : "Cambridge Science Park Lab, Suite 4B, CB4 0GZ")
+      : "Designated Laboratory Facility")
 
   return (
     <div className="bg-white rounded-2xl border-2 border-[#16A6A3]/40 shadow-xs overflow-hidden transition-all duration-300">

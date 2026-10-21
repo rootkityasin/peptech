@@ -7,7 +7,6 @@ export interface CartridgeConcentrationModalProps {
   isOpen: boolean
   onClose: () => void
   onUpdateConcentration?: (strength: string) => Promise<void>
-  onUpdateDosage?: (strength: string) => Promise<void>
   isBusy: boolean
 }
 
@@ -16,7 +15,6 @@ export function CartridgeConcentrationModal({
   isOpen,
   onClose,
   onUpdateConcentration,
-  onUpdateDosage,
   isBusy,
 }: CartridgeConcentrationModalProps) {
   const [selectedStrength, setSelectedStrength] = useState<string>("5mg")
@@ -47,8 +45,6 @@ export function CartridgeConcentrationModal({
   const handleConfirm = async () => {
     if (onUpdateConcentration) {
       await onUpdateConcentration(selectedStrength)
-    } else if (onUpdateDosage) {
-      await onUpdateDosage(selectedStrength)
     }
     onClose()
   }

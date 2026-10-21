@@ -1,6 +1,5 @@
 import { defineRouteConfig } from "@medusajs/admin-sdk";
 import { ArrowPath } from "@medusajs/icons";
-import "../../styles/custom.css";
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { adminFetch } from "../../lib/sdk";

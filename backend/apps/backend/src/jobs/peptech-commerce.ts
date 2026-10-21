@@ -9,4 +9,4 @@ export default async function commerceJob(container:MedusaContainer) {
     // If Stripe is not configured or throws, gracefully skip
   }
 }
-export const config={name:"peptech-commerce-recovery",schedule:"* * * * *"}
+export const config={name:"peptech-commerce-recovery",schedule:"0 3 * * *"}

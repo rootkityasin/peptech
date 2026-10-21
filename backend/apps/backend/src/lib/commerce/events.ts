@@ -134,6 +134,47 @@ export async function processEvent(scope:any,ledger:CommerceService,eventId:stri
     if(record.profile!==context.profile) fail("Event belongs to an inactive credential profile",409)
     try {
       if(event.type.startsWith("checkout.session.")) await reconcileSession(scope,ledger,event.object_id)
+      else if(event.type === "invoice.created") {
+        const invoice = await context.stripe.invoices.retrieve(event.object_id)
+        if (invoice.status === "draft" && invoice.billing_reason !== "subscription_create") {
+          const subId = objectId(invoice.subscription)
+          if (subId) {
+            const sub = await syncSubscription(ledger, subId)
+            if (sub) {
+              const { preflightInvoice } = await import("./worker.js")
+              await preflightInvoice(scope, ledger, sub, invoice)
+            }
+          }
+        }
+      }
+      else if(event.type === "invoice.upcoming") {
+        const invoice = await context.stripe.invoices.retrieve(event.object_id).catch(() => null)
+        const subId = objectId(invoice?.subscription || event.object_id)
+        if (subId) {
+          const sub = await syncSubscription(ledger, subId)
+          if (sub && sub.data.control === "active") {
+            const next = sub.data.next_billing_at || invoice?.period_end
+            if (next) {
+              const id = recordId("operation", sub.id, "reminder", String(next))
+              await ledger.create({
+                id,
+                kind: "operation",
+                profile: context.profile,
+                owner_id: sub.owner_id,
+                state: "pending",
+                data: {
+                  type: "email",
+                  template: "subscription-renewal-reminder",
+                  to: sub.data.quote.email,
+                  reference: sub.id,
+                  renewal_at: next,
+                  total_minor: sub.data.quote.renewal_minor,
+                },
+              }).catch(() => {})
+            }
+          }
+        }
+      }
       else if(event.type.startsWith("invoice.")) await reconcileInvoice(scope,ledger,event.object_id)
       else if(event.type.startsWith("customer.subscription.")) await syncSubscription(ledger,event.object_id)
       else if(event.type.startsWith("charge.dispute.") || event.type.startsWith("refund.") || event.type==="charge.refunded") {

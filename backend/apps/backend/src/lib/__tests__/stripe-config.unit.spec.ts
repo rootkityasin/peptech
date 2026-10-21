@@ -75,12 +75,10 @@ describe("Stripe account configuration", () => {
     expect(checkoutProvider.options.signingSecret).toBe(customSigningSecret)
     expect(checkoutProvider.options.signingSecret).not.toBe(testEnv.STRIPE_API_KEY)
 
-    const modulesDefault = stripeModules(testEnv)
-    const defaultProvider = (modulesDefault[0] as any).options.providers.find((p: any) => p.resolve.includes("stripe-checkout"))
-    expect(defaultProvider.options.signingSecret).toBe("dev_stripe_commerce_signing_secret_min_32_chars")
-    expect(defaultProvider.options.signingSecret).not.toBe(testEnv.STRIPE_API_KEY)
+    const modulesWithoutSecret = stripeModules(testEnv)
+    expect(modulesWithoutSecret).toEqual([])
   })
-  it("rejects missing or short STRIPE_COMMERCE_SIGNING_SECRET in live mode", () => {
+  it("rejects missing or short STRIPE_COMMERCE_SIGNING_SECRET", () => {
     const liveEnv = {
       ...testEnv,
       STRIPE_API_KEY: "rk_live_fixture",

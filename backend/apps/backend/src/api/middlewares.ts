@@ -4,16 +4,39 @@ import { validatePromoMiddlewares } from "./store/custom/promotions/validate/mid
 import fs from "fs"
 import path from "path"
 
+const DEFAULT_ALLOWED_ORIGIN_PATTERNS = [
+  /^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?$/,
+  /^https:\/\/(?:[a-zA-Z0-9-]+\.)*peptech\.bio$/,
+  /^https:\/\/docs\.medusajs\.com$/,
+]
+
+function isOriginAllowed(origin: string): boolean {
+  if (!origin) return false
+  const configuredCors = process.env.STORE_CORS || ""
+  if (configuredCors) {
+    const list = configuredCors.split(",").map((s) => s.trim()).filter(Boolean)
+    if (list.includes(origin)) return true
+    for (const item of list) {
+      if (item.startsWith("/") && item.endsWith("/")) {
+        try {
+          const regex = new RegExp(item.slice(1, -1))
+          if (regex.test(origin)) return true
+        } catch {}
+      }
+    }
+  }
+  return DEFAULT_ALLOWED_ORIGIN_PATTERNS.some((pattern) => pattern.test(origin))
+}
+
 const handleStoreCors = (req: MedusaRequest, res: MedusaResponse, next: MedusaNextFunction) => {
   const origin = (req.headers.origin as string) || ""
-  if (origin) {
+  if (origin && isOriginAllowed(origin)) {
     res.setHeader("Access-Control-Allow-Origin", origin)
     res.setHeader("Access-Control-Allow-Credentials", "true")
-  } else {
-    res.setHeader("Access-Control-Allow-Origin", "*")
+    res.setHeader("Vary", "Origin")
   }
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE")
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, x-publishable-api-key, Accept, Cache-Control, X-Requested-With")
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, x-publishable-api-key, Accept, Cache-Control, X-Requested-With, x-storefront-origin")
   if (req.method === "OPTIONS") {
     res.setHeader("Access-Control-Max-Age", "86400")
     return res.status(204).end()

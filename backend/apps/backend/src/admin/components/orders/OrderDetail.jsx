@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo } from "react";
-import "../../styles/custom.css";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { adminFetch } from "../../lib/sdk";
 import { orderFields, paymentStatus as getPaymentStatus } from "../../lib/order-data";

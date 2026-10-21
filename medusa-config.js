@@ -47,8 +47,10 @@ loadStripeEnv()
 
 loadEnv(process.env.NODE_ENV || 'development', process.cwd());
 
-const defaultDatabaseUrl = 'postgresql://localhost:5432/peptech';
-let rawDbUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || defaultDatabaseUrl;
+if (process.env.NODE_ENV === 'production' && !process.env.DATABASE_URL && !process.env.POSTGRES_URL) {
+  throw new Error('DATABASE_URL or POSTGRES_URL must be configured in production');
+}
+const rawDbUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || 'postgresql://localhost:5432/peptech';
 
 // Strip sslmode=require / sslmode=prefer / sslmode=verify-ca from URL query string
 // because pg-connection-string parses sslmode=require as verify-full, overriding custom ssl options
@@ -62,6 +64,12 @@ const dbUrl = rawDbUrl.replace(/([?&])sslmode=[^&]*(&|$)/gi, (match, prefix, suf
 // Update process.env so internal Medusa loaders read the sanitized URL
 process.env.DATABASE_URL = dbUrl;
 
+const caCert = process.env.DATABASE_CA_CERT
+  ? (fs.existsSync(process.env.DATABASE_CA_CERT)
+      ? fs.readFileSync(process.env.DATABASE_CA_CERT, 'utf8')
+      : process.env.DATABASE_CA_CERT)
+  : undefined;
+
 module.exports = defineConfig({
   projectConfig: {
     databaseUrl: dbUrl,
@@ -69,8 +77,14 @@ module.exports = defineConfig({
     databaseDriverOptions: dbUrl?.includes('localhost') || dbUrl?.includes('127.0.0.1')
       ? { connection: { ssl: false } }
       : {
-          ssl: { rejectUnauthorized: false },
-          connection: { ssl: { rejectUnauthorized: false } },
+          ssl: caCert
+            ? { ca: caCert, rejectUnauthorized: true }
+            : { rejectUnauthorized: false },
+          connection: {
+            ssl: caCert
+              ? { ca: caCert, rejectUnauthorized: true }
+              : { rejectUnauthorized: false },
+          },
           pool: {
             min: 1,
             max: 5,
@@ -81,11 +95,11 @@ module.exports = defineConfig({
       storeCors: process.env.STORE_CORS || 'http://localhost:3000,http://localhost:8000,https://peptech.bio,https://www.peptech.bio,https://admin.peptech.bio,https://docs.medusajs.com',
       adminCors: process.env.ADMIN_CORS || 'http://localhost:5173,http://localhost:9000,https://peptech.bio,https://www.peptech.bio,https://admin.peptech.bio,https://docs.medusajs.com',
       authCors: process.env.AUTH_CORS || 'http://localhost:3000,http://localhost:5173,http://localhost:9000,http://localhost:8000,https://peptech.bio,https://www.peptech.bio,https://admin.peptech.bio,https://docs.medusajs.com',
-      jwtSecret: process.env.JWT_SECRET || (process.env.NODE_ENV === 'production' ? (() => { throw new Error('JWT_SECRET must be set in production') })() : 'dev_jwt_secret_change_in_prod'),
-      cookieSecret: process.env.COOKIE_SECRET || (process.env.NODE_ENV === 'production' ? (() => { throw new Error('COOKIE_SECRET must be set in production') })() : 'dev_cookie_secret_change_in_prod'),
+      jwtSecret: process.env.JWT_SECRET || (() => { throw new Error('JWT_SECRET must be configured') })(),
+      cookieSecret: process.env.COOKIE_SECRET || (() => { throw new Error('COOKIE_SECRET must be configured') })(),
     },
     cookieOptions: {
-      secure: false,
+      secure: process.env.NODE_ENV === "production",
       sameSite: 'lax',
     }
   },

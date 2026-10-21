@@ -181,7 +181,7 @@ export default function TermsOfSalePage() {
                   Royal Mail Shipping &amp; Cold-Chain Dispatch
                 </h3>
                 <p>
-                  All orders are dispatched via Royal Mail Tracked services from our Cambridge fulfillment centre:
+                  All orders are dispatched via Royal Mail Tracked services from our UK logistics centre:
                 </p>
                 <ul className="list-disc list-inside space-y-1.5 pl-2 text-xs text-[#64748b]">
                   <li><strong>UK Domestic</strong>: Royal Mail Tracked 24 (£4.95, or Free on orders over £100).</li>

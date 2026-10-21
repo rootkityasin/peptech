@@ -374,7 +374,7 @@ function VerifyContent() {
 
               <div className="h-px w-full bg-[#e2e8f0]" />
 
-              {/* Row - Manufacture Date */}
+              {/* Row - Synthesis Specification */}
               <div className="flex h-[28px] items-center justify-between w-full">
                 <div className="flex gap-[14px] items-center">
                   <div className="w-[22px] h-[22px] relative shrink-0">
@@ -385,17 +385,17 @@ function VerifyContent() {
                     />
                   </div>
                   <p className="font-normal text-[#64748b] text-[13px]">
-                    Manufacture Date
+                    Synthesis Verification
                   </p>
                 </div>
                 <p className="font-semibold text-[#0b1f3a] text-[14px]">
-                  09/2025
+                  Verified Laboratory Lot
                 </p>
               </div>
 
               <div className="h-px w-full bg-[#e2e8f0]" />
 
-              {/* Row - Expiry Date */}
+              {/* Row - Cold-Chain Specification */}
               <div className="flex h-[28px] items-center justify-between w-full">
                 <div className="flex gap-[14px] items-center">
                   <div className="w-[22px] h-[22px] relative shrink-0">
@@ -406,11 +406,11 @@ function VerifyContent() {
                     />
                   </div>
                   <p className="font-normal text-[#64748b] text-[13px]">
-                    Expiry Date
+                    Storage Specification
                   </p>
                 </div>
                 <p className="font-semibold text-[#0b1f3a] text-[14px]">
-                  09/2028
+                  Cold-Chain 2°C - 8°C
                 </p>
               </div>
 
@@ -526,7 +526,7 @@ function VerifyContent() {
             </div>
             <div>
               <h2 className="text-xl font-bold text-[#0b1f3a]">
-                Batch Number Not Recognized ({activeBatch})
+                Report Pending / Unverified Batch ({activeBatch})
               </h2>
               <p className="text-slate-500 text-sm mt-2 max-w-md mx-auto leading-relaxed">
                 The lot number you entered could not be authenticated in the official PEPTECH®

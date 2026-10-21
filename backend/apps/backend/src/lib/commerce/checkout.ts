@@ -37,16 +37,18 @@ export async function prepareCheckout(scope: any, ledger: CommerceService, custo
 
     const active = await ledger.list("attempt", { owner: customerId, profile: context.profile, limit: 500 })
     for (const other of active.filter((a) => a.id !== id && ["creating", "open", "processing"].includes(a.state))) {
+      const ageMs = Date.now() - new Date(other.created_at).getTime()
       if (!other.data.session_id) {
-        other.state = "failed"
-        await ledger.save(other)
-        await releaseQuote(scope, other.id)
+        if (ageMs > 300000) {
+          other.state = "failed"
+          await ledger.save(other)
+          await releaseQuote(scope, other.id)
+        }
         continue
       }
       try {
         const session = await context.stripe.checkout.sessions.retrieve(other.data.session_id)
-        if (session.status === "open") await context.stripe.checkout.sessions.expire(session.id)
-        else if (session.status !== "expired" && session.payment_status === "paid") {
+        if (session.status !== "expired" && session.payment_status === "paid") {
           try {
             const { reconcileSession } = await import("./events.js")
             await reconcileSession(scope, ledger, session.id)
@@ -54,18 +56,28 @@ export async function prepareCheckout(scope: any, ledger: CommerceService, custo
           } catch {
             fail("A previous payment is awaiting confirmation. Check your orders before retrying.", 409)
           }
+        } else if (session.status === "open") {
+          // Do not invalidate active recent multi-tab sessions (<30 mins) to avoid race conditions
+          if (ageMs > 1800000) {
+            await context.stripe.checkout.sessions.expire(session.id)
+            other.state = "expired"
+            await ledger.save(other)
+            await releaseQuote(scope, other.id)
+          }
+          continue
+        } else if (session.status === "expired") {
+          other.state = "expired"
+          await ledger.save(other)
+          await releaseQuote(scope, other.id)
         }
       } catch (e: any) {
         if (e?.status === 409) throw e
       }
-      other.state = "expired"
-      await ledger.save(other)
-      await releaseQuote(scope, other.id)
     }
 
     if (!attempt) {
       const recent = active.filter((a) => Date.now() - new Date(a.created_at).getTime() < 3600000)
-      if (recent.length >= 12) fail("Too many checkout attempts. Please try again later.", 429)
+      if (recent.length >= 30) fail("Too many checkout attempts. Please try again later.", 429)
       const quote = await buildQuote(scope, ledger, customerId, input, id)
       attempt = await ledger.create({
         id,
@@ -98,7 +110,17 @@ export async function prepareCheckout(scope: any, ledger: CommerceService, custo
 
     let customerObj: any = null
     try {
-      customerObj = await scope.resolve(Modules.CUSTOMER).retrieveCustomer(customerId)
+      const customerModule = scope.resolve(Modules.CUSTOMER)
+      customerObj = await customerModule.retrieveCustomer(customerId)
+      if (input.ruo_accepted && customerObj && !customerObj.metadata?.compliance_ack) {
+        await customerModule.updateCustomers(customerObj.id, {
+          metadata: {
+            ...(customerObj.metadata || {}),
+            compliance_ack: true,
+            compliance_ack_at: new Date().toISOString(),
+          },
+        }).catch((err: any) => console.warn("[PEPTECH] Could not persist compliance_ack:", err?.message))
+      }
     } catch {
       customerObj = { id: customerId, email: quote.email }
     }

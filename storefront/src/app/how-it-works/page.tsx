@@ -328,7 +328,7 @@ export default function HowItWorksPage() {
             <p className="text-xs text-[#64748b]">
               Still have questions? Reach out to our scientific liaison team at{" "}
               <Link href="/contact" className="text-[#16a6a3] font-bold underline">
-                Cambridge Laboratory Support
+                PEPTECH Laboratory Support
               </Link>.
             </p>
           </div>

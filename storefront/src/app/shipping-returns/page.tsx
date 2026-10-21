@@ -52,7 +52,7 @@ function LegalSidebar() {
         <h5 className="font-bold text-[#0b1f3a]">PEPTECH Fulfillment Center</h5>
         <p className="text-[#64748b] leading-relaxed">
           Royal Mail Tracked 24 Hub<br />
-          Cambridge Science Park, UK
+          United Kingdom Distribution Hub, UK
         </p>
         <div className="pt-2 border-t border-[#e2e8f0] flex justify-between items-center text-[11px]">
           <span className="text-[#64748b]">Same-day cutoff:</span>

@@ -50,14 +50,22 @@ try {
       TEST_TYPE: 'unit',
       NODE_OPTIONS: '--experimental-vm-modules',
     };
-    execSync('npx jest src/lib/commerce/__tests__/ --runInBand --forceExit --silent', {
+    execSync('npx jest src/lib/commerce/__tests__/ src/lib/__tests__/ --runInBand --forceExit --silent', {
       cwd: BACKEND_DIR,
       stdio: 'inherit',
       env,
     });
   });
 
-  // 3. Storefront TypeScript & Next.js Compilation
+  // 3. Medusa Backend TypeScript Typecheck
+  runStep('Backend TypeScript Verification (tsc)', () => {
+    execSync('npx tsc --noEmit', {
+      cwd: BACKEND_DIR,
+      stdio: 'inherit',
+    });
+  });
+
+  // 4. Storefront TypeScript & Next.js Compilation
   runStep('Storefront Production Build & Typecheck (Next.js)', () => {
     execSync('npm run build', {
       cwd: STOREFRONT_DIR,

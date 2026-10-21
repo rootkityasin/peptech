@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect } from "react";
-import "../../styles/custom.css";
 import { Link, useNavigate } from "react-router-dom";
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
 import { useOrders } from "../../lib/order-queries";

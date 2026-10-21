@@ -1,5 +1,4 @@
 import { defineRouteConfig } from "@medusajs/admin-sdk";
-import "../../../styles/custom.css";
 import { useState, useEffect, useMemo } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";

@@ -58,7 +58,7 @@ describe("subscription commands and presentation", () => {
     expect(presented.nextDispatchDate).toBeDefined()
   })
 
-  it("validates command schema actions including change_cadence, pause with months, update_dosage, and change_date", () => {
+  it("validates command schema actions including change_cadence, pause with months, update_concentration, and change_date", () => {
     const validCommands = [
       { subscription_id: "sub_1", operation_id: "123e4567-e89b-42d3-a456-426614174000", action: "pause", pause_duration_months: 2 },
       { subscription_id: "sub_1", operation_id: "223e4567-e89b-42d3-a456-426614174001", action: "resume" },
@@ -66,7 +66,7 @@ describe("subscription commands and presentation", () => {
       { subscription_id: "sub_1", operation_id: "423e4567-e89b-42d3-a456-426614174003", action: "change_cadence", cadence_days: 14 },
       { subscription_id: "sub_1", operation_id: "523e4567-e89b-42d3-a456-426614174004", action: "change_date", date: new Date(Date.now() + 864000000).toISOString() },
       { subscription_id: "sub_1", operation_id: "623e4567-e89b-42d3-a456-426614174005", action: "cancel" },
-      { subscription_id: "sub_1", operation_id: "723e4567-e89b-42d3-a456-426614174006", action: "update_dosage", strength: "10mg" },
+      { subscription_id: "sub_1", operation_id: "723e4567-e89b-42d3-a456-426614174006", action: "update_concentration", strength: "10mg" },
       { subscription_id: "sub_1", operation_id: "823e4567-e89b-42d3-a456-426614174007", action: "update_address", address: { address_1: "New Lab Wing" } },
     ]
 
@@ -74,7 +74,8 @@ describe("subscription commands and presentation", () => {
       expect(() => commandSchema.parse(cmd)).not.toThrow()
     }
 
-    // Invalid action or extra unknown fields
+    // Prohibited update_dosage and invalid actions must be rejected
+    expect(() => commandSchema.parse({ subscription_id: "sub_1", operation_id: "723e4567-e89b-42d3-a456-426614174006", action: "update_dosage", strength: "10mg" })).toThrow()
     expect(() => commandSchema.parse({ subscription_id: "sub_1", operation_id: "123e4567-e89b-42d3-a456-426614174000", action: "invalid_action" })).toThrow()
     expect(() => commandSchema.parse({ subscription_id: "sub_1", operation_id: "123e4567-e89b-42d3-a456-426614174000", action: "pause", unknown_field: true })).toThrow()
   })

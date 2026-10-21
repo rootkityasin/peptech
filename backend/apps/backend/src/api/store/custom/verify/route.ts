@@ -1,13 +1,36 @@
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 
+const DEFAULT_ALLOWED_ORIGIN_PATTERNS = [
+  /^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?$/,
+  /^https:\/\/(?:[a-zA-Z0-9-]+\.)*peptech\.bio$/,
+  /^https:\/\/docs\.medusajs\.com$/,
+]
+
+function isOriginAllowed(origin: string): boolean {
+  if (!origin) return false
+  const configuredCors = process.env.STORE_CORS || ""
+  if (configuredCors) {
+    const list = configuredCors.split(",").map((s) => s.trim()).filter(Boolean)
+    if (list.includes(origin)) return true
+    for (const item of list) {
+      if (item.startsWith("/") && item.endsWith("/")) {
+        try {
+          const regex = new RegExp(item.slice(1, -1))
+          if (regex.test(origin)) return true
+        } catch {}
+      }
+    }
+  }
+  return DEFAULT_ALLOWED_ORIGIN_PATTERNS.some((pattern) => pattern.test(origin))
+}
+
 // Helper to set CORS headers
 function applyCors(req: MedusaRequest, res: MedusaResponse) {
   const origin = (req.headers.origin as string) || ""
-  if (origin) {
+  if (origin && isOriginAllowed(origin)) {
     res.setHeader("Access-Control-Allow-Origin", origin)
     res.setHeader("Access-Control-Allow-Credentials", "true")
-  } else {
-    res.setHeader("Access-Control-Allow-Origin", "*")
+    res.setHeader("Vary", "Origin")
   }
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS")
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, x-publishable-api-key, Accept, Cache-Control, X-Requested-With, x-storefront-origin")
@@ -80,12 +103,9 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
         serial_number: "N/A (Laboratory Batch)",
         product_name: "PEPTECH® High-Purity Research Peptide",
         batch_number: upper,
-        manufacture_date: "09/2025",
-        expiry_date: "09/2028",
         status: "Authentic & Safe",
         state: "active",
         security_seal: "LABORATORY-CERTIFIED",
-        verification_date: new Date().toISOString(),
       })
     }
 
@@ -93,7 +113,8 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
     return res.status(200).json({
       verified: false,
       query: trimmed,
-      message: `The lot or batch code "${trimmed}" could not be authenticated in the official PEPTECH® synthesis registry.`,
+      status: "Report Pending / Unverified Batch",
+      message: `Report Pending / Unverified Batch: The lot or batch code "${trimmed}" could not be authenticated in the official PEPTECH® synthesis registry.`,
     })
   } catch (err: any) {
     console.error("[Verify Route Error]:", err?.message || err)

@@ -16,15 +16,10 @@ export function stripeContext() {
     appInfo:{name:"PEPTECH Checkout",version:"1.0.0"},
   })}
   const signingSecret = (process.env.STRIPE_COMMERCE_SIGNING_SECRET || "").trim()
-  if (!signingSecret) {
-    if (process.env.NODE_ENV === "production" || config.mode === "live") {
-      fail("STRIPE_COMMERCE_SIGNING_SECRET must be configured with at least 32 characters in production", 503)
-    }
-  } else if (signingSecret.length < 32 && (process.env.NODE_ENV === "production" || config.mode === "live")) {
-    fail("STRIPE_COMMERCE_SIGNING_SECRET must be at least 32 characters in production", 503)
+  if (!signingSecret || signingSecret.length < 32) {
+    fail("STRIPE_COMMERCE_SIGNING_SECRET must be configured with at least 32 characters", 503)
   }
-  const effectiveSigningSecret = signingSecret || "dev_stripe_commerce_signing_secret_min_32_chars"
-  return {...config,signingSecret:effectiveSigningSecret,stripe:cached.client,profile:`${config.accountId}:${config.mode}:v1`,
+  return {...config,signingSecret,stripe:cached.client,profile:`${config.accountId}:${config.mode}:v1`,
     checkoutProviderId:`pp_peptech-checkout_${config.id}`}
 }
 export async function assertStripeAccount() {

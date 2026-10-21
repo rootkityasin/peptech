@@ -117,7 +117,7 @@ export default function PrivacyPolicyPage() {
                   STATUTORY DATA CONTROLLER IDENTIFICATION
                 </span>
                 <p className="text-[#0b1f3a] font-semibold">
-                  PEPTECH BioSciences Ltd (Company No. 15894120), Cambridge Science Park, Milton Road, Cambridge CB4 0FW, United Kingdom.
+                  PEPTECH BioSciences Ltd, United Kingdom. Support: support@peptech.bio.
                 </p>
               </div>
 

@@ -119,20 +119,15 @@ if (!distDir) {
     }
   }
 
-  // 3. Append / Update custom CSS in app.css
-  const customCssFile = path.resolve(__dirname, '../src/admin/styles/custom.css');
+  // 3. Keep app.css native
   const appCssFile = path.resolve(distDir, 'app.css');
-  if (fs.existsSync(customCssFile) && fs.existsSync(appCssFile)) {
-    const customCss = fs.readFileSync(customCssFile, 'utf8');
+  if (fs.existsSync(appCssFile)) {
     let appCss = fs.readFileSync(appCssFile, 'utf8');
     const marker = '/* ========================================================\n   PEPTECH® Clean Custom Admin Design';
     if (appCss.includes(marker)) {
-      appCss = appCss.substring(0, appCss.indexOf(marker)).trim() + '\n\n' + customCss;
-    } else {
-      appCss += '\n\n' + customCss;
+      appCss = appCss.substring(0, appCss.indexOf(marker)).trim();
+      fs.writeFileSync(appCssFile, appCss, 'utf8');
     }
-    fs.writeFileSync(appCssFile, appCss, 'utf8');
-    console.log('[PEPTECH] Successfully updated dist/app.css with latest custom.css');
   }
 
   // 4. Purge Vite cache directories so dev mode Vite immediately re-optimizes

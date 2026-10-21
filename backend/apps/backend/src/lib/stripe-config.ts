@@ -62,13 +62,10 @@ export function stripeModules(env: NodeJS.ProcessEnv = process.env) {
     const config = getStripeConfig(env)
     if (!config) return []
     const rawSigningSecret = (env.STRIPE_COMMERCE_SIGNING_SECRET || "").trim()
-    if (!rawSigningSecret && (process.env.NODE_ENV === "production" || config.mode === "live")) {
-      throw new Error("STRIPE_COMMERCE_SIGNING_SECRET must be configured with at least 32 characters in production")
+    if (!rawSigningSecret || rawSigningSecret.length < 32) {
+      throw new Error("STRIPE_COMMERCE_SIGNING_SECRET must be configured with at least 32 characters")
     }
-    if (rawSigningSecret && rawSigningSecret.length < 32 && (process.env.NODE_ENV === "production" || config.mode === "live")) {
-      throw new Error("STRIPE_COMMERCE_SIGNING_SECRET must be at least 32 characters in production")
-    }
-    const signingSecret = rawSigningSecret || "dev_stripe_commerce_signing_secret_min_32_chars"
+    const signingSecret = rawSigningSecret
     return [{ resolve: "@medusajs/medusa/payment", options: { providers: [{
       resolve: "@medusajs/payment-stripe", id: config.id,
       options: { apiKey: config.apiKey, webhookSecret: config.webhookSecret,

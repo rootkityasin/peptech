@@ -167,71 +167,6 @@ function getOrderPaymentStatusDisplay(order: any): string {
   return order.payment_status || order.status || "unpaid";
 }
 
-/**
- * Generates a valid 6x4 PDF base64 string (4in x 6in / 288pt x 432pt) conforming to PDF-1.4 standard
- */
-function generateLabelBase64(
-  reference: string,
-  trackingNumber: string,
-  serviceName: string,
-  recipientName: string,
-  city: string,
-  countryCode: string,
-  orderId: string | number,
-): string {
-  const safeRef = String(reference).replace(/[()]/g, "");
-  const safeTrack = String(trackingNumber).replace(/[()]/g, "");
-  const safeService = String(serviceName).replace(/[()]/g, "");
-  const safeName = String(recipientName).replace(/[()]/g, "");
-  const safeCity = String(city).replace(/[()]/g, "");
-  const safeCountry = String(countryCode).replace(/[()]/g, "");
-  const safeId = String(orderId).replace(/[()]/g, "");
-
-  const streamBody = `BT
-/F1 15 Tf 20 405 Td (PEPTECH DISPATCH SUMMARY) Tj
-/F1 10 Tf 20 385 Td (Order Ref: ${safeRef} | Click & Drop ID: #${safeId}) Tj
-/F1 11 Tf 20 355 Td (Carrier: ${safeService}) Tj
-/F1 11 Tf 20 335 Td (Tracking Ref: ${safeTrack}) Tj
-/F1 10 Tf 20 295 Td (DELIVERY DESTINATION:) Tj
-/F1 12 Tf 20 275 Td (${safeName}) Tj
-/F1 10 Tf 20 255 Td (${safeCity}, ${safeCountry}) Tj
-/F1 9 Tf 20 195 Td ([INTERNAL DISPATCH SLIP]) Tj
-/F1 8 Tf 20 175 Td (Print official Royal Mail 2D barcode label in Click & Drop portal) Tj
-/F1 9 Tf 20 60 Td (Discreet Protective Packaging - PEPTECH Laboratory Dispatch) Tj
-ET
-`;
-  const streamLength = Buffer.byteLength(streamBody);
-
-  let out = "%PDF-1.4\n";
-  const offsets: number[] = [];
-
-  offsets.push(Buffer.byteLength(out));
-  out += "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n";
-
-  offsets.push(Buffer.byteLength(out));
-  out += "2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n";
-
-  offsets.push(Buffer.byteLength(out));
-  out +=
-    "3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 288 432] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>\nendobj\n";
-
-  offsets.push(Buffer.byteLength(out));
-  out += `4 0 obj\n<< /Length ${streamLength} >>\nstream\n${streamBody}endstream\nendobj\n`;
-
-  offsets.push(Buffer.byteLength(out));
-  out +=
-    "5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>\nendobj\n";
-
-  const xrefOffset = Buffer.byteLength(out);
-  out += `xref\n0 6\n0000000000 65535 f \n`;
-  for (const off of offsets) {
-    out += off.toString().padStart(10, "0") + " 00000 n \n";
-  }
-  out += `trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF\n`;
-
-  return Buffer.from(out).toString("base64");
-}
-
 export async function GET(req: MedusaRequest, res: MedusaResponse) {
   const {
     orderId,
@@ -394,7 +329,14 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
       return res.status(404).json({ message: `Order '${orderId}' not found` });
     }
 
-    // Gate 1: Check Payment Status (supports Medusa 2.0 captured, authorized, completed, summary paid total, collections, and metadata)
+    // Gate 1: Check Fulfillment Hold Status
+    if (order.metadata?.fulfillment_hold === true || (order.metadata?.peptech_receipt_id && order.metadata?.fulfillment_hold !== false)) {
+      return res.status(400).json({
+        message: "Order is currently on fulfillment hold (RUO allocation / compliance review pending). Release the hold before dispatch.",
+      });
+    }
+
+    // Gate 2: Check Payment Status (supports Medusa 2.0 captured, authorized, completed, summary paid total, collections, and metadata)
     const isPaid = isOrderPaymentSuccessful(order);
 
     if (!isPaid) {
@@ -451,9 +393,9 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
                 addressLine1:
                   shipping.address_1 || "Laboratory Delivery Address",
                 addressLine2: shipping.address_2 || undefined,
-                city: shipping.city || "Cambridge",
+                city: shipping.city || "",
                 county: shipping.province || undefined,
-                postcode: shipping.postal_code || (isUk ? "CB4 0AB" : "90210"),
+                postcode: shipping.postal_code || "",
                 countryCode,
               },
               phoneNumber: shipping.phone || undefined,
@@ -647,35 +589,20 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
       }
     }
 
-    // If no tracking number was returned by API yet (e.g. pending manifest or standard postage), generate reference
-    if (!trackingNumber) {
-      const random9 = Math.floor(100000000 + Math.random() * 900000000);
-      const prefix = isUk ? "VQ" : "RN";
-      trackingNumber = `${prefix}${random9}GB`;
-    }
-
+    // Tracking and Label: only record genuine carrier data, never synthetic VQ...GB labels
     if (!orderIdentifier) {
       orderIdentifier = Math.floor(10000000 + Math.random() * 90000000);
     }
 
-    // Only generate simulated 6x4 PDF if the user explicitly requested a label and no carrier label was returned
-    if (includeLabelInResponse && !labelBase64) {
-      labelBase64 = generateLabelBase64(
-        orderRef,
-        trackingNumber,
-        carrierName,
-        `${shipping.first_name || ""} ${shipping.last_name || ""}`.trim() ||
-          "Researcher",
-        shipping.city || "Cambridge",
-        countryCode,
-        orderIdentifier,
-      );
-    }
-
-    const trackingUrl = `https://www.royalmail.com/track-your-item#/tracking-results/${trackingNumber}`;
+    const trackingUrl = trackingNumber
+      ? `https://www.royalmail.com/track-your-item#/tracking-results/${trackingNumber}`
+      : undefined;
 
     const body = (req.body || {}) as any;
     const isOfficialLabel = officialCarrierLabelReceived;
+    if (!isOfficialLabel) {
+      labelBase64 = "";
+    }
 
     // Resolve items to fulfill
     let itemsToFulfill: Array<{ id: string; quantity: number }> = [];
@@ -777,15 +704,17 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
                 order_id: order.id,
                 fulfillment_id: createdFulfillment.id,
                 items: itemsToFulfill,
-                labels: [
-                  {
-                    tracking_number: trackingNumber,
-                    tracking_url: trackingUrl,
-                    label_url: labelBase64
-                      ? `/admin/custom/fulfillment?orderIdentifier=${orderIdentifier}&format=pdf`
-                      : trackingUrl,
-                  },
-                ],
+                labels: trackingNumber
+                  ? [
+                      {
+                        tracking_number: trackingNumber,
+                        tracking_url: trackingUrl || "",
+                        label_url: labelBase64
+                          ? `/admin/custom/fulfillment?orderIdentifier=${orderIdentifier}&format=pdf`
+                          : (trackingUrl || ""),
+                      },
+                    ]
+                  : [],
                 no_notification: body.no_notification === true,
                 metadata: {
                   carrier: carrierName,
