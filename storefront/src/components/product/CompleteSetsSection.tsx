@@ -81,23 +81,24 @@ export function CompleteSetsSection({ excludeHandle, products: propProducts }: C
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
           
           {/* Left: Complete Pen Set Product Card (lg:col-span-4) */}
-          <div className="lg:col-span-4 bg-white border border-[#e2e8f0] rounded-[14px] p-4 sm:p-5 flex flex-col justify-between shadow-xs">
+          <div className="lg:col-span-4 bg-white border border-[#e2e8f0] rounded-[14px] overflow-hidden flex flex-col justify-between shadow-xs">
             
-            {/* Top Box Image & Information */}
-            <div className="flex flex-col">
-              <Link href={`/products/${featured.handle}`} className="block group">
-                <div className="bg-white border border-[#eef2f6] rounded-[10px] h-[230px] sm:h-[250px] min-h-[230px] w-full relative overflow-hidden flex items-center justify-center mb-3.5">
-                  <Image
-                    src={featured.image}
-                    alt={featured.name}
-                    fill
-                    sizes="(max-width: 1024px) 100vw, 380px"
-                    className="object-contain p-1.5 group-hover:scale-105 transition-transform duration-300"
-                  />
-                </div>
-              </Link>
+            {/* Top Box Image - Edge to edge on top, left, and right */}
+            <Link href={`/products/${featured.handle}`} className="block group w-full">
+              <div className="w-full h-[240px] sm:h-[260px] relative overflow-hidden bg-white">
+                <Image
+                  src={featured.image}
+                  alt={featured.name}
+                  fill
+                  sizes="(max-width: 1024px) 100vw, 420px"
+                  className="object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+              </div>
+            </Link>
 
-              {/* Title, Rating & Copy */}
+            {/* Information & Actions Block */}
+            <div className="p-4 sm:p-5 pt-3 flex flex-col justify-between grow">
+              
               <div className="space-y-1.5">
                 <Link href={`/products/${featured.handle}`} className="block">
                   <h3 className="font-extrabold text-[#0b1f3a] text-[16px] sm:text-[17px] leading-snug hover:text-[#16a6a3] transition-colors">
@@ -130,41 +131,37 @@ export function CompleteSetsSection({ excludeHandle, products: propProducts }: C
                 {/* Structured Inclusions Spec Grid */}
                 <div className="pt-2.5 mt-2 border-t border-[#f1f5f9] flex flex-col gap-1.5 text-[11.5px] text-[#475569]">
                   <div className="flex items-center gap-2">
-                    <span className="size-4 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-[10px] font-bold shrink-0">✓</span>
+                    <span className="text-[#16a6a3] font-bold shrink-0">✓</span>
                     <span className="font-medium truncate">Reusable Precision Pen + 1x Cartridge</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="size-4 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-[10px] font-bold shrink-0">✓</span>
+                    <span className="text-[#16a6a3] font-bold shrink-0">✓</span>
                     <span className="font-medium truncate">31G 5mm Needles &amp; Alcohol Prep Pads</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="size-4 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-[10px] font-bold shrink-0">✓</span>
+                    <span className="text-[#16a6a3] font-bold shrink-0">✓</span>
                     <span className="font-medium truncate">HPLC Certified Batch &amp; Device Passport</span>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Price & Primary CTA Button */}
-            <div className="pt-3.5 mt-3 border-t border-[#f1f5f9] space-y-2.5">
-              <div className="flex items-baseline justify-between">
+              {/* Price & Primary CTA Button */}
+              <div className="pt-3.5 mt-3 border-t border-[#f1f5f9] space-y-2.5">
                 <div className="flex flex-col">
                   <span className="text-[10.5px] font-semibold text-[#64748b] uppercase tracking-wider">Complete Set</span>
                   <span className="font-extrabold text-[#0b1f3a] text-[20px] tracking-tight">
                     £{featured.price.toFixed(2)}
                   </span>
                 </div>
-                <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60">
-                  In Stock · Dispatch 24h
-                </span>
+                <Link
+                  href={`/products/${featured.handle}`}
+                  className="btn-shimmer btn-press bg-[#0b1f3a] hover:bg-[#162e52] cursor-pointer flex items-center justify-center gap-[8px] h-[44px] rounded-xl w-full text-white font-semibold text-[13.5px] transition-all shadow-xs hover:shadow-md group"
+                >
+                  <img src="/images/figma/64d8de74a83e1fb14e8e8745813821f2e7537253.svg" alt="" className="size-[16px] transition-transform duration-200 group-hover:scale-110" />
+                  <span>View Complete Set</span>
+                </Link>
               </div>
-              <Link
-                href={`/products/${featured.handle}`}
-                className="btn-shimmer btn-press bg-[#0b1f3a] hover:bg-[#162e52] cursor-pointer flex items-center justify-center gap-[8px] h-[44px] rounded-xl w-full text-white font-semibold text-[13.5px] transition-all shadow-xs hover:shadow-md group"
-              >
-                <img src="/images/figma/64d8de74a83e1fb14e8e8745813821f2e7537253.svg" alt="" className="size-[16px] transition-transform duration-200 group-hover:scale-110" />
-                <span>View Complete Set</span>
-              </Link>
+
             </div>
 
           </div>
