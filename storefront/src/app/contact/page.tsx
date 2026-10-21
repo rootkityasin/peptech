@@ -15,16 +15,46 @@ export default function ContactPage() {
     ruoAgreement: false,
   })
 
+  const [honeypot, setHoneypot] = useState("")
   const [submitted, setSubmitted] = useState(false)
   const [ticketRef, setTicketRef] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!formData.name || !formData.email || !formData.message) return
+    if (!formData.ruoAgreement) {
+      setErrorMessage("Please confirm the 18+ Research Use Only compliance policy.")
+      return
+    }
 
-    const generatedRef = "PEP-INQ-" + Math.floor(10000 + Math.random() * 90000)
-    setTicketRef(generatedRef)
-    setSubmitted(true)
+    setIsSubmitting(true)
+    setErrorMessage(null)
+
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...formData,
+          _fax_verification: honeypot,
+        }),
+      })
+
+      const data = await res.json().catch(() => null)
+
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.message || "Failed to submit laboratory inquiry. Please try again.")
+      }
+
+      setTicketRef(data.ticketRef || "PEP-INQ-" + Math.floor(10000 + Math.random() * 90000))
+      setSubmitted(true)
+    } catch (err: any) {
+      setErrorMessage(err.message || "Connection error. Please try again or email support@peptech.bio directly.")
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -88,6 +118,8 @@ export default function ContactPage() {
                   <button
                     onClick={() => {
                       setSubmitted(false)
+                      setErrorMessage(null)
+                      setHoneypot("")
                       setFormData({
                         name: "",
                         institution: "",
@@ -98,17 +130,38 @@ export default function ContactPage() {
                         ruoAgreement: false,
                       })
                     }}
-                    className="px-6 py-2.5 rounded-xl bg-[#0b1f3a] hover:bg-[#16a6a3] text-white font-bold text-xs transition-colors shadow-xs"
+                    className="px-6 py-2.5 rounded-xl bg-[#0b1f3a] hover:bg-[#16a6a3] text-white font-bold text-xs transition-colors shadow-xs cursor-pointer"
                   >
                     Submit Another Inquiry
                   </button>
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="bg-white border border-[#e2e8f0] rounded-3xl p-6 sm:p-10 shadow-xs space-y-6">
+                  {/* Honeypot field invisible to humans for bot protection */}
+                  <input
+                    type="text"
+                    name="_fax_verification"
+                    value={honeypot}
+                    onChange={(e) => setHoneypot(e.target.value)}
+                    style={{ display: "none" }}
+                    tabIndex={-1}
+                    autoComplete="off"
+                    aria-hidden="true"
+                  />
+
                   <div className="space-y-1 border-b border-[#e2e8f0] pb-4">
                     <h3 className="text-xl font-bold text-[#0b1f3a]">Send a Laboratory Inquiry</h3>
                     <p className="text-xs text-[#64748b]">Fill in your research facility details below for prompt review.</p>
                   </div>
+
+                  {errorMessage && (
+                    <div className="bg-red-50 border border-red-200 text-red-700 text-xs font-semibold p-4 rounded-xl flex items-start gap-2.5 animate-in fade-in duration-200">
+                      <svg className="w-4 h-4 text-red-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span>{errorMessage}</span>
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
@@ -218,9 +271,17 @@ export default function ContactPage() {
 
                   <button
                     type="submit"
-                    className="w-full py-3.5 rounded-xl bg-[#0b1f3a] hover:bg-[#16a6a3] text-white font-bold text-sm transition-all shadow-md flex items-center justify-center"
+                    disabled={isSubmitting}
+                    className="w-full py-3.5 rounded-xl bg-[#0b1f3a] hover:bg-[#16a6a3] text-white font-bold text-sm transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    <span>Submit Laboratory Inquiry</span>
+                    {isSubmitting ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Sending...</span>
+                      </>
+                    ) : (
+                      <span>Submit Laboratory Inquiry</span>
+                    )}
                   </button>
                 </form>
               )}
