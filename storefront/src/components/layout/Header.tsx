@@ -779,7 +779,7 @@ export function Header() {
         {/* Mobile Dropdown Drawer with Smooth Slide-Down Animation */}
         <div
           ref={mobileMenuRef}
-          className={`lg:hidden absolute top-full left-0 right-0 border-t border-[#e2e8f0] border-b border-[#e2e8f0] bg-white shadow-2xl z-50 overflow-y-auto max-h-[calc(100vh-120px)] transition-all duration-300 ease-out origin-top ${
+          className={`lg:hidden absolute top-full left-0 right-0 border-t border-[#e2e8f0] border-b border-[#e2e8f0] bg-white shadow-2xl z-50 overflow-y-auto max-h-[calc(100vh-120px)] max-h-[calc(100dvh-120px-env(safe-area-inset-bottom,0px))] pb-[calc(1rem+env(safe-area-inset-bottom,0px))] overscroll-contain transition-all duration-300 ease-out origin-top ${
             mobileMenuOpen
               ? "opacity-100 translate-y-0 pointer-events-auto visible"
               : "opacity-0 -translate-y-3 pointer-events-none invisible"

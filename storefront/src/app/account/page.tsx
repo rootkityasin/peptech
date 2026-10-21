@@ -998,7 +998,7 @@ function AccountContent() {
   // Loading State
   if (isLoading) {
     return (
-      <div className="bg-[#f8fafc] flex flex-col items-center justify-center w-full min-h-[calc(100vh-118px)] p-8">
+      <div className="bg-[#f8fafc] flex flex-col items-center justify-center w-full min-h-[calc(100vh-118px)] min-h-[calc(100dvh-118px)] p-8">
         <div className="flex flex-col items-center gap-3">
           <div className="w-10 h-10 border-3 border-[#16a6a3] border-t-transparent rounded-full animate-spin" />
           <p className="text-sm font-semibold text-[#0b1f3a]">Connecting to PEPTECH® Research Server...</p>
@@ -1010,7 +1010,7 @@ function AccountContent() {
   // Unauthenticated State: Render Clinical Auth Portal
   if (!isAuthenticated || !customer) {
     return (
-      <div className="bg-[#f8fafc] flex flex-col items-center justify-center w-full min-h-[calc(100vh-118px)] px-4 py-12">
+      <div className="bg-[#f8fafc] flex flex-col items-center justify-center w-full min-h-[calc(100vh-118px)] min-h-[calc(100dvh-118px)] px-4 py-12">
         <div className="max-w-[480px] w-full bg-white rounded-[20px] p-6 sm:p-9 border border-[#e2e8f0] shadow-sm flex flex-col gap-6">
           {/* Top Header */}
           <div className="text-center">
@@ -1349,7 +1349,7 @@ function AccountContent() {
   }
 
   return (
-    <div className="bg-[#f8fafc] flex flex-col items-center w-full min-h-[calc(100vh-118px)]">
+    <div className="bg-[#f8fafc] flex flex-col items-center w-full min-h-[calc(100vh-118px)] min-h-[calc(100dvh-118px)]">
       {/* Profile Banner & Navigation Tabs (Node 52:8586 / 52:9139) */}
       <section className="bg-white border-b border-[#e2e8f0] w-full pt-6 sm:pt-9 px-4 sm:px-6 lg:px-8 xl:px-10">
         <div className="max-w-[1280px] mx-auto flex flex-col gap-5 sm:gap-7">
@@ -1575,7 +1575,7 @@ function AccountContent() {
                     </div>
                   ) : (
                     <div className="bg-[#f8fafc] rounded-xl p-3 sm:px-4 sm:py-3.5 overflow-x-auto no-scrollbar scroll-smooth">
-                      <div className="flex items-center justify-between gap-1 sm:gap-2 min-w-[420px] sm:min-w-0">
+                      <div className="flex items-center justify-between gap-1 sm:gap-2 w-full min-w-0">
                         {/* Step 1 */}
                         <div className="flex gap-1.5 sm:gap-2 items-center shrink-0">
                           <div className="w-5 h-5 rounded-full bg-[#16a6a3] text-white flex items-center justify-center font-bold text-[10.5px]">
@@ -1585,7 +1585,7 @@ function AccountContent() {
                             Order Placed
                           </span>
                         </div>
-                        <div className="flex-1 h-[2px] min-w-[12px] bg-[#16a6a3] rounded-full" />
+                        <div className="flex-1 h-[2px] min-w-[6px] sm:min-w-[12px] bg-[#16a6a3] rounded-full" />
 
                         {/* Step 2 */}
                         <div className="flex gap-1.5 sm:gap-2 items-center shrink-0">
@@ -1596,7 +1596,7 @@ function AccountContent() {
                             Cold-Chain Packing
                           </span>
                         </div>
-                        <div className={`flex-1 h-[2px] min-w-[12px] ${orders[0].status === "Delivered" ? "bg-[#16a6a3]" : "bg-[#e2e8f0]"} rounded-full`} />
+                        <div className={`flex-1 h-[2px] min-w-[6px] sm:min-w-[12px] ${orders[0].status === "Delivered" ? "bg-[#16a6a3]" : "bg-[#e2e8f0]"} rounded-full`} />
 
                         {/* Step 3 */}
                         <div className="flex gap-1.5 sm:gap-2 items-center shrink-0">
@@ -1607,7 +1607,7 @@ function AccountContent() {
                             Dispatched (Tracked 24)
                           </span>
                         </div>
-                        <div className={`flex-1 h-[2px] min-w-[12px] ${orders[0].status === "Delivered" ? "bg-[#16a6a3]" : "bg-[#e2e8f0]"} rounded-full`} />
+                        <div className={`flex-1 h-[2px] min-w-[6px] sm:min-w-[12px] ${orders[0].status === "Delivered" ? "bg-[#16a6a3]" : "bg-[#e2e8f0]"} rounded-full`} />
 
                         {/* Step 4 */}
                         <div className="flex gap-1.5 sm:gap-2 items-center shrink-0">
@@ -2128,7 +2128,7 @@ function AccountContent() {
                             const isDelivered = order.status === "Delivered"
                             const isDispatched = isDelivered || order.status === "Dispatched" || order.status === "Dispatched (Tracked 24)"
                             return (
-                              <div className="flex items-center justify-between gap-1 sm:gap-2 min-w-[420px] sm:min-w-0">
+                              <div className="flex items-center justify-between gap-1 sm:gap-2 w-full min-w-0">
                                 <div className="flex gap-1.5 sm:gap-2 items-center shrink-0">
                                   <div className="w-5 h-5 rounded-full bg-[#16a6a3] text-white flex items-center justify-center font-bold text-[10.5px]">
                                     ✓
@@ -2137,7 +2137,7 @@ function AccountContent() {
                                     Order Placed
                                   </span>
                                 </div>
-                                <div className="flex-1 h-[2px] min-w-[12px] bg-[#16a6a3] rounded-full" />
+                                <div className="flex-1 h-[2px] min-w-[6px] sm:min-w-[12px] bg-[#16a6a3] rounded-full" />
                                 <div className="flex gap-1.5 sm:gap-2 items-center shrink-0">
                                   <div className={`w-5 h-5 rounded-full ${isDispatched ? "bg-[#16a6a3] text-white" : "bg-[#0b1f3a] text-white ring-2 ring-[#0b1f3a]/10"} flex items-center justify-center font-bold text-[10.5px]`}>
                                     {isDispatched ? "✓" : "2"}
@@ -2146,7 +2146,7 @@ function AccountContent() {
                                     Cold-Chain Packing
                                   </span>
                                 </div>
-                                <div className={`flex-1 h-[2px] min-w-[12px] ${isDispatched ? "bg-[#16a6a3]" : "bg-[#e2e8f0]"} rounded-full`} />
+                                <div className={`flex-1 h-[2px] min-w-[6px] sm:min-w-[12px] ${isDispatched ? "bg-[#16a6a3]" : "bg-[#e2e8f0]"} rounded-full`} />
                                 <div className="flex gap-1.5 sm:gap-2 items-center shrink-0">
                                   <div className={`w-5 h-5 rounded-full ${isDelivered ? "bg-[#16a6a3] text-white" : isDispatched ? "bg-[#0b1f3a] text-white ring-2 ring-[#0b1f3a]/10" : "bg-[#cbd5e1] text-white"} flex items-center justify-center font-bold text-[10.5px]`}>
                                     {isDelivered ? "✓" : "3"}
@@ -2155,7 +2155,7 @@ function AccountContent() {
                                     Dispatched (Tracked 24)
                                   </span>
                                 </div>
-                                <div className={`flex-1 h-[2px] min-w-[12px] ${isDelivered ? "bg-[#16a6a3]" : "bg-[#e2e8f0]"} rounded-full`} />
+                                <div className={`flex-1 h-[2px] min-w-[6px] sm:min-w-[12px] ${isDelivered ? "bg-[#16a6a3]" : "bg-[#e2e8f0]"} rounded-full`} />
                                 <div className="flex gap-1.5 sm:gap-2 items-center shrink-0">
                                   <div className={`w-5 h-5 rounded-full ${isDelivered ? "bg-[#16a6a3] text-white" : "bg-[#cbd5e1] text-white"} flex items-center justify-center font-bold text-[10.5px]`}>
                                     {isDelivered ? "✓" : "4"}

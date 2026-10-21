@@ -1,4 +1,4 @@
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import { Geist } from "next/font/google"
 import "./globals.css"
 import { CustomerProvider } from "@/context/CustomerContext"
@@ -39,6 +39,13 @@ export const metadata: Metadata = {
   },
 }
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  viewportFit: "cover",
+}
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
@@ -47,7 +54,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       suppressHydrationWarning
     >
       <body
-        className="min-h-full flex flex-col bg-white text-slate-900 font-sans"
+        className="min-h-full flex flex-col bg-white text-slate-900 font-sans overflow-x-hidden max-w-full"
         suppressHydrationWarning
       >
         <CustomDialogProvider>

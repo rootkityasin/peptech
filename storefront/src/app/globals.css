@@ -1,5 +1,14 @@
 html {
-  scrollbar-gutter: stable;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+@media (min-width: 768px) {
+  html {
+    scrollbar-gutter: stable;
+  }
 }
 
 @import "tailwindcss";
@@ -7,6 +16,7 @@ html {
 @source "../components";
 @source "../context";
 @source "../data";
+@source "../hooks";
 @source "../lib";
 
 
@@ -48,6 +58,8 @@ html {
 body {
   background: var(--background);
   color: var(--foreground);
+  max-width: 100%;
+  overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

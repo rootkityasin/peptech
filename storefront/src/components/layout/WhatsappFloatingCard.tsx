@@ -37,7 +37,7 @@ export function WhatsappFloatingCard({
   return (
     <aside
       aria-label="WhatsApp Support"
-      className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 select-none print:hidden pointer-events-auto"
+      className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] right-4 sm:bottom-6 sm:right-6 z-40 select-none print:hidden pointer-events-auto"
     >
       <a
         href={whatsappUrl}

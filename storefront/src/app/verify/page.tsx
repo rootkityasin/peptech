@@ -121,7 +121,7 @@ function VerifyContent() {
   }
 
   return (
-    <div className="bg-[#f8fafc] flex flex-col items-center w-full min-h-[calc(100vh-118px)]">
+    <div className="bg-[#f8fafc] flex flex-col items-center w-full min-h-[calc(100vh-118px)] min-h-[calc(100dvh-118px)]">
       {/* Verify Batch Hero Section */}
       <section className="w-full flex flex-col gap-[32px] items-center justify-center px-4 sm:px-8 pt-[80px] pb-[80px] transition-all duration-300">
         {/* Section Heading */}

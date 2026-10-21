@@ -55,7 +55,7 @@ export function ProductTechnicalSpecs({ product }: ProductTechnicalSpecsProps) {
           
           {/* Card 1: Hardware / Delivery System / Formulation */}
           {format === "complete-pen-set" && (
-            <div className="bg-[#f0f6fa] rounded-[16px] p-[24px] sm:p-[28px] lg:p-[32px] flex flex-col justify-between min-h-[460px] border border-[#e2e8f0]/80 shadow-2xs">
+            <div className="bg-[#f0f6fa] rounded-[16px] p-4 sm:p-[28px] lg:p-[32px] flex flex-col justify-between min-h-[460px] border border-[#e2e8f0]/80 shadow-2xs">
               <div>
                 <div className="flex items-center justify-between">
                   <h3 className="font-bold text-[#0b1f3a] text-[18px]">
@@ -128,7 +128,7 @@ export function ProductTechnicalSpecs({ product }: ProductTechnicalSpecsProps) {
           )}
 
           {format === "refill-cartridge" && (
-            <div className="bg-[#f0f6fa] rounded-[16px] p-[24px] sm:p-[28px] lg:p-[32px] flex flex-col justify-between min-h-[460px] border border-[#e2e8f0]/80 shadow-2xs">
+            <div className="bg-[#f0f6fa] rounded-[16px] p-4 sm:p-[28px] lg:p-[32px] flex flex-col justify-between min-h-[460px] border border-[#e2e8f0]/80 shadow-2xs">
               <div>
                 <div className="flex items-center justify-between">
                   <h3 className="font-bold text-[#0b1f3a] text-[18px]">
@@ -192,7 +192,7 @@ export function ProductTechnicalSpecs({ product }: ProductTechnicalSpecsProps) {
           )}
 
           {format === "freeze-dried-vial" && (
-            <div className="bg-[#f0f6fa] rounded-[16px] p-[24px] sm:p-[28px] lg:p-[32px] flex flex-col justify-between min-h-[460px] border border-[#e2e8f0]/80 shadow-2xs">
+            <div className="bg-[#f0f6fa] rounded-[16px] p-4 sm:p-[28px] lg:p-[32px] flex flex-col justify-between min-h-[460px] border border-[#e2e8f0]/80 shadow-2xs">
               <div>
                 <div className="flex items-center justify-between">
                   <h3 className="font-bold text-[#0b1f3a] text-[18px]">
@@ -256,7 +256,7 @@ export function ProductTechnicalSpecs({ product }: ProductTechnicalSpecsProps) {
           )}
 
           {/* Card 2: Technical Specifications Table */}
-          <div className="bg-[#f0f6fa] rounded-[16px] p-[24px] sm:p-[28px] lg:p-[32px] flex flex-col justify-between min-h-[460px] border border-[#e2e8f0]/80 shadow-2xs">
+          <div className="bg-[#f0f6fa] rounded-[16px] p-4 sm:p-[28px] lg:p-[32px] flex flex-col justify-between min-h-[460px] border border-[#e2e8f0]/80 shadow-2xs">
             <div>
               <div className="flex items-center justify-between">
                 <h3 className="font-bold text-[#0b1f3a] text-[18px]">
@@ -439,7 +439,7 @@ export function ProductTechnicalSpecs({ product }: ProductTechnicalSpecsProps) {
           </div>
 
           {/* Card 3: Quality Certified & Verified Worldwide (Unified Figma Styling) */}
-          <div className="bg-[#f0f6fa] rounded-[16px] p-[24px] sm:p-[28px] lg:p-[32px] flex flex-col justify-between min-h-[460px] border border-[#e2e8f0]/80 shadow-2xs">
+          <div className="bg-[#f0f6fa] rounded-[16px] p-4 sm:p-[28px] lg:p-[32px] flex flex-col justify-between min-h-[460px] border border-[#e2e8f0]/80 shadow-2xs">
             <div>
               {/* Header with Quality Shield Icon */}
               <div className="flex gap-[14px] items-center">
@@ -464,23 +464,23 @@ export function ProductTechnicalSpecs({ product }: ProductTechnicalSpecsProps) {
 
               {/* Research Protocol Table */}
               <div className="bg-white border border-[#e2e8f0] rounded-[12px] divide-y divide-[#edf2f7] text-[12px] sm:text-[12.5px] overflow-hidden mt-6 shadow-2xs">
-                <div className="py-3.5 sm:py-4 px-3.5 sm:px-4 flex items-center justify-between gap-3">
+                <div className="py-3 sm:py-4 px-3.5 sm:px-4 flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-3">
                   <span className="font-bold text-[#0b1f3a] shrink-0">Compliance Standard</span>
-                  <span className="text-[#475569] font-medium text-right">18+ Research Only (In-Vitro)</span>
+                  <span className="text-[#475569] font-medium text-left sm:text-right">18+ Research Only (In-Vitro)</span>
                 </div>
-                <div className="py-3.5 sm:py-4 px-3.5 sm:px-4 flex items-center justify-between gap-3">
+                <div className="py-3 sm:py-4 px-3.5 sm:px-4 flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-3">
                   <span className="font-bold text-[#0b1f3a] shrink-0">QR Batch Verification</span>
-                  <span className="text-[#10b981] font-semibold text-right inline-flex items-center gap-1">
+                  <span className="text-[#10b981] font-semibold text-left sm:text-right inline-flex items-center gap-1">
                     <span>✓</span> Packaging Scan Enabled
                   </span>
                 </div>
-                <div className="py-3.5 sm:py-4 px-3.5 sm:px-4 flex items-center justify-between gap-3">
+                <div className="py-3 sm:py-4 px-3.5 sm:px-4 flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-3">
                   <span className="font-bold text-[#0b1f3a] shrink-0">Outer Packaging</span>
-                  <span className="text-[#475569] font-medium text-right">Discreet Protective Box</span>
+                  <span className="text-[#475569] font-medium text-left sm:text-right">Discreet Protective Box</span>
                 </div>
-                <div className="py-3.5 sm:py-4 px-3.5 sm:px-4 flex items-center justify-between gap-3">
+                <div className="py-3 sm:py-4 px-3.5 sm:px-4 flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-3">
                   <span className="font-bold text-[#0b1f3a] shrink-0">Logistics Dispatch</span>
-                  <span className="text-[#475569] font-medium text-right">Royal Mail Tracked (£4.95 UK)</span>
+                  <span className="text-[#475569] font-medium text-left sm:text-right">Royal Mail Tracked (£4.95 UK)</span>
                 </div>
               </div>
 
