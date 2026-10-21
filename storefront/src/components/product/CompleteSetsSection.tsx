@@ -80,66 +80,87 @@ export function CompleteSetsSection({ excludeHandle, products: propProducts }: C
         {/* Content Row - Figma Node 8:41333 */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
           
-          {/* Left: Complete Pen Set Product Card (lg:col-span-4) - Figma Node 8:41334 */}
-          <div className="lg:col-span-4 bg-white border border-[#e2e8f0] rounded-[12px] p-[16px] flex flex-col justify-between shadow-xs">
+          {/* Left: Complete Pen Set Product Card (lg:col-span-4) */}
+          <div className="lg:col-span-4 bg-white border border-[#e2e8f0] rounded-[14px] p-4 sm:p-5 flex flex-col justify-between shadow-xs">
             
-            {/* Top Box Image & Badge */}
-            <div>
-              <Link href={`/products/${featured.handle}`} className="block">
-                <div className="bg-[#f8fafc] h-[200px] min-h-[200px] rounded-[8px] relative overflow-hidden flex items-center justify-center mb-3 group">
+            {/* Top Box Image & Information */}
+            <div className="flex flex-col">
+              <Link href={`/products/${featured.handle}`} className="block group">
+                <div className="bg-white border border-[#eef2f6] rounded-[10px] h-[230px] sm:h-[250px] min-h-[230px] w-full relative overflow-hidden flex items-center justify-center mb-3.5">
                   <Image
                     src={featured.image}
                     alt={featured.name}
                     fill
                     sizes="(max-width: 1024px) 100vw, 380px"
-                    className="object-contain p-2 group-hover:scale-105 transition-transform"
+                    className="object-contain p-1.5 group-hover:scale-105 transition-transform duration-300"
                   />
-                  <div className="absolute top-[12px] right-[12px] bg-[#16a6a3] px-[10px] py-[4px] rounded-[4px]">
-                    <span className="font-bold text-[10px] text-white uppercase tracking-wider">
-                      FEATURED SET
-                    </span>
-                  </div>
                 </div>
               </Link>
 
               {/* Title, Rating & Copy */}
               <div className="space-y-1.5">
-                <Link href={`/products/${featured.handle}`}>
-                  <h3 className="font-bold text-[#0b1f3a] text-[15px] hover:text-[#16a6a3] transition-colors">
+                <Link href={`/products/${featured.handle}`} className="block">
+                  <h3 className="font-extrabold text-[#0b1f3a] text-[16px] sm:text-[17px] leading-snug hover:text-[#16a6a3] transition-colors">
                     {featured.name}
                   </h3>
                 </Link>
                 
                 <div className="flex items-center gap-[6px]">
-                  <div className="flex gap-[2px]">
+                  <div className="flex gap-[2px]" aria-label="5 out of 5 stars">
                     {[...Array(5)].map((_, i) => (
                       <img
                         key={i}
                         src="/images/figma/5bd97b26a01958d8c69784c4a4ae764ab9860fb1.svg"
-                        alt=""
+                        alt="Star"
                         className="size-[12px]"
                       />
                     ))}
                   </div>
                   <span className="font-medium text-[#475569] text-[12px]">
-                    4.9 (284)
+                    4.9 (284 reviews)
                   </span>
                 </div>
 
                 <p className="font-normal text-[#64748b] text-[12px] leading-[18px]">
-                  Includes reusable pen, prefilled cartridge, all accessories and instructions.
+                  {featured.description && featured.description.length > 20
+                    ? featured.description.slice(0, 110) + (featured.description.length > 110 ? "..." : "")
+                    : "Includes reusable pen, prefilled cartridge, all accessories and instructions."}
                 </p>
+
+                {/* Structured Inclusions Spec Grid */}
+                <div className="pt-2.5 mt-2 border-t border-[#f1f5f9] flex flex-col gap-1.5 text-[11.5px] text-[#475569]">
+                  <div className="flex items-center gap-2">
+                    <span className="size-4 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-[10px] font-bold shrink-0">✓</span>
+                    <span className="font-medium truncate">Reusable Precision Pen + 1x Cartridge</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="size-4 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-[10px] font-bold shrink-0">✓</span>
+                    <span className="font-medium truncate">31G 5mm Needles &amp; Alcohol Prep Pads</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="size-4 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-[10px] font-bold shrink-0">✓</span>
+                    <span className="font-medium truncate">HPLC Certified Batch &amp; Device Passport</span>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Price & Add to Cart */}
-            <div className="pt-4 space-y-3">
-              <div className="font-bold text-[#0b1f3a] text-[18px]">
-                £{featured.price.toFixed(2)}
+            {/* Price & Primary CTA Button */}
+            <div className="pt-3.5 mt-3 border-t border-[#f1f5f9] space-y-2.5">
+              <div className="flex items-baseline justify-between">
+                <div className="flex flex-col">
+                  <span className="text-[10.5px] font-semibold text-[#64748b] uppercase tracking-wider">Complete Set</span>
+                  <span className="font-extrabold text-[#0b1f3a] text-[20px] tracking-tight">
+                    £{featured.price.toFixed(2)}
+                  </span>
+                </div>
+                <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60">
+                  In Stock · Dispatch 24h
+                </span>
               </div>
               <Link
                 href={`/products/${featured.handle}`}
-                className="btn-shimmer btn-press bg-[#0b1f3a] hover:bg-[#162e52] cursor-pointer flex items-center justify-center gap-[8px] h-[42px] rounded-xl w-full text-white font-semibold text-[13px] transition-all shadow-xs hover:shadow-md group"
+                className="btn-shimmer btn-press bg-[#0b1f3a] hover:bg-[#162e52] cursor-pointer flex items-center justify-center gap-[8px] h-[44px] rounded-xl w-full text-white font-semibold text-[13.5px] transition-all shadow-xs hover:shadow-md group"
               >
                 <img src="/images/figma/64d8de74a83e1fb14e8e8745813821f2e7537253.svg" alt="" className="size-[16px] transition-transform duration-200 group-hover:scale-110" />
                 <span>View Complete Set</span>
