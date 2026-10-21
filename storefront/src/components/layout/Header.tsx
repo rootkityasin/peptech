@@ -141,8 +141,102 @@ export function Header() {
   return (
     <>
       {/* 01 Top Announcement Bar - Figma Node 2:29210 */}
-      <div className="w-full bg-[#0e2a47] text-white text-[12px] h-[38px] flex items-center px-4 sm:px-8 border-b border-white/10 z-50 relative print:hidden">
-        <div className="max-w-[1240px] w-full mx-auto flex items-center justify-between">
+      <div className="w-full bg-[#0e2a47] text-white text-[12px] h-[38px] flex items-center px-0 sm:px-8 border-b border-white/10 z-50 relative print:hidden overflow-hidden">
+        {/* Mobile Scrolling Banner (Moves from Left to Right like a Classic Marquee Ticker) */}
+        <div className="sm:hidden w-full overflow-hidden flex items-center">
+          <div className="animate-marquee-ltr flex items-center select-none py-1">
+            {/* Repeated Sequence 1 */}
+            <div className="flex items-center gap-3 shrink-0 px-3">
+              {featuredPromo ? (
+                <>
+                  <span className="bg-[#16a6a3]/25 text-[#00c5a0] text-[10px] font-bold px-1.5 py-0.5 rounded tracking-wide uppercase border border-[#16a6a3]/40 shrink-0">
+                    Promo
+                  </span>
+                  <span className="font-normal text-[#e2e8f0] text-[11.5px] whitespace-nowrap">
+                    Use code <strong className="font-bold text-white tracking-wider">{featuredPromo.code}</strong> for {featuredPromo.badgeText} one-time research orders
+                  </span>
+                  {appliedPromo?.code === featuredPromo.code ? (
+                    <span className="text-[10.5px] font-semibold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-500/30 shrink-0">
+                      ✓ Applied
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={async (e) => {
+                        e.stopPropagation()
+                        await applyPromoCode(featuredPromo.code)
+                        setIsDrawerOpen(true)
+                      }}
+                      className="text-[11px] font-semibold text-[#16a6a3] hover:text-white underline underline-offset-2 transition-colors cursor-pointer shrink-0"
+                    >
+                      Apply Code →
+                    </button>
+                  )}
+                </>
+              ) : (
+                <span className="font-normal text-[#e2e8f0] text-[11.5px] whitespace-nowrap">
+                  Precision Today. Better Tomorrow.
+                </span>
+              )}
+              <span className="text-white/30 text-[10px] shrink-0">•</span>
+              <span className="text-[#e2e8f0] text-[11px] whitespace-nowrap shrink-0">
+                Royal Mail Tracked 24 Cold-Chain
+              </span>
+              <span className="text-white/30 text-[10px] shrink-0">•</span>
+              <span className="text-[#e2e8f0] text-[11px] whitespace-nowrap shrink-0">
+                Discreet Neutral Packaging
+              </span>
+              <span className="text-white/30 text-[10px] shrink-0">•</span>
+            </div>
+
+            {/* Repeated Sequence 2 (Identical for seamless infinite loop) */}
+            <div className="flex items-center gap-3 shrink-0 px-3" aria-hidden="true">
+              {featuredPromo ? (
+                <>
+                  <span className="bg-[#16a6a3]/25 text-[#00c5a0] text-[10px] font-bold px-1.5 py-0.5 rounded tracking-wide uppercase border border-[#16a6a3]/40 shrink-0">
+                    Promo
+                  </span>
+                  <span className="font-normal text-[#e2e8f0] text-[11.5px] whitespace-nowrap">
+                    Use code <strong className="font-bold text-white tracking-wider">{featuredPromo.code}</strong> for {featuredPromo.badgeText} one-time research orders
+                  </span>
+                  {appliedPromo?.code === featuredPromo.code ? (
+                    <span className="text-[10.5px] font-semibold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-500/30 shrink-0">
+                      ✓ Applied
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={async (e) => {
+                        e.stopPropagation()
+                        await applyPromoCode(featuredPromo.code)
+                        setIsDrawerOpen(true)
+                      }}
+                      className="text-[11px] font-semibold text-[#16a6a3] hover:text-white underline underline-offset-2 transition-colors cursor-pointer shrink-0"
+                    >
+                      Apply Code →
+                    </button>
+                  )}
+                </>
+              ) : (
+                <span className="font-normal text-[#e2e8f0] text-[11.5px] whitespace-nowrap">
+                  Precision Today. Better Tomorrow.
+                </span>
+              )}
+              <span className="text-white/30 text-[10px] shrink-0">•</span>
+              <span className="text-[#e2e8f0] text-[11px] whitespace-nowrap shrink-0">
+                Royal Mail Tracked 24 Cold-Chain
+              </span>
+              <span className="text-white/30 text-[10px] shrink-0">•</span>
+              <span className="text-[#e2e8f0] text-[11px] whitespace-nowrap shrink-0">
+                Discreet Neutral Packaging
+              </span>
+              <span className="text-white/30 text-[10px] shrink-0">•</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop Static Announcement Bar */}
+        <div className="hidden sm:flex max-w-[1240px] w-full mx-auto items-center justify-between">
           <div className="flex items-center gap-2 overflow-hidden text-ellipsis whitespace-nowrap">
             {featuredPromo ? (
               <div className="flex items-center gap-2">
