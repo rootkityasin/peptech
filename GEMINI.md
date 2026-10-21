@@ -111,4 +111,21 @@ Display the 3-step lifecycle:
   - The agent MUST ask the user directly and receive explicit, unambiguous permission in chat before running `git push`.
   - Local operations such as staging (`git add`) and local commits (`git commit`) are permissible during development, but pushing to the remote origin is strictly blocked until explicit confirmation is granted.
 
+---
+
+## 11. Harness² Dual-Recursive Probing & Deterministic Verification Protocol
+- **Inspired by Google Research's Harness²** (*Recursive Agent Harnessing for an Open World*):
+- **The Propose – Probe – Compose Cycle**:
+  1. *Propose*: Formulate an explicit architectural plan and file-level impact analysis before editing.
+  2. *Probe*: Run baseline tests and repro scripts to observe current behavior and set deterministic criteria.
+  3. *Compose*: Implement clean, senior-engineer solutions using standard Web APIs, Medusa DI container resolution, and canonical constants from `policy.ts`.
+- **Mandatory Deterministic Gates**:
+  - Run `npm run verify` (`node scripts/harness-verify.cjs`) before completing any task.
+  - Verify zero secrets in `git diff HEAD`.
+  - Verify 100% pass on commerce unit tests (`backend/apps/backend/src/lib/commerce/__tests__/`).
+  - Verify clean TypeScript compilation on storefront (`npm run build --prefix storefront`).
+- **Experience Library Accumulation**:
+  - Document all resolved anti-patterns, framework limits, and architectural constraints in `GEMINI.md` so the workspace harness permanently evolves across sessions.
+
+
 

@@ -15,4 +15,5 @@ Key highlights:
 - **COA & QR**: Central searchable lab report library + packaging QR verification (`/verify`).
 - **Security & Secrets**: Strict Zero-Exposure rule. NEVER hardcode secrets, fallback tokens, or commit `.env` files. Read strictly from `process.env`.
 - **Git Push Restrictions**: Mandatory explicit permission rule. NEVER execute `git push` without unambiguous user confirmation in chat.
+- **Harness² Protocol**: Propose - Probe - Compose loop. Always verify code with `npm run verify` before completing tasks; eliminate vibecoding debt.
 
