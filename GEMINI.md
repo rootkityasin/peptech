@@ -103,3 +103,12 @@ Display the 3-step lifecycle:
   - NEVER put actual production or staging secrets in documentation, README files, or curl command examples. Use obvious dummy placeholders (`YOUR_API_KEY`).
   - **Pre-Commit & Pre-Push Verification**: Always inspect git diffs prior to committing or pushing to ensure zero secrets are present.
 
+---
+
+## 10. Mandatory Git Push Authorization Rule
+- **Strictly Prohibited**:
+  - NEVER execute `git push` (or push commits to any remote repository or branch) autonomously, automatically, or without explicit user permission.
+  - The agent MUST ask the user directly and receive explicit, unambiguous permission in chat before running `git push`.
+  - Local operations such as staging (`git add`) and local commits (`git commit`) are permissible during development, but pushing to the remote origin is strictly blocked until explicit confirmation is granted.
+
+
