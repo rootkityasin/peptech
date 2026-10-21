@@ -24,7 +24,7 @@ async function preflightInvoice(scope:any,ledger:CommerceService,record:LedgerRe
     if(!latest) return
     const current=await context.stripe.invoices.retrieve(invoice.id)
     if(current.status!=="draft") return
-    if(latest.data.control!=="active" || (latest.data.skip_until && current.period_end<latest.data.skip_until)) {
+    if(latest.data.control!=="active" || (latest.data.skip_until && current.period_end<=latest.data.skip_until)) {
       // Subscription-generated drafts cannot be deleted. Disable collection,
       // finalize, then void; persist intent so a crash between steps is recoverable.
       const cycle=await ledger.create({id:recordId("cycle",context.profile,current.id),kind:"cycle",profile:context.profile,owner_id:record.owner_id,state:"skip_pending",

@@ -18,8 +18,25 @@ const geistSans = Geist({
 })
 
 export const metadata: Metadata = {
-  title: "PEPTECH® | Quality. Safety. Precision.",
-  description: "The Complete PEPTECH® System. Reusable precision pen systems, refill cartridges, and laboratory freeze-dried vials.",
+  metadataBase: new URL("https://peptech.bio"),
+  title: {
+    default: "PEPTECH® | Quality. Safety. Precision.",
+    template: "%s | PEPTECH®",
+  },
+  description: "The Complete PEPTECH® System. Reusable precision pen systems, prefilled refill cartridges, and laboratory freeze-dried vials. Research Use Only.",
+  openGraph: {
+    type: "website",
+    locale: "en_GB",
+    url: "https://peptech.bio",
+    siteName: "PEPTECH®",
+    title: "PEPTECH® | Quality. Safety. Precision.",
+    description: "The Complete PEPTECH® System. Reusable precision pen systems, prefilled refill cartridges, and analytical laboratory freeze-dried vials.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "PEPTECH® | Quality. Safety. Precision.",
+    description: "The Complete PEPTECH® System. Reusable precision pen systems, prefilled refill cartridges, and analytical laboratory freeze-dried vials.",
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

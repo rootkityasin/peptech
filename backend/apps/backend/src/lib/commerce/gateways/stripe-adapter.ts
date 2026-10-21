@@ -168,7 +168,6 @@ export class StripeGatewayAdapter implements PaymentGatewayAdapter {
           tax_code: "txcd_92010001",
           metadata: { peptech_shipping: "true" },
         },
-        ...(recurring ? { recurring: { interval: "day", interval_count: 28 } } : {}),
       },
     })
 

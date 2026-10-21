@@ -109,11 +109,11 @@ export function Footer() {
             <div className="space-y-3 sm:space-y-3.5">
               <h4 className="font-bold text-[#0B1F3A] text-[15px] tracking-tight">Quick Links</h4>
               <ul className="space-y-2.5 text-[13px] text-[#475569]">
-                <li><Link href="/shop" className="hover:text-[#16A6A3] transition-colors">Shop</Link></li>
-                <li><Link href="/about" className="hover:text-[#16A6A3] transition-colors">About Us</Link></li>
-                <li><Link href="/how-it-works" className="hover:text-[#16A6A3] transition-colors">How It Works</Link></li>
+                <li><Link href="/pen-sets" className="hover:text-[#16A6A3] transition-colors">Complete Pen Sets</Link></li>
+                <li><Link href="/refills" className="hover:text-[#16A6A3] transition-colors">Refill Cartridges</Link></li>
+                <li><Link href="/vials" className="hover:text-[#16A6A3] transition-colors">Freeze-Dried Vials</Link></li>
+                <li><Link href="/lab-reports" className="hover:text-[#16A6A3] transition-colors">Lab Reports (COA)</Link></li>
                 <li><Link href="/verify" className="hover:text-[#16A6A3] transition-colors">Verify Your Batch</Link></li>
-                <li><Link href="/contact" className="hover:text-[#16A6A3] transition-colors">Contact</Link></li>
               </ul>
             </div>
 

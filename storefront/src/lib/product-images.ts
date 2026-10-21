@@ -241,8 +241,10 @@ export function appendRevision(url?: string | null): string {
   try {
     const rev = getCatalogRevision()
     if (!rev) return url
+    if (url.includes("v=")) {
+      return url.replace(/([?&])v=[^&]*/, `$1v=${rev}`)
+    }
     const separator = url.includes("?") ? "&" : "?"
-    if (url.includes("v=") || url.includes("rev=")) return url
     return `${url}${separator}v=${rev}`
   } catch {
     return url

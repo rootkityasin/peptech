@@ -481,7 +481,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
                     }
                   : undefined,
                 contents: (order.items || []).map((it: any) => ({
-                  name: (it.title || "RUO Peptide Compound").slice(0, 50),
+                  name: "Laboratory Chemical Reagents (RUO)",
                   SKU: (
                     it.variant_sku ||
                     it.metadata?.sku ||
@@ -497,7 +497,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
                     ),
                   ),
                   customsDescription:
-                    "Synthetic biochemical peptides for RUO use".slice(0, 50),
+                    "Synthetic biochemical reagents for research (RUO)".slice(0, 50),
                   customsCode: "29371900",
                   originCountryCode: "GB",
                 })),

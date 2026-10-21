@@ -14,7 +14,7 @@ function escapeHtml(str: string | number | undefined | null): string {
 }
 
 export function emailContent(template: string, data: Record<string, any>, origin: string) {
-  const account = `${origin.replace(/\/$/, "")}/account`
+  const account = `${(origin || "https://peptech.bio").replace(/\/$/, "")}/account`
   
   if (template === "order-confirmed") {
     const orderId = String(data.order_id || "PEPTECH-ORDER")

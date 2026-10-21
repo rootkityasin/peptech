@@ -5,10 +5,13 @@ const { Pool } = require("pg")
 let sharedCommercePool: any = null
 let sharedCommerceLockPool: any = null
 
+function isLocalDb(url?: string): boolean { return Boolean(url && (url.includes("localhost") || url.includes("127.0.0.1"))); }
+
 function getSharedPool(databaseUrl: string) {
   if (!sharedCommercePool) {
     sharedCommercePool = new Pool({
       connectionString: databaseUrl,
+      ssl: isLocalDb(databaseUrl) ? false : { rejectUnauthorized: false },
       max: 4,
       idleTimeoutMillis: 10000,
       connectionTimeoutMillis: 5000,
@@ -25,6 +28,7 @@ function getSharedLockPool(databaseUrl: string) {
   if (!sharedCommerceLockPool) {
     sharedCommerceLockPool = new Pool({
       connectionString: databaseUrl,
+      ssl: isLocalDb(databaseUrl) ? false : { rejectUnauthorized: false },
       max: 2,
       idleTimeoutMillis: 10000,
       connectionTimeoutMillis: 5000,

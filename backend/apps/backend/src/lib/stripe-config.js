@@ -137,6 +137,7 @@ function commerceRuntimeModules(env = process.env) {
       connectTimeout: 10000,
       keepAlive: 30000,
       enableReadyCheck: false,
+      ...(activeRedisUrl.startsWith("rediss://") ? { tls: { rejectUnauthorized: false } } : {}),
     };
     return [
       {

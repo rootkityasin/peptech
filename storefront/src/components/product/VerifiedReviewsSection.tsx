@@ -1,121 +1,83 @@
 "use client"
 
-import React, { useState } from "react"
-import Image from "next/image"
-
-const reviews = [
-  {
-    quote1: "Excellent product and service. Highly",
-    quote2: "recommended for any research lab.",
-    name: "Michael T.",
-    initials: "MT",
-    avatar: "/images/reviews/reviewer-1.jpg",
-  },
-  {
-    quote1: "The quality is outstanding. Fast shipping",
-    quote2: "and great customer support.",
-    name: "Dr. Emily R.",
-    initials: "ER",
-    avatar: "/images/reviews/reviewer-2.jpg",
-  },
-  {
-    quote1: "Easy to use and very reliable. Will",
-    quote2: "continue to order.",
-    name: "James L.",
-    initials: "JL",
-    avatar: "/images/reviews/reviewer-3.jpg",
-  },
-]
-
-function ReviewAvatar({ src, name, initials }: { src: string; name: string; initials: string }) {
-  const [hasError, setHasError] = useState(false)
-
-  if (hasError) {
-    return (
-      <div className="rounded-[14px] size-[28px] shrink-0 bg-[#0b1f3a] text-white flex items-center justify-center font-bold text-[10.5px]">
-        {initials}
-      </div>
-    )
-  }
-
-  return (
-    <div className="relative rounded-[14px] size-[28px] shrink-0 overflow-hidden bg-slate-100">
-      <Image
-        alt={name}
-        width={28}
-        height={28}
-        className="size-full object-cover rounded-[14px]"
-        src={src}
-        onError={() => setHasError(true)}
-      />
-    </div>
-  )
-}
+import React from "react"
+import Link from "next/link"
 
 export function VerifiedReviewsSection() {
+  const pillars = [
+    {
+      title: "Analytical Purity Guaranteed",
+      desc: "Every synthesis batch undergoes independent third-party HPLC & Mass Spectrometry testing prior to release.",
+      badge: "HPLC Certified",
+      icon: "/images/figma/0ee7fe88aee11b9b1b7822b9ae473035446e5d9c.svg",
+    },
+    {
+      title: "Verified Order Verification",
+      desc: "Client reviews are collected exclusively from authenticated purchasers following confirmed delivery.",
+      badge: "Verified Research",
+      icon: "/images/figma/0ee7fe88aee11b9b1b7822b9ae473035446e5d9c.svg",
+    },
+    {
+      title: "Full Batch Traceability",
+      desc: "Packaging QR codes link directly to batch-specific analytical certificates and device passport serials.",
+      badge: "Traceable Batch",
+      icon: "/images/figma/0ee7fe88aee11b9b1b7822b9ae473035446e5d9c.svg",
+    },
+  ]
+
   return (
-    <div className="bg-white flex items-center justify-center pb-[40px] pt-[36px] w-full" data-node-id="8:41686" data-name="Verified Customer Reviews Section">
-      <div className="flex flex-col lg:flex-row items-center justify-between max-w-[1240px] w-full px-4 sm:px-6 gap-6" data-node-id="8:41687" data-name="Reviews Inner">
+    <div className="bg-white flex items-center justify-center pb-[40px] pt-[36px] w-full border-t border-slate-100" data-name="Verified Customer Reviews Section">
+      <div className="flex flex-col lg:flex-row items-center justify-between max-w-[1240px] w-full px-4 sm:px-6 gap-6">
         {/* Reviews Summary Column */}
-        <div className="flex flex-col gap-[10px] items-start w-full lg:w-[250px] shrink-0" data-node-id="8:41688" data-name="Reviews Summary Column">
-          <p className="font-bold leading-[26px] text-[#0b1f3a] text-[20px] whitespace-nowrap">
-            Verified Customer Reviews
+        <div className="flex flex-col gap-[10px] items-start w-full lg:w-[280px] shrink-0">
+          <p className="font-bold leading-[26px] text-[#0b1f3a] text-[20px]">
+            Verified Research Standards
           </p>
-          <div className="flex gap-[3px] items-start" data-name="Stars" aria-label="5 out of 5 stars">
+          <div className="flex gap-[3px] items-center" aria-label="100% Verified Quality Standards">
             {[...Array(5)].map((_, i) => (
               <div key={i} className="size-[14px] shrink-0">
                 <img alt="" className="size-full" src="/images/figma/88eae9699ccc8253cd275735cdc60b0ad6111f88.svg" />
               </div>
             ))}
+            <span className="text-xs font-semibold text-[#16A6A3] ml-1.5">RUO Standard</span>
           </div>
-          <p className="font-normal text-[#475569] text-[13px] whitespace-nowrap">
-            4.9 out of 5 (284 reviews)
+          <p className="font-normal text-[#475569] text-[13px] leading-relaxed">
+            Authentic batch quality assurance. Customer reviews are accepted exclusively from verified laboratory orders.
           </p>
-          <a href="#reviews" className="flex gap-[6px] items-center pt-[6px] text-[#0b1f3a] hover:opacity-80 transition-opacity" data-name="View All">
-            <p className="font-bold text-[#0b1f3a] text-[13px] whitespace-nowrap">
-              View All Reviews
+          <Link href="/lab-reports" className="flex gap-[6px] items-center pt-[6px] text-[#0b1f3a] hover:text-[#16A6A3] transition-colors">
+            <p className="font-bold text-[13px] whitespace-nowrap">
+              Search Lab Reports Library →
             </p>
-            <div className="size-[16px] shrink-0">
-              <img alt="" className="size-full" src="/images/figma/59e312c7b3a78ddca79d47b884a0992dc4142203.svg" />
-            </div>
-          </a>
+          </Link>
         </div>
 
-        {/* 3 Review Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[15px] w-full lg:w-auto">
-          {reviews.map((r) => (
+        {/* 3 Authentic Standard Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[15px] w-full lg:w-auto flex-1">
+          {pillars.map((pillar) => (
             <div
-              key={r.name}
-              className="bg-white border border-[#e2e8f0] flex flex-col min-h-[165px] h-auto items-start justify-between p-[18px] rounded-[12px] shrink-0 w-full"
-              data-name={`Review Card - ${r.name}`}
+              key={pillar.title}
+              className="bg-[#F8FAFC] border border-[#E2E8F0] flex flex-col min-h-[165px] h-auto items-start justify-between p-[18px] rounded-[12px] shrink-0 w-full hover:border-[#16A6A3]/30 transition-colors"
             >
-              <div className="flex flex-col gap-[8px] items-start w-full" data-name="Top Group">
-                <div className="flex gap-[2px] items-start" data-name="Stars" aria-label="5 out of 5 stars">
-                  {[...Array(5)].map((_, i) => (
-                    <div key={i} className="size-[12px] shrink-0">
-                      <img alt="" className="size-full" src="/images/figma/5bd97b26a01958d8c69784c4a4ae764ab9860fb1.svg" />
-                    </div>
-                  ))}
+              <div className="flex flex-col gap-[8px] items-start w-full">
+                <div className="flex items-center justify-between w-full">
+                  <span className="text-[10px] font-bold text-[#16A6A3] bg-[#16A6A3]/10 px-2 py-0.5 rounded uppercase tracking-wider">
+                    {pillar.badge}
+                  </span>
+                  <div className="size-[16px] shrink-0">
+                    <img alt="" className="size-full" src={pillar.icon} />
+                  </div>
                 </div>
-                <div className="font-normal text-[#475569] text-[12px] leading-[18px]">
-                  <p className="mb-0">{r.quote1}</p>
-                  <p className="mb-0">{r.quote2}</p>
-                </div>
+                <p className="font-bold text-[#0b1f3a] text-[14px] mt-1">
+                  {pillar.title}
+                </p>
+                <p className="font-normal text-[#475569] text-[12px] leading-[18px]">
+                  {pillar.desc}
+                </p>
               </div>
 
-              <div className="flex gap-[8px] items-center w-full" data-name="Author Row">
-                <ReviewAvatar src={r.avatar} name={r.name} initials={r.initials} />
-                <p className="font-bold text-[#0b1f3a] text-[12px] whitespace-nowrap">
-                  {r.name}
-                </p>
-                <div className="flex gap-[4px] items-center ml-auto" data-name="Verified Badge">
-                  <div className="size-[16px] shrink-0">
-                    <img alt="" className="size-full" src="/images/figma/0ee7fe88aee11b9b1b7822b9ae473035446e5d9c.svg" />
-                  </div>
-                  <p className="font-normal text-[#64748b] text-[11px] whitespace-nowrap">
-                    Verified Buyer
-                  </p>
-                </div>
+              <div className="flex gap-[8px] items-center w-full pt-3 border-t border-slate-200/60 mt-3">
+                <span className="text-[11px] font-medium text-slate-500">PEPTECH® Quality Assurance</span>
+                <span className="ml-auto text-[11px] font-semibold text-[#0B1F3A]">Strict RUO</span>
               </div>
             </div>
           ))}
@@ -124,4 +86,3 @@ export function VerifiedReviewsSection() {
     </div>
   )
 }
-

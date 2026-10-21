@@ -86,6 +86,14 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
+        hostname: "www.peptech.bio",
+      },
+      {
+        protocol: "https",
+        hostname: "*.peptech.bio",
+      },
+      {
+        protocol: "https",
         hostname: "*.supabase.co",
       },
       {
@@ -220,6 +228,11 @@ const nextConfig: NextConfig = {
       {
         source: "/privacy",
         destination: "/privacy-policy",
+        permanent: true,
+      },
+      {
+        source: "/cartridges",
+        destination: "/refills",
         permanent: true,
       },
       {

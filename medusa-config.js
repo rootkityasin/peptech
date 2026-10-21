@@ -70,7 +70,12 @@ module.exports = defineConfig({
       ? { connection: { ssl: false } }
       : {
           ssl: { rejectUnauthorized: false },
-          connection: { ssl: { rejectUnauthorized: false } }
+          connection: { ssl: { rejectUnauthorized: false } },
+          pool: {
+            min: 1,
+            max: 5,
+            idleTimeoutMillis: 30000,
+          },
         },
     http: {
       storeCors: process.env.STORE_CORS || 'http://localhost:3000,http://localhost:8000,https://peptech.bio,https://www.peptech.bio,https://admin.peptech.bio,https://docs.medusajs.com',

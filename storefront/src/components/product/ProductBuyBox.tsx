@@ -457,10 +457,18 @@ export function ProductBuyBox({
         <div className="flex items-center justify-between w-full text-[12.5px] text-[#64748b] px-0.5">
           <span>Need additional replacement cartridges?</span>
           <Link
-            href="/refills"
+            href={
+              product?.compound === "klow"
+                ? "/products/klow-stack-refill-cartridge"
+                : product?.compound === "wolverine"
+                ? "/products/wolverine-stack-refill-cartridge"
+                : product?.compound
+                ? `/products/${product.compound}-refill-cartridge`
+                : "/refills"
+            }
             className="font-semibold text-[#16a6a3] hover:text-[#0b1f3a] transition-colors hover:underline"
           >
-            Shop Refills →
+            Shop Compatible Refills →
           </Link>
         </div>
       ) : (

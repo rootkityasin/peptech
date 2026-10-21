@@ -166,28 +166,35 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
         // Fallback: Query pg directly if available
         try {
           const appMethodId = freeShippingPromo.application_method?.id
-          if (appMethodId) {
+          if (appMethodId && process.env.DATABASE_URL) {
             const { Client } = require("pg")
-            const client = new Client({ connectionString: process.env.DATABASE_URL })
-            await client.connect()
-            const trRows = await client.query(
-              `SELECT pr.id, pr.attribute, pr.operator, array_agg(prv.value) as values
-               FROM application_method_target_rules amtr
-               JOIN promotion_rule pr ON amtr.promotion_rule_id = pr.id
-               LEFT JOIN promotion_rule_value prv ON prv.promotion_rule_id = pr.id
-               WHERE amtr.application_method_id = $1
-               GROUP BY pr.id, pr.attribute, pr.operator`,
-              [appMethodId]
-            )
-            await client.end()
-            if (trRows.rows?.length) {
-              if (!freeShippingPromo.application_method) freeShippingPromo.application_method = {}
-              freeShippingPromo.application_method.target_rules = trRows.rows.map((r: any) => ({
-                id: r.id,
-                attribute: r.attribute,
-                operator: r.operator,
-                values: (r.values || []).map((v: string) => ({ value: v })),
-              }))
+            const isLocal = process.env.DATABASE_URL.includes("localhost") || process.env.DATABASE_URL.includes("127.0.0.1")
+            const client = new Client({
+              connectionString: process.env.DATABASE_URL,
+              ssl: isLocal ? false : { rejectUnauthorized: false },
+            })
+            try {
+              await client.connect()
+              const trRows = await client.query(
+                `SELECT pr.id, pr.attribute, pr.operator, array_agg(prv.value) as values
+                 FROM application_method_target_rules amtr
+                 JOIN promotion_rule pr ON amtr.promotion_rule_id = pr.id
+                 LEFT JOIN promotion_rule_value prv ON prv.promotion_rule_id = pr.id
+                 WHERE amtr.application_method_id = $1
+                 GROUP BY pr.id, pr.attribute, pr.operator`,
+                [appMethodId]
+              )
+              if (trRows.rows?.length) {
+                if (!freeShippingPromo.application_method) freeShippingPromo.application_method = {}
+                freeShippingPromo.application_method.target_rules = trRows.rows.map((r: any) => ({
+                  id: r.id,
+                  attribute: r.attribute,
+                  operator: r.operator,
+                  values: (r.values || []).map((v: string) => ({ value: v })),
+                }))
+              }
+            } finally {
+              await client.end().catch(() => {})
             }
           }
         } catch {}

@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState } from "react"
+import { usePathname } from "next/navigation"
 
 export interface WhatsappFloatingCardProps {
   phoneNumber?: string
@@ -14,6 +15,12 @@ export function WhatsappFloatingCard({
   hoverText = "Whatsapp us!",
 }: WhatsappFloatingCardProps) {
   const [isHovered, setIsHovered] = useState(false)
+  const pathname = usePathname()
+
+  // Suppress on checkout flow to avoid covering inputs or CTA on mobile
+  if (pathname?.startsWith("/checkout")) {
+    return null
+  }
 
   // Clean phone number for WhatsApp URL (digits only)
   const cleanNumber = (phoneNumber || "").replace(/[^0-9]/g, "")
@@ -48,31 +55,27 @@ export function WhatsappFloatingCard({
             viewBox="0 0 32 32"
             className="size-[22px] fill-white drop-shadow-xs"
             xmlns="http://www.w3.org/2000/svg"
-            aria-hidden="true"
           >
-            <path d="M16 2a13.93 13.93 0 0 0-12.07 20.92L2 30l7.26-1.9A13.93 13.93 0 1 0 16 2zm0 25.55a11.58 11.58 0 0 1-5.9-1.62l-.42-.25-4.38 1.15 1.17-4.27-.27-.44A11.62 11.62 0 1 1 16 27.55zm6.37-8.68c-.35-.18-2.07-1-2.39-1.12s-.56-.17-.79.17-.91 1.12-1.11 1.36-.41.26-.76.09a9.58 9.58 0 0 1-2.82-1.74 10.57 10.57 0 0 1-1.95-2.43c-.2-.35 0-.54.16-.71s.35-.41.53-.61a2.38 2.38 0 0 0 .35-.59.65.65 0 0 0 0-.62c-.09-.17-.79-1.91-1.08-2.61s-.58-.59-.79-.6h-.68a1.3 1.3 0 0 0-.94.44 3.94 3.94 0 0 0-1.23 2.93c0 1.73 1.26 3.4 1.44 3.64s2.48 3.79 6 5.31c.84.36 1.49.58 2 .74.84.27 1.61.23 2.22.14.68-.1 2.07-.85 2.36-1.66s.29-1.52.21-1.66-.33-.24-.68-.42z" />
+            <path d="M16.002 2C8.28 2 2 8.28 2 16.002c0 2.576.696 5.094 2.016 7.302L2 30l6.906-1.992c2.14 1.236 4.59 1.896 7.096 1.896 7.722 0 14.002-6.28 14.002-14.002C30.004 8.28 23.724 2 16.002 2zm0 25.56c-2.22 0-4.39-.594-6.29-1.722l-.45-.27-4.1 1.182 1.1-3.996-.294-.468A11.528 11.528 0 0 1 4.444 16c0-6.374 5.186-11.56 11.558-11.56 6.374 0 11.56 5.186 11.56 11.56 0 6.374-5.186 11.56-11.56 11.56zm6.34-8.67c-.348-.174-2.058-1.014-2.376-1.13-.318-.116-.55-.174-.78.174-.232.348-.898 1.13-1.102 1.362-.202.232-.406.26-.754.086-.348-.174-1.468-.54-2.796-1.724-1.034-.922-1.732-2.062-1.936-2.41-.202-.348-.022-.536.152-.71.156-.156.348-.406.522-.61.174-.202.232-.348.348-.58.116-.232.058-.434-.03-.61-.086-.174-.78-1.88-1.07-2.576-.282-.676-.57-.584-.78-.594-.202-.01-.434-.012-.666-.012-.232 0-.61.086-.928.434-.318.348-1.218 1.19-1.218 2.902s1.246 3.364 1.42 3.596c.174.232 2.454 3.748 5.946 5.254.83.358 1.48.572 1.986.732.834.266 1.592.228 2.19.14.668-.1 2.058-.84 2.348-1.652.29-.812.29-1.508.202-1.652-.086-.144-.318-.232-.666-.406z" />
           </svg>
         </div>
 
-        {/* Right Section: Default "Need help!" & Hover "Whatsapp us!" Swap */}
-        <div className="flex-1 overflow-hidden whitespace-nowrap ml-3 relative h-[26px] flex items-center pr-2">
-          {/* Default State: "Need help!" */}
+        {/* Text Container with Slide Animations */}
+        <div className="relative flex flex-col justify-center overflow-hidden h-[36px] ml-3 pr-2 w-full">
           <span
-            className={`absolute inset-0 flex items-center text-[16px] font-medium text-[#18181B] font-sans transition-all duration-200 ease-out ${
+            className={`font-semibold text-[13.5px] leading-tight text-[#0B1F3A] transition-all duration-300 ease-out whitespace-nowrap ${
               isHovered
-                ? "-translate-y-5 opacity-0 pointer-events-none"
+                ? "-translate-y-6 opacity-0"
                 : "translate-y-0 opacity-100"
             }`}
           >
             {defaultText}
           </span>
-
-          {/* Hover State: "Whatsapp us!" */}
           <span
-            className={`absolute inset-0 flex items-center text-[16px] font-bold italic tracking-tight text-[#111827] font-sans transition-all duration-200 ease-out ${
+            className={`absolute font-bold text-[13.5px] leading-tight text-[#16A6A3] transition-all duration-300 ease-out whitespace-nowrap ${
               isHovered
                 ? "translate-y-0 opacity-100"
-                : "translate-y-5 opacity-0 pointer-events-none"
+                : "translate-y-6 opacity-0"
             }`}
           >
             {hoverText}
