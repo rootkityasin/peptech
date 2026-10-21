@@ -439,8 +439,10 @@ export function ProductBuyBox({
 
       {/* Navigation Cross-Links */}
       {isPenSet ? (
-        <div className="flex items-center justify-between w-full text-[12.5px] text-[#64748b] px-0.5">
-          <span>Need additional replacement cartridges?</span>
+        <div className="flex items-center justify-between w-full text-[11px] sm:text-[12.5px] text-[#64748b] px-0.5 gap-2">
+          <span className="whitespace-nowrap">
+            Need <span className="hidden sm:inline">additional </span>replacement cartridges?
+          </span>
           <Link
             href={
               product?.compound === "klow"
@@ -451,17 +453,17 @@ export function ProductBuyBox({
                 ? `/products/${product.compound}-refill-cartridge`
                 : "/refills"
             }
-            className="font-semibold text-[#16a6a3] hover:text-[#0b1f3a] transition-colors hover:underline"
+            className="font-semibold text-[#16a6a3] hover:text-[#0b1f3a] transition-colors hover:underline whitespace-nowrap shrink-0"
           >
-            Shop Compatible Refills →
+            Shop <span className="hidden sm:inline">Compatible </span>Refills →
           </Link>
         </div>
       ) : isRefill ? (
-        <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-[10px] px-4 py-3 flex items-center justify-between w-full">
-          <div className="flex items-center gap-2">
-            <span className="inline-block w-2 h-2 rounded-full bg-[#16a6a3] animate-pulse" />
-            <span className="text-[12.5px] text-[#0b1f3a] font-medium">
-              Fits PEPTECH® Reusable Precision Pen System
+        <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-[10px] px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between w-full gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="inline-block size-2 rounded-full bg-[#16a6a3] animate-pulse shrink-0" />
+            <span className="text-[11px] sm:text-[12.5px] text-[#0b1f3a] font-medium whitespace-nowrap truncate">
+              Fits PEPTECH® <span className="hidden sm:inline">Reusable Precision </span>Pen System
             </span>
           </div>
           <Link
@@ -474,17 +476,17 @@ export function ProductBuyBox({
                 ? `/products/${product.compound}-pen-set`
                 : "/pen-sets"
             }
-            className="text-[12px] font-semibold text-[#16a6a3] hover:text-[#0b1f3a] transition-colors hover:underline shrink-0 ml-2"
+            className="text-[11px] sm:text-[12px] font-semibold text-[#16a6a3] hover:text-[#0b1f3a] transition-colors hover:underline whitespace-nowrap shrink-0 ml-1.5"
           >
             Need the pen? →
           </Link>
         </div>
       ) : (
-        <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-[10px] px-4 py-3 flex items-center justify-between w-full">
-          <div className="flex items-center gap-2">
-            <span className="inline-block w-2 h-2 rounded-full bg-[#0284c7] animate-pulse" />
-            <span className="text-[12.5px] text-[#0b1f3a] font-medium">
-              Standard 3mL Crimp Laboratory Vial
+        <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-[10px] px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between w-full gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="inline-block size-2 rounded-full bg-[#0284c7] animate-pulse shrink-0" />
+            <span className="text-[11px] sm:text-[12.5px] text-[#0b1f3a] font-medium whitespace-nowrap truncate">
+              Standard 3mL <span className="hidden sm:inline">Crimp </span>Laboratory Vial
             </span>
           </div>
           <Link
@@ -497,7 +499,7 @@ export function ProductBuyBox({
                 ? `/products/${product.compound}-pen-set`
                 : "/pen-sets"
             }
-            className="text-[12px] font-semibold text-[#16a6a3] hover:text-[#0b1f3a] transition-colors hover:underline shrink-0 ml-2"
+            className="text-[11px] sm:text-[12px] font-semibold text-[#16a6a3] hover:text-[#0b1f3a] transition-colors hover:underline whitespace-nowrap shrink-0 ml-1.5"
           >
             Prefer pre-filled pen? →
           </Link>
