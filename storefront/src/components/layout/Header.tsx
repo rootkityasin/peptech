@@ -140,8 +140,12 @@ export function Header() {
 
   return (
     <>
-      {/* 01 Top Announcement Bar - Figma Node 2:29210 */}
-      <div className="w-full bg-[#0e2a47] text-white text-[12px] h-[38px] flex items-center px-0 sm:px-8 border-b border-white/10 z-50 relative print:hidden overflow-hidden">
+      <header
+        ref={headerRef}
+        className="w-full sticky top-0 z-50 shadow-xs relative transition-all duration-200 print:hidden bg-white"
+      >
+        {/* 01 Top Announcement Bar - Figma Node 2:29210 */}
+        <div className="w-full bg-[#0e2a47] text-white text-[12px] h-[38px] flex items-center px-0 sm:px-8 border-b border-white/10 relative overflow-hidden">
         {/* Mobile Scrolling Banner (Moves from Left to Right like a Classic Marquee Ticker) */}
         <div className="sm:hidden w-full overflow-hidden flex items-center">
           <div className="animate-marquee-ltr flex items-center select-none py-1">
@@ -283,13 +287,12 @@ export function Header() {
         </div>
       </div>
 
-      {/* 02 Header Navigation - Figma Node 2:29228 */}
-      <header
-        ref={headerRef}
-        style={{ backgroundColor: "#ffffff" }}
-        className="w-full bg-white sticky top-0 z-50 shadow-xs relative transition-all duration-200 border-b border-[#E2E8F0]"
-      >
-        {/* Main Navbar Row (80px) */}
+        {/* 02 Header Navigation - Figma Node 2:29228 */}
+        <div
+          style={{ backgroundColor: "#ffffff" }}
+          className="w-full bg-white border-b border-[#E2E8F0]"
+        >
+          {/* Main Navbar Row (80px) */}
         <div style={{ backgroundColor: "#ffffff" }} className="w-full bg-white">
           <div
             style={{ backgroundColor: "#ffffff" }}
@@ -761,8 +764,9 @@ export function Header() {
           </div>
         </div>
       )}
+        </div>
 
-        {/* Mobile Dropdown Menu - Simple Classic Bordered */}
+        {/* Mobile Dropdown Menu - Structured Sequence */}
         {mobileMenuOpen && (
           <>
             {/* Backdrop Overlay */}
@@ -777,6 +781,7 @@ export function Header() {
               className="lg:hidden absolute top-full left-0 right-0 border-t border-[#e2e8f0] border-b border-[#e2e8f0] bg-white shadow-xl z-50 overflow-y-auto animate-in fade-in slide-in-from-top-1 duration-150"
             >
               <nav className="flex flex-col">
+                {/* 1. Complete Pen Sets */}
                 <Link
                   href="/pen-sets"
                   onClick={() => setMobileMenuOpen(false)}
@@ -792,6 +797,7 @@ export function Header() {
                   </svg>
                 </Link>
 
+                {/* 2. Refill Cartridges */}
                 <Link
                   href="/refills"
                   onClick={() => setMobileMenuOpen(false)}
@@ -807,6 +813,7 @@ export function Header() {
                   </svg>
                 </Link>
 
+                {/* 3. Freeze-Dried Vials */}
                 <Link
                   href="/vials"
                   onClick={() => setMobileMenuOpen(false)}
@@ -822,36 +829,7 @@ export function Header() {
                   </svg>
                 </Link>
 
-                <Link
-                  href="/verify"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center justify-between px-5 py-3.5 border-b border-[#f1f5f9] hover:bg-[#f8fafc] active:bg-[#f1f5f9] transition-colors group ${
-                    pathname === "/verify" ? "bg-teal-50/40 text-[#16a6a3]" : "text-[#0b1f3a]"
-                  }`}
-                >
-                  <span className="text-[14.5px] font-semibold group-hover:text-[#16a6a3] transition-colors">
-                    Verify Your Batch
-                  </span>
-                  <svg className="w-4 h-4 text-slate-300 group-hover:text-[#16a6a3] group-hover:translate-x-0.5 transition-all shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </Link>
-
-                <Link
-                  href="/lab-reports"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center justify-between px-5 py-3.5 border-b border-[#f1f5f9] hover:bg-[#f8fafc] active:bg-[#f1f5f9] transition-colors group ${
-                    pathname === "/lab-reports" ? "bg-teal-50/40 text-[#16a6a3]" : "text-[#0b1f3a]"
-                  }`}
-                >
-                  <span className="text-[14.5px] font-semibold group-hover:text-[#16a6a3] transition-colors">
-                    Resources &amp; COA Library
-                  </span>
-                  <svg className="w-4 h-4 text-slate-300 group-hover:text-[#16a6a3] group-hover:translate-x-0.5 transition-all shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </Link>
-
+                {/* 4. About PEPTECH */}
                 <Link
                   href="/about"
                   onClick={() => setMobileMenuOpen(false)}
@@ -867,6 +845,7 @@ export function Header() {
                   </svg>
                 </Link>
 
+                {/* 5. How It Works & FAQs */}
                 <Link
                   href="/how-it-works"
                   onClick={() => setMobileMenuOpen(false)}
@@ -882,6 +861,39 @@ export function Header() {
                   </svg>
                 </Link>
 
+                {/* 6. Verify Your Batch */}
+                <Link
+                  href="/verify"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center justify-between px-5 py-3.5 border-b border-[#f1f5f9] hover:bg-[#f8fafc] active:bg-[#f1f5f9] transition-colors group ${
+                    pathname === "/verify" ? "bg-teal-50/40 text-[#16a6a3]" : "text-[#0b1f3a]"
+                  }`}
+                >
+                  <span className="text-[14.5px] font-semibold group-hover:text-[#16a6a3] transition-colors">
+                    Verify Your Batch
+                  </span>
+                  <svg className="w-4 h-4 text-slate-300 group-hover:text-[#16a6a3] group-hover:translate-x-0.5 transition-all shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </Link>
+
+                {/* 7. Resources & COA Library */}
+                <Link
+                  href="/lab-reports"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center justify-between px-5 py-3.5 border-b border-[#f1f5f9] hover:bg-[#f8fafc] active:bg-[#f1f5f9] transition-colors group ${
+                    pathname === "/lab-reports" ? "bg-teal-50/40 text-[#16a6a3]" : "text-[#0b1f3a]"
+                  }`}
+                >
+                  <span className="text-[14.5px] font-semibold group-hover:text-[#16a6a3] transition-colors">
+                    Resources &amp; COA Library
+                  </span>
+                  <svg className="w-4 h-4 text-slate-300 group-hover:text-[#16a6a3] group-hover:translate-x-0.5 transition-all shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </Link>
+
+                {/* 8. Contact Us */}
                 <Link
                   href="/contact"
                   onClick={() => setMobileMenuOpen(false)}
@@ -897,6 +909,7 @@ export function Header() {
                   </svg>
                 </Link>
 
+                {/* 9. My Account / Orders (with previous official icon) */}
                 <Link
                   href="/account"
                   onClick={() => setMobileMenuOpen(false)}
@@ -904,9 +917,16 @@ export function Header() {
                     pathname === "/account" ? "bg-teal-50/40 text-[#16a6a3]" : "text-[#0b1f3a]"
                   }`}
                 >
-                  <span className="text-[14.5px] font-semibold group-hover:text-[#16a6a3] transition-colors">
-                    {mounted && customer ? `${customer.first_name || "Customer"}'s Account` : "My Account"}
-                  </span>
+                  <div className="flex items-center gap-2.5">
+                    <img
+                      src="/images/figma/e93dbfd043d0b35bf52fe04bc07fec31b1b89270.svg"
+                      alt="Account"
+                      className="w-[18px] h-[18px] opacity-75 group-hover:opacity-100 transition-opacity"
+                    />
+                    <span className="text-[14.5px] font-semibold group-hover:text-[#16a6a3] transition-colors">
+                      {mounted && customer ? `${customer.first_name || "Customer"}'s Account` : "My Account / Orders"}
+                    </span>
+                  </div>
                   <svg className="w-4 h-4 text-slate-300 group-hover:text-[#16a6a3] group-hover:translate-x-0.5 transition-all shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
