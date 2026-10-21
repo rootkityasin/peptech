@@ -17,6 +17,7 @@ interface ProductBuyBoxProps {
   subscribePrice?: number
   tag?: string
   allProducts?: CatalogProduct[]
+  defaultCartridge?: CatalogProduct | null
 }
 
 export function ProductBuyBox({
@@ -28,6 +29,7 @@ export function ProductBuyBox({
   subscribePrice,
   tag = "PEN SYSTEM",
   allProducts,
+  defaultCartridge,
 }: ProductBuyBoxProps) {
   const { addItem, switchItemSubscription, setIsDrawerOpen, autoSavings } = useCart()
   const [purchaseType, setPurchaseType] = useState<"one-time" | "subscription">("one-time")
@@ -56,31 +58,22 @@ export function ProductBuyBox({
     return cartridges.length > 0 ? cartridges : source
   }, [liveProducts])
 
-  // Cartridge selection state for pen starter sets
-  const [selectedCartridgeId, setSelectedCartridgeId] = useState<string>("")
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
-  const dropdownRef = useRef<HTMLDivElement>(null)
-
-  // Automatically select matching cartridge for the current pen model
-  useEffect(() => {
-    if (availableCartridges.length === 0) return
-
-    // If currently selected ID is valid, maintain user selection
-    if (selectedCartridgeId && availableCartridges.some((c) => c.id === selectedCartridgeId)) {
-      return
-    }
+  // Fixed default cartridge resolution (strictly locked 1:1 to this pen set)
+  const activeCartridge = useMemo(() => {
+    if (defaultCartridge) return defaultCartridge
+    if (availableCartridges.length === 0) return null
 
     const pHandle = (product?.handle || "").toLowerCase()
-    const pName = (product?.name || "").toLowerCase()
+    const pCompound = (product?.compound || "").toLowerCase()
 
     const match = availableCartridges.find((c) => {
-      if (product?.compound && c.compound && product.compound.toLowerCase() === c.compound.toLowerCase()) {
+      if (pCompound && c.compound && pCompound === c.compound.toLowerCase()) {
         return true
       }
       const cHandle = c.handle.toLowerCase()
       const cName = c.name.toLowerCase()
 
-      // Exact 1:1 handle transformation (e.g. klow-stack-pen-set -> klow-stack-cartridge)
+      // Exact 1:1 handle transformation (e.g. retatrutide-pen-set -> retatrutide-cartridge)
       if (pHandle.replace(/-pen-set$/, "-cartridge") === cHandle) return true
       if (pHandle.replace(/^pen-system-/, "").replace(/-pen-set$/, "") === cHandle.replace(/-cartridge$/, "")) return true
 
@@ -88,37 +81,8 @@ export function ProductBuyBox({
       return cleanToken.length > 2 && (cHandle.includes(cleanToken) || cName.replace(/[^a-z0-9]/g, "").includes(cleanToken))
     })
 
-    if (match) {
-      setSelectedCartridgeId(match.id)
-    } else {
-      setSelectedCartridgeId(availableCartridges[0].id)
-    }
-  }, [availableCartridges, product?.handle, product?.name, selectedCartridgeId])
-
-  const activeCartridge = availableCartridges.find((c) => c.id === selectedCartridgeId) || availableCartridges[0]
-
-  // Close dropdown on outside click or Escape key
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false)
-      }
-    }
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setIsDropdownOpen(false)
-      }
-    }
-
-    if (isDropdownOpen) {
-      document.addEventListener("mousedown", handleClickOutside)
-      document.addEventListener("keydown", handleKeyDown)
-    }
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside)
-      document.removeEventListener("keydown", handleKeyDown)
-    }
-  }, [isDropdownOpen])
+    return match || availableCartridges[0] || null
+  }, [defaultCartridge, availableCartridges, product?.handle, product?.compound])
 
   const currentOneTimePrice = product?.price ?? price ?? 0
   const dynamicSubPrice = autoSavings.discountType === "percentage"
@@ -134,7 +98,7 @@ export function ProductBuyBox({
 
   useEffect(() => {
     setConflictError(null)
-  }, [purchaseType, selectedCartridgeId])
+  }, [purchaseType])
 
   const getCandidateItem = () => {
     const targetVariantId = product?.variantId || product?.id || ""
@@ -262,9 +226,9 @@ export function ProductBuyBox({
         )}
       </div>
 
-      {/* Complete Pen Set Cartridge Selector Dropdown */}
-      {!isRefill && (
-        <div className="w-full flex flex-col gap-2 relative" ref={dropdownRef}>
+      {/* Complete Pen Set Fixed Included Cartridge Display */}
+      {!isRefill && activeCartridge && (
+        <div className="w-full flex flex-col gap-2">
           <div className="flex items-center justify-between w-full">
             <label className="text-[13px] font-bold text-[#0b1f3a] flex items-center gap-2">
               <span>Included Cartridge</span>
@@ -277,18 +241,10 @@ export function ProductBuyBox({
             </span>
           </div>
 
-          {/* Trigger Button */}
-          <button
-            type="button"
-            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className={`w-full bg-white border ${
-              isDropdownOpen ? "border-[#0b1f3a] ring-2 ring-[#0b1f3a]/10" : "border-[#e2e8f0] hover:border-[#94a3b8]"
-            } rounded-[10px] p-3 flex items-center justify-between cursor-pointer transition-all shadow-xs text-left group`}
-            aria-haspopup="listbox"
-            aria-expanded={isDropdownOpen}
-          >
+          {/* Static Non-Interactive Included Cartridge Card */}
+          <div className="w-full bg-[#f8fafc] border border-[#e2e8f0] rounded-[10px] p-3 flex items-center justify-between shadow-xs">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="size-10 rounded-lg bg-[#f8fafc] border border-[#e2e8f0] flex items-center justify-center shrink-0 p-1 overflow-hidden">
+              <div className="size-10 rounded-lg bg-white border border-[#e2e8f0] flex items-center justify-center shrink-0 p-1 overflow-hidden">
                 <img
                   src={resolveProductImage(activeCartridge)}
                   alt=""
@@ -297,80 +253,19 @@ export function ProductBuyBox({
               </div>
               <div className="flex flex-col min-w-0">
                 <span className="text-[13.5px] font-bold text-[#0b1f3a] truncate">
-                  {activeCartridge?.name || "Select Cartridge"}
+                  {activeCartridge.name}
                 </span>
                 <span className="text-[11.5px] text-[#16a6a3] font-medium truncate">
-                  {activeCartridge?.categoryLabel || "Precision Research Cartridge"} • 1.5 mL
+                  {activeCartridge.categoryLabel || "Precision Research Cartridge"} • 1.5 mL
                 </span>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 shrink-0 ml-2">
-              <span className="text-[12px] font-semibold text-[#0b1f3a] group-hover:text-[#16a6a3] transition-colors hidden sm:inline">
-                Change
-              </span>
-              <svg
-                className={`size-4 text-[#64748b] transition-transform duration-200 ${isDropdownOpen ? "rotate-180" : ""}`}
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
+            <div className="flex items-center gap-1.5 shrink-0 ml-2 bg-white px-2.5 py-1 rounded-md border border-[#e2e8f0] text-[11px] font-semibold text-[#0b1f3a]">
+              <span className="text-[#10b981]">✓</span>
+              <span>Included in Kit</span>
             </div>
-          </button>
-
-          {/* Dropdown Menu */}
-          {isDropdownOpen && (
-            <div className="absolute top-[calc(100%+6px)] left-0 right-0 z-40 bg-white border border-[#cbd5e1] rounded-xl shadow-2xl p-2 max-h-[300px] overflow-y-auto space-y-1 animate-in fade-in zoom-in-95 duration-150">
-              <div className="px-2 py-1 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
-                Select Pre-filled Cartridge
-              </div>
-              {availableCartridges.map((cartridge) => {
-                const isSelected = cartridge.id === selectedCartridgeId
-                return (
-                  <div
-                    key={cartridge.id}
-                    onClick={() => {
-                      setSelectedCartridgeId(cartridge.id)
-                      setIsDropdownOpen(false)
-                    }}
-                    className={`w-full px-3 py-2.5 rounded-lg flex items-center justify-between cursor-pointer transition-all ${
-                      isSelected
-                        ? "bg-[#f0f9ff] text-[#0b1f3a] font-semibold border border-[#bae6fd]"
-                        : "hover:bg-[#f8fafc] text-[#334155] border border-transparent"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="size-8 rounded-md bg-white border border-[#e2e8f0] flex items-center justify-center shrink-0 p-0.5 overflow-hidden">
-                        <img
-                          src={resolveProductImage(cartridge)}
-                          alt=""
-                          className="size-full object-contain"
-                        />
-                      </div>
-                      <div className="flex flex-col min-w-0">
-                        <span className="text-[13px] leading-tight truncate">
-                          {cartridge.name}
-                        </span>
-                        <span className="text-[11px] text-[#64748b] leading-tight truncate">
-                          {cartridge.categoryLabel} • 1.5 mL
-                        </span>
-                      </div>
-                    </div>
-
-                    {isSelected && (
-                      <div className="size-5 rounded-full bg-[#16a6a3] text-white flex items-center justify-center shrink-0 ml-2">
-                        <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                        </svg>
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          )}
+          </div>
         </div>
       )}
 

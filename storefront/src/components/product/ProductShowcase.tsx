@@ -147,6 +147,7 @@ export function ProductShowcase({
                 subscribePrice={currentProduct.subscribePrice}
                 tag="COMPLETE PEN SET"
                 allProducts={allProducts}
+                defaultCartridge={cartridgeProduct}
               />
             )}
           </div>
