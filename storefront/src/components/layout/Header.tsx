@@ -762,10 +762,10 @@ export function Header() {
         </div>
       )}
 
-        {/* Mobile Dropdown Menu - Classic Bordered Drawer */}
+        {/* Mobile Dropdown Menu - Simple Classic Bordered */}
         {mobileMenuOpen && (
           <>
-            {/* Backdrop Overlay to catch clicks anywhere else in the website */}
+            {/* Backdrop Overlay */}
             <div
               className="lg:hidden fixed inset-0 bg-black/40 z-40 transition-opacity"
               onClick={() => setMobileMenuOpen(false)}
@@ -774,336 +774,144 @@ export function Header() {
 
             <div
               ref={mobileMenuRef}
-              className="lg:hidden absolute top-full left-0 right-0 border-t border-[#e2e8f0] border-b border-[#e2e8f0] bg-white shadow-2xl z-50 max-h-[calc(100vh-80px)] overflow-y-auto animate-in fade-in slide-in-from-top-1 duration-200"
+              className="lg:hidden absolute top-full left-0 right-0 border-t border-[#e2e8f0] border-b border-[#e2e8f0] bg-white shadow-xl z-50 overflow-y-auto animate-in fade-in slide-in-from-top-1 duration-150"
             >
-              {/* Product Categories Section Header */}
-              <div className="bg-[#f8fafc] px-5 py-2.5 border-b border-[#e2e8f0] flex items-center justify-between">
-                <span className="text-[11px] font-bold text-[#64748b] tracking-wider uppercase">
-                  Product Categories
-                </span>
+              <nav className="flex flex-col">
                 <Link
-                  href="/shop"
+                  href="/pen-sets"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="text-[12px] font-semibold text-[#16a6a3] hover:underline flex items-center gap-1"
+                  className={`flex items-center justify-between px-5 py-3.5 border-b border-[#f1f5f9] hover:bg-[#f8fafc] active:bg-[#f1f5f9] transition-colors group ${
+                    pathname === "/pen-sets" ? "bg-teal-50/40 text-[#16a6a3]" : "text-[#0b1f3a]"
+                  }`}
                 >
-                  <span>All Products</span>
-                  <span>→</span>
+                  <span className="text-[14.5px] font-semibold group-hover:text-[#16a6a3] transition-colors">
+                    Complete Pen Sets
+                  </span>
+                  <svg className="w-4 h-4 text-slate-300 group-hover:text-[#16a6a3] group-hover:translate-x-0.5 transition-all shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
                 </Link>
-              </div>
 
-              {/* Category 1: Complete Pen Sets */}
-              <Link
-                href="/pen-sets"
-                onClick={() => setMobileMenuOpen(false)}
-                className={`flex items-center justify-between px-5 py-3.5 border-b border-[#f1f5f9] hover:bg-[#f8fafc] active:bg-[#f1f5f9] transition-colors group ${
-                  pathname === "/pen-sets" ? "bg-teal-50/40" : ""
-                }`}
-              >
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`text-[14.5px] font-bold transition-colors ${
-                        pathname === "/pen-sets"
-                          ? "text-[#16a6a3]"
-                          : "text-[#0b1f3a] group-hover:text-[#16a6a3]"
-                      }`}
-                    >
-                      Complete Pen Sets
-                    </span>
-                    <span className="text-[10px] font-semibold text-[#16a6a3] bg-teal-50 border border-teal-200/60 px-1.5 py-0.5 rounded tracking-wide">
-                      STARTER SET
-                    </span>
-                  </div>
-                  <p className="text-[12px] text-[#64748b] mt-0.5">
-                    Reusable precision pen + cartridge · From £99.99
-                  </p>
-                </div>
-                <svg
-                  className="w-4 h-4 text-[#94a3b8] group-hover:text-[#16a6a3] group-hover:translate-x-0.5 transition-all shrink-0 ml-3"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
+                <Link
+                  href="/refills"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center justify-between px-5 py-3.5 border-b border-[#f1f5f9] hover:bg-[#f8fafc] active:bg-[#f1f5f9] transition-colors group ${
+                    pathname === "/refills" ? "bg-teal-50/40 text-[#16a6a3]" : "text-[#0b1f3a]"
+                  }`}
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </Link>
+                  <span className="text-[14.5px] font-semibold group-hover:text-[#16a6a3] transition-colors">
+                    Refill Cartridges
+                  </span>
+                  <svg className="w-4 h-4 text-slate-300 group-hover:text-[#16a6a3] group-hover:translate-x-0.5 transition-all shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </Link>
 
-              {/* Category 2: Refill Cartridges */}
-              <Link
-                href="/refills"
-                onClick={() => setMobileMenuOpen(false)}
-                className={`flex items-center justify-between px-5 py-3.5 border-b border-[#f1f5f9] hover:bg-[#f8fafc] active:bg-[#f1f5f9] transition-colors group ${
-                  pathname === "/refills" ? "bg-teal-50/40" : ""
-                }`}
-              >
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`text-[14.5px] font-bold transition-colors ${
-                        pathname === "/refills"
-                          ? "text-[#16a6a3]"
-                          : "text-[#0b1f3a] group-hover:text-[#16a6a3]"
-                      }`}
-                    >
-                      Refill Cartridges
-                    </span>
-                    <span className="text-[10px] font-semibold text-[#0b1f3a] bg-slate-100 border border-slate-200/80 px-1.5 py-0.5 rounded tracking-wide">
-                      SAVE 10%
-                    </span>
-                  </div>
-                  <p className="text-[12px] text-[#64748b] mt-0.5">
-                    Compatible 3ml multi-dose system · From £50.00
-                  </p>
-                </div>
-                <svg
-                  className="w-4 h-4 text-[#94a3b8] group-hover:text-[#16a6a3] group-hover:translate-x-0.5 transition-all shrink-0 ml-3"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
+                <Link
+                  href="/vials"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center justify-between px-5 py-3.5 border-b border-[#f1f5f9] hover:bg-[#f8fafc] active:bg-[#f1f5f9] transition-colors group ${
+                    pathname === "/vials" ? "bg-teal-50/40 text-[#16a6a3]" : "text-[#0b1f3a]"
+                  }`}
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </Link>
+                  <span className="text-[14.5px] font-semibold group-hover:text-[#16a6a3] transition-colors">
+                    Freeze-Dried Vials
+                  </span>
+                  <svg className="w-4 h-4 text-slate-300 group-hover:text-[#16a6a3] group-hover:translate-x-0.5 transition-all shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </Link>
 
-              {/* Category 3: Freeze-Dried Vials */}
-              <Link
-                href="/vials"
-                onClick={() => setMobileMenuOpen(false)}
-                className={`flex items-center justify-between px-5 py-3.5 border-b border-[#e2e8f0] hover:bg-[#f8fafc] active:bg-[#f1f5f9] transition-colors group ${
-                  pathname === "/vials" ? "bg-teal-50/40" : ""
-                }`}
-              >
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`text-[14.5px] font-bold transition-colors ${
-                        pathname === "/vials"
-                          ? "text-[#16a6a3]"
-                          : "text-[#0b1f3a] group-hover:text-[#16a6a3]"
-                      }`}
-                    >
-                      Freeze-Dried Vials
-                    </span>
-                    <span className="text-[10px] font-semibold text-slate-700 bg-slate-100 border border-slate-200/80 px-1.5 py-0.5 rounded tracking-wide">
-                      LAB GRADE
-                    </span>
-                  </div>
-                  <p className="text-[12px] text-[#64748b] mt-0.5">
-                    Lyophilised research peptides · From £50.00
-                  </p>
-                </div>
-                <svg
-                  className="w-4 h-4 text-[#94a3b8] group-hover:text-[#16a6a3] group-hover:translate-x-0.5 transition-all shrink-0 ml-3"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
+                <Link
+                  href="/verify"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center justify-between px-5 py-3.5 border-b border-[#f1f5f9] hover:bg-[#f8fafc] active:bg-[#f1f5f9] transition-colors group ${
+                    pathname === "/verify" ? "bg-teal-50/40 text-[#16a6a3]" : "text-[#0b1f3a]"
+                  }`}
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </Link>
-
-              {/* Research & Information Section Header */}
-              <div className="bg-[#f8fafc] px-5 py-2 border-b border-[#e2e8f0]">
-                <span className="text-[11px] font-bold text-[#64748b] tracking-wider uppercase">
-                  Research &amp; Support
-                </span>
-              </div>
-
-              {/* Verify Batch */}
-              <Link
-                href="/verify"
-                onClick={() => setMobileMenuOpen(false)}
-                className={`flex items-center justify-between px-5 py-3.5 border-b border-[#f1f5f9] hover:bg-[#f8fafc] active:bg-[#f1f5f9] transition-colors group ${
-                  pathname === "/verify" ? "bg-teal-50/40" : ""
-                }`}
-              >
-                <div className="flex items-center gap-2.5">
-                  <span className="size-2 rounded-full bg-[#16a6a3] animate-pulse shrink-0" />
-                  <span
-                    className={`text-[14px] font-semibold transition-colors ${
-                      pathname === "/verify"
-                        ? "text-[#16a6a3]"
-                        : "text-[#0b1f3a] group-hover:text-[#16a6a3]"
-                    }`}
-                  >
+                  <span className="text-[14.5px] font-semibold group-hover:text-[#16a6a3] transition-colors">
                     Verify Your Batch
                   </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[11.5px] font-medium text-[#16a6a3]">QR Scanner</span>
-                  <svg
-                    className="w-4 h-4 text-[#94a3b8] group-hover:text-[#16a6a3] group-hover:translate-x-0.5 transition-all shrink-0"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
+                  <svg className="w-4 h-4 text-slate-300 group-hover:text-[#16a6a3] group-hover:translate-x-0.5 transition-all shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
-                </div>
-              </Link>
+                </Link>
 
-              {/* Lab Reports & COA */}
-              <Link
-                href="/lab-reports"
-                onClick={() => setMobileMenuOpen(false)}
-                className={`flex items-center justify-between px-5 py-3.5 border-b border-[#f1f5f9] hover:bg-[#f8fafc] active:bg-[#f1f5f9] transition-colors group ${
-                  pathname === "/lab-reports" ? "bg-teal-50/40" : ""
-                }`}
-              >
-                <span
-                  className={`text-[14px] font-semibold transition-colors ${
-                    pathname === "/lab-reports"
-                      ? "text-[#16a6a3]"
-                      : "text-[#0b1f3a] group-hover:text-[#16a6a3]"
+                <Link
+                  href="/lab-reports"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center justify-between px-5 py-3.5 border-b border-[#f1f5f9] hover:bg-[#f8fafc] active:bg-[#f1f5f9] transition-colors group ${
+                    pathname === "/lab-reports" ? "bg-teal-50/40 text-[#16a6a3]" : "text-[#0b1f3a]"
                   }`}
                 >
-                  Resources &amp; COA Library
-                </span>
-                <div className="flex items-center gap-2">
-                  <span className="text-[11.5px] text-[#64748b]">HPLC / MS</span>
-                  <svg
-                    className="w-4 h-4 text-[#94a3b8] group-hover:text-[#16a6a3] group-hover:translate-x-0.5 transition-all shrink-0"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </div>
-              </Link>
-
-              {/* About PEPTECH */}
-              <Link
-                href="/about"
-                onClick={() => setMobileMenuOpen(false)}
-                className={`flex items-center justify-between px-5 py-3.5 border-b border-[#f1f5f9] hover:bg-[#f8fafc] active:bg-[#f1f5f9] transition-colors group ${
-                  pathname === "/about" ? "bg-teal-50/40" : ""
-                }`}
-              >
-                <span
-                  className={`text-[14px] font-semibold transition-colors ${
-                    pathname === "/about"
-                      ? "text-[#16a6a3]"
-                      : "text-[#0b1f3a] group-hover:text-[#16a6a3]"
-                  }`}
-                >
-                  About PEPTECH®
-                </span>
-                <svg
-                  className="w-4 h-4 text-[#94a3b8] group-hover:text-[#16a6a3] group-hover:translate-x-0.5 transition-all shrink-0"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </Link>
-
-              {/* How It Works & FAQs */}
-              <Link
-                href="/how-it-works"
-                onClick={() => setMobileMenuOpen(false)}
-                className={`flex items-center justify-between px-5 py-3.5 border-b border-[#f1f5f9] hover:bg-[#f8fafc] active:bg-[#f1f5f9] transition-colors group ${
-                  pathname === "/how-it-works" ? "bg-teal-50/40" : ""
-                }`}
-              >
-                <span
-                  className={`text-[14px] font-semibold transition-colors ${
-                    pathname === "/how-it-works"
-                      ? "text-[#16a6a3]"
-                      : "text-[#0b1f3a] group-hover:text-[#16a6a3]"
-                  }`}
-                >
-                  How It Works &amp; FAQs
-                </span>
-                <svg
-                  className="w-4 h-4 text-[#94a3b8] group-hover:text-[#16a6a3] group-hover:translate-x-0.5 transition-all shrink-0"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </Link>
-
-              {/* Contact Us */}
-              <Link
-                href="/contact"
-                onClick={() => setMobileMenuOpen(false)}
-                className={`flex items-center justify-between px-5 py-3.5 border-b border-[#e2e8f0] hover:bg-[#f8fafc] active:bg-[#f1f5f9] transition-colors group ${
-                  pathname === "/contact" ? "bg-teal-50/40" : ""
-                }`}
-              >
-                <span
-                  className={`text-[14px] font-semibold transition-colors ${
-                    pathname === "/contact"
-                      ? "text-[#16a6a3]"
-                      : "text-[#0b1f3a] group-hover:text-[#16a6a3]"
-                  }`}
-                >
-                  Contact Us
-                </span>
-                <svg
-                  className="w-4 h-4 text-[#94a3b8] group-hover:text-[#16a6a3] group-hover:translate-x-0.5 transition-all shrink-0"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </Link>
-
-              {/* Account Link */}
-              <Link
-                href="/account"
-                onClick={() => setMobileMenuOpen(false)}
-                className={`flex items-center justify-between px-5 py-3.5 border-b border-[#e2e8f0] hover:bg-[#f8fafc] active:bg-[#f1f5f9] transition-colors group bg-slate-50/50 ${
-                  pathname === "/account" ? "bg-teal-50/40" : ""
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-[#0b1f3a] text-white flex items-center justify-center font-bold text-[11px] shrink-0">
-                    {mounted && customer ? (
-                      ((customer.first_name?.[0] || "") + (customer.last_name?.[0] || "")).toUpperCase() || "RU"
-                    ) : (
-                      <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
-                    )}
-                  </div>
-                  <div>
-                    <span className="text-[14px] font-bold text-[#0b1f3a] group-hover:text-[#16a6a3] transition-colors block">
-                      {mounted && customer ? `${customer.first_name || "Customer"} ${customer.last_name || ""}` : "My Account"}
-                    </span>
-                    <span className="text-[11.5px] text-[#64748b] block">
-                      {mounted && customer ? "Manage subscriptions & orders" : "Sign in or track your orders"}
-                    </span>
-                  </div>
-                </div>
-                <svg
-                  className="w-4 h-4 text-[#94a3b8] group-hover:text-[#16a6a3] group-hover:translate-x-0.5 transition-all shrink-0"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </Link>
-
-              {/* Classic Footer Strip */}
-              <div className="px-5 py-3.5 bg-[#f8fafc] text-[11px] text-[#64748b] space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-1.5 font-medium text-[#0b1f3a]">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
-                    Royal Mail Tracked 24 Dispatch
+                  <span className="text-[14.5px] font-semibold group-hover:text-[#16a6a3] transition-colors">
+                    Resources &amp; COA Library
                   </span>
-                  <span className="text-[#64748b]">Discreet Carton</span>
-                </div>
-                <div className="flex items-center justify-between text-[10.5px] text-[#94a3b8] pt-1.5 border-t border-[#e2e8f0]">
-                  <span>support@peptech.bio</span>
-                  <span>RUO · Laboratory Research (18+)</span>
-                </div>
-              </div>
+                  <svg className="w-4 h-4 text-slate-300 group-hover:text-[#16a6a3] group-hover:translate-x-0.5 transition-all shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </Link>
+
+                <Link
+                  href="/about"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center justify-between px-5 py-3.5 border-b border-[#f1f5f9] hover:bg-[#f8fafc] active:bg-[#f1f5f9] transition-colors group ${
+                    pathname === "/about" ? "bg-teal-50/40 text-[#16a6a3]" : "text-[#0b1f3a]"
+                  }`}
+                >
+                  <span className="text-[14.5px] font-semibold group-hover:text-[#16a6a3] transition-colors">
+                    About PEPTECH®
+                  </span>
+                  <svg className="w-4 h-4 text-slate-300 group-hover:text-[#16a6a3] group-hover:translate-x-0.5 transition-all shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </Link>
+
+                <Link
+                  href="/how-it-works"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center justify-between px-5 py-3.5 border-b border-[#f1f5f9] hover:bg-[#f8fafc] active:bg-[#f1f5f9] transition-colors group ${
+                    pathname === "/how-it-works" ? "bg-teal-50/40 text-[#16a6a3]" : "text-[#0b1f3a]"
+                  }`}
+                >
+                  <span className="text-[14.5px] font-semibold group-hover:text-[#16a6a3] transition-colors">
+                    How It Works &amp; FAQs
+                  </span>
+                  <svg className="w-4 h-4 text-slate-300 group-hover:text-[#16a6a3] group-hover:translate-x-0.5 transition-all shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </Link>
+
+                <Link
+                  href="/contact"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center justify-between px-5 py-3.5 border-b border-[#f1f5f9] hover:bg-[#f8fafc] active:bg-[#f1f5f9] transition-colors group ${
+                    pathname === "/contact" ? "bg-teal-50/40 text-[#16a6a3]" : "text-[#0b1f3a]"
+                  }`}
+                >
+                  <span className="text-[14.5px] font-semibold group-hover:text-[#16a6a3] transition-colors">
+                    Contact Us
+                  </span>
+                  <svg className="w-4 h-4 text-slate-300 group-hover:text-[#16a6a3] group-hover:translate-x-0.5 transition-all shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </Link>
+
+                <Link
+                  href="/account"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center justify-between px-5 py-3.5 hover:bg-[#f8fafc] active:bg-[#f1f5f9] transition-colors group ${
+                    pathname === "/account" ? "bg-teal-50/40 text-[#16a6a3]" : "text-[#0b1f3a]"
+                  }`}
+                >
+                  <span className="text-[14.5px] font-semibold group-hover:text-[#16a6a3] transition-colors">
+                    {mounted && customer ? `${customer.first_name || "Customer"}'s Account` : "My Account"}
+                  </span>
+                  <svg className="w-4 h-4 text-slate-300 group-hover:text-[#16a6a3] group-hover:translate-x-0.5 transition-all shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </Link>
+              </nav>
             </div>
           </>
         )}
