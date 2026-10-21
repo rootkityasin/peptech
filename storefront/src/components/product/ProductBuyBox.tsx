@@ -35,13 +35,22 @@ export function ProductBuyBox({
   const [purchaseType, setPurchaseType] = useState<"one-time" | "subscription">("one-time")
   const [conflictError, setConflictError] = useState<CartConflict | null>(null)
   
+  const format = product?.format
+  const isVial =
+    format === "freeze-dried-vial" ||
+    tag === "FREEZE-DRIED VIAL" ||
+    Boolean(product?.handle?.includes("vial")) ||
+    (typeof title === "string" && title.toLowerCase().includes("vial"))
+
   const isRefill =
-    product?.format === "refill-cartridge" ||
-    (product?.format !== "complete-pen-set" && (
+    !isVial &&
+    (format === "refill-cartridge" ||
       tag === "REFILL CARTRIDGE" ||
-      product?.handle?.includes("cartridge") ||
-      (typeof title === "string" && title.toLowerCase().includes("cartridge"))
-    ))
+      Boolean(product?.handle?.includes("cartridge")) ||
+      (typeof title === "string" && title.toLowerCase().includes("cartridge")))
+
+  const isPenSet = !isVial && !isRefill
+  const isSubscriptionEligible = isRefill || isVial
 
   // Fetch live products for dynamic cartridge choices (hydrates from allProducts or localStorage in 0ms)
   const { products: liveProducts } = useLiveProducts(allProducts || [])
@@ -102,21 +111,30 @@ export function ProductBuyBox({
 
   const getCandidateItem = () => {
     const targetVariantId = product?.variantId || product?.id || ""
-    const recurring = isRefill && purchaseType === "subscription"
+    const recurring = isSubscriptionEligible && purchaseType === "subscription"
+    const resolvedFormat: "pen-set" | "refill" | "vial" = isVial ? "vial" : isRefill ? "refill" : "pen-set"
     
-    const options = !isRefill && activeCartridge
+    const options = isPenSet && activeCartridge
       ? [
           { label: "Included Cartridge", value: activeCartridge.name },
           ...(activeCartridge.contents ? [{ label: "Specification", value: activeCartridge.contents }] : []),
         ]
+      : isVial
+      ? [
+          { label: "Format", value: "Vacuum Freeze-Dried Lyophilised Vial" },
+        ]
+      : isRefill
+      ? [
+          { label: "Format", value: "1.5 mL Borosilicate Refill Cartridge" },
+        ]
       : undefined
 
     return {
-      id: `${targetVariantId}-${recurring ? "subscription" : "one-time"}${activeCartridge && !isRefill ? `-${activeCartridge.id}` : ""}`,
+      id: `${targetVariantId}-${recurring ? "subscription" : "one-time"}${activeCartridge && isPenSet ? `-${activeCartridge.id}` : ""}`,
       variantId: targetVariantId,
-      productHandle: product?.handle || "pen-system",
+      productHandle: product?.handle || (isVial ? "vial" : isRefill ? "cartridge" : "pen-system"),
       title: displayTitle.replace("\n", " "),
-      format: (isRefill ? "refill" : "pen-set") as "refill" | "pen-set",
+      format: resolvedFormat,
       strength: product?.categoryLabel || "Precision Research",
       price: recurring ? currentSubscribePrice : currentOneTimePrice,
       isSubscription: recurring,
@@ -226,8 +244,8 @@ export function ProductBuyBox({
         )}
       </div>
 
-      {/* Complete Pen Set Fixed Included Cartridge Display */}
-      {!isRefill && activeCartridge && (
+      {/* Format-Specific Middle Specification Card (Structurally Identical for All Formats) */}
+      {isPenSet && activeCartridge && (
         <div className="w-full flex flex-col gap-2">
           <div className="flex items-center justify-between w-full">
             <label className="text-[13px] font-bold text-[#0b1f3a] flex items-center gap-2">
@@ -241,7 +259,6 @@ export function ProductBuyBox({
             </span>
           </div>
 
-          {/* Static Non-Interactive Included Cartridge Card */}
           <div className="w-full bg-[#f8fafc] border border-[#e2e8f0] rounded-[10px] p-3 flex items-center justify-between shadow-xs">
             <div className="flex items-center gap-3 min-w-0">
               <div className="size-10 rounded-lg bg-white border border-[#e2e8f0] flex items-center justify-center shrink-0 p-1 overflow-hidden">
@@ -257,6 +274,78 @@ export function ProductBuyBox({
                 </span>
                 <span className="text-[11.5px] text-[#16a6a3] font-medium truncate">
                   {activeCartridge.categoryLabel || "Precision Research Cartridge"} • 1.5 mL
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isRefill && (
+        <div className="w-full flex flex-col gap-2">
+          <div className="flex items-center justify-between w-full">
+            <label className="text-[13px] font-bold text-[#0b1f3a] flex items-center gap-2">
+              <span>Format Specification</span>
+              <span className="bg-teal-50 text-teal-700 border border-teal-200 text-[10.5px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                Refill Cartridge
+              </span>
+            </label>
+            <span className="text-[11.5px] text-[#64748b]">
+              1.5 mL Borosilicate Type I Glass
+            </span>
+          </div>
+
+          <div className="w-full bg-[#f8fafc] border border-[#e2e8f0] rounded-[10px] p-3 flex items-center justify-between shadow-xs">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="size-10 rounded-lg bg-white border border-[#e2e8f0] flex items-center justify-center shrink-0 p-1 overflow-hidden">
+                <img
+                  src={resolveProductImage(product)}
+                  alt=""
+                  className="size-full object-contain"
+                />
+              </div>
+              <div className="flex flex-col min-w-0">
+                <span className="text-[13.5px] font-bold text-[#0b1f3a] truncate">
+                  {displayTitle}
+                </span>
+                <span className="text-[11.5px] text-[#16a6a3] font-medium truncate">
+                  {product?.contents || `${product?.categoryLabel || "Precision Research Cartridge"} • 1.5 mL Volume`}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isVial && (
+        <div className="w-full flex flex-col gap-2">
+          <div className="flex items-center justify-between w-full">
+            <label className="text-[13px] font-bold text-[#0b1f3a] flex items-center gap-2">
+              <span>Format Specification</span>
+              <span className="bg-sky-50 text-sky-700 border border-sky-200 text-[10.5px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                Freeze-Dried Vial
+              </span>
+            </label>
+            <span className="text-[11.5px] text-[#64748b]">
+              Vacuum-Sealed Laboratory Grade
+            </span>
+          </div>
+
+          <div className="w-full bg-[#f8fafc] border border-[#e2e8f0] rounded-[10px] p-3 flex items-center justify-between shadow-xs">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="size-10 rounded-lg bg-white border border-[#e2e8f0] flex items-center justify-center shrink-0 p-1 overflow-hidden">
+                <img
+                  src={resolveProductImage(product)}
+                  alt=""
+                  className="size-full object-contain"
+                />
+              </div>
+              <div className="flex flex-col min-w-0">
+                <span className="text-[13.5px] font-bold text-[#0b1f3a] truncate">
+                  {displayTitle}
+                </span>
+                <span className="text-[11.5px] text-[#16a6a3] font-medium truncate">
+                  {product?.contents || `${product?.categoryLabel || "Lyophilised Research Standard"} • Store at 2°C–8°C / -20°C`}
                 </span>
               </div>
             </div>
@@ -295,8 +384,8 @@ export function ProductBuyBox({
           </span>
         </div>
 
-        {/* Option 2: Subscribe & Save 10% (Refills only) */}
-        {isRefill && (
+        {/* Option 2: Subscribe & Save 10% (Refills & Vials) */}
+        {isSubscriptionEligible && (
           <div
             onClick={() => setPurchaseType("subscription")}
             className={`min-h-[60px] py-2.5 rounded-[8px] px-[18px] flex items-center justify-between w-full cursor-pointer transition-all ${
@@ -343,7 +432,7 @@ export function ProductBuyBox({
       </div>
 
       {/* Navigation Cross-Links */}
-      {!isRefill ? (
+      {isPenSet ? (
         <div className="flex items-center justify-between w-full text-[12.5px] text-[#64748b] px-0.5">
           <span>Need additional replacement cartridges?</span>
           <Link
@@ -361,8 +450,7 @@ export function ProductBuyBox({
             Shop Compatible Refills →
           </Link>
         </div>
-      ) : (
-        /* Cartridge Compatibility Badge & Reusable Pen Cross-Link */
+      ) : isRefill ? (
         <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-[10px] px-4 py-3 flex items-center justify-between w-full">
           <div className="flex items-center gap-2">
             <span className="inline-block w-2 h-2 rounded-full bg-[#16a6a3] animate-pulse" />
@@ -383,6 +471,29 @@ export function ProductBuyBox({
             className="text-[12px] font-semibold text-[#16a6a3] hover:text-[#0b1f3a] transition-colors hover:underline shrink-0 ml-2"
           >
             Need the pen? →
+          </Link>
+        </div>
+      ) : (
+        <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-[10px] px-4 py-3 flex items-center justify-between w-full">
+          <div className="flex items-center gap-2">
+            <span className="inline-block w-2 h-2 rounded-full bg-[#0284c7] animate-pulse" />
+            <span className="text-[12.5px] text-[#0b1f3a] font-medium">
+              Standard 3mL Crimp Laboratory Vial
+            </span>
+          </div>
+          <Link
+            href={
+              product?.compound === "klow"
+                ? "/products/klow-stack-pen-set"
+                : product?.compound === "wolverine"
+                ? "/products/wolverine-stack-pen-set"
+                : product?.compound
+                ? `/products/${product.compound}-pen-set`
+                : "/pen-sets"
+            }
+            className="text-[12px] font-semibold text-[#16a6a3] hover:text-[#0b1f3a] transition-colors hover:underline shrink-0 ml-2"
+          >
+            Prefer pre-filled pen? →
           </Link>
         </div>
       )}

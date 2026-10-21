@@ -6,8 +6,6 @@ import { useRouter } from "next/navigation"
 import { CatalogProduct } from "@/data/catalog"
 import { ProductGallery } from "./ProductGallery"
 import { ProductBuyBox } from "./ProductBuyBox"
-import { RefillBuyBox } from "./RefillBuyBox"
-import { VialBuyBox } from "./VialBuyBox"
 import { ProductFormatSwitcher } from "./ProductFormatSwitcher"
 import { ProductTechnicalSpecs } from "./ProductTechnicalSpecs"
 import { PeptechJourney } from "./PeptechJourney"
@@ -124,32 +122,23 @@ export function ProductShowcase({
               accentColor={currentProduct.accentColor}
             />
 
-            {currentProduct.format === "freeze-dried-vial" ? (
-              <VialBuyBox product={currentProduct} />
-            ) : currentProduct.format === "refill-cartridge" ? (
-              <ProductBuyBox
+            <ProductBuyBox
                 product={currentProduct}
                 title={currentProduct.name}
                 subtitle={currentProduct.contents || ""}
                 description={currentProduct.description || ""}
                 price={currentProduct.price}
                 subscribePrice={currentProduct.subscribePrice}
-                tag="REFILL CARTRIDGE"
-                allProducts={allProducts}
-              />
-            ) : (
-              <ProductBuyBox
-                product={currentProduct}
-                title={currentProduct.name}
-                subtitle={currentProduct.contents || ""}
-                description={currentProduct.description || ""}
-                price={currentProduct.price}
-                subscribePrice={currentProduct.subscribePrice}
-                tag="COMPLETE PEN SET"
+                tag={
+                  currentProduct.format === "freeze-dried-vial"
+                    ? "FREEZE-DRIED VIAL"
+                    : currentProduct.format === "refill-cartridge"
+                    ? "REFILL CARTRIDGE"
+                    : "COMPLETE PEN SET"
+                }
                 allProducts={allProducts}
                 defaultCartridge={cartridgeProduct}
               />
-            )}
           </div>
 
         </div>
