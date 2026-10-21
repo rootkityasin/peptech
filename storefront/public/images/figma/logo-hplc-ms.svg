@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 170 50" fill="none">
-  <rect x="1" y="1" width="168" height="48" rx="6" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.5"/>
-  <rect x="6" y="6" width="38" height="38" rx="4" fill="#16A6A3"/>
-  <path d="M12 36 L17 36 L21 16 L25 36 L30 36 L32 26 L34 36 L38 36" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-  <text x="52" y="21" font-family="system-ui, -apple-system, sans-serif" font-size="10.5" font-weight="800" fill="#0B1F3A" letter-spacing="0.3">RP-HPLC &amp; MS</text>
-  <text x="52" y="34" font-family="system-ui, -apple-system, sans-serif" font-size="8" font-weight="600" fill="#64748B" letter-spacing="0.5">PURITY CERTIFIED</text>
-</svg>
-

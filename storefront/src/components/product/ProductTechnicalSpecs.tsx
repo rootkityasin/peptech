@@ -502,11 +502,11 @@ export function ProductTechnicalSpecs({ product }: ProductTechnicalSpecsProps) {
                   />
                 </div>
                 <div className="w-px h-[28px] bg-[#d1e0ed]" />
-                <div className="h-[40px] w-[80px] flex items-center justify-center shrink-0">
+                <div className="h-[40px] w-[55px] flex items-center justify-center shrink-0">
                   <img
-                    src="/images/figma/logo-iso-17025.svg"
-                    alt="ISO 17025 Accredited Laboratory Testing"
-                    className="h-[32px] w-auto max-w-[80px] object-contain"
+                    src="/images/figma/logo-ce.svg"
+                    alt="CE Mark"
+                    className="h-[32px] w-auto max-w-[50px] object-contain"
                   />
                 </div>
               </div>
