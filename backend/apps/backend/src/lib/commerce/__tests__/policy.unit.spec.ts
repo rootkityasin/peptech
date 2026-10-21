@@ -73,7 +73,7 @@ describe("authoritative commerce boundary", () => {
     const { shippingRatesSchema } = require("../policy")
     const defaults = shippingRatesSchema.parse({})
     expect(defaults.pen_set_uk_minor).toBe(495)
-    expect(defaults.pen_set_intl_minor).toBe(1800)
+    expect(defaults.pen_set_intl_minor).toBe(1500)
     expect(defaults.refill_uk_minor).toBe(395)
     expect(defaults.refill_intl_minor).toBe(1000)
     expect(defaults.vial_uk_minor).toBe(395)

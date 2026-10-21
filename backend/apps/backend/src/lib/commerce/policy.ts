@@ -22,7 +22,7 @@ export const checkoutItemSchema = z.object({
 
 export const shippingRatesSchema = z.object({
   pen_set_uk_minor: z.number().int().nonnegative().default(495),
-  pen_set_intl_minor: z.number().int().nonnegative().default(1800),
+  pen_set_intl_minor: z.number().int().nonnegative().default(1500),
   refill_uk_minor: z.number().int().nonnegative().default(395),
   refill_intl_minor: z.number().int().nonnegative().default(1000),
   vial_uk_minor: z.number().int().nonnegative().default(395),

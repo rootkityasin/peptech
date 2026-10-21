@@ -350,7 +350,7 @@ export function calculateDynamicShipping({
 
   let penSetMinor = isUk
     ? (policy?.shipping_rates?.pen_set_uk_minor ?? 495)
-    : (policy?.shipping_rates?.pen_set_intl_minor ?? 1800)
+    : (policy?.shipping_rates?.pen_set_intl_minor ?? 1500)
   let refillMinor = isUk
     ? (policy?.shipping_rates?.refill_uk_minor ?? 395)
     : (policy?.shipping_rates?.refill_intl_minor ?? 1000)
@@ -367,11 +367,11 @@ export function calculateDynamicShipping({
       const isUkZone = matchedZone.countries.map((c) => c.toLowerCase()).includes("gb")
       const savedRate = policy?.service_zone_rates?.[matchedZone.id] || matchedZone.rates
       if (savedRate) {
-        penSetMinor = Number(savedRate.pen_set_minor ?? (isUkZone ? 495 : 1800))
+        penSetMinor = Number(savedRate.pen_set_minor ?? (isUkZone ? 495 : 1500))
         refillMinor = Number(savedRate.refill_minor ?? (isUkZone ? 395 : 1000))
         vialMinor = Number(savedRate.vial_minor ?? (isUkZone ? 395 : 1000))
       } else {
-        penSetMinor = isUkZone ? 495 : 1800
+        penSetMinor = isUkZone ? 495 : 1500
         refillMinor = isUkZone ? 395 : 1000
         vialMinor = isUkZone ? 395 : 1000
       }

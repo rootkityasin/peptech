@@ -46,7 +46,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
       z.countries.map((c) => c.toLowerCase()).includes(countryCode.toLowerCase())
     )
     const isUk = countryCode.toLowerCase() === "gb"
-    let penSetMinor = isUk ? 495 : 1800
+    let penSetMinor = isUk ? 495 : 1500
     let refillMinor = isUk ? 395 : 1000
     let vialMinor = isUk ? 395 : 1000
 
@@ -54,11 +54,11 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
       const isUkZone = matchedZone.countries.includes("gb")
       const savedRate = policy?.service_zone_rates?.[matchedZone.id] || matchedZone.rates
       if (savedRate) {
-        penSetMinor = Number(savedRate.pen_set_minor ?? (isUkZone ? 495 : 1800))
+        penSetMinor = Number(savedRate.pen_set_minor ?? (isUkZone ? 495 : 1500))
         refillMinor = Number(savedRate.refill_minor ?? (isUkZone ? 395 : 1000))
         vialMinor = Number(savedRate.vial_minor ?? (isUkZone ? 395 : 1000))
       } else {
-        penSetMinor = isUkZone ? 495 : 1800
+        penSetMinor = isUkZone ? 495 : 1500
         refillMinor = isUkZone ? 395 : 1000
         vialMinor = isUkZone ? 395 : 1000
       }

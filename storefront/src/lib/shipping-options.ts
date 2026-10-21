@@ -38,7 +38,7 @@ type RawShippingOption = {
 
 const DEFAULT_RATES: ShippingRatesConfig = {
   pen_set_uk_minor: 495,
-  pen_set_intl_minor: 1800,
+  pen_set_intl_minor: 1500,
   refill_uk_minor: 395,
   refill_intl_minor: 1000,
   vial_uk_minor: 395,

@@ -265,7 +265,7 @@ describe("shipping option resolution", () => {
         countryCode: "us",
       })
       expect(pen.free_shipping).toBe(false)
-      expect(pen.amount_minor).toBe(1800)
+      expect(pen.amount_minor).toBe(1500)
       expect(pen.rate_tier).toBe("pen_set")
 
       // Refill only: £10.00 (1000 minor)
@@ -306,7 +306,7 @@ describe("shipping option resolution", () => {
         countryCode: "au",
       })
       expect(mixedPenRefill.free_shipping).toBe(false)
-      expect(mixedPenRefill.amount_minor).toBe(1800)
+      expect(mixedPenRefill.amount_minor).toBe(1500)
       expect(mixedPenRefill.rate_tier).toBe("pen_set")
     })
 
