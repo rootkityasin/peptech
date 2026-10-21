@@ -260,11 +260,6 @@ export function ProductBuyBox({
                 </span>
               </div>
             </div>
-
-            <div className="flex items-center gap-1.5 shrink-0 ml-2 bg-white px-2.5 py-1 rounded-md border border-[#e2e8f0] text-[11px] font-semibold text-[#0b1f3a]">
-              <span className="text-[#10b981]">✓</span>
-              <span>Included in Kit</span>
-            </div>
           </div>
         </div>
       )}
