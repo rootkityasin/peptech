@@ -247,15 +247,17 @@ export function ProductBuyBox({
       {/* Format-Specific Middle Specification Card (Structurally Identical for All Formats) */}
       {isPenSet && activeCartridge && (
         <div className="w-full flex flex-col gap-2">
-          <div className="flex items-center justify-between w-full">
-            <label className="text-[13px] font-bold text-[#0b1f3a] flex items-center gap-2">
-              <span>Included Cartridge</span>
-              <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10.5px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+          <div className="flex items-center justify-between w-full gap-2">
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="text-[12.5px] sm:text-[13px] font-bold text-[#0b1f3a] whitespace-nowrap">
+                Included Cartridge
+              </span>
+              <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] sm:text-[10.5px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider whitespace-nowrap shrink-0">
                 1x Included
               </span>
-            </label>
-            <span className="text-[11.5px] text-[#64748b]">
-              1.5 mL Borosilicate Pre-filled
+            </div>
+            <span className="text-[11px] sm:text-[11.5px] text-[#64748b] whitespace-nowrap text-right shrink-0">
+              <span className="hidden sm:inline">1.5 mL Borosilicate </span>Pre-filled
             </span>
           </div>
 
@@ -283,15 +285,17 @@ export function ProductBuyBox({
 
       {isRefill && (
         <div className="w-full flex flex-col gap-2">
-          <div className="flex items-center justify-between w-full">
-            <label className="text-[13px] font-bold text-[#0b1f3a] flex items-center gap-2">
-              <span>Format Specification</span>
-              <span className="bg-teal-50 text-teal-700 border border-teal-200 text-[10.5px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+          <div className="flex items-center justify-between w-full gap-2">
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="text-[12.5px] sm:text-[13px] font-bold text-[#0b1f3a] whitespace-nowrap">
+                Format Specification
+              </span>
+              <span className="bg-teal-50 text-teal-700 border border-teal-200 text-[10px] sm:text-[10.5px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider whitespace-nowrap shrink-0">
                 Refill Cartridge
               </span>
-            </label>
-            <span className="text-[11.5px] text-[#64748b]">
-              1.5 mL Borosilicate Type I Glass
+            </div>
+            <span className="text-[11px] sm:text-[11.5px] text-[#64748b] whitespace-nowrap text-right shrink-0">
+              <span className="hidden sm:inline">1.5 mL Borosilicate </span>Type I Glass
             </span>
           </div>
 
@@ -319,15 +323,17 @@ export function ProductBuyBox({
 
       {isVial && (
         <div className="w-full flex flex-col gap-2">
-          <div className="flex items-center justify-between w-full">
-            <label className="text-[13px] font-bold text-[#0b1f3a] flex items-center gap-2">
-              <span>Format Specification</span>
-              <span className="bg-sky-50 text-sky-700 border border-sky-200 text-[10.5px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+          <div className="flex items-center justify-between w-full gap-2">
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="text-[12.5px] sm:text-[13px] font-bold text-[#0b1f3a] whitespace-nowrap">
+                Format Specification
+              </span>
+              <span className="bg-sky-50 text-sky-700 border border-sky-200 text-[10px] sm:text-[10.5px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider whitespace-nowrap shrink-0">
                 Freeze-Dried Vial
               </span>
-            </label>
-            <span className="text-[11.5px] text-[#64748b]">
-              Vacuum-Sealed Laboratory Grade
+            </div>
+            <span className="text-[11px] sm:text-[11.5px] text-[#64748b] whitespace-nowrap text-right shrink-0">
+              <span className="hidden sm:inline">Vacuum-Sealed </span>Laboratory Grade
             </span>
           </div>
 
