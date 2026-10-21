@@ -107,57 +107,61 @@ export function RefillsSection({ excludeHandle, products: propProducts }: Refill
             {displayRefills.map((item) => (
               <div
                 key={item.id}
-                className="bg-white border border-[#e2e8f0] rounded-[12px] p-3 sm:p-[16px] flex flex-col justify-between h-full min-h-[360px] sm:min-h-[380px] hover:shadow-md transition-shadow text-center group"
+                className="bg-white border border-[#e2e8f0] rounded-[14px] overflow-hidden flex flex-col justify-between h-full hover:shadow-md transition-shadow text-center group shadow-xs"
               >
-                <Link href={`/products/${item.handle}`} className="block flex-1 flex flex-col">
-                  {/* Cartridge Photo */}
-                  <div className="h-[145px] sm:h-[160px] min-h-[145px] w-full relative mb-2.5 bg-[#f8fafc] rounded-lg group-hover:bg-slate-100 transition-colors flex items-center justify-center shrink-0">
+                <Link href={`/products/${item.handle}`} className="block w-full">
+                  {/* Cartridge Photo - Edge to Edge at Top, Left, and Right */}
+                  <div className="h-[200px] sm:h-[220px] w-full relative overflow-hidden bg-white flex items-center justify-center shrink-0">
                     <Image
                       src={item.image}
                       alt={item.name}
                       fill
-                      sizes="(max-width: 640px) 45vw, (max-width: 1024px) 25vw, 220px"
-                      className="object-contain p-2 group-hover:scale-105 transition-transform"
+                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 240px"
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
                     />
-                  </div>
-
-                  {/* Info */}
-                  <div className="space-y-0.5 grow flex flex-col justify-center">
-                    <h4 className="font-bold text-[#0b1f3a] text-[13px] sm:text-[14px] group-hover:text-[#16a6a3] transition-colors line-clamp-2 min-h-[36px] sm:min-h-[40px] flex items-center justify-center">
-                      {item.name}
-                    </h4>
-                    <p className="font-medium text-[#16a6a3] text-[11px] truncate">
-                      {item.contents || "1.5 mL Refill Cartridge"}
-                    </p>
-                    <p className="font-bold text-[#0b1f3a] text-[14px] sm:text-[15px] pt-0.5">
-                      £{item.price.toFixed(2)}
-                    </p>
-                    <div className="flex items-center justify-center gap-1 text-[11px] pt-0.5">
-                      <span className="text-[#64748b] text-[10.5px]">Sub &amp; Save</span>
-                      <span className="font-bold text-[#0d7b78] bg-[#e6fffa] px-1 py-0.5 rounded text-[10px]">
-                        £{(autoSavings.discountType === "percentage"
-                          ? Number((item.price * (1 - autoSavings.discountValue / 100)).toFixed(2))
-                          : Math.max(0, Number((item.price - autoSavings.discountValue).toFixed(2)))
-                        ).toFixed(2)}
-                      </span>
-                    </div>
                   </div>
                 </Link>
 
-                {/* Actions: View Details */}
-                <div className="mt-auto pt-2 border-t border-slate-100">
-                  <Link
-                    href={`/products/${item.handle}`}
-                    className="btn-shimmer btn-press w-full bg-[#0b1f3a] hover:bg-[#16a6a3] text-white flex items-center justify-center py-2 rounded-lg text-[12px] font-semibold transition-all shadow-xs"
-                  >
-                    <span>Details</span>
-                  </Link>
+                {/* Content Block */}
+                <div className="p-3.5 sm:p-4 pt-3 flex flex-col justify-between grow">
+                  <div className="space-y-1">
+                    <Link href={`/products/${item.handle}`}>
+                      <h4 className="font-bold text-[#0b1f3a] text-[13px] sm:text-[14px] group-hover:text-[#16a6a3] transition-colors line-clamp-2 min-h-[38px] flex items-center justify-center">
+                        {item.name}
+                      </h4>
+                    </Link>
+                    <p className="font-medium text-[#16a6a3] text-[11px] truncate">
+                      {item.contents || "1.5 mL Refill Cartridge"}
+                    </p>
+                    <div className="pt-1.5 flex flex-col items-center gap-1">
+                      <span className="font-extrabold text-[#0b1f3a] text-[16px] tracking-tight">
+                        £{item.price.toFixed(2)}
+                      </span>
+                      <div className="flex items-center justify-center gap-1 text-[11px]">
+                        <span className="text-[#64748b] text-[10px]">Sub &amp; Save</span>
+                        <span className="font-bold text-[#0d7b78] bg-[#e6fffa] px-1.5 py-0.5 rounded text-[10px] border border-[#16a6a3]/20">
+                          £{(autoSavings.discountType === "percentage"
+                            ? Number((item.price * (1 - autoSavings.discountValue / 100)).toFixed(2))
+                            : Math.max(0, Number((item.price - autoSavings.discountValue).toFixed(2)))
+                          ).toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Actions: View Details */}
+                  <div className="mt-3.5 pt-3 border-t border-[#f1f5f9]">
+                    <Link
+                      href={`/products/${item.handle}`}
+                      className="btn-shimmer btn-press w-full bg-[#0b1f3a] hover:bg-[#162e52] text-white flex items-center justify-center h-[38px] rounded-xl text-[12.5px] font-semibold transition-all shadow-xs group-hover:shadow-md"
+                    >
+                      <span>Details</span>
+                    </Link>
+                  </div>
                 </div>
               </div>
             ))}
-          </div>
-
-        </div>
+          </div>        </div>
 
         {/* Subscription Callout Banner - Figma Node 8:41531 */}
         <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-[8px] h-[48px] w-full flex items-center justify-center gap-[10px] px-4">
