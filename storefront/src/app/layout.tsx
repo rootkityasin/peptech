@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next"
 import { Geist } from "next/font/google"
 import "./globals.css"
 import { CustomerProvider } from "@/context/CustomerContext"
+import { SoundProvider } from "@/context/SoundContext"
 import { CartProvider } from "@/components/cart/CartContext"
 import { CartDrawer } from "@/components/cart/CartDrawer"
 import { ResearchDisclaimerModal } from "@/components/compliance/ResearchDisclaimerModal"
@@ -60,12 +61,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <CustomDialogProvider>
           <CustomerProvider>
             <CartProvider>
-              <ResearchDisclaimerModal />
-              <Header />
-              <div className="flex-1">{children}</div>
-              <Footer />
-              <CartDrawer />
-              <WhatsappFloatingCard />
+              <SoundProvider>
+                <ResearchDisclaimerModal />
+                <Header />
+                <div className="flex-1">{children}</div>
+                <Footer />
+                <CartDrawer />
+                <WhatsappFloatingCard />
+              </SoundProvider>
             </CartProvider>
           </CustomerProvider>
         </CustomDialogProvider>

@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation"
 import { useCart } from "../cart/CartContext"
 import { useCustomer } from "@/context/CustomerContext"
 import { useLiveProducts } from "@/hooks/useLiveProducts"
+import { SoundOscillationButton } from "./SoundOscillationButton"
 
 export function Header() {
   const pathname = usePathname()
@@ -519,6 +520,9 @@ export function Header() {
 
           {/* Right Utility Icons (Search, Account, Cart) */}
           <div className="flex gap-[12px] sm:gap-[22px] items-center">
+            {/* Sound Oscillation & Volume Controller */}
+            <SoundOscillationButton />
+
             {/* Search Button with smooth hover animation */}
             <button
               onClick={() => setSearchOpen(!searchOpen)}

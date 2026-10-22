@@ -1,8 +1,9 @@
 "use client"
 
-import React, { Suspense } from "react"
+import React, { Suspense, useRef, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
+import { useSound } from "@/context/SoundContext"
 import { Interactive3DPen } from "@/components/home/Interactive3DPen"
 import { TrustedBySection } from "@/components/common/TrustedBySection"
 import { useLiveProducts } from "@/hooks/useLiveProducts"
@@ -265,6 +266,17 @@ export function HomeContent({
   initialProducts?: CatalogProduct[]
 }) {
   const { products, isLoading } = useLiveProducts(initialProducts)
+  const { registerVideoElement } = useSound()
+  const videoRef = useRef<HTMLVideoElement>(null)
+
+  useEffect(() => {
+    if (videoRef.current) {
+      registerVideoElement(videoRef.current)
+      return () => {
+        registerVideoElement(null)
+      }
+    }
+  }, [registerVideoElement])
 
   const sourceProducts = products
 
@@ -305,10 +317,11 @@ export function HomeContent({
         {/* Full-Width Background Video */}
         <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none">
           <video
+            ref={videoRef}
+            id="peptech-hero-video"
             src="/videos/peptech-system-showcase.mp4"
             poster="/images/system-showcase-poster.webp"
             autoPlay
-            muted
             loop
             playsInline
             preload="auto"

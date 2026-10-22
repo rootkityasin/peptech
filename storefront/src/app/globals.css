@@ -102,6 +102,33 @@ body {
   }
 }
 
+/* Sound Wave Equalizer / Oscillation Animations */
+@keyframes sound-wave-oscillate {
+  0%, 100% {
+    transform: scaleY(0.25);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+.sound-bar-anim-1 {
+  animation: sound-wave-oscillate 0.8s ease-in-out infinite;
+  transform-origin: center;
+}
+.sound-bar-anim-2 {
+  animation: sound-wave-oscillate 0.65s ease-in-out infinite 0.18s;
+  transform-origin: center;
+}
+.sound-bar-anim-3 {
+  animation: sound-wave-oscillate 0.95s ease-in-out infinite 0.36s;
+  transform-origin: center;
+}
+.sound-bar-anim-4 {
+  animation: sound-wave-oscillate 0.72s ease-in-out infinite 0.12s;
+  transform-origin: center;
+}
+
 /* Custom scrollbar for clinical feel */
 ::-webkit-scrollbar {
   width: 6px;
