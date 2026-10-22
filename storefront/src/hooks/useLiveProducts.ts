@@ -15,42 +15,9 @@ const CACHE_REVISION_KEY = "peptech_catalog_revision"
  * and performs silent background revalidation on mount, window focus, and cross-tab sync.
  */
 export function useLiveProducts(initialFallback: CatalogProduct[] = []) {
-  // Synchronous initial state resolution (0ms tick-0 hydration)
-  const [products, setProducts] = useState<CatalogProduct[]>(() => {
-    if (initialFallback && initialFallback.length > 0) {
-      if (typeof window !== "undefined") {
-        try {
-          localStorage.setItem(CATALOG_CACHE_KEY, JSON.stringify(initialFallback))
-          localStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString())
-        } catch {}
-      }
-      return initialFallback
-    }
-    if (typeof window !== "undefined") {
-      try {
-        const cached = localStorage.getItem(CATALOG_CACHE_KEY)
-        if (cached) {
-          const parsed = JSON.parse(cached)
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed
-        }
-      } catch {}
-    }
-    return []
-  })
-
-  const [isLoading, setIsLoading] = useState<boolean>(() => {
-    if (initialFallback && initialFallback.length > 0) return false
-    if (typeof window !== "undefined") {
-      try {
-        const cached = localStorage.getItem(CATALOG_CACHE_KEY)
-        if (cached) {
-          const parsed = JSON.parse(cached)
-          if (Array.isArray(parsed) && parsed.length > 0) return false
-        }
-      } catch {}
-    }
-    return true
-  })
+  // Initial state mirrors SSR initialFallback identically on both server and client (0ms tick-0 hydration)
+  const [products, setProducts] = useState<CatalogProduct[]>(initialFallback)
+  const [isLoading, setIsLoading] = useState<boolean>(!(initialFallback && initialFallback.length > 0))
 
   const inFlightRef = useRef(false)
   const isMountedRef = useRef(true)
@@ -127,6 +94,25 @@ export function useLiveProducts(initialFallback: CatalogProduct[] = []) {
 
   useEffect(() => {
     isMountedRef.current = true
+
+    // Persist or hydrate cache from localStorage after hydration without SSR mismatches
+    if (initialFallback && initialFallback.length > 0) {
+      try {
+        localStorage.setItem(CATALOG_CACHE_KEY, JSON.stringify(initialFallback))
+        localStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString())
+      } catch {}
+    } else {
+      try {
+        const cached = localStorage.getItem(CATALOG_CACHE_KEY)
+        if (cached) {
+          const parsed = JSON.parse(cached)
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setProducts(parsed)
+            setIsLoading(false)
+          }
+        }
+      } catch {}
+    }
 
     // 1. Silent background revalidation on component mount
     void revalidateCatalog(false)

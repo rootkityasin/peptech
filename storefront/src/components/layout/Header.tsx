@@ -317,7 +317,7 @@ export function Header() {
               </svg>
             </button>
 
-            <Link href="/" className="flex flex-col gap-[3px] items-start shrink-0 group">
+            <Link href="/" className="flex items-center shrink-0 group">
               <div className="h-[27px] w-[130px] relative">
                 <Image
                   src="/images/figma/peptech-logo.png"
@@ -329,9 +329,6 @@ export function Header() {
                   priority
                 />
               </div>
-              <p className="font-semibold text-[#16A6A3] text-[9px] tracking-[0.5px] whitespace-nowrap uppercase">
-                Quality. Safety. Precision.
-              </p>
             </Link>
           </div>
 

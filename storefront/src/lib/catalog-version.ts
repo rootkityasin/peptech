@@ -9,15 +9,24 @@ const globalForCatalog = globalThis as unknown as {
   __peptech_catalog_revision?: number
 }
 
-if (!globalForCatalog.__peptech_catalog_revision) {
+// In Node.js server runtime, initialize once per server process.
+// In the browser, do NOT initialize with Date.now() to prevent React SSR hydration mismatches.
+if (!globalForCatalog.__peptech_catalog_revision && typeof window === "undefined") {
   globalForCatalog.__peptech_catalog_revision = Date.now()
 }
 
 export function getCatalogRevision(): number {
+  if (typeof window !== "undefined") {
+    return globalForCatalog.__peptech_catalog_revision || 0
+  }
   return globalForCatalog.__peptech_catalog_revision || Date.now()
 }
 
 export function bumpCatalogRevision(): number {
   globalForCatalog.__peptech_catalog_revision = Date.now()
   return globalForCatalog.__peptech_catalog_revision
+}
+
+export function setCatalogRevision(rev: number): void {
+  globalForCatalog.__peptech_catalog_revision = rev
 }

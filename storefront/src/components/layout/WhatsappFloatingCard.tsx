@@ -17,8 +17,13 @@ export function WhatsappFloatingCard({
   const [isHovered, setIsHovered] = useState(false)
   const pathname = usePathname()
 
+  // Hide on the first page (homepage). Display from the 2nd page onwards.
+  if (!pathname || pathname === "/") {
+    return null
+  }
+
   // Suppress on checkout flow to avoid covering inputs or CTA on mobile
-  if (pathname?.startsWith("/checkout")) {
+  if (pathname.startsWith("/checkout")) {
     return null
   }
 

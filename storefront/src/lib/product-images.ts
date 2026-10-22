@@ -239,11 +239,18 @@ export function appendRevision(url?: string | null): string {
   // Local static bundled assets in /public do not change at runtime without a redeploy
   if (url.startsWith("/") && !url.startsWith("/api/")) return url
   try {
-    const rev = getCatalogRevision()
-    if (!rev) return url
     const isAbsolute = /^https?:\/\//i.test(url)
     const base = isAbsolute ? undefined : "https://peptech.bio"
     const parsed = new URL(url, base)
+
+    // If the URL already contains a version parameter 'v', preserve it.
+    // Overwriting it with a different timestamp on client hydration causes React SSR mismatches.
+    if (parsed.searchParams.has("v")) {
+      return url
+    }
+
+    const rev = getCatalogRevision()
+    if (!rev) return url
     parsed.searchParams.set("v", String(rev))
     return isAbsolute ? parsed.toString() : `${parsed.pathname}${parsed.search}`
   } catch {
