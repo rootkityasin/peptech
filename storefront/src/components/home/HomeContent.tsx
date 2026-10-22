@@ -300,100 +300,86 @@ export function HomeContent({
   return (
     <main className="bg-white text-slate-900 overflow-x-hidden font-sans">
       
-      {/* 01. HERO SECTION - Figma Node 2:29257 */}
-      <section className="bg-[#F4F7FA] pt-6 pb-0 sm:pb-12 lg:py-16 border-b border-[#E2E8F0] relative">
-        <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center">
-            
-            {/* Left Column on Desktop, Second on Mobile: Value Proposition */}
-            <div className="order-2 lg:order-1 lg:col-span-6 space-y-5">
-              <span className="inline-block text-[12px] font-bold text-[#16A6A3] tracking-[1.2px] uppercase">
-                RAPID TESTING. REAL IMPACT.
-              </span>
-              
-              <h1 className="text-3xl sm:text-4xl lg:text-[44px] font-extrabold text-[#0B1F3A] leading-[1.15] tracking-tight uppercase">
-                THE COMPLETE<br className="hidden sm:inline" /> PEPTECH® SYSTEM
-              </h1>
+      {/* 01. HERO SECTION WITH FULL-WIDTH BACKGROUND VIDEO */}
+      <section className="relative overflow-hidden pt-12 pb-14 sm:py-20 lg:py-24 border-b border-[#0f284e] bg-[#051329] text-white">
+        {/* Full-Width Background Video */}
+        <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none">
+          <video
+            src="/videos/peptech-system-showcase.mp4"
+            poster="/images/system-showcase-poster.webp"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+            className="w-full h-full object-cover opacity-60 sm:opacity-75"
+          />
+          {/* Subtle Dark Gradient Overlay for left-aligned typography readability while keeping right-side video clear */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "linear-gradient(90deg, rgba(5,19,41,0.94) 0%, rgba(5,19,41,0.82) 48%, rgba(5,19,41,0.35) 82%, rgba(5,19,41,0.65) 100%)",
+            }}
+          />
+        </div>
 
-              <p className="text-sm sm:text-base font-bold text-[#0B1F3A] leading-relaxed">
-                One reusable pen. Multiple test cartridges. Accurate. Reliable. Convenient.
-              </p>
+        {/* Hero Content Container */}
+        <div className="relative max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-xl lg:max-w-2xl space-y-6">
+            <span className="inline-block text-[12px] font-bold text-[#00C5A0] tracking-[1.4px] uppercase drop-shadow-sm">
+              RAPID TESTING. REAL IMPACT.
+            </span>
 
-              <p className="text-xs sm:text-[14px] text-[#64748B] leading-[22px] max-w-lg">
-                PEPTECH® delivers premium, ready-to-use kits and reagents designed for precision, consistency and trusted results across multiple industries.
-              </p>
+            <h1 className="text-3xl sm:text-4xl lg:text-[46px] font-extrabold text-white leading-[1.12] tracking-tight uppercase drop-shadow-md">
+              THE COMPLETE<br className="hidden sm:inline" /> PEPTECH® SYSTEM
+            </h1>
 
-              {/* Action Buttons - Desktop */}
-              <div className="hidden lg:flex flex-wrap items-center gap-3.5 pt-2">
-                <Link
-                  href="/shop"
-                  className="btn-shimmer btn-press px-6 py-3.5 rounded-xl bg-[#0B1F3A] hover:bg-[#162e52] text-white text-[14px] font-semibold transition-all shadow-md hover:shadow-xl inline-flex items-center gap-2 group cursor-pointer"
-                >
-                  <span>Shop All Products</span>
-                  <span className="transition-transform duration-200 group-hover:translate-x-1">→</span>
-                </Link>
-                
-                <Link
-                  href="/how-it-works"
-                  className="btn-press px-6 py-3.5 rounded-xl bg-white hover:bg-slate-50 text-[#0B1F3A] border border-[#CBD5E1] hover:border-[#0B1F3A] text-[14px] font-semibold transition-all shadow-xs hover:shadow-md inline-flex items-center cursor-pointer"
-                >
-                  Learn More
-                </Link>
-              </div>
+            <p className="text-sm sm:text-base font-semibold text-[#E2E8F0] leading-relaxed">
+              One reusable pen. Multiple test cartridges. Accurate. Reliable. Convenient.
+            </p>
 
-              {/* 4 Micro Value Props Row - Figma Node I2:29725;2:29272 */}
-              <div className="py-7 sm:py-6 border-t border-[#E2E8F0] grid grid-cols-2 sm:grid-cols-4 gap-y-8 sm:gap-y-4 gap-x-4 sm:gap-6 text-center max-w-[520px]">
-                <div className="flex flex-col items-center text-center gap-2">
-                  <img src="/images/figma/icon-target.svg" alt="Accuracy" className="w-5 h-5" loading="lazy" decoding="async" />
-                  <span className="text-[12px] font-bold text-[#0B1F3A] leading-tight">High Accuracy</span>
-                </div>
-                <div className="flex flex-col items-center text-center gap-2">
-                  <img src="/images/figma/icon-lightning.svg" alt="Results" className="w-5 h-5" loading="lazy" decoding="async" />
-                  <span className="text-[12px] font-bold text-[#0B1F3A] leading-tight">Fast Results</span>
-                </div>
-                <div className="flex flex-col items-center text-center gap-2">
-                  <img src="/images/figma/icon-hand.svg" alt="Usage" className="w-5 h-5" loading="lazy" decoding="async" />
-                  <span className="text-[12px] font-bold text-[#0B1F3A] leading-tight">Easy to Use</span>
-                </div>
-                <div className="flex flex-col items-center text-center gap-2">
-                  <img src="/images/figma/icon-shield.svg" alt="Consistency" className="w-5 h-5" loading="lazy" decoding="async" />
-                  <span className="text-[12px] font-bold text-[#0B1F3A] leading-tight">Reliable &amp; Consistent</span>
-                </div>
-              </div>
+            <p className="text-xs sm:text-[14px] text-[#94A3B8] leading-[22px] max-w-lg">
+              PEPTECH® delivers premium, ready-to-use kits and reagents designed for precision, consistency and trusted results across multiple industries.
+            </p>
+
+            {/* Action Buttons */}
+            <div className="flex flex-wrap items-center gap-3.5 pt-2">
+              <Link
+                href="/shop"
+                className="btn-shimmer btn-press px-6 py-3.5 rounded-xl bg-[#16A6A3] hover:bg-[#138e8c] text-white text-[14px] font-bold transition-all shadow-lg hover:shadow-cyan-500/25 inline-flex items-center gap-2 group cursor-pointer"
+              >
+                <span>Shop All Products</span>
+                <span className="transition-transform duration-200 group-hover:translate-x-1">→</span>
+              </Link>
+
+              <Link
+                href="/how-it-works"
+                className="btn-press px-6 py-3.5 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 text-[14px] font-semibold transition-all backdrop-blur-xs inline-flex items-center cursor-pointer"
+              >
+                Learn More
+              </Link>
             </div>
 
-            {/* Right Column on Desktop, First on Mobile: Hero Presentation Kit Mockup */}
-            <div className="order-1 lg:order-2 lg:col-span-6 flex flex-col items-center lg:items-end justify-center">
-              <div className="relative w-full max-w-[580px] h-[300px] sm:h-[400px] lg:h-[440px] min-h-[300px] flex items-center justify-center">
-                <Image
-                  src="/images/figma/hero-presentation-box.png"
-                  alt="PEPTECH® Reusable Precision Pen System Presentation"
-                  fill
-                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 580px"
-                  className="object-contain drop-shadow-xl"
-                  priority
-                />
-
-                {/* Mobile / Tablet Action Buttons */}
-                <div className="lg:hidden absolute left-2.5 xs:left-3.5 sm:left-6 bottom-1.5 xs:bottom-2 sm:bottom-3 z-10 flex flex-row items-center gap-2 sm:gap-2.5 max-w-[340px]">
-                  <Link
-                    href="/shop"
-                    className="btn-shimmer btn-press py-2.5 sm:py-3 px-3.5 sm:px-4 rounded-xl bg-[#0B1F3A] hover:bg-[#162e52] text-white text-[12px] sm:text-[13px] font-bold transition-all shadow-xl hover:shadow-2xl inline-flex items-center justify-center gap-1.5 group cursor-pointer whitespace-nowrap"
-                  >
-                    <span>Shop All Products</span>
-                    <span className="transition-transform duration-200 group-hover:translate-x-0.5">→</span>
-                  </Link>
-                  
-                  <Link
-                    href="/how-it-works"
-                    className="btn-press py-2.5 sm:py-3 px-3.5 sm:px-4 rounded-xl bg-white/95 hover:bg-white text-[#0B1F3A] border border-[#CBD5E1] hover:border-[#0B1F3A] text-[12px] sm:text-[13px] font-bold transition-all shadow-lg backdrop-blur-xs inline-flex items-center justify-center cursor-pointer whitespace-nowrap"
-                  >
-                    Learn More
-                  </Link>
-                </div>
+            {/* 4 Micro Value Props Row */}
+            <div className="pt-6 sm:pt-8 border-t border-white/15 grid grid-cols-2 sm:grid-cols-4 gap-y-6 sm:gap-y-4 gap-x-4 sm:gap-6 text-center max-w-[540px]">
+              <div className="flex flex-col items-center text-center gap-2">
+                <img src="/images/figma/icon-target.svg" alt="Accuracy" className="w-5 h-5 brightness-200" loading="lazy" decoding="async" />
+                <span className="text-[12px] font-bold text-white leading-tight">High Accuracy</span>
+              </div>
+              <div className="flex flex-col items-center text-center gap-2">
+                <img src="/images/figma/icon-lightning.svg" alt="Results" className="w-5 h-5 brightness-200" loading="lazy" decoding="async" />
+                <span className="text-[12px] font-bold text-white leading-tight">Fast Results</span>
+              </div>
+              <div className="flex flex-col items-center text-center gap-2">
+                <img src="/images/figma/icon-hand.svg" alt="Usage" className="w-5 h-5 brightness-200" loading="lazy" decoding="async" />
+                <span className="text-[12px] font-bold text-white leading-tight">Easy to Use</span>
+              </div>
+              <div className="flex flex-col items-center text-center gap-2">
+                <img src="/images/figma/icon-shield.svg" alt="Consistency" className="w-5 h-5 brightness-200" loading="lazy" decoding="async" />
+                <span className="text-[12px] font-bold text-white leading-tight">Reliable &amp; Consistent</span>
               </div>
             </div>
-
           </div>
         </div>
       </section>
