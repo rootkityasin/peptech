@@ -270,9 +270,14 @@ export function HomeContent({
   const videoRef = useRef<HTMLVideoElement>(null)
 
   useEffect(() => {
-    if (videoRef.current) {
-      registerVideoElement(videoRef.current)
+    const video = videoRef.current
+    if (video) {
+      registerVideoElement(video)
       return () => {
+        try {
+          video.pause()
+          video.muted = true
+        } catch {}
         registerVideoElement(null)
       }
     }
@@ -322,6 +327,7 @@ export function HomeContent({
             src="/videos/peptech-system-showcase.mp4"
             poster="/images/system-showcase-poster.webp"
             autoPlay
+            muted
             loop
             playsInline
             preload="auto"

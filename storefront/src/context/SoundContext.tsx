@@ -21,19 +21,49 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
   const [isAudioAvailable, setIsAudioAvailable] = useState(true)
 
   const videoRef = useRef<HTMLVideoElement | null>(null)
-  const interactionListenersRef = useRef<(() => void) | null>(null)
+  const volumeRef = useRef(0.75)
+  const isMutedRef = useRef(false)
+  const interactionCleanupRef = useRef<(() => void) | null>(null)
 
-  // Clean up any pending interaction listeners
+  // Keep refs in sync with state for stable callbacks
+  useEffect(() => {
+    volumeRef.current = volume
+  }, [volume])
+
+  useEffect(() => {
+    isMutedRef.current = isMuted
+  }, [isMuted])
+
+  // Remove any pending one-time interaction listeners
   const cleanupInteractionListeners = useCallback(() => {
-    if (interactionListenersRef.current) {
-      interactionListenersRef.current()
-      interactionListenersRef.current = null
+    if (interactionCleanupRef.current) {
+      interactionCleanupRef.current()
+      interactionCleanupRef.current = null
     }
   }, [])
 
-  // Register video element
+  // Register and synchronize video element (STABLE CALLBACK)
   const registerVideoElement = useCallback((el: HTMLVideoElement | null) => {
+    // 1. If an existing video was already playing, stop and mute it to prevent double audio
+    if (videoRef.current && videoRef.current !== el) {
+      videoRef.current.pause()
+      videoRef.current.muted = true
+    }
+
+    // Also defensively stop any orphan video/audio elements on document
+    if (typeof window !== "undefined") {
+      document.querySelectorAll("video, audio").forEach((m) => {
+        if (m !== el) {
+          try {
+            ;(m as HTMLMediaElement).pause()
+            ;(m as HTMLMediaElement).muted = true
+          } catch {}
+        }
+      })
+    }
+
     videoRef.current = el
+
     if (!el) {
       setIsAudioAvailable(false)
       setIsPlaying(false)
@@ -42,31 +72,39 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
     }
 
     setIsAudioAvailable(true)
-    el.volume = volume
+    const initialVol = volumeRef.current || 0.75
+    el.volume = initialVol
 
-    // Attempt autoplay with sound
+    // 2. Attempt Autoplay with Sound
+    // Try unmuting directly
     el.muted = false
     const playPromise = el.play()
+
     if (playPromise !== undefined) {
       playPromise
         .then(() => {
+          // Unmuted autoplay succeeded! Match volume icon to unmuted
           setIsMuted(false)
+          isMutedRef.current = false
           setIsPlaying(true)
         })
         .catch(() => {
           // Autoplay with sound restricted by browser policy:
-          // Keep video playing muted until first user interaction
+          // Play muted so video renders, and set icon to MUTED so visual matches audio state!
           el.muted = true
           el.play().catch(() => {})
           setIsMuted(true)
+          isMutedRef.current = true
           setIsPlaying(true)
 
+          // On the very first user interaction (tap, click, scroll), unmute and match icon!
           const onFirstInteraction = () => {
             if (videoRef.current) {
               videoRef.current.muted = false
-              videoRef.current.volume = volume
+              videoRef.current.volume = volumeRef.current || 0.75
               videoRef.current.play().catch(() => {})
               setIsMuted(false)
+              isMutedRef.current = false
             }
             cleanupInteractionListeners()
           }
@@ -76,7 +114,7 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
             window.addEventListener(evt, onFirstInteraction, { once: true, passive: true })
           })
 
-          interactionListenersRef.current = () => {
+          interactionCleanupRef.current = () => {
             events.forEach((evt) => {
               window.removeEventListener(evt, onFirstInteraction)
             })
@@ -84,43 +122,51 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
         })
     }
 
-    const onPlay = () => setIsPlaying(true)
-    const onPause = () => setIsPlaying(false)
-    const onVolumeChange = () => {
+    // 3. Keep state perfectly in sync with DOM media events
+    const syncState = () => {
       setIsMuted(el.muted)
+      isMutedRef.current = el.muted
       setVolumeState(el.volume)
+      volumeRef.current = el.volume
+      setIsPlaying(!el.paused && !el.ended)
     }
 
-    el.addEventListener("play", onPlay)
-    el.addEventListener("pause", onPause)
-    el.addEventListener("volumechange", onVolumeChange)
+    el.addEventListener("play", syncState)
+    el.addEventListener("pause", syncState)
+    el.addEventListener("playing", syncState)
+    el.addEventListener("volumechange", syncState)
 
     return () => {
-      el.removeEventListener("play", onPlay)
-      el.removeEventListener("pause", onPause)
-      el.removeEventListener("volumechange", onVolumeChange)
+      el.removeEventListener("play", syncState)
+      el.removeEventListener("pause", syncState)
+      el.removeEventListener("playing", syncState)
+      el.removeEventListener("volumechange", syncState)
     }
-  }, [volume, cleanupInteractionListeners])
+  }, [cleanupInteractionListeners])
 
   // Toggle Mute / Unmute
   const toggleMute = useCallback(() => {
     cleanupInteractionListeners()
-    if (!videoRef.current) {
+    const video = videoRef.current
+    if (!video) {
       setIsMuted((prev) => !prev)
       return
     }
 
-    if (videoRef.current.muted) {
-      videoRef.current.muted = false
-      if (videoRef.current.volume === 0) {
-        videoRef.current.volume = 0.75
-        setVolumeState(0.75)
+    if (video.muted) {
+      video.muted = false
+      if (video.volume === 0) {
+        const restoredVol = volumeRef.current > 0 ? volumeRef.current : 0.75
+        video.volume = restoredVol
+        setVolumeState(restoredVol)
       }
       setIsMuted(false)
-      videoRef.current.play().catch(() => {})
+      isMutedRef.current = false
+      video.play().catch(() => {})
     } else {
-      videoRef.current.muted = true
+      video.muted = true
       setIsMuted(true)
+      isMutedRef.current = true
     }
   }, [cleanupInteractionListeners])
 
@@ -129,19 +175,24 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
     cleanupInteractionListeners()
     const clamped = Math.max(0, Math.min(1, newVol))
     setVolumeState(clamped)
+    volumeRef.current = clamped
 
-    if (videoRef.current) {
-      videoRef.current.volume = clamped
+    const video = videoRef.current
+    if (video) {
+      video.volume = clamped
       if (clamped === 0) {
-        videoRef.current.muted = true
+        video.muted = true
         setIsMuted(true)
+        isMutedRef.current = true
       } else {
-        videoRef.current.muted = false
+        video.muted = false
         setIsMuted(false)
-        videoRef.current.play().catch(() => {})
+        isMutedRef.current = false
+        video.play().catch(() => {})
       }
     } else {
       setIsMuted(clamped === 0)
+      isMutedRef.current = clamped === 0
     }
   }, [cleanupInteractionListeners])
 
