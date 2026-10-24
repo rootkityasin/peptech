@@ -566,11 +566,106 @@ export function mapMedusaToCatalogProduct(p: StoreProduct): CatalogProduct {
 }
 
 /**
+ * Extracts the canonical compound / first-naming / SKU key for matching sibling formats
+ * (e.g., matching "GHK-Cu Complete Pen Set", "GHK-Cu Refill Cartridge", and "GHK-Cu Freeze-Dried Vial").
+ */
+export function getCanonicalProductKey(p?: CatalogProduct | null): string {
+  if (!p) return ""
+
+  const normalizeToken = (raw: string): string => {
+    const lower = raw.toLowerCase()
+    const clean = lower
+      .replace(/peptech®?/g, " ")
+      .replace(
+        /\b(complete|pen|set|sets|system|systems|starter|refill|refills|cartridge|cartridges|freeze-dried|freeze|dried|lyophilised|lyophilized|vial|vials|stack|reagent|kit|pep)\b/g,
+        " "
+      )
+      .trim()
+
+    if (!clean) return ""
+    if (clean.includes("barbie") || clean.includes("glow") || (clean.includes("klow") && lower.includes("barbie"))) {
+      return "glow"
+    }
+    if (clean.includes("klow")) return "klow"
+    if (clean.includes("wolverine") || clean.includes("bpc") || clean.includes("tb-500") || clean.includes("tb500")) {
+      return "wolverine"
+    }
+    if (clean.includes("ghk")) return "ghk-cu"
+    if (clean.includes("retatrutide") || clean.includes("reta")) return "retatrutide"
+    if (clean.includes("tirzepatide") || clean.includes("tirz")) return "tirzepatide"
+    if (clean.includes("semaglutide") || clean.includes("sema")) return "semaglutide"
+    if (clean.includes("tesamorelin") || clean.includes("tesa")) return "tesamorelin"
+    if (clean.includes("melanotan") || clean.includes("mt-2") || clean.includes("mt2")) return "melanotan-2"
+    if (clean.includes("nad")) return "nad-plus"
+    if (clean.includes("mots")) return "mots-c"
+    if (clean.includes("pt-141") || clean.includes("pt141") || clean.includes("bremelanotide")) return "pt-141"
+
+    // Otherwise extract the first meaningful naming token / SKU prefix
+    const firstWord = clean.split(/[\s_()/,+]+/).filter(Boolean)[0] || ""
+    return firstWord.replace(/[^a-z0-9-]/g, "")
+  }
+
+  // 1. Primary: First naming token from product title/name
+  const fromName = normalizeToken(p.name || "")
+  if (fromName) return fromName
+
+  // 2. Secondary: SKU prefix
+  const fromSku = normalizeToken(p.sku || "")
+  if (fromSku) return fromSku
+
+  // 3. Fallback: Compound & handle
+  return normalizeToken(`${p.compound || ""} ${p.handle || ""}`)
+}
+
+/**
+ * Checks whether two products share the same first naming (SKU) / compound identity.
+ */
+export function isMatchingProductCompound(
+  a?: CatalogProduct | null,
+  b?: CatalogProduct | null
+): boolean {
+  if (!a || !b) return false
+  const keyA = getCanonicalProductKey(a)
+  const keyB = getCanonicalProductKey(b)
+  return Boolean(keyA && keyB && keyA === keyB)
+}
+
+/**
  * Helper: Sort products prioritizing items with numeric priority (1, 2, 3...)
- * followed by unranked items sorted alphabetically by name.
+ * If a sibling format (e.g. Refill Cartridge or Vial) does not have an explicit priority
+ * set on its own record, it inherits the priority of its matching compound (by first naming / SKU)
+ * so all formats follow the exact same priority showcase order.
  */
 export function sortProductsByPriority(products: CatalogProduct[]): CatalogProduct[] {
-  return [...products].sort((a, b) => {
+  const compoundPriorityMap = new Map<string, number>()
+  for (const p of products) {
+    if (typeof p.priority === "number" && p.priority > 0) {
+      const key = getCanonicalProductKey(p)
+      if (key) {
+        const existing = compoundPriorityMap.get(key)
+        if (existing === undefined || p.priority < existing) {
+          compoundPriorityMap.set(key, p.priority)
+        }
+      }
+    }
+  }
+
+  const formatOrder: Record<CatalogProduct["format"], number> = {
+    "complete-pen-set": 1,
+    "refill-cartridge": 2,
+    "freeze-dried-vial": 3,
+  }
+
+  const enriched = products.map((p) => {
+    if (typeof p.priority === "number" && p.priority > 0) {
+      return p
+    }
+    const key = getCanonicalProductKey(p)
+    const inheritedPriority = key ? compoundPriorityMap.get(key) : undefined
+    return inheritedPriority !== undefined ? { ...p, priority: inheritedPriority } : p
+  })
+
+  return enriched.sort((a, b) => {
     const aHasPriority = typeof a.priority === "number" && a.priority > 0
     const bHasPriority = typeof b.priority === "number" && b.priority > 0
 
@@ -578,12 +673,52 @@ export function sortProductsByPriority(products: CatalogProduct[]): CatalogProdu
       if (a.priority !== b.priority) {
         return a.priority! - b.priority!
       }
+      const fDiff = (formatOrder[a.format] || 99) - (formatOrder[b.format] || 99)
+      if (fDiff !== 0) return fDiff
       return a.name.localeCompare(b.name)
     }
     if (aHasPriority) return -1
     if (bHasPriority) return 1
     return a.name.localeCompare(b.name)
   })
+}
+
+/**
+ * Orders suggestion cards for a target format below the Product Details page:
+ * 1. First card: The product matching `currentProduct` by first naming (SKU) / compound.
+ * 2. Remaining cards: Priority-wise product showcase (`sortProductsByPriority`).
+ */
+export function orderSuggestionsForProduct(
+  allProducts: CatalogProduct[],
+  targetFormat: CatalogProduct["format"],
+  currentProduct?: CatalogProduct | null,
+  excludeHandle?: string
+): CatalogProduct[] {
+  const sortedAll = sortProductsByPriority(allProducts)
+  const formatProducts = sortedAll.filter(
+    (p) => p.format === targetFormat && (!excludeHandle || p.handle !== excludeHandle)
+  )
+
+  if (!currentProduct) {
+    return formatProducts
+  }
+
+  const targetKey = getCanonicalProductKey(currentProduct)
+  if (!targetKey) {
+    return formatProducts
+  }
+
+  const matchedIndex = formatProducts.findIndex(
+    (p) => getCanonicalProductKey(p) === targetKey
+  )
+
+  if (matchedIndex <= 0) {
+    return formatProducts
+  }
+
+  const matchedProduct = formatProducts[matchedIndex]
+  const remainingPriorityProducts = formatProducts.filter((_, idx) => idx !== matchedIndex)
+  return [matchedProduct, ...remainingPriorityProducts]
 }
 
 /**

@@ -1,7 +1,7 @@
 import React, { Suspense, cache } from "react"
 import Link from "next/link"
 import { Metadata } from "next"
-import { getCatalogProduct, getCatalogProducts } from "@/lib/medusa"
+import { getCatalogProduct, getCatalogProducts, isMatchingProductCompound } from "@/lib/medusa"
 import { ProductShowcase } from "@/components/product/ProductShowcase"
 import { ProductDetailSkeleton } from "@/components/product/ProductDetailSkeleton"
 
@@ -87,7 +87,7 @@ async function ProductDetailAsync({ handle }: { handle: string }) {
     )
   }
 
-  // Sibling formats for the current compound with bidirectional slug normalization
+  // Sibling formats for the current compound with first-naming (SKU) & slug normalization
   const normalizeSlug = (slug: string) =>
     slug
       .toLowerCase()
@@ -100,6 +100,7 @@ async function ProductDetailAsync({ handle }: { handle: string }) {
   const baseCompound = normalizeSlug(product.compound || product.handle)
 
   const matchesCompound = (p: any) => {
+    if (isMatchingProductCompound(product, p)) return true
     const pSlug = normalizeSlug(p.compound || p.handle)
     return pSlug === baseCompound || pSlug.startsWith(baseCompound) || baseCompound.startsWith(pSlug)
   }

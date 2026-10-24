@@ -150,22 +150,22 @@ export function ProductShowcase({
       {currentProduct.format === "complete-pen-set" && (
         <>
           <PeptechJourney />
-          <RefillsSection excludeHandle={cartridgeProduct?.handle} products={allProducts} />
-          <VialsSection excludeHandle={vialProduct?.handle} products={allProducts} />
+          <RefillsSection currentProduct={currentProduct} products={allProducts} />
+          <VialsSection currentProduct={currentProduct} products={allProducts} />
         </>
       )}
 
       {currentProduct.format === "refill-cartridge" && (
         <>
-          <CompleteSetsSection excludeHandle={penSetProduct?.handle} products={allProducts} />
-          <VialsSection excludeHandle={vialProduct?.handle} products={allProducts} />
+          <CompleteSetsSection currentProduct={currentProduct} products={allProducts} />
+          <VialsSection currentProduct={currentProduct} products={allProducts} />
         </>
       )}
 
       {currentProduct.format === "freeze-dried-vial" && (
         <>
-          <RefillsSection excludeHandle={cartridgeProduct?.handle} products={allProducts} />
-          <CompleteSetsSection excludeHandle={penSetProduct?.handle} products={allProducts} />
+          <RefillsSection currentProduct={currentProduct} products={allProducts} />
+          <CompleteSetsSection currentProduct={currentProduct} products={allProducts} />
         </>
       )}
 

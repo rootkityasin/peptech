@@ -40,19 +40,29 @@ const CORE_FEATURES = [
 
 import { CatalogProduct } from "@/data/catalog"
 import { useLiveProducts } from "@/hooks/useLiveProducts"
+import { orderSuggestionsForProduct } from "@/lib/medusa"
 
 interface CompleteSetsSectionProps {
+  currentProduct?: CatalogProduct | null
   excludeHandle?: string
   products?: CatalogProduct[]
 }
 
-export function CompleteSetsSection({ excludeHandle, products: propProducts }: CompleteSetsSectionProps) {
+export function CompleteSetsSection({
+  currentProduct,
+  excludeHandle,
+  products: propProducts,
+}: CompleteSetsSectionProps) {
   const router = useRouter()
   const { products: liveProducts } = useLiveProducts(propProducts || [])
   const products = propProducts && propProducts.length > 0 ? propProducts : liveProducts
-  const featured =
-    products.find((p) => p.format === "complete-pen-set" && (!excludeHandle || p.handle !== excludeHandle)) ||
-    products[0]
+  const orderedPenSets = orderSuggestionsForProduct(
+    products,
+    "complete-pen-set",
+    currentProduct,
+    excludeHandle
+  )
+  const featured = orderedPenSets[0] || products[0]
 
   return (
     <section className="bg-white py-[20px] pb-[60px] flex items-center justify-center border-t border-[#e2e8f0]">

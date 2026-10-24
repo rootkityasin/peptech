@@ -7,18 +7,27 @@ import { useCart } from "@/components/cart/CartContext"
 
 import { CatalogProduct } from "@/data/catalog"
 import { useLiveProducts } from "@/hooks/useLiveProducts"
+import { orderSuggestionsForProduct } from "@/lib/medusa"
 
 interface RefillsSectionProps {
+  currentProduct?: CatalogProduct | null
   excludeHandle?: string
   products?: CatalogProduct[]
 }
 
-export function RefillsSection({ excludeHandle, products: propProducts }: RefillsSectionProps = {}) {
+export function RefillsSection({
+  currentProduct,
+  excludeHandle,
+  products: propProducts,
+}: RefillsSectionProps = {}) {
   const { autoSavings } = useCart()
   const { products: liveProducts } = useLiveProducts(propProducts || [])
   const products = propProducts && propProducts.length > 0 ? propProducts : liveProducts
-  const displayRefills = products.filter(
-    (p) => p.format === "refill-cartridge" && (!excludeHandle || p.handle !== excludeHandle)
+  const displayRefills = orderSuggestionsForProduct(
+    products,
+    "refill-cartridge",
+    currentProduct,
+    excludeHandle
   ).slice(0, 4)
 
   return (

@@ -6,17 +6,26 @@ import Image from "next/image"
 
 import { CatalogProduct } from "@/data/catalog"
 import { useLiveProducts } from "@/hooks/useLiveProducts"
+import { orderSuggestionsForProduct } from "@/lib/medusa"
 
 interface VialsSectionProps {
+  currentProduct?: CatalogProduct | null
   excludeHandle?: string
   products?: CatalogProduct[]
 }
 
-export function VialsSection({ excludeHandle, products: propProducts }: VialsSectionProps = {}) {
+export function VialsSection({
+  currentProduct,
+  excludeHandle,
+  products: propProducts,
+}: VialsSectionProps = {}) {
   const { products: liveProducts } = useLiveProducts(propProducts || [])
   const products = propProducts && propProducts.length > 0 ? propProducts : liveProducts
-  const displayVials = products.filter(
-    (p) => p.format === "freeze-dried-vial" && (!excludeHandle || p.handle !== excludeHandle)
+  const displayVials = orderSuggestionsForProduct(
+    products,
+    "freeze-dried-vial",
+    currentProduct,
+    excludeHandle
   ).slice(0, 4)
 
   return (
