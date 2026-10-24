@@ -297,18 +297,18 @@ export function Header() {
         <div style={{ backgroundColor: "#ffffff" }} className="w-full bg-white">
           <div
             style={{ backgroundColor: "#ffffff" }}
-            className="max-w-[1240px] w-full mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4 relative z-10 bg-white h-[80px]"
+            className="max-w-[1240px] w-full mx-auto pl-2 pr-3.5 sm:px-6 lg:px-8 flex items-center justify-between gap-2 sm:gap-4 relative z-10 bg-white h-[72px] sm:h-[80px]"
           >
           
-          {/* Brand Logo with Slogan */}
-          <div className="flex items-center gap-3">
+          {/* Brand Logo & Mobile Hamburger */}
+          <div className="flex items-center gap-1.5 sm:gap-2.5">
             <button
               ref={mobileToggleRef}
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 text-slate-700 hover:bg-slate-100 rounded-lg transition-colors relative z-50"
+              className="lg:hidden p-1.5 flex items-center justify-center text-[#0B1F3A] hover:bg-slate-100 rounded-lg transition-colors relative z-50"
               aria-label="Toggle Navigation"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-[22px] h-[22px] block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 {mobileMenuOpen ? (
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 ) : (
@@ -318,17 +318,15 @@ export function Header() {
             </button>
 
             <Link href="/" className="flex items-center shrink-0 group">
-              <div className="h-[27px] w-[130px] relative">
-                <Image
-                  src="/images/figma/peptech-logo.png"
-                  alt="PEPTECH®"
-                  width={130}
-                  height={27}
-                  className="object-contain"
-                  style={{ width: "auto", height: "auto" }}
-                  priority
-                />
-              </div>
+              <Image
+                src="/images/figma/peptech-logo.png"
+                alt="PEPTECH®"
+                width={104}
+                height={15}
+                unoptimized
+                className="h-[14.5px] xs:h-[15px] sm:h-[18px] lg:h-[20px] w-auto object-contain block"
+                priority
+              />
             </Link>
           </div>
 

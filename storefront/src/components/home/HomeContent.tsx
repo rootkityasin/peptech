@@ -99,11 +99,10 @@ export function HomePageSkeleton() {
       </section>
 
       {/* Featured Section Skeleton */}
-      <section className="py-16 max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-        <div className="space-y-2">
-          <div className="h-3 bg-[#16A6A3]/30 rounded w-32" />
-          <div className="h-7 bg-slate-200 rounded w-72" />
-          <div className="h-4 bg-slate-100 rounded w-96" />
+      <section className="py-10 sm:py-14 lg:py-16 max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8 space-y-5 sm:space-y-7">
+        <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-3.5 sm:pb-4">
+          <div className="h-6 sm:h-7 bg-slate-200 rounded w-64 sm:w-80" />
+          <div className="h-4 bg-slate-100 rounded w-20 sm:w-32" />
         </div>
         <ProductCardsSkeleton count={6} />
       </section>
@@ -455,69 +454,6 @@ export function HomeContent({
         </div>
       </section>
 
-      {/* 01b. PEPTECH CLINICAL VALUES (White Background Below Video) */}
-      <section className="bg-white py-7 sm:py-9 border-b border-[#E2E8F0]">
-        <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-y-6 gap-x-4 sm:gap-6">
-            
-            {/* High Accuracy */}
-            <div className="flex flex-col items-center text-center gap-2.5">
-              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-teal-50 border border-[#16A6A3]/20 flex items-center justify-center text-[#16A6A3] shadow-xs">
-                <svg className="w-5.5 h-5.5 sm:w-6 sm:h-6" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M10 18.3333C14.6024 18.3333 18.3333 14.6024 18.3333 10C18.3333 5.39763 14.6024 1.66667 10 1.66667C5.39763 1.66667 1.66667 5.39763 1.66667 10C1.66667 14.6024 5.39763 18.3333 10 18.3333Z" stroke="currentColor" strokeWidth="1.66667" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M10 15C12.7614 15 15 12.7614 15 10C15 7.23858 12.7614 5 10 5C7.23858 5 5 7.23858 5 10C5 12.7614 7.23858 15 10 15Z" stroke="currentColor" strokeWidth="1.66667" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M10 11.6667C10.9205 11.6667 11.6667 10.9205 11.6667 10C11.6667 9.07953 10.9205 8.33333 10 8.33333C9.07953 8.33333 8.33333 9.07953 8.33333 10C8.33333 10.9205 9.07953 11.6667 10 11.6667Z" stroke="currentColor" strokeWidth="1.66667" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </div>
-              <span className="text-[13px] sm:text-[14px] font-bold text-[#0B1F3A] leading-tight">
-                High Accuracy
-              </span>
-            </div>
-
-            {/* Fast Results */}
-            <div className="flex flex-col items-center text-center gap-2.5">
-              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-cyan-50 border border-[#16A6A3]/20 flex items-center justify-center text-[#16A6A3] shadow-xs">
-                <svg className="w-5.5 h-5.5 sm:w-6 sm:h-6" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M10.8333 1.66667L2.5 11.6667H10L9.16667 18.3333L17.5 8.33333H10L10.8333 1.66667Z" stroke="currentColor" strokeWidth="1.66667" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </div>
-              <span className="text-[13px] sm:text-[14px] font-bold text-[#0B1F3A] leading-tight">
-                Fast Results
-              </span>
-            </div>
-
-            {/* Easy to Use */}
-            <div className="flex flex-col items-center text-center gap-2.5">
-              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-emerald-50 border border-[#16A6A3]/20 flex items-center justify-center text-[#16A6A3] shadow-xs">
-                <svg className="w-5.5 h-5.5 sm:w-6 sm:h-6" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M15 9.16667V5C15 4.55797 14.8244 4.13405 14.5118 3.82149C14.1993 3.50893 13.7754 3.33333 13.3333 3.33333C12.8913 3.33333 12.4674 3.50893 12.1548 3.82149C11.8423 4.13405 11.6667 4.55797 11.6667 5" stroke="currentColor" strokeWidth="1.66667" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M11.6667 8.33333V3.33333C11.6667 2.89131 11.4911 2.46738 11.1785 2.15482C10.8659 1.84226 10.442 1.66667 10 1.66667C9.55797 1.66667 9.13405 1.84226 8.82149 2.15482C8.50893 2.46738 8.33333 2.89131 8.33333 3.33333V5" stroke="currentColor" strokeWidth="1.66667" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M8.33333 8.75V5C8.33333 4.55797 8.15774 4.13405 7.84518 3.82149C7.53262 3.50893 7.10869 3.33333 6.66667 3.33333C6.22464 3.33333 5.80072 3.50893 5.48816 3.82149C5.17559 4.13405 5 4.55797 5 5V11.6667" stroke="currentColor" strokeWidth="1.66667" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M15 6.66667C15 6.22464 15.1756 5.80072 15.4882 5.48816C15.8007 5.17559 16.2246 5 16.6667 5C17.1087 5 17.5326 5.17559 17.8452 5.48816C18.1577 5.80072 18.3333 6.22464 18.3333 6.66667V11.6667C18.3333 13.4348 17.631 15.1305 16.3807 16.3807C15.1305 17.631 13.4348 18.3333 11.6667 18.3333H10C7.66667 18.3333 6.25 17.6167 5.00833 16.3833L2.00833 13.3833C1.72161 13.0658 1.56799 12.6501 1.57927 12.2225C1.59055 11.7948 1.76587 11.3878 2.06893 11.0858C2.372 10.7838 2.77958 10.6099 3.20731 10.6002C3.63504 10.5904 4.05014 10.7455 4.36667 11.0333L5.83333 12.5" stroke="currentColor" strokeWidth="1.66667" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </div>
-              <span className="text-[13px] sm:text-[14px] font-bold text-[#0B1F3A] leading-tight">
-                Easy to Use
-              </span>
-            </div>
-
-            {/* Reliable & Consistent */}
-            <div className="flex flex-col items-center text-center gap-2.5">
-              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-teal-50 border border-[#16A6A3]/20 flex items-center justify-center text-[#16A6A3] shadow-xs">
-                <svg className="w-5.5 h-5.5 sm:w-6 sm:h-6" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M10 18.3333C10 18.3333 16.6667 15 16.6667 10V4.16667L10 1.66667L3.33333 4.16667V10C3.33333 15 10 18.3333 10 18.3333Z" stroke="currentColor" strokeWidth="1.66667" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M7.5 10L9.16667 11.6667L12.5 8.33333" stroke="currentColor" strokeWidth="1.66667" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </div>
-              <span className="text-[13px] sm:text-[14px] font-bold text-[#0B1F3A] leading-tight">
-                Reliable &amp; Consistent
-              </span>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
       {/* 02. TRUST BADGES STRIP - Figma Node 2:29297 */}
       <section className="bg-white py-7 sm:py-10 border-b border-[#E2E8F0]">
         <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8">
@@ -590,28 +526,21 @@ export function HomeContent({
       </section>
 
       {/* 03. FEATURED PRODUCTS SECTION - Figma Node 2:29339 */}
-      <section className="bg-white py-16">
-        <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+      <section className="bg-white py-10 sm:py-14 lg:py-16">
+        <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8 space-y-5 sm:space-y-7">
           
           {/* Section Header */}
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-            <div className="space-y-1.5">
-              <span className="text-[12px] font-bold text-[#16A6A3] tracking-[1.2px] uppercase">
-                FEATURED PRODUCTS
-              </span>
-              <h2 className="text-2xl sm:text-[28px] font-bold text-[#0B1F3A]">
-                Start with a premium PEPTECH® set
-              </h2>
-              <p className="text-[14px] text-[#64748B]">
-                Each set includes everything you need to begin testing with confidence.
-              </p>
-            </div>
+          <div className="flex flex-row items-center justify-between gap-3 border-b border-[#E2E8F0] pb-3.5 sm:pb-4">
+            <h2 className="text-[17px] xs:text-[19px] sm:text-[26px] lg:text-[28px] font-bold text-[#0B1F3A] tracking-tight leading-tight">
+              Start with a premium PEPTECH® set
+            </h2>
             <Link
               href="/shop"
-              className="text-[14px] font-semibold text-[#0B1F3A] hover:text-[#16A6A3] transition-colors inline-flex items-center gap-1.5 shrink-0"
+              className="text-[12px] xs:text-[13px] sm:text-[14px] font-semibold text-[#16A6A3] hover:text-[#0B1F3A] transition-colors inline-flex items-center gap-1 shrink-0 whitespace-nowrap"
             >
-              <span>View All Products</span>
-              <span>→</span>
+              <span className="sm:hidden">View All</span>
+              <span className="hidden sm:inline">View All Products</span>
+              <span aria-hidden="true">→</span>
             </Link>
           </div>
 
