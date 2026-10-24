@@ -15,7 +15,7 @@ interface ShopCatalogProps {
 }
 
 export function ShopCatalog({ initialCategory = "all", initialProducts }: ShopCatalogProps) {
-  const { addItem, setIsDrawerOpen } = useCart()
+  const { addItem, setIsDrawerOpen, autoSavings } = useCart()
   const searchParams = useSearchParams()
   const urlSearch = searchParams?.get("search") || ""
 
@@ -224,9 +224,6 @@ export function ShopCatalog({ initialCategory = "all", initialProducts }: ShopCa
           )}
         </div>
         <div className="mt-1">
-          <span className="inline-block text-[12px] font-bold text-[#16A6A3] tracking-[1.2px] uppercase mb-1">
-            LABORATORY REAGENTS &amp; SYSTEMS
-          </span>
           <h1 className="text-2xl sm:text-[32px] font-extrabold text-[#0b1f3a] tracking-tight uppercase">
             {activeTab === "all"
               ? "PEPTECH® Master Catalog"
@@ -905,86 +902,70 @@ export function ShopCatalog({ initialCategory = "all", initialProducts }: ShopCa
               </button>
             </div>
           ) : viewMode === "grid" ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[20px] w-full">
+            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3.5 sm:gap-4 w-full">
               {filteredProducts.map((product) => (
                 <div
                   key={product.id}
-                  className="bg-white border border-[#e2e8f0] rounded-[10px] p-[12px] flex flex-col justify-between h-full min-h-[360px] sm:min-h-[380px] hover:shadow-md transition-shadow text-center group relative overflow-hidden"
+                  className="bg-white border border-[#e2e8f0] rounded-[14px] overflow-hidden flex flex-col justify-between h-full hover:shadow-md transition-shadow text-center group shadow-xs"
                 >
-
-
-                  {/* Clickable Card Body: Image, Title, Specs & Price */}
-                  <Link
-                    href={`/products/${product.handle}`}
-                    className="flex flex-col items-center flex-1 w-full text-center"
-                  >
-                    {/* Image Box */}
-                    <div className="bg-[#f8fafc] rounded-[8px] h-[145px] min-h-[145px] w-full flex items-center justify-center relative overflow-hidden mb-2 group-hover:bg-[#f1f5f9] transition-colors">
-                      {/* Format Badge with Accent Dot */}
-                      <div className="absolute top-[8px] left-[8px] z-10 flex items-center gap-1.5">
-                        <span className="bg-white/90 backdrop-blur-xs text-[#0b1f3a] border border-[#e2e8f0] text-[9.5px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">
-                          {product.formatLabel}
-                        </span>
-
-                      </div>
-
-                      <div className="relative w-full h-[130px] min-h-[130px] flex items-center justify-center">
-                        <Image
-                          src={product.image}
-                          alt={product.name}
-                          fill
-                          sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 180px"
-                          className="object-contain p-2 group-hover:scale-105 transition-transform"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Info Block */}
-                    <div className="flex flex-col gap-[3px] items-center text-center w-full">
-                      <h3 className="font-bold text-[#0b1f3a] text-[14px] sm:text-[15px] group-hover:text-[#16a6a3] transition-colors line-clamp-2 min-h-[36px] sm:min-h-[40px] flex items-center justify-center">
-                        {product.name}
-                      </h3>
-
-                      {/* Product Contents Subtitle */}
-                      {product.contents ? (
-                        <p
-                          className="font-bold text-[11.5px] truncate max-w-full tracking-tight px-1"
-                          style={{ color: product.accentColor || "#16a6a3" }}
-                        >
-                          {product.contents}
-                        </p>
-                      ) : (
-                        <p className="font-semibold text-[#64748b] text-[10px] tracking-wide uppercase">
-                          {product.formatLabel}
-                        </p>
-                      )}
-
-                      <p className="font-normal text-[#475569] text-[11px] line-clamp-1">
-                        {product.description}
-                      </p>
-
-                      {/* Price Row */}
-                      <div className="flex gap-[6px] items-center justify-center pt-1.5 whitespace-nowrap">
-                        <span className="font-bold text-[#0b1f3a] text-[15px]">
-                          £{product.price.toFixed(2)}
-                        </span>
-                        {product.isSubscriptionEligible && (
-                          <span className="font-normal text-[#64748b] text-[11px]">
-                            • 28-day available
-                          </span>
-                        )}
-                      </div>
+                  <Link href={`/products/${product.handle}`} className="block w-full">
+                    {/* Product Photo - Edge to Edge at Top, Left, and Right */}
+                    <div className="h-[200px] sm:h-[220px] w-full relative overflow-hidden bg-white flex items-center justify-center shrink-0">
+                      <Image
+                        src={product.image}
+                        alt={product.name}
+                        fill
+                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 240px"
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
                     </div>
                   </Link>
 
-                  {/* Action Buttons Row */}
-                  <div className="w-full mt-auto pt-2">
-                    <Link
-                      href={`/products/${product.handle}`}
-                      className="btn-shimmer btn-press w-full bg-[#0b1f3a] hover:bg-[#16a6a3] text-white flex items-center justify-center py-[9px] rounded-xl text-[12px] font-semibold transition-all shadow-xs hover:shadow-md cursor-pointer"
-                    >
-                      <span>Details</span>
-                    </Link>
+                  {/* Content Block */}
+                  <div className="p-3.5 sm:p-4 pt-3 flex flex-col justify-between grow">
+                    <div className="space-y-1">
+                      <Link href={`/products/${product.handle}`}>
+                        <h4 className="font-bold text-[#0b1f3a] text-[13px] sm:text-[14px] group-hover:text-[#16a6a3] transition-colors line-clamp-2 min-h-[38px] flex items-center justify-center">
+                          {product.name}
+                        </h4>
+                      </Link>
+                      <p className="font-medium text-[#16a6a3] text-[11px] truncate">
+                        {product.contents || product.formatLabel}
+                      </p>
+                      <div className="pt-1.5 flex flex-col items-center gap-1">
+                        <span className="font-extrabold text-[#0b1f3a] text-[16px] tracking-tight">
+                          £{product.price.toFixed(2)}
+                        </span>
+                        {product.isSubscriptionEligible ? (
+                          <div className="flex items-center justify-center gap-1 text-[11px]">
+                            <span className="text-[#64748b] text-[10px]">Sub &amp; Save</span>
+                            <span className="font-bold text-[#0d7b78] bg-[#e6fffa] px-1.5 py-0.5 rounded text-[10px] border border-[#16a6a3]/20">
+                              £{(autoSavings.discountType === "percentage"
+                                ? Number((product.price * (1 - autoSavings.discountValue / 100)).toFixed(2))
+                                : Math.max(0, Number((product.price - autoSavings.discountValue).toFixed(2)))
+                              ).toFixed(2)}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-center gap-1 text-[11px]">
+                            <span className="text-[#64748b] text-[10px]">Starter Kit</span>
+                            <span className="font-bold text-[#0b1f3a] bg-[#f1f5f9] px-1.5 py-0.5 rounded text-[10px] border border-[#e2e8f0]">
+                              Complete Set
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Actions: View Details */}
+                    <div className="mt-3.5 pt-3 border-t border-[#f1f5f9]">
+                      <Link
+                        href={`/products/${product.handle}`}
+                        className="btn-shimmer btn-press w-full bg-[#0b1f3a] hover:bg-[#162e52] text-white flex items-center justify-center h-[38px] rounded-xl text-[12.5px] font-semibold transition-all shadow-xs group-hover:shadow-md"
+                      >
+                        <span>Details</span>
+                      </Link>
+                    </div>
                   </div>
                 </div>
               ))}
