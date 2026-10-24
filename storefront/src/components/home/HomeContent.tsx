@@ -270,7 +270,7 @@ export function HomeContent({
   initialProducts?: CatalogProduct[]
 }) {
   const { products, isLoading } = useLiveProducts(initialProducts)
-  const { registerVideoElement } = useSound()
+  const { registerVideoElement, isMuted } = useSound()
   const videoRef = useRef<HTMLVideoElement>(null)
 
   useEffect(() => {
@@ -333,7 +333,7 @@ export function HomeContent({
               src="/videos/peptech-system-showcase.mp4"
               poster="/images/system-showcase-poster.webp"
               autoPlay
-              muted
+              muted={isMuted}
               loop
               playsInline
               preload="auto"
