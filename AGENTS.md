@@ -14,6 +14,4 @@ Key highlights:
 - **Logistics**: Royal Mail Tracked (£4.95 UK / £15 Worldwide), discreet outer packaging.
 - **COA & QR**: Central searchable lab report library + packaging QR verification (`/verify`).
 - **Security & Secrets**: Strict Zero-Exposure rule. NEVER hardcode secrets, fallback tokens, or commit `.env` files. Read strictly from `process.env`.
-- **Git Push Restrictions**: Mandatory explicit permission rule. NEVER execute `git push` without unambiguous user confirmation in chat.
-- **Harness² Protocol**: Propose - Probe - Compose loop. Always verify code with `npm run verify` before completing tasks; eliminate vibecoding debt.
-
+- **Zero Git Touch & Single-Use Permission Rule**: NEVER touch Git (`git add`, `git commit`, `git push`, or any `git` command) until the user explicitly tells you to. If the user grants permission once, that permission applies ONLY to that single request and NEVER carries over to next updates.

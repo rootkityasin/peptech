@@ -151,6 +151,8 @@ function FeaturedPenSetsGrid({
                 src={p.image}
                 alt={p.name}
                 fill
+                loading="lazy"
+                fetchPriority="low"
                 sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 160px"
                 className="object-contain p-1 group-hover:scale-105 transition-transform"
               />
@@ -225,6 +227,8 @@ function CartridgesGrid({
                 src={c.image}
                 alt={c.name}
                 fill
+                loading="lazy"
+                fetchPriority="low"
                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 280px"
                 className="object-contain p-2 group-hover:scale-105 transition-transform"
               />
@@ -334,6 +338,8 @@ export function HomeContent({
               loop
               playsInline
               preload="auto"
+              // @ts-expect-error React 19 fetchPriority attribute on HTMLVideoElement
+              fetchPriority="high"
               className="w-full h-full object-cover object-center opacity-92 sm:opacity-95 transition-opacity duration-700"
             />
 
@@ -736,6 +742,8 @@ export function HomeContent({
                 src="/images/figma/lab-banner-photo.png"
                 alt="Laboratory research background"
                 fill
+                loading="lazy"
+                fetchPriority="low"
                 sizes="(max-width: 1024px) 100vw, 970px"
                 className="object-cover"
               />

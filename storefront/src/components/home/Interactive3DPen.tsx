@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import dynamic from "next/dynamic"
 
 // Dynamically import Three.js 3D WebGL Canvas without SSR
@@ -28,14 +28,38 @@ const Pen3DCanvas = dynamic(
 )
 
 export function Interactive3DPen() {
-  const [isMounted, setIsMounted] = useState(false)
+  const [shouldLoad3D, setShouldLoad3D] = useState(false)
+  const sectionRef = useRef<HTMLDivElement>(null)
 
+  // Defer heavy Three.js WebGL bundle & GPU shader compilation until the user scrolls near Section 05
+  // or after the above-the-fold Hero Video has buffered, ensuring 100% network/GPU priority for Hero Video.
   useEffect(() => {
-    setIsMounted(true)
+    const el = sectionRef.current
+    if (!el || typeof IntersectionObserver === "undefined") {
+      const timer = setTimeout(() => setShouldLoad3D(true), 2500)
+      return () => clearTimeout(timer)
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setShouldLoad3D(true)
+          observer.disconnect()
+        }
+      },
+      { rootMargin: "450px 0px" }
+    )
+
+    observer.observe(el)
+    return () => observer.disconnect()
   }, [])
 
   return (
-    <div id="peptech-3d-pen-section" className="w-full flex flex-col items-center select-none">
+    <div
+      ref={sectionRef}
+      id="peptech-3d-pen-section"
+      className="w-full flex flex-col items-center select-none"
+    >
       {/* Stage Container */}
       <div className="w-full max-w-[1040px] relative flex items-center justify-center">
         {/* Soft Ambient Radial Backlight */}
@@ -45,11 +69,18 @@ export function Interactive3DPen() {
 
         {/* 3D WebGL Mesh Centerpiece */}
         <div className="w-full relative flex flex-col items-center">
-          {isMounted && (
+          {shouldLoad3D ? (
             <Pen3DCanvas
               autoRotate={true}
               className="h-[165px] xs:h-[185px] sm:h-[170px] lg:h-[160px]"
             />
+          ) : (
+            <div className="w-full h-[165px] xs:h-[185px] sm:h-[170px] lg:h-[160px] flex items-center justify-center">
+              <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/95 border border-[#D2DFED] text-xs font-medium text-[#0B1F3A] shadow-xs">
+                <span className="w-2 h-2 rounded-full bg-[#16A6A3] animate-pulse" />
+                <span>Preparing 3D Architecture...</span>
+              </div>
+            </div>
           )}
 
           {/* 3D Model Dynamic Ground Shadow right under the pen body */}

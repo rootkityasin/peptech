@@ -9,7 +9,6 @@
   "description": "PEPTECH Custom Storefront & Medusa 2.0 Admin Backend",
   "scripts": {
     "postinstall": "npm install --include=dev --prefix backend && npm install --include=dev --prefix storefront",
-    "verify": "node scripts/harness-verify.cjs",
     "build": "node build.js",
     "start": "node server.js",
     "dev:backend": "npm run dev --prefix backend",

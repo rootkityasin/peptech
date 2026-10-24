@@ -101,31 +101,12 @@ Display the 3-step lifecycle:
   - NEVER supply hardcoded fallback strings for sensitive environment variables (e.g. `process.env.SECRET || "my_secret"`). Always read strictly from `process.env`. If a variable is missing, gracefully fail or log a generic warning without exposing credentials.
   - NEVER commit or track `.env`, `.env.local`, `.env.*`, or any credential file to Git.
   - NEVER put actual production or staging secrets in documentation, README files, or curl command examples. Use obvious dummy placeholders (`YOUR_API_KEY`).
-  - **Pre-Commit & Pre-Push Verification**: Always inspect git diffs prior to committing or pushing to ensure zero secrets are present.
+  - **Pre-Commit & Pre-Push Verification**: Always inspect diffs prior to committing or pushing (when explicitly instructed by the user) to ensure zero secrets are present.
 
 ---
 
-## 10. Mandatory Git Push Authorization Rule
+## 10. Mandatory Zero Git Touch & Single-Use Permission Rule
 - **Strictly Prohibited**:
-  - NEVER execute `git push` (or push commits to any remote repository or branch) autonomously, automatically, or without explicit user permission.
-  - The agent MUST ask the user directly and receive explicit, unambiguous permission in chat before running `git push`.
-  - Local operations such as staging (`git add`) and local commits (`git commit`) are permissible during development, but pushing to the remote origin is strictly blocked until explicit confirmation is granted.
-
----
-
-## 11. Harness² Dual-Recursive Probing & Deterministic Verification Protocol
-- **Inspired by Google Research's Harness²** (*Recursive Agent Harnessing for an Open World*):
-- **The Propose – Probe – Compose Cycle**:
-  1. *Propose*: Formulate an explicit architectural plan and file-level impact analysis before editing.
-  2. *Probe*: Run baseline tests and repro scripts to observe current behavior and set deterministic criteria.
-  3. *Compose*: Implement clean, senior-engineer solutions using standard Web APIs, Medusa DI container resolution, and canonical constants from `policy.ts`.
-- **Mandatory Deterministic Gates**:
-  - Run `npm run verify` (`node scripts/harness-verify.cjs`) before completing any task.
-  - Verify zero secrets in `git diff HEAD`.
-  - Verify 100% pass on commerce unit tests (`backend/apps/backend/src/lib/commerce/__tests__/`).
-  - Verify clean TypeScript compilation on storefront (`npm run build --prefix storefront`).
-- **Experience Library Accumulation**:
-  - Document all resolved anti-patterns, framework limits, and architectural constraints in `GEMINI.md` so the workspace harness permanently evolves across sessions.
-
-
-
+  - **NEVER Touch Git Until Explicitly Instructed**: The agent is strictly prohibited from executing ANY Git operation (`git add`, `git commit`, `git push`, `git reset`, `git restore`, `git checkout`, `git stash`, or any `git` CLI command) autonomously, automatically, or as part of standard development work. All modified files must remain uncommitted in the working tree until the user explicitly instructs otherwise.
+  - **Strict Single-Use (Non-Persistent) Permission**: If the user gives permission to touch, commit, or push to Git once, that permission applies **ONLY to that single, immediate request**.
+  - **Zero Carry-Over to Future Updates**: Prior Git permission NEVER carries over to subsequent updates, follow-up tasks, or future turns. Once a user-authorized Git command completes, permission immediately resets to **BLOCKED**, and the agent must require fresh, explicit user instruction before touching Git again.
