@@ -176,43 +176,6 @@ function VerifyContent() {
           </form>
         </div>
 
-        {/* Sample Batch Helper */}
-        {resultState === "none" && (
-          <div className="flex items-center gap-2 text-xs text-slate-500 flex-wrap justify-center">
-            <span>Sample batches:</span>
-            <button
-              type="button"
-              onClick={() => {
-                setBatchInput("RT-2609A")
-                handleVerify("RT-2609A")
-              }}
-              className="px-3 py-1 bg-white border border-slate-200 hover:border-[#16a6a3] rounded-full text-[#0b1f3a] text-[12px] font-semibold transition-colors"
-            >
-              RT-2609A
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setBatchInput("TRZ-2026-08B")
-                handleVerify("TRZ-2026-08B")
-              }}
-              className="px-3 py-1 bg-white border border-slate-200 hover:border-[#16a6a3] rounded-full text-[#0b1f3a] text-[12px] font-semibold transition-colors"
-            >
-              TRZ-2026-08B
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setBatchInput("SMG-2026-04A")
-                handleVerify("SMG-2026-04A")
-              }}
-              className="px-3 py-1 bg-white border border-slate-200 hover:border-[#16a6a3] rounded-full text-[#0b1f3a] text-[12px] font-semibold transition-colors"
-            >
-              SMG-2026-04A
-            </button>
-          </div>
-        )}
-
         {/* VERIFIED RESULT CARD (Figma Node 71:16810) */}
         {resultState === "verified" && (
           <div className="w-full max-w-[720px] bg-white rounded-[20px] pb-[36px] pt-[40px] px-5 sm:px-[32px] shadow-sm flex flex-col gap-[24px] items-center animate-in fade-in zoom-in-95 duration-200">

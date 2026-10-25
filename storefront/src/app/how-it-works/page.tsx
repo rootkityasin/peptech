@@ -261,9 +261,6 @@ export default function HowItWorksPage() {
             <h2 className="text-2xl sm:text-[28px] font-bold text-[#0B1F3A]">
               Everything You Need to Know
             </h2>
-            <p className="text-[14px] text-[#64748B]">
-              Have questions regarding orders, hardware maintenance, or analytical purity?
-            </p>
           </div>
 
           <div className="space-y-4">
