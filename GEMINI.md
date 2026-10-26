@@ -110,3 +110,21 @@ Display the 3-step lifecycle:
   - **NEVER Touch Git Until Explicitly Instructed**: The agent is strictly prohibited from executing ANY Git operation (`git add`, `git commit`, `git push`, `git reset`, `git restore`, `git checkout`, `git stash`, or any `git` CLI command) autonomously, automatically, or as part of standard development work. All modified files must remain uncommitted in the working tree until the user explicitly instructs otherwise.
   - **Strict Single-Use (Non-Persistent) Permission**: If the user gives permission to touch, commit, or push to Git once, that permission applies **ONLY to that single, immediate request**.
   - **Zero Carry-Over to Future Updates**: Prior Git permission NEVER carries over to subsequent updates, follow-up tasks, or future turns. Once a user-authorized Git command completes, permission immediately resets to **BLOCKED**, and the agent must require fresh, explicit user instruction before touching Git again.
+
+---
+
+## 11. Mandatory Gravitas Engineering Reliability Runtime & Discipline
+- **Source**: [udaysharmadev/Gravitas](https://github.com/udaysharmadev/Gravitas)
+- **Prime Directive**: Report what actually happened, not what was intended. Any claim of completion, fix, or verification must be backed by terminal/runtime execution output observed in the current session.
+- **The 6 Invariants**:
+  1. *Ground before mutating:* Read target files, tests, and callers before editing. Never assume file state.
+  2. *Stay in declared scope:* Writes outside declared task scope are prohibited.
+  3. *Completion requires executed evidence:* Changes are verified only when validators (`tsc`, tests, builds) pass *after* the last mutation.
+  4. *Never exact-retry failures:* Change diagnosis, strategy, or context before retrying a failed attempt.
+  5. *Satisfy the contract:* Meet all requirements and acceptance criteria before concluding.
+  6. *Say what you can't verify:* Be transparent about unverified or unverifiable paths; never fabricate certainty.
+- **Verification Hierarchy**: Integration/runtime > Tests > Compiler/type checker (`tsc`) > Linters.
+- **Output Format for Non-Trivial Changes**:
+  - `## What Changed`
+  - `## Evidence`
+  - `## Why`

@@ -117,8 +117,8 @@ export function VialsSection({
                 className="bg-white border border-[#e2e8f0] rounded-[14px] overflow-hidden flex flex-col justify-between h-full hover:shadow-md transition-shadow text-center group shadow-xs"
               >
                 <Link href={`/products/${item.handle}`} className="block w-full">
-                  {/* Vial Photo - Edge to Edge at Top, Left, and Right */}
-                  <div className="h-[200px] sm:h-[220px] w-full relative overflow-hidden bg-white flex items-center justify-center shrink-0">
+                  {/* Vial Photo - 1:1 Aspect Ratio Edge to Edge */}
+                  <div className="aspect-square w-full relative overflow-hidden bg-white flex items-center justify-center shrink-0">
                     <Image
                       src={item.image}
                       alt={item.name}

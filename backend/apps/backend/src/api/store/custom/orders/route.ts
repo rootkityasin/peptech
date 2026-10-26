@@ -3,11 +3,11 @@ import { Modules } from "@medusajs/framework/utils"
 import { actor, endpoint } from "../../../../lib/commerce/http"
 
 function resolveItemThumbnail(it: any): string {
-  let thumb = it?.thumbnail
+  let thumb = it?.thumbnail || it?.variant?.product?.thumbnail || it?.variant?.thumbnail
   if (thumb && typeof thumb === "string" && !thumb.includes("null") && !thumb.includes("placeholder")) {
     return thumb.replace(/^https?:\/\/localhost:\d+/, "")
   }
-  return "/images/placeholder.svg"
+  return ""
 }
 
 export async function GET(req: AuthenticatedMedusaRequest, res: MedusaResponse) {

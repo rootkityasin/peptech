@@ -37,6 +37,30 @@
       "skillPath": "plugins/medusa-dev/skills/db-migrate/SKILL.md",
       "computedHash": "67e08aa2633481106be84d196381320a4ba88410e6d710395234e23e394cd07e"
     },
+    "gravitas": {
+      "source": "udaysharmadev/Gravitas",
+      "sourceType": "github",
+      "skillPath": "skills/gravitas/SKILL.md",
+      "computedHash": "32b13f79b3aa3b8259ebc96192f7c16678ccec6c1db6cce170675c7fa33bc21d"
+    },
+    "gravitas-highstakes": {
+      "source": "udaysharmadev/Gravitas",
+      "sourceType": "github",
+      "skillPath": "skills/gravitas-highstakes/SKILL.md",
+      "computedHash": "94ea59d71477d16161025a62edca475e835b5ba965cc10cc64c2f9b715a9e16b"
+    },
+    "gravitas-python": {
+      "source": "udaysharmadev/Gravitas",
+      "sourceType": "github",
+      "skillPath": "skills/gravitas-python/SKILL.md",
+      "computedHash": "885241ad466211bc05bfcf055d149312210923146bb9f45afdda611325c7b0ee"
+    },
+    "gravitas-typescript": {
+      "source": "udaysharmadev/Gravitas",
+      "sourceType": "github",
+      "skillPath": "skills/gravitas-typescript/SKILL.md",
+      "computedHash": "302176c065ff4d57462d811df24a7e2ec4a4b42bd070a75fa8ad1063cd1c4bcf"
+    },
     "learning-medusa": {
       "source": "medusajs/medusa-agent-skills",
       "sourceType": "github",

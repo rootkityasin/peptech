@@ -111,10 +111,10 @@ export function getItemDisplayDetails(item: ReceiptItem): {
 
   // Infer default cartridge for pen set models if not explicitly set
   if (isPenSystem && !cartridgeOpt) {
-    if (titleLower.includes("ghk")) cartridgeOpt = "GHK-Cu Pre-filled Cartridge (1.5 mL)"
+    if (titleLower.includes("ghk") || titleLower.includes("gvk")) cartridgeOpt = "GHK-Cu Pre-filled Cartridge (1.5 mL)"
     else if (titleLower.includes("tesamorelin")) cartridgeOpt = "Tesamorelin Pre-filled Cartridge (1.5 mL)"
     else if (titleLower.includes("tirzepatide")) cartridgeOpt = "Tirzepatide Pre-filled Cartridge (1.5 mL)"
-    else if (titleLower.includes("melanotan") || titleLower.includes("mt-2")) cartridgeOpt = "Melanotan II Pre-filled Cartridge (1.5 mL)"
+    else if (titleLower.includes("melanotan") || titleLower.includes("melatonin") || titleLower.includes("mt-2")) cartridgeOpt = "Melanotan II Pre-filled Cartridge (1.5 mL)"
     else if (titleLower.includes("pt-141") || titleLower.includes("bremelanotide")) cartridgeOpt = "PT-141 Pre-filled Cartridge (1.5 mL)"
     else if (titleLower.includes("mots-c") || titleLower.includes("mots")) cartridgeOpt = "MOTS-c Pre-filled Cartridge (1.5 mL)"
     else if (titleLower.includes("wolverine")) cartridgeOpt = "Wolverine Stack (BPC-157 + TB-500) Pre-filled Cartridge (1.5 mL)"

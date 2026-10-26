@@ -15,3 +15,4 @@ Key highlights:
 - **COA & QR**: Central searchable lab report library + packaging QR verification (`/verify`).
 - **Security & Secrets**: Strict Zero-Exposure rule. NEVER hardcode secrets, fallback tokens, or commit `.env` files. Read strictly from `process.env`.
 - **Zero Git Touch & Single-Use Permission Rule**: NEVER touch Git (`git add`, `git commit`, `git push`, or any `git` command) until the user explicitly tells you to. If the user grants permission once, that permission applies ONLY to that single request and NEVER carries over to next updates.
+- **Gravitas Engineering Runtime**: Mandatory reliability discipline ([udaysharmadev/Gravitas](https://github.com/udaysharmadev/Gravitas)). Ground before mutating (read before write), stay in declared scope, completion requires executed evidence, never exact-retry failures without diagnosis change, satisfy task contracts, and explicitly state what could not be verified.

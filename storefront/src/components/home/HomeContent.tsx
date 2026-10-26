@@ -18,45 +18,48 @@ import { HeroScrollingPhrases } from "./HeroScrollingPhrases"
 
 export function ProductCardsSkeleton({ count = 6 }: { count?: number }) {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5 sm:gap-4">
       {Array.from({ length: count }).map((_, i) => (
         <div
           key={i}
-          className="bg-white border border-[#E2E8F0] rounded-[8px] p-3 flex flex-col justify-between animate-pulse"
+          className="bg-white border border-[#E2E8F0] rounded-[14px] overflow-hidden flex flex-col justify-between animate-pulse shadow-xs"
         >
-          <div className="h-[125px] min-h-[125px] w-full bg-slate-100 rounded-md mb-2 flex items-center justify-center">
+          <div className="aspect-square w-full bg-slate-100 flex items-center justify-center">
             <div className="w-10 h-10 rounded-full bg-slate-200/70" />
           </div>
-          <div className="text-center space-y-1.5 mb-3">
-            <div className="h-4 bg-slate-200 rounded w-3/4 mx-auto" />
-            <div className="h-2.5 bg-slate-100 rounded w-1/2 mx-auto" />
-            <div className="h-3 bg-slate-100 rounded w-2/3 mx-auto" />
-            <div className="h-4 bg-slate-200 rounded w-1/3 mx-auto pt-1" />
+          <div className="p-3 sm:p-3.5 text-center space-y-1.5 grow flex flex-col justify-between">
+            <div className="space-y-1.5 my-auto">
+              <div className="h-4 bg-slate-200 rounded w-3/4 mx-auto" />
+              <div className="h-2.5 bg-slate-100 rounded w-1/2 mx-auto" />
+              <div className="h-4 bg-slate-200 rounded w-1/3 mx-auto pt-1" />
+            </div>
+            <div className="w-full h-[36px] bg-slate-200 rounded-xl mt-3" />
           </div>
-          <div className="w-full h-[36px] bg-slate-200 rounded-[6px]" />
         </div>
       ))}
     </div>
   )
 }
 
-export function CartridgeCardsSkeleton({ count = 6 }: { count?: number }) {
+export function CartridgeCardsSkeleton({ count = 4 }: { count?: number }) {
   return (
-    <div className="lg:col-span-9 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-3.5">
+    <div className="lg:col-span-9 grid grid-cols-2 sm:grid-cols-4 gap-3.5 sm:gap-4">
       {Array.from({ length: count }).map((_, i) => (
         <div
           key={i}
-          className="bg-white border border-[#E2E8F0] rounded-[8px] p-2.5 sm:p-3 flex flex-col justify-between h-full min-h-[360px] sm:min-h-[380px] animate-pulse"
+          className="bg-white border border-[#E2E8F0] rounded-[14px] overflow-hidden flex flex-col justify-between h-full animate-pulse shadow-xs"
         >
-          <div className="h-[150px] xs:h-[160px] sm:h-[160px] lg:h-[150px] xl:h-[160px] min-h-[150px] w-full bg-[#f8fafc] rounded-lg mb-2 flex items-center justify-center">
+          <div className="aspect-square w-full bg-[#f8fafc] flex items-center justify-center">
             <div className="w-10 h-20 bg-slate-200/70 rounded-md" />
           </div>
-          <div className="text-center space-y-1.5 my-2">
-            <div className="h-4 bg-slate-200 rounded w-3/4 mx-auto" />
-            <div className="h-3 bg-slate-100 rounded w-1/2 mx-auto" />
-            <div className="h-4 bg-slate-200 rounded w-1/3 mx-auto" />
+          <div className="p-3 sm:p-3.5 text-center space-y-1.5 grow flex flex-col justify-between">
+            <div className="space-y-1.5 my-auto">
+              <div className="h-4 bg-slate-200 rounded w-3/4 mx-auto" />
+              <div className="h-2.5 bg-slate-100 rounded w-1/2 mx-auto" />
+              <div className="h-4 bg-slate-200 rounded w-1/3 mx-auto" />
+            </div>
+            <div className="w-full h-[36px] bg-slate-200 rounded-xl mt-3" />
           </div>
-          <div className="w-full h-[36px] bg-slate-200 rounded-[6px] mt-auto" />
         </div>
       ))}
     </div>
@@ -141,49 +144,50 @@ function FeaturedPenSetsGrid({
       {products.map((p) => (
         <div
           key={p.id}
-          className="bg-white border border-[#E2E8F0] rounded-[8px] p-2.5 sm:p-3 flex flex-col justify-between hover:shadow-md transition-shadow group h-full"
+          className="bg-white border border-[#e2e8f0] rounded-[14px] overflow-hidden flex flex-col justify-between h-full hover:shadow-md transition-shadow text-center group shadow-xs"
         >
-          {/* Product Box Image */}
-          <Link href={`/products/${p.handle}`} className="block">
-            <div className="h-[125px] min-h-[125px] w-full relative flex items-center justify-center mb-2">
+          {/* Product Box Image - 1:1 Aspect Ratio Edge to Edge */}
+          <Link href={`/products/${p.handle}`} className="block w-full">
+            <div className="aspect-square w-full relative overflow-hidden bg-white flex items-center justify-center shrink-0">
               <Image
                 src={p.image}
                 alt={p.name}
                 fill
                 loading="lazy"
                 fetchPriority="low"
-                sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 160px"
-                className="object-contain p-1 group-hover:scale-105 transition-transform"
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 30vw, 200px"
+                className="object-cover group-hover:scale-105 transition-transform duration-300"
               />
             </div>
           </Link>
 
           {/* Info Block */}
-          <div className="text-center space-y-0.5 mb-2 sm:mb-3 grow flex flex-col justify-center">
-            <Link href={`/products/${p.handle}`}>
-              <h3 className="text-[13px] sm:text-[14px] font-bold text-[#0B1F3A] hover:text-[#16A6A3] transition-colors line-clamp-2 min-h-[36px] sm:min-h-[40px] flex items-center justify-center">
-                {p.name}
-              </h3>
-            </Link>
-            <p className="text-[10px] font-semibold text-[#64748B] tracking-[0.5px]">
-              {p.tag}
-            </p>
-            <p className="text-[11px] text-[#475569] truncate">
-              {p.application}
-            </p>
-            <p className="text-[14px] sm:text-[15px] font-bold text-[#0B1F3A] pt-0.5">
-              £{p.price.toFixed(2)}
-            </p>
-          </div>
+          <div className="p-3 sm:p-3.5 pt-3 flex flex-col justify-between grow">
+            <div className="space-y-1">
+              <Link href={`/products/${p.handle}`}>
+                <h3 className="font-bold text-[#0b1f3a] text-[13px] sm:text-[14px] group-hover:text-[#16a6a3] transition-colors line-clamp-2 min-h-[38px] flex items-center justify-center">
+                  {p.name}
+                </h3>
+              </Link>
+              <p className="font-medium text-[#16a6a3] text-[11px] truncate">
+                {p.application || p.tag}
+              </p>
+              <div className="pt-1.5 flex flex-col items-center gap-1">
+                <span className="font-extrabold text-[#0b1f3a] text-[15px] sm:text-[16px] tracking-tight">
+                  £{p.price.toFixed(2)}
+                </span>
+              </div>
+            </div>
 
-          {/* Actions Row */}
-          <div className="w-full mt-auto pt-1">
-            <Link
-              href={`/products/${p.handle}`}
-              className="btn-shimmer btn-press w-full h-[36px] bg-[#0B1F3A] hover:bg-[#16A6A3] text-white rounded-[6px] text-[12px] font-semibold flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-[0.98]"
-            >
-              <span>Details</span>
-            </Link>
+            {/* Actions Row */}
+            <div className="mt-3.5 pt-3 border-t border-[#f1f5f9]">
+              <Link
+                href={`/products/${p.handle}`}
+                className="btn-shimmer btn-press w-full bg-[#0b1f3a] hover:bg-[#162e52] text-white flex items-center justify-center h-[38px] rounded-xl text-[12.5px] font-semibold transition-all shadow-xs group-hover:shadow-md"
+              >
+                <span>Details</span>
+              </Link>
+            </div>
           </div>
         </div>
       ))}
@@ -209,54 +213,64 @@ function CartridgesGrid({
   isLoading: boolean
 }) {
   if (isLoading && cartridges.length === 0) {
-    return <CartridgeCardsSkeleton count={6} />
+    return <CartridgeCardsSkeleton count={4} />
   }
 
   return (
-    <div className="lg:col-span-9 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-3.5">
+    <div className="lg:col-span-9 grid grid-cols-2 sm:grid-cols-4 gap-3.5 sm:gap-4">
       {cartridges.map((c) => (
         <div
           key={c.id}
-          className="bg-white border border-[#E2E8F0] rounded-[8px] p-2.5 sm:p-3 flex flex-col justify-between h-full min-h-[360px] sm:min-h-[380px] hover:shadow-md transition-shadow group"
+          className="bg-white border border-[#e2e8f0] rounded-[14px] overflow-hidden flex flex-col justify-between h-full hover:shadow-md transition-shadow text-center group shadow-xs"
         >
-          {/* Cartridge Clear Photo */}
-          <Link href={`/products/${c.handle}`} className="block">
-            <div className="h-[150px] xs:h-[160px] sm:h-[160px] lg:h-[150px] xl:h-[160px] min-h-[150px] w-full relative flex items-center justify-center bg-[#f8fafc] rounded-lg group-hover:bg-slate-100 transition-colors">
+          {/* Cartridge Clear Photo - 1:1 Aspect Ratio Edge to Edge */}
+          <Link href={`/products/${c.handle}`} className="block w-full">
+            <div className="aspect-square w-full relative overflow-hidden bg-white flex items-center justify-center shrink-0">
               <Image
                 src={c.image}
                 alt={c.name}
                 fill
                 loading="lazy"
                 fetchPriority="low"
-                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 280px"
-                className="object-contain p-2 group-hover:scale-105 transition-transform"
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 240px"
+                className="object-cover group-hover:scale-105 transition-transform duration-300"
               />
             </div>
           </Link>
 
           {/* Info Block */}
-          <div className="text-center space-y-0.5 my-2 grow flex flex-col justify-center">
-            <Link href={`/products/${c.handle}`}>
-              <h3 className="text-[13px] sm:text-[14px] font-bold text-[#0B1F3A] hover:text-[#16A6A3] transition-colors line-clamp-2 min-h-[36px] sm:min-h-[40px] flex items-center justify-center">
-                {c.name}
-              </h3>
-            </Link>
-            <p className="text-[11px] text-[#64748B] truncate">
-              {c.type}
-            </p>
-            <p className="text-[14px] font-bold text-[#0B1F3A] pt-0.5">
-              £{c.price.toFixed(2)}
-            </p>
-          </div>
+          <div className="p-3 sm:p-3.5 pt-3 flex flex-col justify-between grow">
+            <div className="space-y-1">
+              <Link href={`/products/${c.handle}`}>
+                <h3 className="font-bold text-[#0b1f3a] text-[13px] sm:text-[14px] group-hover:text-[#16a6a3] transition-colors line-clamp-2 min-h-[38px] flex items-center justify-center text-center">
+                  {c.name}
+                </h3>
+              </Link>
+              <p className="font-medium text-[#16a6a3] text-[11px] truncate">
+                {c.type}
+              </p>
+              <div className="pt-1.5 flex flex-col items-center gap-1">
+                <span className="font-extrabold text-[#0b1f3a] text-[15px] sm:text-[16px] tracking-tight">
+                  £{c.price.toFixed(2)}
+                </span>
+                <div className="flex items-center justify-center gap-1.5 text-[11px] whitespace-nowrap">
+                  <span className="text-[#64748b] text-[10px] shrink-0">Sub &amp; Save</span>
+                  <span className="font-bold text-[#0d7b78] bg-[#e6fffa] px-1.5 py-0.5 rounded text-[10px] border border-[#16a6a3]/20 shrink-0">
+                    £{(c.price * 0.9).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            </div>
 
-          {/* Actions Row */}
-          <div className="w-full mt-auto pt-1">
-            <Link
-              href={`/products/${c.handle}`}
-              className="btn-shimmer btn-press w-full h-[36px] bg-[#0B1F3A] hover:bg-[#16A6A3] text-white rounded-[6px] text-[12px] font-semibold flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-[0.98]"
-            >
-              <span>Details</span>
-            </Link>
+            {/* Actions Row */}
+            <div className="mt-3.5 pt-3 border-t border-[#f1f5f9]">
+              <Link
+                href={`/products/${c.handle}`}
+                className="btn-shimmer btn-press w-full bg-[#0b1f3a] hover:bg-[#162e52] text-white flex items-center justify-center h-[38px] rounded-xl text-[12.5px] font-semibold transition-all shadow-xs group-hover:shadow-md"
+              >
+                <span>Details</span>
+              </Link>
+            </div>
           </div>
         </div>
       ))}
@@ -307,7 +321,7 @@ export function HomeContent({
   const displayCartridges = sortProductsByPriority(
     sourceProducts.filter((p) => p.format === "refill-cartridge")
   )
-    .slice(0, 6)
+    .slice(0, 4)
     .map((c) => ({
       id: c.id,
       name: c.name,
@@ -578,7 +592,7 @@ export function HomeContent({
               </Link>
             </div>
 
-            {/* Right 6-Card Cartridge Grid */}
+            {/* Right 4-Card Cartridge Grid */}
             <CartridgesGrid cartridges={displayCartridges} isLoading={isLoading} />
 
           </div>
