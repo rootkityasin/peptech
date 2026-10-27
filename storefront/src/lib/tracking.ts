@@ -73,6 +73,59 @@ export function pushToDataLayer(payload: Record<string, any>) {
   window.dataLayer.push(payload)
 }
 
+function getCookie(name: string): string | null {
+  if (typeof document === "undefined") return null
+  const match = document.cookie.match(new RegExp("(^|;\\s*)" + name + "=([^;]*)"))
+  return match ? decodeURIComponent(match[2]) : null
+}
+
+/**
+ * Dispatch server-to-server CAPI event to internal Next.js API route
+ * Fully non-blocking with keepalive for seamless browser <-> server deduplication.
+ */
+function dispatchCapiEvent(payload: {
+  event_name: string
+  event_id: string
+  user_data?: TrackingCustomerData
+  custom_data?: Record<string, any>
+}) {
+  if (typeof window === "undefined") return
+
+  try {
+    const fbp = getCookie("_fbp")
+    const fbc = getCookie("_fbc")
+
+    const body = {
+      event_name: payload.event_name,
+      event_id: payload.event_id,
+      event_source_url: window.location.href,
+      user_data: {
+        email: payload.user_data?.email,
+        phone: payload.user_data?.phone,
+        firstName: payload.user_data?.firstName,
+        lastName: payload.user_data?.lastName,
+        city: payload.user_data?.city,
+        postalCode: payload.user_data?.postalCode,
+        country: payload.user_data?.country,
+        fbp: fbp || undefined,
+        fbc: fbc || undefined,
+      },
+      custom_data: payload.custom_data,
+    }
+
+    fetch("/api/tracking/meta-capi", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      keepalive: true,
+    }).catch(() => {
+      // Background ping - fail silently
+    })
+  } catch {
+    // Fail silently on restricted environments
+  }
+}
+
 /**
  * 1. View Item List (Catalog / Category Browsing)
  */
@@ -101,12 +154,14 @@ export function trackViewItemList(items: TrackingItem[], listName = "Catalog") {
  */
 export function trackViewItem(item: TrackingItem) {
   const event_id = generateEventId("view_item", item.item_id)
+  const itemValue = Number((item.price * (item.quantity || 1)).toFixed(2))
+
   pushToDataLayer({
     event: "view_item",
     event_id,
     ecommerce: {
       currency: "GBP",
-      value: Number((item.price * (item.quantity || 1)).toFixed(2)),
+      value: itemValue,
       items: [
         {
           item_id: item.item_id,
@@ -119,6 +174,23 @@ export function trackViewItem(item: TrackingItem) {
       ],
     },
   })
+
+  dispatchCapiEvent({
+    event_name: "ViewContent",
+    event_id,
+    custom_data: {
+      currency: "GBP",
+      value: itemValue,
+      content_type: "product",
+      contents: [
+        {
+          id: item.item_id,
+          quantity: item.quantity || 1,
+          item_price: item.price,
+        },
+      ],
+    },
+  })
 }
 
 /**
@@ -126,12 +198,14 @@ export function trackViewItem(item: TrackingItem) {
  */
 export function trackAddToCart(item: TrackingItem) {
   const event_id = generateEventId("add_to_cart", item.item_id)
+  const itemValue = Number((item.price * (item.quantity || 1)).toFixed(2))
+
   pushToDataLayer({
     event: "add_to_cart",
     event_id,
     ecommerce: {
       currency: "GBP",
-      value: Number((item.price * (item.quantity || 1)).toFixed(2)),
+      value: itemValue,
       items: [
         {
           item_id: item.item_id,
@@ -140,6 +214,23 @@ export function trackAddToCart(item: TrackingItem) {
           price: item.price,
           quantity: item.quantity || 1,
           subscription_type: item.subscription_type || "one_time",
+        },
+      ],
+    },
+  })
+
+  dispatchCapiEvent({
+    event_name: "AddToCart",
+    event_id,
+    custom_data: {
+      currency: "GBP",
+      value: itemValue,
+      content_type: "product",
+      contents: [
+        {
+          id: item.item_id,
+          quantity: item.quantity || 1,
+          item_price: item.price,
         },
       ],
     },
@@ -176,12 +267,14 @@ export function trackRemoveFromCart(item: TrackingItem) {
  */
 export function trackBeginCheckout(items: TrackingItem[], totalValue: number) {
   const event_id = generateEventId("begin_checkout")
+  const valueFormatted = Number(totalValue.toFixed(2))
+
   pushToDataLayer({
     event: "begin_checkout",
     event_id,
     ecommerce: {
       currency: "GBP",
-      value: Number(totalValue.toFixed(2)),
+      value: valueFormatted,
       items: items.map((it) => ({
         item_id: it.item_id,
         item_name: it.item_name,
@@ -189,6 +282,21 @@ export function trackBeginCheckout(items: TrackingItem[], totalValue: number) {
         price: it.price,
         quantity: it.quantity || 1,
         subscription_type: it.subscription_type || "one_time",
+      })),
+    },
+  })
+
+  dispatchCapiEvent({
+    event_name: "InitiateCheckout",
+    event_id,
+    custom_data: {
+      currency: "GBP",
+      value: valueFormatted,
+      content_type: "product",
+      contents: items.map((it) => ({
+        id: it.item_id,
+        quantity: it.quantity || 1,
+        item_price: it.price,
       })),
     },
   })
@@ -292,6 +400,23 @@ export function trackPurchase(order: TrackingOrder): boolean {
           country: order.customer.country,
         }
       : undefined,
+  })
+
+  dispatchCapiEvent({
+    event_name: "Purchase",
+    event_id,
+    user_data: order.customer,
+    custom_data: {
+      currency: order.currency || "GBP",
+      value: Number(order.value.toFixed(2)),
+      order_id: order.transaction_id,
+      content_type: "product",
+      contents: order.items.map((it) => ({
+        id: it.item_id,
+        quantity: it.quantity || 1,
+        item_price: it.price,
+      })),
+    },
   })
 
   try {
