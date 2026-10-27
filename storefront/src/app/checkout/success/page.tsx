@@ -4,6 +4,7 @@ import Link from "next/link"
 import { useCustomer } from "@/context/CustomerContext"
 import { useCart } from "@/components/cart/CartContext"
 import { checkoutStatus, completeStripeCheckout, type CheckoutSession } from "@/lib/stripe-checkout"
+import { trackPurchase } from "@/lib/tracking"
 
 export default function CheckoutSuccessPage() {
   const { customer, token, isLoading, refreshCustomer } = useCustomer()
@@ -49,6 +50,28 @@ export default function CheckoutSuccessPage() {
         if (!active) return
         setResult(data)
         if (data.state === "confirmed") {
+          trackPurchase({
+            transaction_id: String(data.orderNumber || data.orderId || data.attemptId),
+            value: data.total,
+            tax: data.tax,
+            shipping: data.shipping,
+            currency: data.currency || "GBP",
+            items: (data.items || []).map((it) => ({
+              item_id: it.name,
+              item_name: it.name,
+              price: it.unitPrice,
+              quantity: it.quantity,
+              subscription_type: it.recurring ? "28_day_subscription" : "one_time",
+            })),
+            customer: customer
+              ? {
+                  email: customer.email,
+                  firstName: customer.first_name,
+                  lastName: customer.last_name,
+                  phone: customer.phone,
+                }
+              : undefined,
+          })
           setMessage("Payment confirmed. Your order has been received; dispatch will be confirmed separately.")
           const snapshot = sessionStorage.getItem(`peptech_checkout_cart:${id}`)
           if (snapshot) clearCartIfUnchanged(snapshot)

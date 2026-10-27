@@ -7,6 +7,7 @@ import { CatalogProduct } from "@/data/catalog"
 import { useLiveProducts } from "@/hooks/useLiveProducts"
 import { ProductAccordions } from "./ProductAccordions"
 import { resolveProductImage } from "@/lib/product-images"
+import { trackViewItem, trackAddToCart } from "@/lib/tracking"
 
 interface ProductBuyBoxProps {
   product?: CatalogProduct
@@ -146,6 +147,22 @@ export function ProductBuyBox({
     }
   }
 
+  // GA4 / CAPI E-Commerce: View Item tracking
+  useEffect(() => {
+    if (product) {
+      const candidate = getCandidateItem()
+      trackViewItem({
+        item_id: candidate.id,
+        item_name: candidate.title,
+        price: candidate.price,
+        quantity: 1,
+        format: candidate.format,
+        subscription_type: candidate.isSubscription ? "28_day_subscription" : "one_time",
+        compound: candidate.productHandle,
+      })
+    }
+  }, [product?.id, purchaseType, activeCartridge?.id])
+
   const handleAddToCart = () => {
     const candidate = getCandidateItem()
     const res = addItem(candidate)
@@ -153,6 +170,16 @@ export function ProductBuyBox({
       setConflictError(res.conflict)
     } else {
       setConflictError(null)
+      // GA4 / CAPI E-Commerce: Add to Cart tracking
+      trackAddToCart({
+        item_id: candidate.id,
+        item_name: candidate.title,
+        price: candidate.price,
+        quantity: 1,
+        format: candidate.format,
+        subscription_type: candidate.isSubscription ? "28_day_subscription" : "one_time",
+        compound: candidate.productHandle,
+      })
     }
   }
 

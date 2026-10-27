@@ -18,6 +18,7 @@ import {
 import { CheckoutSkeleton } from "@/components/ui/Skeletons";
 import { resolveProductImage } from "@/lib/product-images";
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { trackAddShippingInfo, trackAddPaymentInfo, trackBeginCheckout } from "@/lib/tracking";
 
 function CheckoutContent() {
   const {
@@ -62,6 +63,25 @@ function CheckoutContent() {
 
   // Checkout states
   const [ruo, setRuo] = useState(false);
+
+  // GA4 / CAPI E-Commerce: Begin Checkout tracking
+  const hasTrackedBeginCheckoutRef = React.useRef(false);
+  useEffect(() => {
+    if (items.length > 0 && finalSubtotal > 0 && !hasTrackedBeginCheckoutRef.current) {
+      hasTrackedBeginCheckoutRef.current = true;
+      trackBeginCheckout(
+        items.map((it) => ({
+          item_id: it.id,
+          item_name: it.title,
+          price: it.price,
+          quantity: it.quantity,
+          format: it.format,
+          subscription_type: it.isSubscription ? "28_day_subscription" : "one_time",
+        })),
+        finalSubtotal
+      );
+    }
+  }, [items, finalSubtotal]);
   const [recurring, setRecurring] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -484,6 +504,19 @@ function CheckoutContent() {
             province: customAddress.province || undefined,
             phone: customAddress.phone || customer.phone || undefined,
           };
+
+      trackAddPaymentInfo(
+        items.map((it) => ({
+          item_id: it.id,
+          item_name: it.title,
+          price: it.price,
+          quantity: it.quantity,
+          format: it.format,
+          subscription_type: it.isSubscription ? "28_day_subscription" : "one_time",
+        })),
+        finalSubtotal + (shippingAvailable ? shippingCost : 0),
+        "stripe_card"
+      );
 
       const session = await prepareStripeCheckout({
         items,
@@ -1190,7 +1223,21 @@ function CheckoutContent() {
                           key={option.id}
                           type="button"
                           disabled={busy}
-                          onClick={() => setShippingOptionId(option.id)}
+                          onClick={() => {
+                            setShippingOptionId(option.id);
+                            trackAddShippingInfo(
+                              items.map((it) => ({
+                                item_id: it.id,
+                                item_name: it.title,
+                                price: it.price,
+                                quantity: it.quantity,
+                                format: it.format,
+                                subscription_type: it.isSubscription ? "28_day_subscription" : "one_time",
+                              })),
+                              finalSubtotal,
+                              option.name
+                            );
+                          }}
                           className={`flex items-center justify-between gap-3 rounded-xl border p-3.5 text-left transition-colors cursor-pointer ${
                             active
                               ? "border-[#16A6A3] bg-teal-50/60 ring-1 ring-[#16A6A3]"

@@ -10,6 +10,7 @@ import { CustomDialogProvider } from "@/components/ui/CustomDialog"
 import { Header } from "@/components/layout/Header"
 import { Footer } from "@/components/layout/Footer"
 import { WhatsappFloatingCard } from "@/components/layout/WhatsappFloatingCard"
+import { GoogleTagManager } from "@/components/analytics/GoogleTagManager"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -58,6 +59,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         className="min-h-full flex flex-col bg-white text-slate-900 font-sans overflow-x-hidden max-w-full"
         suppressHydrationWarning
       >
+        <GoogleTagManager />
         <CustomDialogProvider>
           <CustomerProvider>
             <CartProvider>

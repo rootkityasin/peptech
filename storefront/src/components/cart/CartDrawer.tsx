@@ -4,6 +4,7 @@ import React, { useEffect } from "react"
 import Link from "next/link"
 import { useCart, getItemSubtitle } from "./CartContext"
 import { resolveProductImage } from "@/lib/product-images"
+import { trackRemoveFromCart, trackBeginCheckout } from "@/lib/tracking"
 
 export function CartDrawer() {
   const {
@@ -50,7 +51,20 @@ export function CartDrawer() {
         className={`fixed inset-0 bg-[rgba(11,31,58,0.55)] backdrop-blur-xs transition-opacity duration-300 ease-out cursor-pointer ${
           isDrawerOpen ? "opacity-100" : "opacity-0"
         }`}
-        onClick={() => setIsDrawerOpen(false)}
+        onClick={() => {
+                trackBeginCheckout(
+                  items.map((it) => ({
+                    item_id: it.id,
+                    item_name: it.title,
+                    price: it.price,
+                    quantity: it.quantity,
+                    format: it.format,
+                    subscription_type: it.isSubscription ? "28_day_subscription" : "one_time",
+                  })),
+                  finalSubtotal
+                )
+                setIsDrawerOpen(false)
+              }}
         data-node-id="47:7421"
         data-name="Left Backdrop (Click to Close)"
       />
@@ -307,7 +321,17 @@ export function CartDrawer() {
                   {/* Delete Button with Hover Pop */}
                   <button
                     type="button"
-                    onClick={() => removeItem(item.id, item.isSubscription)}
+                    onClick={() => {
+                    trackRemoveFromCart({
+                      item_id: item.id,
+                      item_name: item.title,
+                      price: item.price,
+                      quantity: item.quantity,
+                      format: item.format,
+                      subscription_type: item.isSubscription ? "28_day_subscription" : "one_time",
+                    })
+                    removeItem(item.id, item.isSubscription)
+                  }}
                     className="flex items-center justify-center rounded-[8px] shrink-0 size-[28px] hover:bg-red-50 text-[#94a3b8] hover:text-red-500 hover:scale-110 active:scale-90 transition-all cursor-pointer ml-2"
                     data-name="Delete Button"
                     title="Remove item"

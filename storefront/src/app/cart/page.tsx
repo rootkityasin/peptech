@@ -6,6 +6,7 @@ import Image from "next/image"
 import { useCart, getItemSubtitle } from "@/components/cart/CartContext"
 import { CartSkeleton } from "@/components/ui/Skeletons"
 import { resolveProductImage } from "@/lib/product-images"
+import { trackBeginCheckout, trackRemoveFromCart } from "@/lib/tracking"
 
 function CartContent() {
   const {
@@ -383,6 +384,19 @@ function CartContent() {
                 {/* Checkout CTA */}
                 <Link
                   href="/checkout"
+                  onClick={() => {
+                    trackBeginCheckout(
+                      items.map((it) => ({
+                        item_id: it.id,
+                        item_name: it.title,
+                        price: it.price,
+                        quantity: it.quantity,
+                        format: it.format,
+                        subscription_type: it.isSubscription ? "28_day_subscription" : "one_time",
+                      })),
+                      finalSubtotal
+                    )
+                  }}
                   className="w-full py-4 rounded-xl bg-[#0b1f3a] hover:bg-[#16a6a3] text-white font-bold text-sm text-center block transition-all shadow-md"
                 >
                   Proceed to Checkout
