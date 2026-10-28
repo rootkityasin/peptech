@@ -40,6 +40,7 @@ export interface TrackingOrder {
 declare global {
   interface Window {
     dataLayer?: Array<Record<string, any>>
+    fbq?: (...args: any[]) => void
   }
 }
 
@@ -127,6 +128,23 @@ function dispatchCapiEvent(payload: {
 }
 
 /**
+ * Dispatch client-side Meta Browser Pixel event with 1:1 eventID matching server CAPI
+ */
+function dispatchBrowserPixel(eventName: string, data?: Record<string, any>, eventId?: string) {
+  if (typeof window === "undefined" || typeof window.fbq !== "function") return
+
+  try {
+    if (eventId) {
+      window.fbq("track", eventName, data, { eventID: eventId })
+    } else {
+      window.fbq("track", eventName, data)
+    }
+  } catch {
+    // Fail silently
+  }
+}
+
+/**
  * 1. View Item List (Catalog / Category Browsing)
  */
 export function trackViewItemList(items: TrackingItem[], listName = "Catalog") {
@@ -175,6 +193,19 @@ export function trackViewItem(item: TrackingItem) {
     },
   })
 
+  dispatchBrowserPixel(
+    "ViewContent",
+    {
+      content_type: "product",
+      content_ids: [item.item_id],
+      content_name: item.item_name,
+      content_category: itFormatToCategory(item.format, item.item_category),
+      value: itemValue,
+      currency: "GBP",
+    },
+    event_id
+  )
+
   dispatchCapiEvent({
     event_name: "ViewContent",
     event_id,
@@ -218,6 +249,18 @@ export function trackAddToCart(item: TrackingItem) {
       ],
     },
   })
+
+  dispatchBrowserPixel(
+    "AddToCart",
+    {
+      content_type: "product",
+      content_ids: [item.item_id],
+      content_name: item.item_name,
+      value: itemValue,
+      currency: "GBP",
+    },
+    event_id
+  )
 
   dispatchCapiEvent({
     event_name: "AddToCart",
@@ -285,6 +328,22 @@ export function trackBeginCheckout(items: TrackingItem[], totalValue: number) {
       })),
     },
   })
+
+  dispatchBrowserPixel(
+    "InitiateCheckout",
+    {
+      content_type: "product",
+      contents: items.map((it) => ({
+        id: it.item_id,
+        quantity: it.quantity || 1,
+        item_price: it.price,
+      })),
+      num_items: items.length,
+      value: valueFormatted,
+      currency: "GBP",
+    },
+    event_id
+  )
 
   dispatchCapiEvent({
     event_name: "InitiateCheckout",
@@ -401,6 +460,22 @@ export function trackPurchase(order: TrackingOrder): boolean {
         }
       : undefined,
   })
+
+  dispatchBrowserPixel(
+    "Purchase",
+    {
+      content_type: "product",
+      contents: order.items.map((it) => ({
+        id: it.item_id,
+        quantity: it.quantity || 1,
+        item_price: it.price,
+      })),
+      num_items: order.items.length,
+      value: Number(order.value.toFixed(2)),
+      currency: order.currency || "GBP",
+    },
+    event_id
+  )
 
   dispatchCapiEvent({
     event_name: "Purchase",

@@ -65,7 +65,7 @@ function hashField(value?: string | null, type: "email" | "phone" | "text" | "po
 
 export async function POST(req: NextRequest) {
   try {
-    const pixelId = process.env.META_PIXEL_ID
+    const pixelId = process.env.META_PIXEL_ID || process.env.NEXT_PUBLIC_META_PIXEL_ID
     const accessToken = process.env.META_CAPI_ACCESS_TOKEN
 
     // If CAPI credentials are not configured yet, fail closed gracefully without erroring the client
