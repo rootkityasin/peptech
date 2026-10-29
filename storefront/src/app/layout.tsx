@@ -12,6 +12,7 @@ import { Footer } from "@/components/layout/Footer"
 import { WhatsappFloatingCard } from "@/components/layout/WhatsappFloatingCard"
 import { GoogleTagManager } from "@/components/analytics/GoogleTagManager"
 import { MetaPixel } from "@/components/analytics/MetaPixel"
+import { TikTokPixel } from "@/components/analytics/TikTokPixel"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -62,6 +63,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       >
         <GoogleTagManager />
         <MetaPixel pixelId={process.env.META_PIXEL_ID} />
+        <TikTokPixel pixelId={process.env.TIKTOK_PIXEL_ID} />
         <CustomDialogProvider>
           <CustomerProvider>
             <CartProvider>

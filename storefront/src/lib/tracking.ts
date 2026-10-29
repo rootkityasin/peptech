@@ -41,6 +41,12 @@ declare global {
   interface Window {
     dataLayer?: Array<Record<string, any>>
     fbq?: (...args: any[]) => void
+    ttq?: {
+      track: (eventName: string, data?: Record<string, any>, options?: { event_id?: string }) => void
+      page: () => void
+      identify: (data: Record<string, any>) => void
+      [key: string]: any
+    }
   }
 }
 
@@ -95,6 +101,8 @@ function dispatchCapiEvent(payload: {
   try {
     const fbp = getCookie("_fbp")
     const fbc = getCookie("_fbc")
+    const ttclid = getCookie("ttclid")
+    const ttp = getCookie("_ttp")
 
     const body = {
       event_name: payload.event_name,
@@ -110,6 +118,8 @@ function dispatchCapiEvent(payload: {
         country: payload.user_data?.country,
         fbp: fbp || undefined,
         fbc: fbc || undefined,
+        ttclid: ttclid || undefined,
+        ttp: ttp || undefined,
       },
       custom_data: payload.custom_data,
     }
@@ -138,6 +148,23 @@ function dispatchBrowserPixel(eventName: string, data?: Record<string, any>, eve
       window.fbq("track", eventName, data, { eventID: eventId })
     } else {
       window.fbq("track", eventName, data)
+    }
+  } catch {
+    // Fail silently
+  }
+}
+
+/**
+ * Dispatch client-side TikTok Browser Pixel event with 1:1 event_id matching server Events API
+ */
+function dispatchTikTokPixel(eventName: string, data?: Record<string, any>, eventId?: string) {
+  if (typeof window === "undefined" || !window.ttq || typeof window.ttq.track !== "function") return
+
+  try {
+    if (eventId) {
+      window.ttq.track(eventName, data, { event_id: eventId })
+    } else {
+      window.ttq.track(eventName, data)
     }
   } catch {
     // Fail silently
@@ -206,6 +233,21 @@ export function trackViewItem(item: TrackingItem) {
     event_id
   )
 
+  dispatchTikTokPixel(
+    "ViewContent",
+    {
+      content_id: item.item_id,
+      content_type: "product",
+      content_name: item.item_name,
+      content_category: itFormatToCategory(item.format, item.item_category),
+      value: itemValue,
+      currency: "GBP",
+      quantity: item.quantity || 1,
+      price: item.price,
+    },
+    event_id
+  )
+
   dispatchCapiEvent({
     event_name: "ViewContent",
     event_id,
@@ -258,6 +300,20 @@ export function trackAddToCart(item: TrackingItem) {
       content_name: item.item_name,
       value: itemValue,
       currency: "GBP",
+    },
+    event_id
+  )
+
+  dispatchTikTokPixel(
+    "AddToCart",
+    {
+      content_id: item.item_id,
+      content_type: "product",
+      content_name: item.item_name,
+      value: itemValue,
+      currency: "GBP",
+      quantity: item.quantity || 1,
+      price: item.price,
     },
     event_id
   )
@@ -339,6 +395,22 @@ export function trackBeginCheckout(items: TrackingItem[], totalValue: number) {
         item_price: it.price,
       })),
       num_items: items.length,
+      value: valueFormatted,
+      currency: "GBP",
+    },
+    event_id
+  )
+
+  dispatchTikTokPixel(
+    "InitiateCheckout",
+    {
+      contents: items.map((it) => ({
+        content_id: it.item_id,
+        content_type: "product",
+        content_name: it.item_name,
+        quantity: it.quantity || 1,
+        price: it.price,
+      })),
       value: valueFormatted,
       currency: "GBP",
     },
@@ -471,6 +543,33 @@ export function trackPurchase(order: TrackingOrder): boolean {
         item_price: it.price,
       })),
       num_items: order.items.length,
+      value: Number(order.value.toFixed(2)),
+      currency: order.currency || "GBP",
+    },
+    event_id
+  )
+
+  if (order.customer && typeof window.ttq?.identify === "function") {
+    try {
+      window.ttq.identify({
+        email: order.customer.email || undefined,
+        phone_number: order.customer.phone || undefined,
+      })
+    } catch {
+      // Fail silently
+    }
+  }
+
+  dispatchTikTokPixel(
+    "CompletePayment",
+    {
+      contents: order.items.map((it) => ({
+        content_id: it.item_id,
+        content_type: "product",
+        content_name: it.item_name,
+        quantity: it.quantity || 1,
+        price: it.price,
+      })),
       value: Number(order.value.toFixed(2)),
       currency: order.currency || "GBP",
     },

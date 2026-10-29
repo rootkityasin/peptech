@@ -147,6 +147,69 @@ export async function POST(req: NextRequest) {
 
     const metaUrl = `https://graph.facebook.com/v19.0/${pixelId}/events?access_token=${accessToken}`
 
+    // TikTok Events API Dispatch (if credentials configured)
+    const tiktokToken = process.env.TIKTOK_ACCESS_TOKEN
+    const tiktokPixelId = process.env.TIKTOK_PIXEL_ID
+
+    if (tiktokToken && tiktokPixelId) {
+      try {
+        const tiktokEventMap: Record<string, string> = {
+          PageView: "PageView",
+          ViewContent: "ViewContent",
+          AddToCart: "AddToCart",
+          InitiateCheckout: "InitiateCheckout",
+          Purchase: "CompletePayment",
+        }
+        const tiktokEventName = tiktokEventMap[body.event_name] || body.event_name
+        const ttclid = (body.user_data as any)?.ttclid || undefined
+        const ttp = (body.user_data as any)?.ttp || undefined
+
+        const tiktokPayload = {
+          event_source: "web",
+          event_source_id: tiktokPixelId,
+          data: [
+            {
+              event: tiktokEventName,
+              event_time: Math.floor(Date.now() / 1000),
+              event_id: body.event_id,
+              user: {
+                email: hashedEmail,
+                phone_number: hashedPhone,
+                ip: clientIp,
+                user_agent: userAgent,
+                ttclid: ttclid,
+                ttp: ttp,
+              },
+              page: {
+                url: body.event_source_url || "https://peptech.bio",
+              },
+              properties: {
+                currency: body.custom_data?.currency || "GBP",
+                value: body.custom_data?.value,
+                contents: (body.custom_data?.contents || []).map((it) => ({
+                  content_id: it.id,
+                  content_type: "product",
+                  quantity: it.quantity || 1,
+                  price: it.item_price,
+                })),
+              },
+            },
+          ],
+        }
+
+        fetch("https://business-api.tiktok.com/open_api/v1.3/event/track/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Token": tiktokToken,
+          },
+          body: JSON.stringify(tiktokPayload),
+        }).catch((err) => console.warn("[TikTok Events API Warning]", err?.message || err))
+      } catch (err) {
+        console.warn("[TikTok Events API Error]", err)
+      }
+    }
+
     const metaResponse = await fetch(metaUrl, {
       method: "POST",
       headers: {
