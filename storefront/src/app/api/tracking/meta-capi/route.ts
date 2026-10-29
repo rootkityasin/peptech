@@ -163,10 +163,12 @@ export async function POST(req: NextRequest) {
         const tiktokEventName = tiktokEventMap[body.event_name] || body.event_name
         const ttclid = (body.user_data as any)?.ttclid || undefined
         const ttp = (body.user_data as any)?.ttp || undefined
+        const tiktokTestCode = process.env.TIKTOK_TEST_EVENT_CODE || body.test_event_code || undefined
 
-        const tiktokPayload = {
+        const tiktokPayload: Record<string, any> = {
           event_source: "web",
           event_source_id: tiktokPixelId,
+          ...(tiktokTestCode ? { test_event_code: tiktokTestCode } : {}),
           data: [
             {
               event: tiktokEventName,
@@ -186,6 +188,8 @@ export async function POST(req: NextRequest) {
               properties: {
                 currency: body.custom_data?.currency || "GBP",
                 value: body.custom_data?.value,
+                content_type: body.custom_data?.content_type || "product",
+                content_id: body.custom_data?.contents?.[0]?.id || undefined,
                 contents: (body.custom_data?.contents || []).map((it) => ({
                   content_id: it.id,
                   content_type: "product",
