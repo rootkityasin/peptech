@@ -563,6 +563,8 @@ export function trackPurchase(order: TrackingOrder): boolean {
   dispatchTikTokPixel(
     "CompletePayment",
     {
+      content_id: order.items[0]?.item_id,
+      content_type: "product",
       contents: order.items.map((it) => ({
         content_id: it.item_id,
         content_type: "product",
@@ -574,6 +576,24 @@ export function trackPurchase(order: TrackingOrder): boolean {
       currency: order.currency || "GBP",
     },
     event_id
+  )
+
+  dispatchTikTokPixel(
+    "PlaceAnOrder",
+    {
+      content_id: order.items[0]?.item_id,
+      content_type: "product",
+      contents: order.items.map((it) => ({
+        content_id: it.item_id,
+        content_type: "product",
+        content_name: it.item_name,
+        quantity: it.quantity || 1,
+        price: it.price,
+      })),
+      value: Number(order.value.toFixed(2)),
+      currency: order.currency || "GBP",
+    },
+    `order_${event_id}`
   )
 
   dispatchCapiEvent({

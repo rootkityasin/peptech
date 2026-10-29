@@ -165,40 +165,64 @@ export async function POST(req: NextRequest) {
         const ttp = (body.user_data as any)?.ttp || undefined
         const tiktokTestCode = process.env.TIKTOK_TEST_EVENT_CODE || body.test_event_code || undefined
 
+        const tiktokUser = {
+          email: hashedEmail,
+          phone_number: hashedPhone,
+          ip: clientIp,
+          user_agent: userAgent,
+          ttclid: ttclid,
+          ttp: ttp,
+        }
+
+        const tiktokProperties = {
+          currency: body.custom_data?.currency || "GBP",
+          value: body.custom_data?.value,
+          content_type: body.custom_data?.content_type || "product",
+          content_id: body.custom_data?.contents?.[0]?.id || undefined,
+          contents: (body.custom_data?.contents || []).map((it) => ({
+            content_id: it.id,
+            content_type: "product",
+            quantity: it.quantity || 1,
+            price: it.item_price,
+          })),
+        }
+
+        const tiktokEventsData =
+          body.event_name === "Purchase"
+            ? [
+                {
+                  event: "CompletePayment",
+                  event_time: Math.floor(Date.now() / 1000),
+                  event_id: body.event_id,
+                  user: tiktokUser,
+                  page: { url: body.event_source_url || "https://peptech.bio" },
+                  properties: tiktokProperties,
+                },
+                {
+                  event: "PlaceAnOrder",
+                  event_time: Math.floor(Date.now() / 1000),
+                  event_id: `order_${body.event_id}`,
+                  user: tiktokUser,
+                  page: { url: body.event_source_url || "https://peptech.bio" },
+                  properties: tiktokProperties,
+                },
+              ]
+            : [
+                {
+                  event: tiktokEventName,
+                  event_time: Math.floor(Date.now() / 1000),
+                  event_id: body.event_id,
+                  user: tiktokUser,
+                  page: { url: body.event_source_url || "https://peptech.bio" },
+                  properties: tiktokProperties,
+                },
+              ]
+
         const tiktokPayload: Record<string, any> = {
           event_source: "web",
           event_source_id: tiktokPixelId,
           ...(tiktokTestCode ? { test_event_code: tiktokTestCode } : {}),
-          data: [
-            {
-              event: tiktokEventName,
-              event_time: Math.floor(Date.now() / 1000),
-              event_id: body.event_id,
-              user: {
-                email: hashedEmail,
-                phone_number: hashedPhone,
-                ip: clientIp,
-                user_agent: userAgent,
-                ttclid: ttclid,
-                ttp: ttp,
-              },
-              page: {
-                url: body.event_source_url || "https://peptech.bio",
-              },
-              properties: {
-                currency: body.custom_data?.currency || "GBP",
-                value: body.custom_data?.value,
-                content_type: body.custom_data?.content_type || "product",
-                content_id: body.custom_data?.contents?.[0]?.id || undefined,
-                contents: (body.custom_data?.contents || []).map((it) => ({
-                  content_id: it.id,
-                  content_type: "product",
-                  quantity: it.quantity || 1,
-                  price: it.item_price,
-                })),
-              },
-            },
-          ],
+          data: tiktokEventsData,
         }
 
         fetch("https://business-api.tiktok.com/open_api/v1.3/event/track/", {
