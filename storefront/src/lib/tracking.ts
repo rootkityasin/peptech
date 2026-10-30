@@ -492,8 +492,8 @@ export function trackPurchase(order: TrackingOrder): boolean {
   const trackingKey = `peptech_tracked_order_${order.transaction_id}`
 
   try {
-    if (sessionStorage.getItem(trackingKey)) {
-      // Already tracked this session — prevent duplicate purchase events
+    if (localStorage.getItem(trackingKey) || sessionStorage.getItem(trackingKey)) {
+      // Already tracked this order — prevent duplicate purchase events across tabs or reloads
       return false
     }
   } catch {
@@ -560,24 +560,7 @@ export function trackPurchase(order: TrackingOrder): boolean {
     }
   }
 
-  dispatchTikTokPixel(
-    "CompletePayment",
-    {
-      content_id: order.items[0]?.item_id,
-      content_type: "product",
-      contents: order.items.map((it) => ({
-        content_id: it.item_id,
-        content_type: "product",
-        content_name: it.item_name,
-        quantity: it.quantity || 1,
-        price: it.price,
-      })),
-      value: Number(order.value.toFixed(2)),
-      currency: order.currency || "GBP",
-    },
-    event_id
-  )
-
+  // TikTok: Dispatch PlaceAnOrder (matches Media Buyer optimization event 1:1)
   dispatchTikTokPixel(
     "PlaceAnOrder",
     {
@@ -593,7 +576,7 @@ export function trackPurchase(order: TrackingOrder): boolean {
       value: Number(order.value.toFixed(2)),
       currency: order.currency || "GBP",
     },
-    `order_${event_id}`
+    event_id
   )
 
   dispatchCapiEvent({
@@ -614,6 +597,7 @@ export function trackPurchase(order: TrackingOrder): boolean {
   })
 
   try {
+    localStorage.setItem(trackingKey, "1")
     sessionStorage.setItem(trackingKey, "1")
   } catch {
     // Ignore storage write errors

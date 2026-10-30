@@ -1,9 +1,8 @@
 "use client"
 
-import React, { useEffect } from "react"
+import React from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { trackPurchase } from "@/lib/tracking"
 
 export interface ReceiptItem {
   id?: string
@@ -229,33 +228,6 @@ export function UnifiedReceipt({
   const formattedDateTime = receipt.displayDate && receipt.displayDate.includes(":") 
     ? receipt.displayDate 
     : formatFullReceiptDateTime(receipt.date)
-
-  // GA4 / Meta CAPI / TikTok: Purchase conversion tracking
-  useEffect(() => {
-    if (receipt && (receipt.id || receipt.displayId)) {
-      trackPurchase({
-        transaction_id: String(receipt.id || receipt.displayId),
-        value: total,
-        tax: tax,
-        shipping: shipping,
-        currency: "GBP",
-        items: (receipt.items || []).map((it) => ({
-          item_id: it.id || it.title,
-          item_name: it.title,
-          price: it.price,
-          quantity: it.quantity,
-          subscription_type: it.subtitle?.toLowerCase().includes("subscribe") ? "28_day_subscription" : "one_time",
-        })),
-        customer: receipt.customerEmail
-          ? {
-              email: receipt.customerEmail,
-              firstName: receipt.customerName?.split(" ")[0],
-              lastName: receipt.customerName?.split(" ").slice(1).join(" "),
-            }
-          : undefined,
-      })
-    }
-  }, [receipt?.id, receipt?.displayId, total, tax, shipping])
 
   return (
     <div className="w-full receipt-print-root">
