@@ -7,11 +7,19 @@ let sharedCommerceLockPool: any = null
 
 function isLocalDb(url?: string): boolean { return Boolean(url && (url.includes("localhost") || url.includes("127.0.0.1"))); }
 
+function getSslConfig(url: string) {
+  if (isLocalDb(url)) return false
+  const caCert = process.env.DATABASE_CA_CERT
+  return caCert
+    ? { ca: caCert, rejectUnauthorized: true }
+    : { rejectUnauthorized: false }
+}
+
 function getSharedPool(databaseUrl: string) {
   if (!sharedCommercePool) {
     sharedCommercePool = new Pool({
       connectionString: databaseUrl,
-      ssl: isLocalDb(databaseUrl) ? false : { rejectUnauthorized: false },
+      ssl: getSslConfig(databaseUrl),
       max: 4,
       idleTimeoutMillis: 10000,
       connectionTimeoutMillis: 5000,
@@ -28,7 +36,7 @@ function getSharedLockPool(databaseUrl: string) {
   if (!sharedCommerceLockPool) {
     sharedCommerceLockPool = new Pool({
       connectionString: databaseUrl,
-      ssl: isLocalDb(databaseUrl) ? false : { rejectUnauthorized: false },
+      ssl: getSslConfig(databaseUrl),
       max: 2,
       idleTimeoutMillis: 10000,
       connectionTimeoutMillis: 5000,

@@ -43,8 +43,8 @@ function decodeFileContent(content: string, mimeType?: string): Buffer {
 }
 
 function sanitizeFileName(filename: string): string {
-  const clean = filename.replace(/\\/g, "/").replace(/^\/+/, "")
-  return clean.replace(/[^a-zA-Z0-9._/-]/g, "_")
+  const base = path.posix.basename(filename.replace(/\\/g, "/"))
+  return base.replace(/^\.+/, "").replace(/[^a-zA-Z0-9._-]/g, "_") || "unnamed"
 }
 
 function getWorkspaceRoot(startDir = process.cwd()) {
@@ -66,16 +66,25 @@ function getWorkspaceRoot(startDir = process.cwd()) {
 
 function syncToLocalDisk(fileKey: string, buffer: Buffer, logger?: any) {
   try {
+    if (typeof fileKey !== "string" || !fileKey.trim()) return
     const root = getWorkspaceRoot()
     if (!root) return
-    const targetPath = path.join(root, "storefront", "public", "images", "products", fileKey)
+    const safeBaseName = path.basename(fileKey.replace(/\\/g, "/"))
+    if (!safeBaseName || safeBaseName === "." || safeBaseName === ".." || safeBaseName.includes("..")) {
+      throw new Error("Invalid file key")
+    }
+    const baseDir = path.resolve(root, "storefront", "public", "images", "products")
+    const targetPath = path.resolve(baseDir, safeBaseName)
+    if (!targetPath.startsWith(baseDir + path.sep)) {
+      throw new Error("Invalid file path: outside allowed storage directory")
+    }
     const targetDir = path.dirname(targetPath)
     if (!fs.existsSync(targetDir)) {
       fs.mkdirSync(targetDir, { recursive: true })
     }
     fs.writeFileSync(targetPath, buffer)
     logger?.info?.(
-      `[SupabaseFileService] 💾 Mirrored to local storefront disk: ${fileKey} (${(buffer.length / 1024).toFixed(1)}KB)`
+      `[SupabaseFileService] 💾 Mirrored to local storefront disk: ${safeBaseName} (${(buffer.length / 1024).toFixed(1)}KB)`
     )
   } catch (err: any) {
     logger?.warn?.(`[SupabaseFileService] ⚠️ Local disk mirror failed for ${fileKey}: ${err?.message}`)
@@ -84,12 +93,21 @@ function syncToLocalDisk(fileKey: string, buffer: Buffer, logger?: any) {
 
 function removeFromLocalDisk(fileKey: string, logger?: any) {
   try {
+    if (typeof fileKey !== "string" || !fileKey.trim()) return
     const root = getWorkspaceRoot()
     if (!root) return
-    const targetPath = path.join(root, "storefront", "public", "images", "products", fileKey)
+    const safeBaseName = path.basename(fileKey.replace(/\\/g, "/"))
+    if (!safeBaseName || safeBaseName === "." || safeBaseName === ".." || safeBaseName.includes("..")) {
+      throw new Error("Invalid file key")
+    }
+    const baseDir = path.resolve(root, "storefront", "public", "images", "products")
+    const targetPath = path.resolve(baseDir, safeBaseName)
+    if (!targetPath.startsWith(baseDir + path.sep)) {
+      throw new Error("Invalid file path: outside allowed storage directory")
+    }
     if (fs.existsSync(targetPath)) {
       fs.unlinkSync(targetPath)
-      logger?.info?.(`[SupabaseFileService] 🗑️ Removed from local storefront disk: ${fileKey}`)
+      logger?.info?.(`[SupabaseFileService] 🗑️ Removed from local storefront disk: ${safeBaseName}`)
     }
   } catch (err: any) {
     logger?.warn?.(`[SupabaseFileService] ⚠️ Local disk deletion failed for ${fileKey}: ${err?.message}`)
@@ -210,10 +228,9 @@ export class SupabaseFileService extends AbstractFileProviderService {
 
   protected getFileKey(filename: string, access?: string): string {
     const sanitized = sanitizeFileName(filename)
-    const parsed = path.posix.parse(sanitized)
     const prefix = access === "public" ? "" : "private-"
     const unique = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-    return `${parsed.dir ? `${parsed.dir}/` : ""}${prefix}${unique}-${parsed.base}`
+    return `${prefix}${unique}-${sanitized}`
   }
 
   async upload(file: ProviderUploadFileDTO): Promise<ProviderFileResultDTO> {

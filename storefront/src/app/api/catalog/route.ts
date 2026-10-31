@@ -9,15 +9,30 @@ export const dynamic = "force-dynamic"
  * Optimized server-side catalog endpoint configured for Hostinger Cache Manager & Edge CDN.
  * Returns mapped CatalogProduct[] with Cache-Control, LiteSpeed cache headers, and Revision tracking.
  */
+let lastRefreshTime = 0
+const REFRESH_COOLDOWN_MS = 60000
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
-    const forceRefresh = searchParams.get("refresh") === "1"
+    const wantsRefresh = searchParams.get("refresh") === "1"
 
-    if (forceRefresh) {
+    const internalSecret =
+      request.headers.get("x-internal-secret") ||
+      request.headers.get("x-revalidate-secret")
+    const expectedSecret =
+      process.env.REVALIDATION_SECRET || process.env.COMMERCE_CRON_SECRET
+
+    const isAuthorized = Boolean(expectedSecret && internalSecret === expectedSecret)
+    const now = Date.now()
+    const canRefresh = wantsRefresh && (isAuthorized || now - lastRefreshTime > REFRESH_COOLDOWN_MS)
+
+    if (canRefresh) {
+      lastRefreshTime = now
       invalidateProductsCache()
     }
 
+    const forceRefresh = canRefresh
     const products = await getCatalogProducts({ limit: 100 }, forceRefresh)
     const revision = getCatalogRevision()
 

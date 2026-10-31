@@ -19,7 +19,7 @@ export interface ContactInquiryResult {
   error?: string
 }
 
-const INQUIRY_TYPE_LABELS: Record<string, string> = {
+export const INQUIRY_TYPE_LABELS: Record<string, string> = {
   order_support: "Active Order & Delivery Status",
   coa_batch: "Certificate of Analysis (COA) / Batch Verification",
   institutional_po: "Institutional Purchase Order (Net-30 PO)",
@@ -383,7 +383,9 @@ export async function sendContactInquiryEmails(
     tls: { rejectUnauthorized: process.env.NODE_ENV === "production" },
   })
 
-  const categoryLabel = INQUIRY_TYPE_LABELS[payload.inquiryType] || payload.inquiryType
+  const safeName = (payload.name || "Customer").replace(/[\r\n]/g, " ").trim()
+  const safeTicket = ticketRef.replace(/[\r\n]/g, "").trim()
+  const categoryLabel = (INQUIRY_TYPE_LABELS[payload.inquiryType] || "General Scientific Support").replace(/[\r\n]/g, " ").trim()
   const staffEmail = buildStaffNotificationEmail(payload, ticketRef)
   const customerEmail = buildCustomerConfirmationEmail(payload, ticketRef)
 
@@ -397,7 +399,7 @@ export async function sendContactInquiryEmails(
       from: config.from,
       to: config.supportEmail,
       replyTo: payload.email,
-      subject: `[PEPTECH Inquiry] ${categoryLabel} - Ref: ${ticketRef} (${payload.name})`,
+      subject: `[PEPTECH Inquiry] ${categoryLabel} - Ref: ${safeTicket} (${safeName})`,
       text: staffEmail.text,
       html: staffEmail.html,
     })

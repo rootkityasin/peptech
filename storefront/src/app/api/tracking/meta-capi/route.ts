@@ -63,8 +63,74 @@ function hashField(value?: string | null, type: "email" | "phone" | "text" | "po
   return sha256(clean)
 }
 
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
+const MAX_RATE_LIMIT_ENTRIES = 1000
+
+function isRateLimited(ip: string): boolean {
+  const now = Date.now()
+  if (rateLimitMap.size > MAX_RATE_LIMIT_ENTRIES) {
+    for (const [key, val] of rateLimitMap.entries()) {
+      if (val.resetAt < now) rateLimitMap.delete(key)
+    }
+  }
+  const entry = rateLimitMap.get(ip)
+  if (!entry || entry.resetAt < now) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + 60000 })
+    return false
+  }
+  if (entry.count >= 60) {
+    return true
+  }
+  entry.count++
+  return false
+}
+
+function isAllowedOrigin(originHeader: string | null): boolean {
+  if (!originHeader) return true
+  try {
+    const parsed = new URL(originHeader)
+    const host = parsed.hostname.toLowerCase()
+    return (
+      host === "peptech.bio" ||
+      host.endsWith(".peptech.bio") ||
+      host === "localhost" ||
+      host === "127.0.0.1"
+    )
+  } catch {
+    return false
+  }
+}
+
+const ALLOWED_EVENTS = new Set([
+  "PageView",
+  "ViewContent",
+  "AddToCart",
+  "InitiateCheckout",
+  "Purchase",
+  "PlaceAnOrder",
+  "Contact",
+  "Search",
+])
+
 export async function POST(req: NextRequest) {
   try {
+    const origin = req.headers.get("origin") || req.headers.get("referer")
+    if (!isAllowedOrigin(origin)) {
+      return NextResponse.json({ success: false, error: "Forbidden origin" }, { status: 403 })
+    }
+
+    const cfIp = req.headers.get("cf-connecting-ip")
+    const realIp = req.headers.get("x-real-ip")
+    const forwarded = req.headers.get("x-forwarded-for")
+    const clientIp = cfIp || realIp || (forwarded ? forwarded.split(",")[0].trim() : "unknown")
+
+    if (isRateLimited(clientIp)) {
+      return NextResponse.json(
+        { success: false, error: "Too many tracking requests. Please slow down." },
+        { status: 429 }
+      )
+    }
+
     const pixelId = process.env.META_PIXEL_ID || process.env.NEXT_PUBLIC_META_PIXEL_ID
     const accessToken = process.env.META_CAPI_ACCESS_TOKEN
 
@@ -89,18 +155,29 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Extract client IP and user agent for Meta Advanced Matching
-    const forwarded = req.headers.get("x-forwarded-for")
-    const clientIp = forwarded
-      ? forwarded.split(",")[0].trim()
-      : req.headers.get("x-real-ip") || req.headers.get("cf-connecting-ip") || undefined
+    if (!ALLOWED_EVENTS.has(body.event_name)) {
+      return NextResponse.json(
+        { success: false, error: "Disallowed tracking event name" },
+        { status: 400 }
+      )
+    }
+
+    if (["Purchase", "PlaceAnOrder"].includes(body.event_name)) {
+      const orderId = body.custom_data?.order_id
+      if (!orderId || typeof orderId !== "string" || orderId.trim().length < 4) {
+        return NextResponse.json(
+          { success: false, error: "Valid order_id required for purchase conversion tracking" },
+          { status: 400 }
+        )
+      }
+    }
 
     const userAgent = req.headers.get("user-agent") || undefined
 
     // Prepare hashed user data adhering to Meta Graph API specifications
     const uData = body.user_data || {}
     const hashedUserData: Record<string, any> = {
-      client_ip_address: clientIp,
+      client_ip_address: clientIp !== "unknown" ? clientIp : undefined,
       client_user_agent: userAgent,
     }
 
@@ -128,7 +205,10 @@ export async function POST(req: NextRequest) {
     if (uData.fbp) hashedUserData.fbp = uData.fbp
     if (uData.fbc) hashedUserData.fbc = uData.fbc
 
-    const testCode = body.test_event_code || process.env.META_TEST_EVENT_CODE || undefined
+    const isProd = process.env.NODE_ENV === "production" || /^(?:sk|rk)_live_/.test(process.env.STRIPE_API_KEY || "")
+    const testCode = isProd
+      ? (process.env.META_TEST_EVENT_CODE || undefined)
+      : (body.test_event_code || process.env.META_TEST_EVENT_CODE || undefined)
 
     const metaPayload = {
       data: [

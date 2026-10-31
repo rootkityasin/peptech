@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { VerifySkeleton } from "@/components/ui/Skeletons"
 import { resolveProductImage } from "@/lib/product-images"
+import { getBackendUrl } from "@/lib/customer-api"
 
 function cleanBatchQuery(input: string): string {
   let cleaned = input.trim()
@@ -48,24 +49,27 @@ function cleanBatchQuery(input: string): string {
   return cleaned
 }
 
-const PRODUCTION_BATCH_PREFIXES = [
-  "RT-",
-  "TR-",
-  "TRZ-",
-  "SM-",
-  "SMG-",
-  "CU-",
-  "GHK-",
-  "BC-",
-  "BPC-",
-  "TB-",
-  "TB5-",
-  "NJ-",
-  "CGL-",
-  "PT-",
-  "PEP-",
-  "MT-",
-]
+const VERIFIED_EXACT_BATCHES = new Set([
+  "RT-2609A",
+  "TR-2609B",
+  "SM-2609A",
+  "CU-2608C",
+  "BPC-2608A",
+  "TB-2608B",
+  "TSM-2609A",
+  "PT-2608D",
+  "TRZ-2026-08B",
+  "SMG-2026-04A",
+  "TIR-2026-01",
+  "SEMA-2026-02",
+  "BPC-157-09A",
+  "TB-500-11C",
+  "GHK-CU-05B",
+])
+
+const PENDING_BATCHES = new Set([
+  "CGL-2609X",
+])
 
 function VerifyContent() {
   const searchParams = useSearchParams()
@@ -79,25 +83,58 @@ function VerifyContent() {
   
   const [batchInput, setBatchInput] = useState(initialBatch)
   const [activeBatch, setActiveBatch] = useState(initialBatch)
-  const [resultState, setResultState] = useState<"none" | "verified" | "unverified">("none")
+  const [resultState, setResultState] = useState<"none" | "verified" | "pending" | "unverified">("none")
+  const [loading, setLoading] = useState(false)
 
-  const handleVerify = useCallback((query: string) => {
+  const handleVerify = useCallback(async (query: string) => {
     const cleaned = cleanBatchQuery(query)
     if (!cleaned) {
       setResultState("none")
       return
     }
     setActiveBatch(cleaned)
+    setLoading(true)
 
     const upper = cleaned.toUpperCase()
-    // Recognized batches in the system (16 production prefixes + sample registry)
-    if (
-      upper === "RT-2609A" ||
-      PRODUCTION_BATCH_PREFIXES.some((prefix) => upper.startsWith(prefix))
-    ) {
-      setResultState("verified")
-    } else {
-      setResultState("unverified")
+
+    // 1. Check if known pending batch
+    if (PENDING_BATCHES.has(upper)) {
+      setResultState("pending")
+      setLoading(false)
+      return
+    }
+
+    // 2. Query backend verification API
+    try {
+      const backendUrl = getBackendUrl()
+      const res = await fetch(`${backendUrl}/store/custom/verify?code=${encodeURIComponent(upper)}`, {
+        headers: { Accept: "application/json" },
+        cache: "no-store",
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        if (data.pending) {
+          setResultState("pending")
+        } else if (data.verified) {
+          setResultState("verified")
+        } else {
+          setResultState("unverified")
+        }
+      } else {
+        setResultState("unverified")
+      }
+    } catch {
+      // Offline fallback: strict exact registry check
+      if (VERIFIED_EXACT_BATCHES.has(upper)) {
+        setResultState("verified")
+      } else if (PENDING_BATCHES.has(upper)) {
+        setResultState("pending")
+      } else {
+        setResultState("unverified")
+      }
+    } finally {
+      setLoading(false)
     }
   }, [])
 
@@ -481,6 +518,53 @@ function VerifyContent() {
           </div>
         )}
 
+        {/* PENDING LAB REPORT CARD (GEMINI.md Rule 7: Display 'Report Pending' without false certificates) */}
+        {resultState === "pending" && (
+          <div className="w-full max-w-[680px] bg-white rounded-[20px] p-8 sm:p-10 shadow-sm border border-amber-300 flex flex-col items-center text-center gap-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="w-14 h-14 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center text-2xl font-bold">
+              ⏳
+            </div>
+            <div>
+              <span className="inline-block text-[11px] font-bold text-amber-700 tracking-[1.5px] uppercase bg-amber-100 px-3 py-1 rounded-full mb-2">
+                LABORATORY TESTING IN PROGRESS
+              </span>
+              <h2 className="text-xl font-bold text-[#0b1f3a]">
+                Laboratory Report Pending ({activeBatch})
+              </h2>
+              <p className="text-slate-600 text-sm mt-2 max-w-md mx-auto leading-relaxed">
+                Chemical synthesis and formulation for batch lot <strong className="font-semibold text-slate-800">{activeBatch}</strong> are complete.
+                Independent HPLC purity and Mass Spectrometry analytical reports are currently undergoing laboratory testing.
+              </p>
+            </div>
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-amber-800 max-w-md text-left space-y-1">
+              <p className="font-bold flex items-center gap-1.5 text-amber-900">
+                <span>ℹ️</span> Strict PEPTECH® RUO Compliance Notice
+              </p>
+              <p>
+                In accordance with PEPTECH laboratory standards, analytical certificates are published strictly after third-party HPLC & MS verification is finalized. Uncertified purity percentages are never fabricated.
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <Link
+                href={`/lab-reports?batch=${encodeURIComponent(activeBatch)}`}
+                className="px-5 py-2.5 rounded-xl bg-[#0b1f3a] hover:bg-[#162a45] text-white font-semibold text-xs transition-colors"
+              >
+                Track Status in COA Library →
+              </Link>
+              <button
+                type="button"
+                onClick={() => {
+                  setResultState("none")
+                  setBatchInput("")
+                }}
+                className="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 font-semibold text-xs transition-colors"
+              >
+                Verify Another Lot
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* UNVERIFIED BATCH STATE */}
         {resultState === "unverified" && (
           <div className="w-full max-w-[680px] bg-white rounded-[20px] p-8 sm:p-10 shadow-sm border border-rose-200 flex flex-col items-center text-center gap-4 animate-in fade-in zoom-in-95 duration-200">
@@ -489,7 +573,7 @@ function VerifyContent() {
             </div>
             <div>
               <h2 className="text-xl font-bold text-[#0b1f3a]">
-                Report Pending / Unverified Batch ({activeBatch})
+                Unverified Batch Code ({activeBatch})
               </h2>
               <p className="text-slate-500 text-sm mt-2 max-w-md mx-auto leading-relaxed">
                 The lot number you entered could not be authenticated in the official PEPTECH®

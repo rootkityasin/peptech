@@ -1,4 +1,5 @@
 import type { AuthenticatedMedusaRequest, MedusaResponse } from "@medusajs/framework/http"
+import { operator } from "../../../../../../lib/commerce/http"
 import { createClient } from "@supabase/supabase-js"
 import sharp from "sharp"
 import path from "path"
@@ -169,6 +170,7 @@ export async function GET(req: AuthenticatedMedusaRequest, res: MedusaResponse) 
 // POST /admin/custom/products/:id/optimize-images - Optimize product images on demand
 export async function POST(req: AuthenticatedMedusaRequest, res: MedusaResponse) {
   try {
+    operator(req)
     const productId = req.params.id
     if (!productId) {
       return res.status(400).json({ message: "Product ID is required" })
@@ -285,6 +287,6 @@ export async function POST(req: AuthenticatedMedusaRequest, res: MedusaResponse)
       results,
     })
   } catch (err: any) {
-    return res.status(500).json({ message: err.message || "Optimization failed" })
+    return res.status(err.status || 500).json({ message: err.message || "Optimization failed" })
   }
 }

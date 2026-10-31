@@ -1,5 +1,6 @@
-import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
+import type { AuthenticatedMedusaRequest, MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
+import { operator } from "../../../../lib/commerce/http"
 
 // GET /admin/custom/promotions - List all promotions with linked order usage tracking
 export async function GET(req: MedusaRequest, res: MedusaResponse) {
@@ -133,6 +134,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
 // POST /admin/custom/promotions - Manually link an order to a promotion, update free shipping, or toggle promotion status
 export async function POST(req: MedusaRequest, res: MedusaResponse) {
   try {
+    operator(req as AuthenticatedMedusaRequest)
     const {
       action,
       promotion_id,
@@ -233,6 +235,6 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     return res.status(400).json({ message: "Invalid action or missing parameters" })
   } catch (err: any) {
     console.error("[PEPTECH PROMOTIONS UPDATE ERROR]:", err)
-    return res.status(500).json({ message: err.message })
+    return res.status(err.status || 500).json({ message: err.message })
   }
 }

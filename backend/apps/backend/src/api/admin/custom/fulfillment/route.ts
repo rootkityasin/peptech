@@ -1,5 +1,6 @@
-import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http";
+import type { AuthenticatedMedusaRequest, MedusaRequest, MedusaResponse } from "@medusajs/framework/http";
 import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils";
+import { operator } from "../../../../lib/commerce/http";
 import {
   createOrderFulfillmentWorkflow,
   createOrderShipmentWorkflow,
@@ -309,6 +310,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
 
 export async function POST(req: MedusaRequest, res: MedusaResponse) {
   try {
+    operator(req as AuthenticatedMedusaRequest);
     const {
       orderId,
       serviceCode = "AUTO",
@@ -790,13 +792,14 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
   } catch (err: any) {
     console.error("[PEPTECH FULFILLMENT ERROR]:", err);
     return res
-      .status(500)
+      .status(err.status || 500)
       .json({ message: err.message || "Internal fulfillment error" });
   }
 }
 
 export async function DELETE(req: MedusaRequest, res: MedusaResponse) {
   try {
+    operator(req as AuthenticatedMedusaRequest);
     const { orderId, fulfillmentId, orderIdentifier, orderReference } = {
       ...(req.query || {}),
       ...(req.body || {}),
@@ -958,7 +961,7 @@ export async function DELETE(req: MedusaRequest, res: MedusaResponse) {
   } catch (err: any) {
     console.error("[PEPTECH DELETE FULFILLMENT ERROR]:", err);
     return res
-      .status(500)
+      .status(err.status || 500)
       .json({ message: err.message || "Failed to delete fulfillment" });
   }
 }

@@ -1,13 +1,38 @@
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
 
-// Helper to set CORS headers
+const DEFAULT_ALLOWED_ORIGIN_PATTERNS = [
+  /^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?$/,
+  /^https:\/\/(?:[a-zA-Z0-9-]+\.)*peptech\.bio$/,
+  /^https:\/\/docs\.medusajs\.com$/,
+]
+
+function isOriginAllowed(origin: string): boolean {
+  if (!origin) return false
+  const configuredCors = process.env.STORE_CORS || ""
+  if (configuredCors) {
+    const list = configuredCors.split(",").map((s) => s.trim()).filter(Boolean)
+    if (list.includes(origin)) return true
+    for (const item of list) {
+      if (item.startsWith("/") && item.endsWith("/")) {
+        try {
+          const regex = new RegExp(item.slice(1, -1))
+          if (regex.test(origin)) return true
+        } catch {}
+      }
+    }
+  }
+  return DEFAULT_ALLOWED_ORIGIN_PATTERNS.some((pattern) => pattern.test(origin))
+}
+
+// Helper to set CORS headers safely
 function applyCors(req: MedusaRequest, res: MedusaResponse) {
   const origin = (req.headers.origin as string) || ""
-  if (origin) {
+  if (origin && isOriginAllowed(origin)) {
     res.setHeader("Access-Control-Allow-Origin", origin)
     res.setHeader("Access-Control-Allow-Credentials", "true")
-  } else {
+    res.setHeader("Vary", "Origin")
+  } else if (!origin) {
     res.setHeader("Access-Control-Allow-Origin", "*")
   }
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS")

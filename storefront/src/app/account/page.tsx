@@ -25,6 +25,19 @@ function formatOrderDate(rawDate?: string | Date | null): string {
     : d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
 }
 
+function isSafeRelativePath(url: string | null | undefined): boolean {
+  if (!url || typeof url !== "string") return false
+  const clean = url.trim()
+  if (!clean.startsWith("/")) return false
+  if (clean.startsWith("//") || clean.startsWith("/\\")) return false
+  try {
+    const parsed = new URL(clean, "https://peptech.bio")
+    return parsed.origin === "https://peptech.bio" && clean.startsWith("/")
+  } catch {
+    return false
+  }
+}
+
 function formatMedusaOrder(mo: any, customer?: any) {
   const rawTotal =
     typeof mo.summary?.original_order_total === "number" && mo.summary.original_order_total > 0
@@ -256,8 +269,8 @@ function AccountContent() {
   useEffect(() => {
     if (!isLoading && isAuthenticated && token) {
       const redirectParam = searchParams.get("redirect")
-      if (redirectParam && redirectParam.startsWith("/")) {
-        router.push(redirectParam)
+      if (isSafeRelativePath(redirectParam)) {
+        router.push(redirectParam!)
       }
     }
   }, [isLoading, isAuthenticated, token, searchParams, router])
@@ -893,8 +906,8 @@ function AccountContent() {
       setFailedAttempts(0)
       setLockedUntil(null)
       const redirectParam = searchParams.get("redirect")
-      if (redirectParam && redirectParam.startsWith("/")) {
-        router.push(redirectParam)
+      if (isSafeRelativePath(redirectParam)) {
+        router.push(redirectParam!)
         return
       }
     } catch (err: any) {
@@ -983,8 +996,8 @@ function AccountContent() {
       })
       setAuthSuccessMessage("Account created! Loading research dashboard...")
       const redirectParam = searchParams.get("redirect")
-      if (redirectParam && redirectParam.startsWith("/")) {
-        router.push(redirectParam)
+      if (isSafeRelativePath(redirectParam)) {
+        router.push(redirectParam!)
         return
       }
     } catch (err: any) {

@@ -39,11 +39,9 @@ export async function prepareCheckout(scope: any, ledger: CommerceService, custo
     for (const other of active.filter((a) => a.id !== id && ["creating", "open", "processing"].includes(a.state))) {
       const ageMs = Date.now() - new Date(other.created_at).getTime()
       if (!other.data.session_id) {
-        if (ageMs > 300000) {
-          other.state = "failed"
-          await ledger.save(other)
-          await releaseQuote(scope, other.id)
-        }
+        other.state = "failed"
+        await ledger.save(other)
+        await releaseQuote(scope, other.id)
         continue
       }
       try {
@@ -57,13 +55,15 @@ export async function prepareCheckout(scope: any, ledger: CommerceService, custo
             fail("A previous payment is awaiting confirmation. Check your orders before retrying.", 409)
           }
         } else if (session.status === "open") {
-          // Do not invalidate active recent multi-tab sessions (<30 mins) to avoid race conditions
-          if (ageMs > 1800000) {
+          // Release prior open checkout attempts for this customer to avoid inventory exhaustion
+          try {
             await context.stripe.checkout.sessions.expire(session.id)
-            other.state = "expired"
-            await ledger.save(other)
-            await releaseQuote(scope, other.id)
+          } catch (expireErr: any) {
+            console.warn("Could not expire previous Stripe checkout session:", expireErr?.message)
           }
+          other.state = "expired"
+          await ledger.save(other)
+          await releaseQuote(scope, other.id)
           continue
         } else if (session.status === "expired") {
           other.state = "expired"
@@ -92,7 +92,7 @@ export async function prepareCheckout(scope: any, ledger: CommerceService, custo
           payment_method: input.payment_method,
           integration_identifier: `peptech_${Array.from(randomBytes(8), (b) => String.fromCharCode(97 + (b % 26))).join("")}`,
           consent: { ruo: true, recurring: input.recurring_accepted, version: "checkout-v1", accepted_at: new Date().toISOString() },
-          expires_at: Math.floor(Date.now() / 1000) + 3600,
+          expires_at: Math.floor(Date.now() / 1000) + 900,
         },
       })
     }
@@ -129,7 +129,7 @@ export async function prepareCheckout(scope: any, ledger: CommerceService, custo
 
     if (!session) {
       if (Date.now() - new Date(attempt.created_at).getTime() > 23 * 3600000) fail("Checkout needs reconciliation before retry", 409)
-      if (attempt.data.expires_at < Math.floor(Date.now() / 1000) + 1800) fail("Checkout is awaiting expiry reconciliation. Please retry shortly.", 409)
+      if (attempt.data.expires_at <= Math.floor(Date.now() / 1000) + 60) fail("Checkout has expired. Refresh your basket.", 409)
 
       try {
         const result = await gateway.createCheckoutSession({

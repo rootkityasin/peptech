@@ -1,13 +1,14 @@
 import type { AuthenticatedMedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { Modules } from "@medusajs/framework/utils"
 import { actor, endpoint } from "../../../../../lib/commerce/http"
+import { fail } from "../../../../../lib/commerce/policy"
 
 export async function GET(req: AuthenticatedMedusaRequest, res: MedusaResponse) {
   return endpoint(res, async () => {
     const customerId = actor(req)
     const rawId = req.params.id
     if (!rawId) {
-      return res.status(400).json({ message: "Order ID is required" })
+      fail("Order ID is required", 400)
     }
 
     const orderQuery = req.scope.resolve("query")
@@ -84,7 +85,7 @@ export async function GET(req: AuthenticatedMedusaRequest, res: MedusaResponse) 
       try {
         const orderModule = req.scope.resolve(Modules.ORDER)
         const [ordersList] = await orderModule.listAndCountOrders(
-          {},
+          { customer_id: customerId },
           { relations: ["items", "shipping_address", "billing_address", "summary"], take: 50, order: { created_at: "DESC" } }
         )
         const cleanRaw = rawId.toLowerCase().replace(/[^a-z0-9]/g, "")
@@ -115,7 +116,7 @@ export async function GET(req: AuthenticatedMedusaRequest, res: MedusaResponse) 
       const orderEmail = (order.email || "").trim().toLowerCase()
       const isOwner = order.customer_id === customerId || (customerEmail && orderEmail === customerEmail)
       if (!isOwner) {
-        return res.status(403).json({ message: "You are not authorized to view this order." })
+        fail("Order not found.", 404)
       }
 
       const lineItems = order.items || []
@@ -172,7 +173,7 @@ export async function GET(req: AuthenticatedMedusaRequest, res: MedusaResponse) 
       }
     }
 
-    return res.status(404).json({ message: `Order ${rawId} not found` })
+    fail("Order not found.", 404)
   })
 }
 

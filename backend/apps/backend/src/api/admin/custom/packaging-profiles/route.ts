@@ -1,4 +1,5 @@
-import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http";
+import type { AuthenticatedMedusaRequest, MedusaRequest, MedusaResponse } from "@medusajs/framework/http";
+import { operator } from "../../../../lib/commerce/http";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -120,6 +121,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
 // POST /admin/custom/packaging-profiles - Create or update a packaging profile
 export async function POST(req: MedusaRequest, res: MedusaResponse) {
   try {
+    operator(req as AuthenticatedMedusaRequest);
     const { id, name, packageFormatIdentifier, weightInGrams, dimensions } = req.body as any;
 
     if (!name || typeof name !== "string" || !name.trim()) {
@@ -170,13 +172,14 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
 
     return res.status(201).json({ success: true, profile: newProfile, profiles: updated });
   } catch (err: any) {
-    return res.status(500).json({ message: err.message || "Failed to save packaging profile" });
+    return res.status(err.status || 500).json({ message: err.message || "Failed to save packaging profile" });
   }
 }
 
 // DELETE /admin/custom/packaging-profiles - Delete a packaging profile or reset to defaults
 export async function DELETE(req: MedusaRequest, res: MedusaResponse) {
   try {
+    operator(req as AuthenticatedMedusaRequest);
     const action = req.query?.action as string;
     if (action === "reset") {
       saveDataFile(DEFAULT_PACKAGING_PROFILES);
@@ -197,6 +200,6 @@ export async function DELETE(req: MedusaRequest, res: MedusaResponse) {
 
     return res.status(200).json({ success: true, profiles: finalProfiles });
   } catch (err: any) {
-    return res.status(500).json({ message: err.message || "Failed to delete packaging profile" });
+    return res.status(err.status || 500).json({ message: err.message || "Failed to delete packaging profile" });
   }
 }

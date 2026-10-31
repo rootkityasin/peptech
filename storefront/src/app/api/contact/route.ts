@@ -1,38 +1,50 @@
-import { sendContactInquiryEmails, type ContactInquiryPayload } from "../../../lib/contact-email.ts"
+import { sendContactInquiryEmails, INQUIRY_TYPE_LABELS, type ContactInquiryPayload } from "../../../lib/contact-email.ts"
 
 export const dynamic = "force-dynamic"
 
-// In-memory rate limiting map: ip -> array of request timestamps
-const rateLimitMap = new Map<string, number[]>()
-const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000 // 10 minutes
-const MAX_REQUESTS_PER_WINDOW = 5
+// In-memory rate limiting maps with hard capacity bounds
+const ipRateLimitMap = new Map<string, number[]>()
+const emailRateLimitMap = new Map<string, number[]>()
+const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000 // 15 minutes
+const MAX_IP_REQUESTS = 5
+const MAX_EMAIL_REQUESTS = 3
+const MAX_MAP_ENTRIES = 1000
 
-function isRateLimited(ip: string): boolean {
+function checkRateLimit(map: Map<string, number[]>, key: string, maxLimit: number): boolean {
   const now = Date.now()
-  const timestamps = rateLimitMap.get(ip) || []
+  if (map.size > MAX_MAP_ENTRIES) {
+    for (const [k, timestamps] of map.entries()) {
+      if (!timestamps.some((t) => now - t < RATE_LIMIT_WINDOW_MS)) {
+        map.delete(k)
+      }
+    }
+  }
+  const timestamps = map.get(key) || []
   const recent = timestamps.filter((t) => now - t < RATE_LIMIT_WINDOW_MS)
   
-  if (recent.length >= MAX_REQUESTS_PER_WINDOW) {
-    rateLimitMap.set(ip, recent)
-    return true
+  if (recent.length >= maxLimit) {
+    map.set(key, recent)
+    return false
   }
   
   recent.push(now)
-  rateLimitMap.set(ip, recent)
-  return false
+  map.set(key, recent)
+  return true
 }
 
 // Clean up old rate limit entries every 15 minutes
 if (typeof setInterval !== "undefined") {
   const cleanupTimer = setInterval(() => {
     const now = Date.now()
-    for (const [ip, timestamps] of rateLimitMap.entries()) {
+    for (const [ip, timestamps] of ipRateLimitMap.entries()) {
       const recent = timestamps.filter((t) => now - t < RATE_LIMIT_WINDOW_MS)
-      if (recent.length === 0) {
-        rateLimitMap.delete(ip)
-      } else {
-        rateLimitMap.set(ip, recent)
-      }
+      if (recent.length === 0) ipRateLimitMap.delete(ip)
+      else ipRateLimitMap.set(ip, recent)
+    }
+    for (const [email, timestamps] of emailRateLimitMap.entries()) {
+      const recent = timestamps.filter((t) => now - t < RATE_LIMIT_WINDOW_MS)
+      if (recent.length === 0) emailRateLimitMap.delete(email)
+      else emailRateLimitMap.set(email, recent)
     }
   }, 15 * 60 * 1000)
   if (typeof cleanupTimer.unref === "function") {
@@ -47,11 +59,12 @@ function isValidEmail(email: string): boolean {
 export async function POST(request: Request) {
   try {
     const clientIp =
-      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      request.headers.get("cf-connecting-ip") ||
       request.headers.get("x-real-ip") ||
+      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
       "127.0.0.1"
 
-    if (isRateLimited(clientIp)) {
+    if (!checkRateLimit(ipRateLimitMap, clientIp, MAX_IP_REQUESTS)) {
       return Response.json(
         {
           success: false,
@@ -79,11 +92,19 @@ export async function POST(request: Request) {
       })
     }
 
-    const name = String(body.name || "").trim()
+    const name = String(body.name || "").replace(/[\r\n]/g, " ").trim()
     const email = String(body.email || "").trim().toLowerCase()
-    const institution = String(body.institution || "").trim()
-    const inquiryType = String(body.inquiryType || "order_support").trim()
-    const referenceId = String(body.referenceId || "").trim()
+    const institution = String(body.institution || "").replace(/[\r\n]/g, " ").trim()
+    const rawInquiryType = String(body.inquiryType || "order_support").trim()
+    const validInquiryTypes = new Set(Object.keys(INQUIRY_TYPE_LABELS))
+    if (!validInquiryTypes.has(rawInquiryType)) {
+      return Response.json(
+        { success: false, message: "Invalid scientific inquiry type selected." },
+        { status: 400 }
+      )
+    }
+    const inquiryType = rawInquiryType
+    const referenceId = String(body.referenceId || "").replace(/[\r\n]/g, " ").trim()
     const message = String(body.message || "").trim()
     const ruoAgreement = Boolean(body.ruoAgreement)
 
@@ -99,6 +120,16 @@ export async function POST(request: Request) {
       return Response.json(
         { success: false, message: "Please enter a valid academic or work email address." },
         { status: 400 }
+      )
+    }
+
+    if (!checkRateLimit(emailRateLimitMap, email, MAX_EMAIL_REQUESTS)) {
+      return Response.json(
+        {
+          success: false,
+          message: "Too many inquiries submitted for this email address. Please allow time for our response.",
+        },
+        { status: 429 }
       )
     }
 

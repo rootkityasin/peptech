@@ -42,14 +42,26 @@ const mimeTypes = {
   '.jpeg': 'image/jpeg',
   '.svg': 'image/svg+xml',
   '.gif': 'image/gif',
+  '.avif': 'image/avif',
   '.ico': 'image/x-icon',
 };
 
 function serveStaticImage(req, res) {
-  let urlPath = (req.url || '').split('?')[0];
+  const rawUrl = req.url || '';
+  if (rawUrl.includes('\0') || rawUrl.includes('%00') || rawUrl.includes('\\') || rawUrl.includes('%5c') || rawUrl.includes('%5C')) {
+    return false;
+  }
+
+  let urlPath = rawUrl.split('?')[0];
   try {
     urlPath = decodeURIComponent(urlPath);
-  } catch {}
+  } catch {
+    return false;
+  }
+
+  if (urlPath.includes('\0') || urlPath.includes('\\')) {
+    return false;
+  }
 
   const isImageRequest = 
     urlPath.startsWith('/images/') || 
@@ -66,24 +78,43 @@ function serveStaticImage(req, res) {
     cleanPath = '/images/peptech/cartridge.webp';
   }
 
-  const cleanPathsToTry = [cleanPath];
-  if (cleanPath.endsWith('.png') || cleanPath.endsWith('.jpg')) {
-    cleanPathsToTry.push(cleanPath.replace(/\.(png|jpg)$/, '.webp'));
+  const normalized = path.posix.normalize(cleanPath);
+  if (normalized.includes('..') || !normalized.startsWith('/images/')) {
+    return false;
+  }
+
+  const ext = path.extname(normalized).toLowerCase();
+  if (!ext || !mimeTypes[ext]) {
+    return false;
+  }
+
+  const cleanPathsToTry = [normalized];
+  if (normalized.endsWith('.png') || normalized.endsWith('.jpg')) {
+    cleanPathsToTry.push(normalized.replace(/\.(png|jpg)$/, '.webp'));
   }
 
   const baseDirs = [
-    path.join(__dirname, 'storefront/public'),
-    path.join(__dirname, 'backend/apps/backend/public'),
-    path.join(__dirname, 'app'),
-    path.join(__dirname, 'dist/public'),
-    path.join(__dirname, 'dist/app'),
-    path.join(__dirname, 'public'),
+    path.resolve(__dirname, 'storefront/public'),
+    path.resolve(__dirname, 'backend/apps/backend/public'),
+    path.resolve(__dirname, 'backend/apps/backend/public/admin'),
+    path.resolve(__dirname, 'app'),
+    path.resolve(__dirname, 'dist/public'),
+    path.resolve(__dirname, 'dist/public/admin'),
+    path.resolve(__dirname, 'dist/app'),
+    path.resolve(__dirname, 'public'),
   ];
 
   let filePath = null;
   for (const cPath of cleanPathsToTry) {
+    const extCandidate = path.extname(cPath).toLowerCase();
+    if (!mimeTypes[extCandidate]) continue;
+    const relPath = cPath.replace(/^\/+/, '');
     for (const bDir of baseDirs) {
-      const candidate = path.join(bDir, cPath);
+      const resolvedBase = path.resolve(bDir);
+      const candidate = path.resolve(resolvedBase, relPath);
+      if (!candidate.startsWith(resolvedBase + path.sep)) {
+        continue;
+      }
       try {
         if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
           filePath = candidate;
@@ -94,13 +125,20 @@ function serveStaticImage(req, res) {
     if (filePath) break;
   }
 
-  const defaultFallback = path.join(__dirname, 'storefront/public/images/peptech/cartridge.webp');
-  const targetPath = filePath || (fs.existsSync(defaultFallback) ? defaultFallback : null);
+  const targetPath = filePath;
 
   if (targetPath) {
-    const ext = path.extname(targetPath).toLowerCase();
+    const targetExt = path.extname(targetPath).toLowerCase();
+    if (!mimeTypes[targetExt]) {
+      return false;
+    }
+    const projectRoot = path.resolve(__dirname);
+    if (!targetPath.startsWith(projectRoot + path.sep)) {
+      return false;
+    }
+
     res.writeHead(200, {
-      'Content-Type': mimeTypes[ext] || 'image/webp',
+      'Content-Type': mimeTypes[targetExt] || 'image/webp',
       'Cache-Control': 'public, max-age=86400',
       'Access-Control-Allow-Origin': '*',
     });

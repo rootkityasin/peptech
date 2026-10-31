@@ -114,35 +114,9 @@ export async function buildQuote(
     })
     if (!variant || variant.product?.status !== "published" || !variant.price_set?.id) fail("Product is unavailable", 409)
 
-    let approval = await ledger.get(recordId("catalog", item.variant_id))
+    const approval = await ledger.get(recordId("catalog", item.variant_id))
     if (!approval) {
-      const handle = (variant.product?.handle || "").toLowerCase()
-      let format = "vial"
-      if (handle.includes("pen") || handle.includes("device") || handle.includes("starter-set")) {
-        format = "device"
-      } else if (handle.includes("cartridge") || handle.includes("refill")) {
-        format = "refill"
-      }
-      const isGeneric = !variant.title || ["Default Variant", "Complete Starter Kit", "Default", "Standard"].includes(variant.title) || variant.title === variant.product?.title
-      const canonicalName = isGeneric ? (variant.product?.title || "Research Formulation") : `${variant.product?.title} - ${variant.title}`
-      const catalogData = {
-        version: "1.0",
-        canonical_name: canonicalName,
-        canonical_sku: variant.sku || `SKU-${variant.id.slice(-8)}`,
-        format,
-        evidence_ref: "COA-2026-VERIFIED",
-        tax_code: "txcd_99999999",
-        destinations: ["*", "gb", "us", "eu", "de", "fr", "es", "it", "nl", "ie", "ca", "au", "ch", "at", "be", "dk", "se", "no"],
-        approved_at: new Date().toISOString()
-      }
-      approval = await ledger.create({
-        id: recordId("catalog", variant.id),
-        kind: "catalog",
-        profile: policy.profile || "catalog",
-        owner_id: null,
-        state: "approved",
-        data: catalogData
-      })
+      fail("Product compliance verification pending operator approval", 422)
     }
     assertProduct(approval, input.address.country_code, item.recurring)
     const prices = await scope.resolve(Modules.PRICING).calculatePrices(

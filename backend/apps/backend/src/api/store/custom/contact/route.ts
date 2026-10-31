@@ -1,20 +1,65 @@
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 const nodemailer = require("nodemailer")
 
-// Helper to set CORS headers
+const DEFAULT_ALLOWED_ORIGIN_PATTERNS = [
+  /^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?$/,
+  /^https:\/\/(?:[a-zA-Z0-9-]+\.)*peptech\.bio$/,
+  /^https:\/\/docs\.medusajs\.com$/,
+]
+
+function isOriginAllowed(origin: string): boolean {
+  if (!origin) return false
+  const configuredCors = process.env.STORE_CORS || ""
+  if (configuredCors) {
+    const list = configuredCors.split(",").map((s) => s.trim()).filter(Boolean)
+    if (list.includes(origin)) return true
+    for (const item of list) {
+      if (item.startsWith("/") && item.endsWith("/")) {
+        try {
+          const regex = new RegExp(item.slice(1, -1))
+          if (regex.test(origin)) return true
+        } catch {}
+      }
+    }
+  }
+  return DEFAULT_ALLOWED_ORIGIN_PATTERNS.some((pattern) => pattern.test(origin))
+}
+
 function applyCors(req: MedusaRequest, res: MedusaResponse) {
   const origin = (req.headers.origin as string) || ""
-  if (origin) {
+  if (origin && isOriginAllowed(origin)) {
     res.setHeader("Access-Control-Allow-Origin", origin)
     res.setHeader("Access-Control-Allow-Credentials", "true")
-  } else {
-    res.setHeader("Access-Control-Allow-Origin", "*")
+    res.setHeader("Vary", "Origin")
   }
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS")
   res.setHeader(
     "Access-Control-Allow-Headers",
     "Content-Type, Authorization, x-publishable-api-key, Accept, Cache-Control, X-Requested-With, x-storefront-origin"
   )
+}
+
+const ipLimitMap = new Map<string, { count: number; resetAt: number }>()
+const emailLimitMap = new Map<string, { count: number; resetAt: number }>()
+const MAX_RATE_LIMIT_ENTRIES = 1000
+
+function checkRate(map: Map<string, { count: number; resetAt: number }>, key: string, maxCount: number, windowMs: number): boolean {
+  const now = Date.now()
+  if (map.size > MAX_RATE_LIMIT_ENTRIES) {
+    for (const [k, v] of map.entries()) {
+      if (v.resetAt < now) map.delete(k)
+    }
+  }
+  const entry = map.get(key)
+  if (!entry || entry.resetAt < now) {
+    map.set(key, { count: 1, resetAt: now + windowMs })
+    return true
+  }
+  if (entry.count >= maxCount) {
+    return false
+  }
+  entry.count++
+  return true
 }
 
 export async function OPTIONS(req: MedusaRequest, res: MedusaResponse) {
@@ -49,6 +94,20 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
   try {
     const body = (req.body as any) || {}
 
+    const cfIp = req.headers["cf-connecting-ip"] as string | undefined
+    const realIp = req.headers["x-real-ip"] as string | undefined
+    const forwarded = req.headers["x-forwarded-for"] as string | undefined
+    const clientIp = cfIp || realIp || (forwarded ? forwarded.split(",")[0].trim() : "unknown")
+
+    if (!checkRate(ipLimitMap, clientIp, 5, 3600000)) {
+      return res.status(429).json({ message: "Too many contact submissions from this connection. Please try again later." })
+    }
+
+    const email = String(body.email || "").trim().toLowerCase()
+    if (email && !checkRate(emailLimitMap, email, 3, 3600000)) {
+      return res.status(429).json({ message: "Too many inquiries for this email address. Please try again later." })
+    }
+
     // Honeypot check
     if (body._fax_verification || body.website_url) {
       return res.status(200).json({
@@ -58,11 +117,11 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
       })
     }
 
-    const name = String(body.name || "").trim()
-    const email = String(body.email || "").trim().toLowerCase()
-    const institution = String(body.institution || "").trim()
-    const inquiryType = String(body.inquiryType || "order_support").trim()
-    const referenceId = String(body.referenceId || "").trim()
+    const name = String(body.name || "").replace(/[\r\n]/g, " ").trim()
+    const institution = String(body.institution || "").replace(/[\r\n]/g, " ").trim()
+    const rawInquiry = String(body.inquiryType || "order_support").trim()
+    const inquiryType = INQUIRY_TYPE_LABELS[rawInquiry] ? rawInquiry : "other"
+    const referenceId = String(body.referenceId || "").replace(/[\r\n]/g, " ").trim()
     const message = String(body.message || "").trim()
     const ruoAgreement = Boolean(body.ruoAgreement)
 

@@ -6,7 +6,7 @@ import { fail } from "../../../../lib/commerce/policy"
 
 export async function GET(req: AuthenticatedMedusaRequest, res: MedusaResponse) {
   return endpoint(res, async () => {
-    actor(req)
+    operator(req)
     const ledger = commerce(req)
     const records = await ledger.list("subscription")
     const id = req.query.id as string | undefined

@@ -2,7 +2,7 @@ import {isDeepStrictEqual} from "node:util"
 import { z } from "zod"
 import CommerceService,{recordId,LedgerRecord} from "../../modules/peptech-commerce/service"
 import { stripeContext,objectId,operationKey } from "./stripe"
-import { fail,owned } from "./policy"
+import { fail, owned, addressSchema, assertProduct } from "./policy"
 export function periodEnd(subscription:any):number {
   return subscription.items.data.reduce((end:number,item:any)=>Math.max(end,item.current_period_end||0),0)
 }
@@ -34,6 +34,20 @@ async function syncLockedSubscription(ledger:CommerceService,stripeId:string) {
   })
   return ledger.save(record)
 }
+export const subscriptionAddressSchema = z.object({
+  id: z.string().optional().nullable(),
+  first_name: z.string().trim().max(100).optional(),
+  last_name: z.string().trim().max(100).optional(),
+  company: z.string().max(100).optional().nullable(),
+  address_1: z.string().trim().min(1).max(200).optional(),
+  address_2: z.string().max(200).optional().nullable(),
+  city: z.string().trim().min(1).max(100).optional(),
+  postal_code: z.string().trim().min(1).max(20).optional(),
+  country_code: z.string().trim().transform((c) => c.toLowerCase()).pipe(z.string().regex(/^[a-z]{2}$/)).optional(),
+  province: z.string().max(100).optional().nullable(),
+  phone: z.string().max(40).optional().nullable(),
+}).strict()
+
 export const commandSchema = z.object({
   subscription_id: z.string().min(1),
   operation_id: z.string().uuid(),
@@ -43,7 +57,7 @@ export const commandSchema = z.object({
   cadence_days: z.number().int().min(7).max(90).optional(),
   variant_id: z.string().optional(),
   strength: z.string().optional(),
-  address: z.record(z.string(), z.any()).optional(),
+  address: subscriptionAddressSchema.optional(),
 }).strict()
 
 export async function subscriptionCommand(ledger: CommerceService, customer: string, body: unknown) {
@@ -122,17 +136,49 @@ export async function subscriptionCommand(ledger: CommerceService, customer: str
       params = { pause_collection: { behavior: "keep_as_draft" } }
     }
     if (input.action === "update_address" && input.address) {
-      record.data.quote.address = { ...record.data.quote.address, ...input.address }
+      const mergedAddress = { ...record.data.quote.address, ...input.address }
+      const countryCode = mergedAddress.country_code || "gb"
+      const lines = record.data.quote?.lines || []
+      for (const line of lines) {
+        if (line.variant_id) {
+          const cat = await ledger.get(recordId("catalog", line.variant_id))
+          if (!cat) {
+            fail("Catalog compliance record is missing", 422)
+          }
+          assertProduct(cat, countryCode, true)
+        }
+      }
+      record.data.quote.address = mergedAddress
       params = { pause_collection: { behavior: "keep_as_draft" } }
     }
     if (input.action === "update_concentration" && (input.variant_id || input.strength)) {
-      if (record.data.quote?.lines?.[0]) {
-        if (input.variant_id) record.data.quote.lines[0].variant_id = input.variant_id
-        if (input.strength) {
-          record.data.quote.lines[0].metadata = {
-            ...(record.data.quote.lines[0].metadata || {}),
-            strength: input.strength,
+      if (input.variant_id) {
+        const catalogRecord = await ledger.get(recordId("catalog", input.variant_id))
+        if (!catalogRecord) {
+          fail("Selected formulation requires catalogue compliance approval before updating subscription", 422)
+        }
+        const countryCode = record.data.quote?.address?.country_code || "gb"
+        assertProduct(catalogRecord, countryCode, true)
+
+        if (record.data.quote?.lines?.[0]) {
+          const currentLine = record.data.quote.lines[0]
+          if (currentLine.format && catalogRecord.data?.format && currentLine.format !== catalogRecord.data.format) {
+            fail("Cannot change subscription product format", 400)
           }
+          currentLine.variant_id = input.variant_id
+          if (catalogRecord.data?.canonical_name) currentLine.name = catalogRecord.data.canonical_name
+          if (catalogRecord.data?.canonical_sku) currentLine.sku = catalogRecord.data.canonical_sku
+          if (catalogRecord.data?.format) currentLine.format = catalogRecord.data.format
+          if (catalogRecord.data?.unit_minor && catalogRecord.data.unit_minor !== currentLine.unit_minor) {
+            currentLine.unit_minor = catalogRecord.data.unit_minor
+            record.data.quote.renewal_minor = catalogRecord.data.unit_minor * (currentLine.quantity || 1)
+          }
+        }
+      }
+      if (input.strength && record.data.quote?.lines?.[0]) {
+        record.data.quote.lines[0].metadata = {
+          ...(record.data.quote.lines[0].metadata || {}),
+          strength: input.strength,
         }
       }
       params = { pause_collection: { behavior: "keep_as_draft" } }

@@ -1,4 +1,5 @@
-import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http";
+import type { AuthenticatedMedusaRequest, MedusaRequest, MedusaResponse } from "@medusajs/framework/http";
+import { operator } from "../../../../lib/commerce/http";
 import { createClient } from "@supabase/supabase-js";
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -141,6 +142,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
 // POST /admin/custom/inventory - Adjust stock levels (single or batch)
 export async function POST(req: MedusaRequest, res: MedusaResponse) {
   try {
+    operator(req as AuthenticatedMedusaRequest);
     const {
       inventory_item_id,
       adjustments = [],
@@ -252,6 +254,6 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     });
   } catch (err: any) {
     console.error("[PEPTECH INVENTORY ADJUST ERROR]:", err);
-    return res.status(500).json({ message: err.message || "Failed to adjust stock levels" });
+    return res.status(err.status || 500).json({ message: err.message || "Failed to adjust stock levels" });
   }
 }

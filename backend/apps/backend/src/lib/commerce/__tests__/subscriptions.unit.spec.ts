@@ -78,6 +78,7 @@ describe("subscription commands and presentation", () => {
     expect(() => commandSchema.parse({ subscription_id: "sub_1", operation_id: "723e4567-e89b-42d3-a456-426614174006", action: "update_dosage", strength: "10mg" })).toThrow()
     expect(() => commandSchema.parse({ subscription_id: "sub_1", operation_id: "123e4567-e89b-42d3-a456-426614174000", action: "invalid_action" })).toThrow()
     expect(() => commandSchema.parse({ subscription_id: "sub_1", operation_id: "123e4567-e89b-42d3-a456-426614174000", action: "pause", unknown_field: true })).toThrow()
+    expect(() => commandSchema.parse({ subscription_id: "sub_1", operation_id: "823e4567-e89b-42d3-a456-426614174007", action: "update_address", address: { address_1: "New Lab Wing", injected_key: "malicious" } })).toThrow()
   })
 
   it("computes proper cadence labels and skip calculations", () => {

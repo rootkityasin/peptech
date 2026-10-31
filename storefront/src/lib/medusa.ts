@@ -110,7 +110,6 @@ export function invalidateProductsCache(): void {
   cachedStoreProducts = null
   cachedCatalogProducts = null
   productByHandleCache.clear()
-  inFlightProductsPromise = null
   inFlightHandlePromises.clear()
   bumpCatalogRevision()
 }
@@ -127,13 +126,15 @@ export async function getProducts(queryParams: Record<string, unknown> = {}, for
     Object.keys(queryParams).length === 0 ||
     (Object.keys(queryParams).length === 1 && queryParams.limit === 100)
 
+  // Coalesce concurrent requests on active in-flight query
+  if (isDefaultList && inFlightProductsPromise) {
+    return inFlightProductsPromise
+  }
+
   // Pure on-demand: if already cached and not force refreshing, return immediately (0 DB queries!)
   if (!forceRefresh && isDefaultList) {
     if (cachedStoreProducts && cachedStoreProducts.length > 0) {
       return cachedStoreProducts
-    }
-    if (inFlightProductsPromise) {
-      return inFlightProductsPromise
     }
   }
 
