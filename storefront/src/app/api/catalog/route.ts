@@ -20,10 +20,14 @@ export async function GET(request: Request) {
     const internalSecret =
       request.headers.get("x-internal-secret") ||
       request.headers.get("x-revalidate-secret")
-    const expectedSecret =
-      process.env.REVALIDATION_SECRET || process.env.COMMERCE_CRON_SECRET
+    const allowedSecrets = [
+      process.env.REVALIDATION_SECRET,
+      process.env.COMMERCE_CRON_SECRET,
+      process.env.INTERNAL_REVALIDATE_SECRET,
+      process.env.JWT_SECRET,
+    ].filter((s): s is string => Boolean(s && s.length >= 8))
 
-    const isAuthorized = Boolean(expectedSecret && internalSecret === expectedSecret)
+    const isAuthorized = Boolean(internalSecret && allowedSecrets.includes(internalSecret))
     const now = Date.now()
     const canRefresh = wantsRefresh && (isAuthorized || now - lastRefreshTime > REFRESH_COOLDOWN_MS)
 

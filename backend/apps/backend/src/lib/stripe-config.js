@@ -129,7 +129,16 @@ function resolveRedisUrl(env = process.env) {
 function commerceRuntimeModules(env = process.env) {
   try {
     const activeRedisUrl = resolveRedisUrl(env);
-    if (!activeRedisUrl) return [];
+    if (!activeRedisUrl) {
+      return [
+        {
+          resolve: "@medusajs/medusa/event-bus-local",
+        },
+        {
+          resolve: "@medusajs/medusa/workflow-engine-inmemory",
+        },
+      ];
+    }
     const redisClientOptions = {
       connectTimeout: 10000,
       keepAlive: 30000,

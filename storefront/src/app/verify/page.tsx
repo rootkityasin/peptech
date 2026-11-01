@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useCallback, Suspense } from "react"
+import React, { useState, useEffect, useCallback, useRef, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { VerifySkeleton } from "@/components/ui/Skeletons"

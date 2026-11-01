@@ -19,6 +19,8 @@ function isAuthorized(request: Request): boolean {
     process.env.REVALIDATION_SECRET,
     process.env.COMMERCE_CRON_SECRET,
     process.env.STRIPE_COMMERCE_SIGNING_SECRET,
+    process.env.INTERNAL_REVALIDATE_SECRET,
+    process.env.JWT_SECRET,
   ].filter((s): s is string => Boolean(s && s.length >= 8))
 
   if (validSecrets.length === 0) {
@@ -113,11 +115,23 @@ async function handleRevalidation(request: Request) {
     warmTargets.push(`${origin}/refills`, `${origin}/pen-sets`, `${origin}/vials`)
   }
 
+  const authSecret =
+    request.headers.get("x-revalidate-secret") ||
+    process.env.REVALIDATION_SECRET ||
+    process.env.COMMERCE_CRON_SECRET ||
+    process.env.INTERNAL_REVALIDATE_SECRET ||
+    process.env.JWT_SECRET ||
+    ""
+
   // Fire eager warming in background without blocking the revalidation HTTP response
   Promise.allSettled(
     warmTargets.map((url) =>
       fetch(url, {
-        headers: { "x-eager-warm": "1", "Cache-Control": "no-cache" },
+        headers: {
+          "x-eager-warm": "1",
+          "Cache-Control": "no-cache",
+          ...(authSecret ? { "x-revalidate-secret": authSecret } : {}),
+        },
         cache: "no-store",
       }).catch(() => null)
     )

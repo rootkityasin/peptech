@@ -96,6 +96,8 @@ function ensureRuntimeBaseUrl() {
 // invalidateProductsCache() is called via Medusa Admin webhook/subscriber.
 // ==============================================================================
 let cachedStoreProducts: StoreProduct[] | null = null
+let cachedStoreProductsAt = 0
+const CATALOG_MEMORY_TTL_MS = 60000 // 60-second fallback freshness window
 let cachedCatalogProducts: CatalogProduct[] | null = null
 let inFlightProductsPromise: Promise<StoreProduct[]> | null = null
 
@@ -109,6 +111,7 @@ const inFlightHandlePromises = new Map<string, Promise<StoreProduct | null>>()
 export function invalidateProductsCache(): void {
   cachedStoreProducts = null
   cachedCatalogProducts = null
+  cachedStoreProductsAt = 0
   productByHandleCache.clear()
   inFlightHandlePromises.clear()
   bumpCatalogRevision()
@@ -131,11 +134,14 @@ export async function getProducts(queryParams: Record<string, unknown> = {}, for
     return inFlightProductsPromise
   }
 
-  // Pure on-demand: if already cached and not force refreshing, return immediately (0 DB queries!)
-  if (!forceRefresh && isDefaultList) {
-    if (cachedStoreProducts && cachedStoreProducts.length > 0) {
-      return cachedStoreProducts
-    }
+  // Pure on-demand: if already cached within fresh TTL and not force refreshing, return immediately (0 DB queries!)
+  const isFresh = Boolean(
+    cachedStoreProducts &&
+    cachedStoreProducts.length > 0 &&
+    Date.now() - cachedStoreProductsAt < CATALOG_MEMORY_TTL_MS
+  )
+  if (!forceRefresh && isDefaultList && isFresh) {
+    return cachedStoreProducts!
   }
 
   const fetchPromise = (async () => {
@@ -148,6 +154,7 @@ export async function getProducts(queryParams: Record<string, unknown> = {}, for
       const products = (response.products as unknown as StoreProduct[]) || []
       if (isDefaultList && products.length > 0) {
         cachedStoreProducts = products
+        cachedStoreProductsAt = Date.now()
         cachedCatalogProducts = products.map(mapMedusaToCatalogProduct)
         // Prime handle cache with all retrieved products
         products.forEach((p) => {

@@ -68,7 +68,7 @@ function cleanExistingUrl(url?: string | null): string | null {
     return null
   }
   // Strip localhost origin if present
-  let clean = trimmed.replace(/^https?:\/\/localhost:\d+/, "")
+  const clean = trimmed.replace(/^https?:\/\/localhost:\d+/, "")
   if (clean.includes("/static/")) {
     return null
   }
@@ -247,10 +247,16 @@ export function getProductImagePath(category: ProductCategory, slug: CompoundSlu
  */
 export function appendRevision(url?: string | null): string {
   if (!url || typeof url !== "string") return "/images/placeholder.svg"
-  if (url === "/images/placeholder.svg" || url.endsWith(".svg")) return url
-  // Only remote / uploaded images (e.g. Supabase storage, CDN) need query cache-busting
-  // Local static bundled assets in /public do not change at runtime without a redeploy
-  if (url.startsWith("/") && !url.startsWith("/api/")) return url
+  if (
+    url === "/images/placeholder.svg" ||
+    url.endsWith(".svg") ||
+    url.startsWith("/images/figma/") ||
+    url.startsWith("/images/payment/") ||
+    url.startsWith("/images/badges/") ||
+    url.startsWith("/favicon")
+  ) {
+    return url
+  }
   try {
     const isAbsolute = /^https?:\/\//i.test(url)
     const base = isAbsolute ? undefined : "https://peptech.bio"
@@ -277,7 +283,7 @@ export function appendRevision(url?: string | null): string {
  * and order history. Guaranteed to display valid product photography without broken placeholders.
  */
 export function resolveProductImage(item?: ProductLike | string | null): string {
-  if (!item) return `/images/products/pen-sets/ghk-cu.jpg`
+  if (!item) return appendRevision(`/images/products/pen-sets/ghk-cu.jpg`)
 
   if (typeof item === "string") {
     const clean = cleanExistingUrl(item)
@@ -287,9 +293,9 @@ export function resolveProductImage(item?: ProductLike | string | null): string 
     const slug = resolveCompoundSlug(item)
     const fallbackPath = getProductImagePath(category, slug)
     if (fallbackPath && !fallbackPath.includes("placeholder")) {
-      return fallbackPath
+      return appendRevision(fallbackPath)
     }
-    return `/images/products/pen-sets/ghk-cu.jpg`
+    return appendRevision(`/images/products/pen-sets/ghk-cu.jpg`)
   }
 
   // 1. Try explicit image or thumbnail first if valid (and not a placeholder)
@@ -312,8 +318,8 @@ export function resolveProductImage(item?: ProductLike | string | null): string 
   const slug = resolveCompoundSlug(item)
   const resolved = getProductImagePath(category, slug)
   if (resolved && !resolved.includes("placeholder")) {
-    return resolved
+    return appendRevision(resolved)
   }
 
-  return `/images/products/pen-sets/ghk-cu.jpg`
+  return appendRevision(`/images/products/pen-sets/ghk-cu.jpg`)
 }

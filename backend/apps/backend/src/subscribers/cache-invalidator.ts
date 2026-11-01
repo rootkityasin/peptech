@@ -31,11 +31,13 @@ export default async function cacheInvalidationSubscriber({
   const revalidateSecret =
     process.env.REVALIDATION_SECRET ||
     process.env.COMMERCE_CRON_SECRET ||
-    process.env.STRIPE_COMMERCE_SIGNING_SECRET
+    process.env.STRIPE_COMMERCE_SIGNING_SECRET ||
+    process.env.INTERNAL_REVALIDATE_SECRET ||
+    process.env.JWT_SECRET
 
   if (!revalidateSecret) {
     logger.warn(
-      "[PEPTECH CACHE INVALIDATOR] Neither REVALIDATION_SECRET, COMMERCE_CRON_SECRET, nor STRIPE_COMMERCE_SIGNING_SECRET is configured. Skipping cache invalidation request."
+      "[PEPTECH CACHE INVALIDATOR] Neither REVALIDATION_SECRET, COMMERCE_CRON_SECRET, STRIPE_COMMERCE_SIGNING_SECRET, nor JWT_SECRET is configured. Skipping cache invalidation request."
     )
     return
   }
@@ -88,41 +90,54 @@ export default async function cacheInvalidationSubscriber({
     }
   }
 
-  try {
-    const res = await fetch(`${storefrontUrl}/api/revalidate`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-revalidate-secret": revalidateSecret,
-      },
-      body: JSON.stringify({
-        event: name,
-        data,
-        productId,
-        handle,
-        categories,
-        timestamp: Date.now(),
-      }),
-    })
+  const port = process.env.PORT || 9000
+  const targets = Array.from(new Set([
+    `http://127.0.0.1:${port}/api/revalidate`,
+    ...(storefrontUrl ? [`${storefrontUrl.replace(/\/$/, "")}/api/revalidate`] : []),
+  ]))
 
-    if (res.ok) {
-      const result = await res.json()
-      logger.info(
-        `[PEPTECH CACHE INVALIDATOR] ✓ Storefront & LiteSpeed edge cache purged instantly: ${JSON.stringify(
-          result
-        )}`
-      )
-    } else {
-      const text = await res.text()
-      logger.warn(
-        `[PEPTECH CACHE INVALIDATOR] ⚠️ Storefront revalidation failed (Status ${res.status}): ${text}`
-      )
-    }
-  } catch (err: any) {
+  const payload = JSON.stringify({
+    event: name,
+    data,
+    productId,
+    handle,
+    categories,
+    timestamp: Date.now(),
+  })
+
+  let anySuccess = false
+  const errors: string[] = []
+
+  await Promise.allSettled(
+    targets.map(async (url) => {
+      try {
+        const res = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-revalidate-secret": revalidateSecret,
+          },
+          body: payload,
+        })
+        if (res.ok) {
+          anySuccess = true
+          const result = await res.json().catch(() => ({}))
+          logger.info(
+            `[PEPTECH CACHE INVALIDATOR] ✓ Cache purged via ${url}: ${JSON.stringify(result)}`
+          )
+        } else {
+          const text = await res.text().catch(() => "")
+          errors.push(`${url} returned status ${res.status}: ${text}`)
+        }
+      } catch (err: any) {
+        errors.push(`${url} unreachable: ${err?.message || err}`)
+      }
+    })
+  )
+
+  if (!anySuccess && errors.length > 0) {
     logger.warn(
-      `[PEPTECH CACHE INVALIDATOR] ⚠️ Failed to reach storefront revalidation endpoint at ${storefrontUrl}: ${
-        err?.message || err
-      }`
+      `[PEPTECH CACHE INVALIDATOR] ⚠️ All storefront revalidation attempts failed: ${errors.join(" | ")}`
     )
   }
 }
