@@ -14,6 +14,7 @@ function getSupabase() {
 
 // GET /admin/custom/inventory - Retrieve inventory overview and stock levels
 export async function GET(req: MedusaRequest, res: MedusaResponse) {
+  operator(req as AuthenticatedMedusaRequest);
   try {
     const sb = getSupabase();
 

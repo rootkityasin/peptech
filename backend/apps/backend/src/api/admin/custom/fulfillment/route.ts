@@ -169,6 +169,7 @@ function getOrderPaymentStatusDisplay(order: any): string {
 }
 
 export async function GET(req: MedusaRequest, res: MedusaResponse) {
+  operator(req as AuthenticatedMedusaRequest);
   const {
     orderId,
     orderIdentifier,

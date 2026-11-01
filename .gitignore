@@ -59,3 +59,15 @@ supabase/.branches/
 test-files/
 backend/apps/backend/src/api/hooks/peptech-simulation/
 
+scripts/*.exe
+scripts/bin/
+scripts/stripe*
+*.exe
+
+# Test files and test scripts (Excluded from production)
+scripts/
+**/__tests__/
+**/*.test.*
+**/*.spec.*
+integration-tests/
+.agents/

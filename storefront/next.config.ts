@@ -140,6 +140,22 @@ const nextConfig: NextConfig = {
             key: "X-XSS-Protection",
             value: "1; mode=block",
           },
+          {
+            key: "Content-Security-Policy",
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://www.googletagmanager.com https://connect.facebook.net",
+              "style-src 'self' 'unsafe-inline'",
+              "img-src 'self' blob: data: https://*.supabase.co https://*.peptech.bio https://images.unsplash.com https://*.stripe.com",
+              "font-src 'self' data:",
+              "connect-src 'self' https://*.supabase.co https://*.peptech.bio http://localhost:9000 http://127.0.0.1:9000 https://api.stripe.com https://www.google-analytics.com https://connect.facebook.net",
+              "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
+              "object-src 'none'",
+              "base-uri 'self'",
+              "form-action 'self'",
+              "frame-ancestors 'self'",
+            ].join("; "),
+          },
         ],
       },
       {

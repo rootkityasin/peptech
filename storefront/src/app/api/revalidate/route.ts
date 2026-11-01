@@ -2,14 +2,39 @@ import { NextResponse } from "next/server"
 import { revalidatePath } from "next/cache"
 import { invalidateProductsCache } from "@/lib/medusa"
 import { bumpCatalogRevision } from "@/lib/catalog-version"
+import crypto from "crypto"
 
 export const dynamic = "force-dynamic"
 
+// In-memory sliding-window rate limit for /api/revalidate (30 requests per minute max per IP)
+const revalidateRateLimitMap = new Map<string, number[]>()
+const REVALIDATE_WINDOW_MS = 60 * 1000
+const MAX_REVALIDATE_PER_MIN = 30
+
+function checkRevalidateRateLimit(ip: string): boolean {
+  const now = Date.now()
+  const timestamps = revalidateRateLimitMap.get(ip) || []
+  const recent = timestamps.filter((t) => now - t < REVALIDATE_WINDOW_MS)
+  if (recent.length >= MAX_REVALIDATE_PER_MIN) {
+    revalidateRateLimitMap.set(ip, recent)
+    return false
+  }
+  recent.push(now)
+  revalidateRateLimitMap.set(ip, recent)
+  return true
+}
+
+function safeCompare(a: string, b: string): boolean {
+  if (typeof a !== "string" || typeof b !== "string") return false
+  const bufA = Buffer.from(a, "utf8")
+  const bufB = Buffer.from(b, "utf8")
+  if (bufA.length !== bufB.length) return false
+  return crypto.timingSafeEqual(bufA, bufB)
+}
+
 function isAuthorized(request: Request): boolean {
-  const secretHeader = request.headers.get("x-revalidate-secret")
-  const { searchParams } = new URL(request.url)
-  const secretQuery = searchParams.get("secret")
-  const candidateSecret = secretHeader || secretQuery
+  // Reject URL query parameter secrets to prevent credential leakage in web server access logs
+  const candidateSecret = request.headers.get("x-revalidate-secret")?.trim()
 
   if (!candidateSecret) {
     return false
@@ -20,20 +45,31 @@ function isAuthorized(request: Request): boolean {
     process.env.COMMERCE_CRON_SECRET,
     process.env.STRIPE_COMMERCE_SIGNING_SECRET,
     process.env.INTERNAL_REVALIDATE_SECRET,
-    process.env.JWT_SECRET,
   ].filter((s): s is string => Boolean(s && s.length >= 8))
 
   if (validSecrets.length === 0) {
     return false
   }
 
-  return validSecrets.includes(candidateSecret)
+  return validSecrets.some((secret) => safeCompare(candidateSecret, secret))
 }
 
 async function handleRevalidation(request: Request) {
+  const clientIp =
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    request.headers.get("x-real-ip") ||
+    "127.0.0.1"
+
+  if (!checkRevalidateRateLimit(clientIp)) {
+    return NextResponse.json(
+      { error: "Too many revalidation requests. Please retry in 1 minute." },
+      { status: 429 }
+    )
+  }
+
   if (!isAuthorized(request)) {
     return NextResponse.json(
-      { error: "Unauthorized: Invalid or missing revalidation secret" },
+      { error: "Unauthorized: Invalid or missing revalidation secret header" },
       { status: 401 }
     )
   }

@@ -42,6 +42,60 @@ function decodeFileContent(content: string, mimeType?: string): Buffer {
     : Buffer.from(content, "binary")
 }
 
+const MAX_UPLOAD_SIZE = 15 * 1024 * 1024; // 15MB max
+const ALLOWED_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp", ".pdf", ".csv"]);
+const ALLOWED_MIME_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "application/pdf",
+  "text/csv",
+  "text/plain",
+  "application/octet-stream",
+]);
+
+function validateFilePayload(filename: string, buffer: Buffer, mimeType?: string) {
+  if (buffer.length > MAX_UPLOAD_SIZE) {
+    throw new MedusaError(
+      MedusaError.Types.INVALID_DATA,
+      `File size (${(buffer.length / (1024 * 1024)).toFixed(2)}MB) exceeds maximum allowed limit of 15MB`
+    );
+  }
+
+  const ext = path.extname(filename).toLowerCase();
+  if (!ALLOWED_EXTENSIONS.has(ext)) {
+    throw new MedusaError(
+      MedusaError.Types.INVALID_DATA,
+      `File extension "${ext}" is not permitted. Allowed: ${Array.from(ALLOWED_EXTENSIONS).join(", ")}`
+    );
+  }
+
+  if (mimeType && !ALLOWED_MIME_TYPES.has(mimeType)) {
+    throw new MedusaError(
+      MedusaError.Types.INVALID_DATA,
+      `MIME type "${mimeType}" is not permitted`
+    );
+  }
+
+  // Magic byte verification for binary file types
+  if (buffer.length >= 4) {
+    const isJpeg = buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+    const isPng = buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47;
+    const isPdf = buffer[0] === 0x25 && buffer[1] === 0x50 && buffer[2] === 0x44 && buffer[3] === 0x46;
+    const isRiff = buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46;
+
+    if (ext === ".jpg" || ext === ".jpeg") {
+      if (!isJpeg) throw new MedusaError(MedusaError.Types.INVALID_DATA, "Corrupted or invalid JPEG image header");
+    } else if (ext === ".png") {
+      if (!isPng) throw new MedusaError(MedusaError.Types.INVALID_DATA, "Corrupted or invalid PNG image header");
+    } else if (ext === ".pdf") {
+      if (!isPdf) throw new MedusaError(MedusaError.Types.INVALID_DATA, "Corrupted or invalid PDF header");
+    } else if (ext === ".webp") {
+      if (!isRiff) throw new MedusaError(MedusaError.Types.INVALID_DATA, "Corrupted or invalid WebP header");
+    }
+  }
+}
+
 function sanitizeFileName(filename: string): string {
   const base = path.posix.basename(filename.replace(/\\/g, "/"))
   return base.replace(/^\.+/, "").replace(/[^a-zA-Z0-9._-]/g, "_") || "unnamed"
@@ -241,7 +295,8 @@ export class SupabaseFileService extends AbstractFileProviderService {
       throw new MedusaError(MedusaError.Types.INVALID_DATA, "No filename provided")
     }
 
-    const rawBuffer = decodeFileContent(file.content, file.mimeType)
+    const rawBuffer = decodeFileContent(file.content, file.mimeType);
+    validateFilePayload(file.filename, rawBuffer, file.mimeType);
 
     // Automatically optimize image before uploading to Supabase Storage
     const { buffer, mimeType } = await this.optimizeImage(rawBuffer, file.filename, file.mimeType)

@@ -85,7 +85,7 @@ function VerifyContent() {
   const [activeBatch, setActiveBatch] = useState(initialBatch)
   const [resultState, setResultState] = useState<"none" | "verified" | "pending" | "unverified">("none")
   const [loading, setLoading] = useState(false)
-  const initialTriggerRef = useRef(false)
+  const initialTriggerRef = React.useRef(false)
 
   const handleVerify = useCallback(async (query: string) => {
     const cleaned = cleanBatchQuery(query)

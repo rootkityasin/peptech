@@ -7,7 +7,7 @@ import path from "path"
 const DEFAULT_ALLOWED_ORIGIN_PATTERNS = [
   /^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?$/,
   /^https:\/\/(?:[a-zA-Z0-9-]+\.)*peptech\.bio$/,
-  /^https:\/\/docs\.medusajs\.com$/,
+  ...(process.env.NODE_ENV !== "production" ? [/^https:\/\/docs\.medusajs\.com$/] : []),
 ]
 
 function isOriginAllowed(origin: string): boolean {
@@ -43,6 +43,13 @@ const handleStoreCors = (req: MedusaRequest, res: MedusaResponse, next: MedusaNe
   }
   next()
 }
+
+const handleSecurityHeaders = (req: MedusaRequest, res: MedusaResponse, next: MedusaNextFunction) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "SAMEORIGIN");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  next();
+};
 
 function getWorkspaceRoot() {
   let dir = __dirname
@@ -125,6 +132,7 @@ export default defineMiddlewares({
     { matcher: "/store/payment-collections/:id/payment-sessions", methods: ["POST"], middlewares: [retiredPaymentCreation] },
     { matcher: "/admin/orders/:id/fulfillments", methods: ["POST"], middlewares: [authenticate("user", ["session", "bearer"]), guardFulfillment] },
     { matcher: "/admin/payments/:id/refund", methods: ["POST"], middlewares: [authenticate("user", ["session", "bearer"]), guardNativeRefund] },
+    { matcher: "/admin/custom*", middlewares: [authenticate("user", ["session", "bearer"])] },
     { matcher: "/admin/custom/return", middlewares: [authenticate("user", ["session", "bearer"])] },
     { matcher: "/admin/custom/refund", middlewares: [authenticate("user", ["session", "bearer"])] },
     { matcher: "/admin/custom/promotions*", middlewares: [authenticate("user", ["session", "bearer"])] },
