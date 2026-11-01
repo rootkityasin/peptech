@@ -50,6 +50,10 @@
     "proxy-addr": "^2.0.8",
     "source-map-js": "^1.2.2",
     "qs": "^6.16.1",
+    "minimatch": "^11.0.1",
+    "glob": {
+      "minimatch": "^11.0.1"
+    },
     "fast-uri": "^3.1.8",
     "multer": "^2.4.0",
     "postcss-selector-parser": "^7.1.6"

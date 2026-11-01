@@ -85,6 +85,7 @@ function VerifyContent() {
   const [activeBatch, setActiveBatch] = useState(initialBatch)
   const [resultState, setResultState] = useState<"none" | "verified" | "pending" | "unverified">("none")
   const [loading, setLoading] = useState(false)
+  const initialTriggerRef = useRef(false)
 
   const handleVerify = useCallback(async (query: string) => {
     const cleaned = cleanBatchQuery(query)
@@ -139,18 +140,11 @@ function VerifyContent() {
   }, [])
 
   useEffect(() => {
-    const raw =
-      searchParams.get("batch") ||
-      searchParams.get("code") ||
-      searchParams.get("serial") ||
-      searchParams.get("id")
-    if (raw) {
-      const cleaned = cleanBatchQuery(raw)
-      setBatchInput(cleaned)
-      setActiveBatch(cleaned)
-      handleVerify(cleaned)
+    if (!initialTriggerRef.current && initialBatch) {
+      initialTriggerRef.current = true
+      handleVerify(initialBatch)
     }
-  }, [searchParams, handleVerify])
+  }, [initialBatch, handleVerify])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -204,10 +198,11 @@ function VerifyContent() {
             </div>
             <button
               type="submit"
-              className="bg-[#0b1f3a] hover:bg-[#162a45] active:scale-[0.99] transition-all flex h-[52px] items-center justify-center px-[32px] rounded-[10px] shrink-0 cursor-pointer shadow-xs"
+              disabled={loading}
+              className="bg-[#0b1f3a] hover:bg-[#162a45] active:scale-[0.99] disabled:opacity-70 transition-all flex h-[52px] items-center justify-center px-[32px] rounded-[10px] shrink-0 cursor-pointer shadow-xs"
             >
               <span className="font-semibold text-[15px] text-center text-white whitespace-nowrap">
-                Verify
+                {loading ? "Verifying..." : "Verify"}
               </span>
             </button>
           </form>
