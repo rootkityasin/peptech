@@ -558,6 +558,43 @@ function CheckoutContent() {
     }
   }
 
+  if (embeddedSession?.clientSecret) {
+    return (
+      <div className="min-h-screen bg-white text-[#0B1F3A] flex flex-col">
+        {/* Minimal Return Header */}
+        <header className="border-b border-slate-200 bg-white sticky top-0 z-30 px-6 py-4 sm:px-10">
+          <div className="max-w-3xl mx-auto flex items-center justify-between">
+            <button
+              type="button"
+              onClick={() => setEmbeddedSession(null)}
+              className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-[#0B1F3A] transition-colors cursor-pointer"
+            >
+              <span>←</span>
+              <span>Return to order details</span>
+            </button>
+            <div className="flex items-center gap-3">
+              <span className="tracking-widest font-extrabold text-base text-[#0B1F3A]">
+                PEPTECH®
+              </span>
+              <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-[#16A6A3]/10 text-teal-700 border border-[#16A6A3]/20">
+                Secure Checkout
+              </span>
+            </div>
+          </div>
+        </header>
+
+        {/* Full-page Stripe Checkout */}
+        <main className="flex-1 w-full max-w-3xl mx-auto px-4 sm:px-8 py-6 sm:py-10 animate-in fade-in duration-200">
+          <EmbeddedStripeCheckout
+            clientSecret={embeddedSession.clientSecret}
+            publishableKey={embeddedSession.publishableKey}
+            onClose={() => setEmbeddedSession(null)}
+          />
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#0B1F3A] text-slate-100 flex flex-col lg:flex-row">
       {/* ========================================================================= */}
@@ -837,34 +874,7 @@ function CheckoutContent() {
       {/* ========================================================================= */}
       <div className="w-full lg:w-[52%] min-h-0 lg:min-h-screen bg-white text-[#0B1F3A] p-6 sm:p-10 lg:p-14 flex flex-col justify-start lg:justify-center">
         <div className="max-w-xl mx-auto w-full">
-          {embeddedSession?.clientSecret ? (
-            <div className="flex flex-col gap-4 animate-in fade-in duration-200">
-              <div className="rounded-xl bg-slate-50 border border-slate-200 p-3.5 flex items-center justify-between text-xs">
-                <div>
-                  <p className="font-bold text-[#0B1F3A]">
-                    {customer?.first_name} {customer?.last_name} ·{" "}
-                    {customer?.email}
-                  </p>
-                  <p className="text-slate-500 mt-0.5">
-                    Delivery: {country} ·{" "}
-                    {selectedShippingOption?.name || "Shipping"}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setEmbeddedSession(null)}
-                  className="text-xs font-semibold text-teal-700 hover:underline cursor-pointer"
-                >
-                  Edit details
-                </button>
-              </div>
-              <EmbeddedStripeCheckout
-                clientSecret={embeddedSession.clientSecret}
-                publishableKey={embeddedSession.publishableKey}
-                onClose={() => setEmbeddedSession(null)}
-              />
-            </div>
-          ) : isAuthLoading ? (
+          {isAuthLoading ? (
             <div className="py-20 flex flex-col items-center justify-center gap-3">
               <div className="w-8 h-8 border-3 border-[#16A6A3] border-t-transparent rounded-full animate-spin" />
               <p className="text-sm font-semibold text-slate-600">
