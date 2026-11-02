@@ -605,16 +605,18 @@ function CheckoutContent() {
           <div className="flex items-center justify-between">
             <Link
               href="/cart"
-              className="inline-flex items-center gap-2 text-sm font-semibold text-slate-300 hover:text-white transition-colors"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-slate-300 hover:text-white transition-colors cursor-pointer"
             >
-              <span>←</span>
-              <span className="tracking-widest font-extrabold text-lg text-white">
-                PEPTECH®
-              </span>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              <span>Return</span>
             </Link>
-            <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-[#16A6A3]/20 text-[#00C5A0] border border-[#16A6A3]/30">
-              Laboratory Research Checkout
-            </span>
+            <img
+              src="/images/figma/peptech-logo.png"
+              alt="PEPTECH®"
+              className="h-5 sm:h-6 w-auto object-contain block brightness-0 invert"
+            />
           </div>
 
           {/* Total Due Big Display */}
