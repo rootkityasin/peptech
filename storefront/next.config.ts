@@ -39,8 +39,8 @@ const supabaseStorageBase =
   (process.env.NEXT_PUBLIC_SUPABASE_URL
     ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/products`
     : process.env.SUPABASE_URL
-    ? `${process.env.SUPABASE_URL}/storage/v1/object/public/products`
-    : "");
+      ? `${process.env.SUPABASE_URL}/storage/v1/object/public/products`
+      : "");
 
 const nextConfig: NextConfig = {
   env: {
@@ -67,19 +67,19 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       ...(!isProd
         ? [
-            {
-              protocol: "http" as const,
-              hostname: "localhost",
-            },
-            {
-              protocol: "http" as const,
-              hostname: "127.0.0.1",
-            },
-            {
-              protocol: "https" as const,
-              hostname: "localhost",
-            },
-          ]
+          {
+            protocol: "http" as const,
+            hostname: "localhost",
+          },
+          {
+            protocol: "http" as const,
+            hostname: "127.0.0.1",
+          },
+          {
+            protocol: "https" as const,
+            hostname: "localhost",
+          },
+        ]
         : []),
       {
         protocol: "https",
@@ -130,7 +130,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: "Permissions-Policy",
-            value: "camera=(self), microphone=(), geolocation=()",
+            value: "camera=(self), microphone=(), geolocation=(), payment=(self \"https://js.stripe.com\" \"https://checkout.stripe.com\")",
           },
           {
             key: "Strict-Transport-Security",
@@ -148,8 +148,8 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' blob: data: https://*.supabase.co https://*.peptech.bio https://images.unsplash.com https://*.stripe.com https://www.facebook.com https://*.facebook.com https://*.facebook.net https://analytics.tiktok.com https://*.tiktok.com https://*.tiktokw.us https://*.byteoversea.com https://*.ibytedtos.com https://www.google-analytics.com https://*.google-analytics.com https://*.googletagmanager.com",
               "font-src 'self' data:",
-              "connect-src 'self' https://*.supabase.co https://*.peptech.bio http://localhost:9000 http://127.0.0.1:9000 https://api.stripe.com https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://connect.facebook.net https://www.facebook.com https://*.facebook.com https://*.facebook.net https://analytics.tiktok.com https://*.tiktok.com https://analytics-ipv6.tiktokw.us https://*.tiktokw.us https://*.byteoversea.com https://*.ibytedtos.com",
-              "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://www.facebook.com https://*.facebook.com https://analytics.tiktok.com https://*.tiktok.com https://*.tiktokw.us",
+              "connect-src 'self' https://*.supabase.co https://*.peptech.bio http://localhost:9000 http://127.0.0.1:9000 https://api.stripe.com https://pay.google.com https://*.google.com https://apple-pay-gateway.apple.com https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://connect.facebook.net https://www.facebook.com https://*.facebook.com https://*.facebook.net https://analytics.tiktok.com https://*.tiktok.com https://analytics-ipv6.tiktokw.us https://*.tiktokw.us https://*.byteoversea.com https://*.ibytedtos.com",
+              "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://pay.google.com https://*.google.com https://www.facebook.com https://*.facebook.com https://analytics.tiktok.com https://*.tiktok.com https://*.tiktokw.us",
               "object-src 'none'",
               "base-uri 'self'",
               "form-action 'self' https://www.facebook.com https://*.facebook.com",
