@@ -15,14 +15,14 @@ interface SoundContextType {
 const SoundContext = createContext<SoundContextType | undefined>(undefined)
 
 export function SoundProvider({ children }: { children: React.ReactNode }) {
-  const [isMuted, setIsMuted] = useState(false)
+  const [isMuted, setIsMuted] = useState(true)
   const [volume, setVolumeState] = useState(0.75)
   const [isPlaying, setIsPlaying] = useState(false)
   const [isAudioAvailable, setIsAudioAvailable] = useState(true)
 
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const volumeRef = useRef(0.75)
-  const isMutedRef = useRef(false)
+  const isMutedRef = useRef(true)
   const hasUserExplicitlyMutedRef = useRef(false)
   const interactionCleanupRef = useRef<(() => void) | null>(null)
 
@@ -78,7 +78,7 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    const events = ["click", "pointerdown", "pointerup", "touchstart", "touchend", "keydown"]
+    const events = ["click", "touchstart", "keydown"]
     events.forEach((evt) => {
       window.addEventListener(evt, onInteraction, { passive: true, capture: true })
     })
@@ -119,29 +119,15 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
         isMutedRef.current = true
         el.play().then(() => setIsPlaying(true)).catch(() => {})
       } else {
-        // 1. Try unmuted autoplay first (succeeds immediately after internal navigation, Age Gate click, or high MEI)
-        el.muted = false
-        const playPromise = el.play()
-        if (playPromise !== undefined) {
-          playPromise
-            .then(() => {
-              setIsMuted(false)
-              isMutedRef.current = false
-              setIsPlaying(true)
-              cleanupInteractionListeners()
-            })
-            .catch(() => {
-              // 2. Browser blocked unmuted cold autoplay: start playing muted immediately so video never freezes,
-              // and unmute on the very first click/tap/keypress anywhere on the page.
-              el.muted = true
-              setIsMuted(true)
-              isMutedRef.current = true
-              el.play()
-                .then(() => setIsPlaying(true))
-                .catch(() => {})
-              armAutoUnmuteOnInteraction()
-            })
-        }
+        // Videos must always start muted on page load to comply with browser autoplay policies without console errors.
+        // Unmute seamlessly on the very first user interaction (click, tap, keypress).
+        el.muted = true
+        setIsMuted(true)
+        isMutedRef.current = true
+        el.play()
+          .then(() => setIsPlaying(true))
+          .catch(() => {})
+        armAutoUnmuteOnInteraction()
       }
 
       // Media event listeners for continuous sync with hardware DOM state

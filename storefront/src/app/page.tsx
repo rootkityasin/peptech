@@ -16,17 +16,8 @@ export default async function HomePage() {
   const initialProducts = await getCatalogProducts({ limit: 100 }).catch(() => [])
 
   return (
-    <>
-      <link
-        rel="preload"
-        href="/videos/peptech-system-showcase.mp4"
-        as="video"
-        type="video/mp4"
-        fetchPriority="high"
-      />
-      <Suspense fallback={<HomePageSkeleton />}>
-        <HomeContent initialProducts={initialProducts} />
-      </Suspense>
-    </>
+    <Suspense fallback={<HomePageSkeleton />}>
+      <HomeContent initialProducts={initialProducts} />
+    </Suspense>
   )
 }
