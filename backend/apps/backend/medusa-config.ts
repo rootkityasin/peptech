@@ -91,9 +91,9 @@ module.exports = defineConfig({
           },
         },
     http: {
-      storeCors: process.env.STORE_CORS || (process.env.NODE_ENV === 'production' ? '/^https?:\\/\\/(?:[a-zA-Z0-9-]+\\.)*peptech\\.bio$/' : '/^https?:\\/\\/(localhost|127\\.0\\.0\\.1)(:\\d+)?$|^https?:\\/\\/(?:[a-zA-Z0-9-]+\\.)*peptech\\.bio$|^https?:\\/\\/docs\\.medusajs\\.com$/'),
-      adminCors: process.env.ADMIN_CORS || (process.env.NODE_ENV === 'production' ? '/^https?:\\/\\/(?:[a-zA-Z0-9-]+\\.)*peptech\\.bio$/' : '/^https?:\\/\\/(localhost|127\\.0\\.0\\.1)(:\\d+)?$|^https?:\\/\\/(?:[a-zA-Z0-9-]+\\.)*peptech\\.bio$|^https?:\\/\\/docs\\.medusajs\\.com$/'),
-      authCors: process.env.AUTH_CORS || (process.env.NODE_ENV === 'production' ? '/^https?:\\/\\/(?:[a-zA-Z0-9-]+\\.)*peptech\\.bio$/' : '/^https?:\\/\\/(localhost|127\\.0\\.0\\.1)(:\\d+)?$|^https?:\\/\\/(?:[a-zA-Z0-9-]+\\.)*peptech\\.bio$|^https?:\\/\\/docs\\.medusajs\\.com$/'),
+      storeCors: process.env.STORE_CORS || (process.env.NODE_ENV === 'production' ? 'https://peptech.bio,https://www.peptech.bio,/^https?:\\/\\/(?:[a-zA-Z0-9-]+\\.)*peptech\\.bio$/' : 'https://peptech.bio,https://www.peptech.bio,/^https?:\\/\\/(localhost|127\\.0\\.0\\.1)(:\\d+)?$/,/^https?:\\/\\/(?:[a-zA-Z0-9-]+\\.)*peptech\\.bio$/,https://docs.medusajs.com'),
+      adminCors: process.env.ADMIN_CORS || (process.env.NODE_ENV === 'production' ? 'https://admin.peptech.bio,https://peptech.bio,/^https?:\\/\\/(?:[a-zA-Z0-9-]+\\.)*peptech\\.bio$/' : 'https://admin.peptech.bio,https://peptech.bio,/^https?:\\/\\/(localhost|127\\.0\\.0\\.1)(:\\d+)?$/,/^https?:\\/\\/(?:[a-zA-Z0-9-]+\\.)*peptech\\.bio$/,https://docs.medusajs.com'),
+      authCors: process.env.AUTH_CORS || (process.env.NODE_ENV === 'production' ? 'https://peptech.bio,https://www.peptech.bio,https://admin.peptech.bio,/^https?:\\/\\/(?:[a-zA-Z0-9-]+\\.)*peptech\\.bio$/' : 'https://peptech.bio,https://www.peptech.bio,https://admin.peptech.bio,/^https?:\\/\\/(localhost|127\\.0\\.0\\.1)(:\\d+)?$/,/^https?:\\/\\/(?:[a-zA-Z0-9-]+\\.)*peptech\\.bio$/,https://docs.medusajs.com'),
       jwtSecret: process.env.JWT_SECRET || (() => { throw new MedusaError(MedusaError.Types.INVALID_DATA, 'JWT_SECRET must be configured') })(),
       jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
       cookieSecret: process.env.COOKIE_SECRET || (() => { throw new MedusaError(MedusaError.Types.INVALID_DATA, 'COOKIE_SECRET must be configured') })(),

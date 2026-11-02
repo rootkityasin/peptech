@@ -118,27 +118,13 @@ function stripeModules(env = process.env) {
 }
 
 function resolveRedisUrl(env = process.env) {
-  const isProduction = env.NODE_ENV === "production";
-  if (isProduction) {
-    return (env.REDIS_URL || env.REDIS_URL_PRODUCTION || "").trim();
-  }
-  // For local development (file watcher, restarts): use local Redis to prevent connection exhaustion
-  return (env.DEV_REDIS_URL || env.REDIS_URL || "").trim();
+  return (env.REDIS_URL || "").trim();
 }
 
 function commerceRuntimeModules(env = process.env) {
   try {
     const activeRedisUrl = resolveRedisUrl(env);
-    if (!activeRedisUrl) {
-      return [
-        {
-          resolve: "@medusajs/medusa/event-bus-local",
-        },
-        {
-          resolve: "@medusajs/medusa/workflow-engine-inmemory",
-        },
-      ];
-    }
+    if (!activeRedisUrl) return [];
     const redisClientOptions = {
       connectTimeout: 10000,
       keepAlive: 30000,

@@ -82,12 +82,7 @@ export function stripeModules(env: NodeJS.ProcessEnv = process.env) {
 
 
 export function resolveRedisUrl(env: NodeJS.ProcessEnv = process.env): string {
-  const isProduction = env.NODE_ENV === "production"
-  if (isProduction) {
-    return (env.REDIS_URL || env.REDIS_URL_PRODUCTION || "").trim()
-  }
-  // For local development (file watcher, restarts): use local Redis to prevent connection exhaustion
-  return (env.DEV_REDIS_URL || env.REDIS_URL || "").trim();
+  return (env.REDIS_URL || "").trim();
 }
 
 export function commerceRuntimeModules(env: NodeJS.ProcessEnv = process.env) {
@@ -98,6 +93,7 @@ export function commerceRuntimeModules(env: NodeJS.ProcessEnv = process.env) {
       connectTimeout: 10000,
       keepAlive: 30000,
       enableReadyCheck: false,
+      ...(activeRedisUrl.startsWith("rediss://") ? { tls: { rejectUnauthorized: false } } : {}),
     }
     return [
       {

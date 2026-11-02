@@ -4,6 +4,17 @@ import { validatePromoMiddlewares } from "./store/custom/promotions/validate/mid
 import fs from "fs"
 import path from "path"
 
+const EXACT_ALLOWED_ORIGINS = new Set([
+  "https://peptech.bio",
+  "https://www.peptech.bio",
+  "https://admin.peptech.bio",
+  "http://localhost:3000",
+  "http://localhost:7001",
+  "http://localhost:9000",
+  "http://127.0.0.1:3000",
+  "http://127.0.0.1:7001",
+  "http://127.0.0.1:9000",
+])
 const DEFAULT_ALLOWED_ORIGIN_PATTERNS = [
   /^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?$/,
   /^https:\/\/(?:[a-zA-Z0-9-]+\.)*peptech\.bio$/,
@@ -12,6 +23,7 @@ const DEFAULT_ALLOWED_ORIGIN_PATTERNS = [
 
 function isOriginAllowed(origin: string): boolean {
   if (!origin) return false
+  if (EXACT_ALLOWED_ORIGINS.has(origin)) return true
   const configuredCors = process.env.STORE_CORS || ""
   if (configuredCors) {
     const list = configuredCors.split(",").map((s) => s.trim()).filter(Boolean)
@@ -35,7 +47,7 @@ const handleStoreCors = (req: MedusaRequest, res: MedusaResponse, next: MedusaNe
     res.setHeader("Access-Control-Allow-Credentials", "true")
     res.setHeader("Vary", "Origin")
   }
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE")
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE, PATCH, HEAD")
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, x-publishable-api-key, Accept, Cache-Control, X-Requested-With, x-storefront-origin")
   if (req.method === "OPTIONS") {
     res.setHeader("Access-Control-Max-Age", "86400")
@@ -126,8 +138,9 @@ const ensureVerifyPublishableKey = (req: MedusaRequest, res: MedusaResponse, nex
 
 export default defineMiddlewares({
   routes: [
-    { matcher: "/store/custom/verify*", middlewares: [ensureVerifyPublishableKey, handleStoreCors] },
-    { matcher: "/store/custom*", middlewares: [handleStoreCors] },
+    { matcher: "/store*", middlewares: [handleStoreCors] },
+    { matcher: "/auth*", middlewares: [handleStoreCors] },
+    { matcher: "/store/custom/verify*", middlewares: [ensureVerifyPublishableKey] },
     ...validatePromoMiddlewares,
     { matcher: "/store/payment-collections/:id/payment-sessions", methods: ["POST"], middlewares: [retiredPaymentCreation] },
     { matcher: "/admin/orders/:id/fulfillments", methods: ["POST"], middlewares: [authenticate("user", ["session", "bearer"]), guardFulfillment] },
