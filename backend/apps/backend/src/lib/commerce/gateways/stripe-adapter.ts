@@ -187,6 +187,10 @@ export class StripeGatewayAdapter implements PaymentGatewayAdapter {
       },
       line_items: lineItems,
       automatic_tax: { enabled: quote.stripe_tax_enabled === true },
+      branding_settings: {
+        background_color: "#FFFFFF",
+        button_color: "#16A6A3",
+      },
       client_reference_id: attemptId,
       metadata: { peptech_attempt: attemptId, peptech_profile: context.profile, peptech_promo: quote.promo?.code || "" },
       ...(recurring

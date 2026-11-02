@@ -30,9 +30,9 @@ export function EmbeddedStripeCheckout({
   }
 
   return (
-    <div id="stripe-embedded-checkout" className="w-full min-h-[380px] animate-in fade-in duration-300">
+    <div id="stripe-embedded-checkout" className="w-full min-h-[380px] bg-white rounded-2xl overflow-hidden animate-in fade-in duration-300">
       <EmbeddedCheckoutProvider stripe={stripePromise} options={{ clientSecret }}>
-        <EmbeddedCheckout className="w-full" />
+        <EmbeddedCheckout className="w-full bg-white" />
       </EmbeddedCheckoutProvider>
     </div>
   )
