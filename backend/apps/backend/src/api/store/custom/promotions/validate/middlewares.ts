@@ -14,7 +14,7 @@ export type ValidatePromoCodeSchema = z.infer<typeof ValidatePromoCodeSchema>
 export const validatePromoMiddlewares: MiddlewareRoute[] = [
   {
     matcher: "/store/custom/promotions/validate",
-    method: "POST",
+    methods: ["POST"],
     middlewares: [validateAndTransformBody(ValidatePromoCodeSchema)],
   },
 ]

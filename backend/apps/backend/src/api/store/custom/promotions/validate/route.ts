@@ -38,36 +38,68 @@ export async function POST(
       currency_code,
     } = req.validatedBody || (req.body as any) || {}
 
-    if (!code || typeof code !== "string" || !code.trim()) {
-      return res.status(400).json({ valid: false, message: "Please provide a valid promotional code." })
+    const rawCode = (code || "").trim()
+    if (!rawCode) {
+      return res.status(200).json({ valid: false, message: "Please provide a valid promotional code." })
     }
 
-    const normalizedCode = code.trim().toUpperCase()
+    const codeVariants = Array.from(new Set([
+      rawCode,
+      rawCode.toUpperCase(),
+      rawCode.toLowerCase(),
+    ]))
+
     const query = req.scope.resolve(ContainerRegistrationKeys.QUERY) || req.scope.resolve("query")
 
-    // Fetch promotion and application method via Medusa 2.0 query graph
-    const { data: promotions = [] } = await query.graph({
-      entity: "promotion",
-      fields: [
-        "id",
-        "code",
-        "type",
-        "status",
-        "limit",
-        "used",
-        "metadata",
-        "is_automatic",
-        "application_method.*",
-      ],
-      filters: {
-        code: normalizedCode,
-      },
-    })
+    // Fetch promotion and application method via Medusa 2.0 query graph with case-insensitive variants
+    let promotions: any[] = []
+    try {
+      const result = await query.graph({
+        entity: "promotion",
+        fields: [
+          "id",
+          "code",
+          "type",
+          "status",
+          "limit",
+          "used",
+          "metadata",
+          "is_automatic",
+          "application_method.*",
+        ],
+        filters: {
+          code: { $ilike: rawCode },
+        },
+      })
+      promotions = result.data || []
+    } catch {
+      // Fallback: Query matching any code variant (UPPER, lower, raw)
+      try {
+        const result = await query.graph({
+          entity: "promotion",
+          fields: [
+            "id",
+            "code",
+            "type",
+            "status",
+            "limit",
+            "used",
+            "metadata",
+            "is_automatic",
+            "application_method.*",
+          ],
+          filters: {
+            code: codeVariants,
+          },
+        })
+        promotions = result.data || []
+      } catch {}
+    }
 
     const promo = promotions[0]
 
     if (!promo || promo.status !== "active") {
-      return res.status(404).json({ valid: false, message: "Invalid or inactive promotional code." })
+      return res.status(200).json({ valid: false, message: "Invalid or inactive promotional code." })
     }
 
     // Guard: If code is automatic, alert user that it is already active without entering a code

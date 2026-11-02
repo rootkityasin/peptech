@@ -562,24 +562,23 @@ function CheckoutContent() {
     return (
       <div className="min-h-screen bg-white text-[#0B1F3A] flex flex-col">
         {/* Minimal Return Header */}
-        <header className="border-b border-slate-200 bg-white sticky top-0 z-30 px-6 py-4 sm:px-10">
+        <header className="border-b border-slate-200 bg-white sticky top-0 z-30 px-4 py-3.5 sm:px-8 sm:py-4">
           <div className="max-w-3xl mx-auto flex items-center justify-between">
             <button
               type="button"
               onClick={() => setEmbeddedSession(null)}
               className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-[#0B1F3A] transition-colors cursor-pointer"
             >
-              <span>←</span>
-              <span>Return to order details</span>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              <span>Return</span>
             </button>
-            <div className="flex items-center gap-3">
-              <span className="tracking-widest font-extrabold text-base text-[#0B1F3A]">
-                PEPTECH®
-              </span>
-              <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-[#16A6A3]/10 text-teal-700 border border-[#16A6A3]/20">
-                Secure Checkout
-              </span>
-            </div>
+            <img
+              src="/images/figma/peptech-logo.png"
+              alt="PEPTECH®"
+              className="h-5 sm:h-6 w-auto object-contain block"
+            />
           </div>
         </header>
 
