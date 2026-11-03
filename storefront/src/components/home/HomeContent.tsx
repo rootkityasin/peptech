@@ -409,7 +409,7 @@ export function HomeContent({
               {/* Desktop Action Buttons: Exactly as Before on Desktop */}
               <div className="hidden lg:flex flex-wrap items-center gap-4 sm:gap-5">
                 <Link
-                  href="/shop"
+                  href="/pen-sets"
                   className="btn-shimmer btn-press px-6 py-3.5 rounded-xl bg-[#16A6A3] hover:bg-[#138e8c] text-white text-[14px] font-bold transition-all shadow-lg shadow-teal-950/40 hover:shadow-cyan-500/25 inline-flex items-center gap-2 group cursor-pointer"
                 >
                   <span>Shop All Products</span>
@@ -446,7 +446,7 @@ export function HomeContent({
               {/* Mobile Buttons at Bottom of that Div (Middle-Aligned, Slightly Reduced Size) */}
               <div className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-3">
                 <Link
-                  href="/shop"
+                  href="/pen-sets"
                   className="btn-shimmer btn-press px-4 sm:px-4.5 py-2.5 rounded-lg sm:rounded-xl bg-[#16A6A3] hover:bg-[#138e8c] text-white text-[12.5px] sm:text-[13px] font-bold transition-all shadow-md shadow-teal-950/40 hover:shadow-cyan-500/25 inline-flex items-center gap-1.5 group cursor-pointer"
                 >
                   <span>Shop All Products</span>
@@ -549,7 +549,7 @@ export function HomeContent({
               Start with a premium PEPTECH® set
             </h2>
             <Link
-              href="/shop"
+              href="/pen-sets"
               className="text-[12px] xs:text-[13px] sm:text-[14px] font-semibold text-[#16A6A3] hover:text-[#0B1F3A] transition-colors inline-flex items-center gap-1 shrink-0 whitespace-nowrap"
             >
               <span className="sm:hidden">View All</span>
