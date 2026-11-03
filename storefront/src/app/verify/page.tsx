@@ -82,7 +82,14 @@ function VerifyContent() {
 
     const upper = cleaned.toUpperCase()
 
-    // 1. Check if known pending batch
+    // 1. Check if known exact verified batch (instant match)
+    if (VERIFIED_EXACT_BATCHES.has(upper)) {
+      setResultState("verified")
+      setLoading(false)
+      return
+    }
+
+    // 2. Check if known pending batch
     if (PENDING_BATCHES.has(upper)) {
       setResultState("pending")
       setLoading(false)
