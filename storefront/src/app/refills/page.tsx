@@ -15,7 +15,7 @@ export default async function RefillsPage() {
 
   return (
     <Suspense fallback={<CatalogSkeleton category="refills" />}>
-      <ShopCatalog initialCategory="refills" initialProducts={products} />
+      <ShopCatalog key="refills" initialCategory="refills" initialProducts={products} />
     </Suspense>
   )
 }

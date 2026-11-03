@@ -10,7 +10,7 @@ export const metadata = {
 export default function CartridgesPage() {
   return (
     <Suspense fallback={<CatalogSkeleton category="refills" />}>
-      <ShopCatalog initialCategory="refills" />
+      <ShopCatalog key="cartridges" initialCategory="refills" />
     </Suspense>
   )
 }

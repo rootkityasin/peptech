@@ -15,7 +15,7 @@ export default async function ShopPage() {
 
   return (
     <Suspense fallback={<CatalogSkeleton category="all" />}>
-      <ShopCatalog initialCategory="all" initialProducts={products} />
+      <ShopCatalog key="all" initialCategory="all" initialProducts={products} />
     </Suspense>
   )
 }

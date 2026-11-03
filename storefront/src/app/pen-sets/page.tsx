@@ -15,7 +15,7 @@ export default async function PenSetsPage() {
 
   return (
     <Suspense fallback={<CatalogSkeleton category="pen-sets" />}>
-      <ShopCatalog initialCategory="pen-sets" initialProducts={products} />
+      <ShopCatalog key="pen-sets" initialCategory="pen-sets" initialProducts={products} />
     </Suspense>
   )
 }

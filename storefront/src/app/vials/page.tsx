@@ -15,7 +15,7 @@ export default async function FreezeDriedVialsPage() {
 
   return (
     <Suspense fallback={<CatalogSkeleton category="vials" />}>
-      <ShopCatalog initialCategory="vials" initialProducts={products} />
+      <ShopCatalog key="vials" initialCategory="vials" initialProducts={products} />
     </Suspense>
   )
 }

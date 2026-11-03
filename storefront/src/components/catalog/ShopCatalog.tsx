@@ -36,6 +36,17 @@ export function ShopCatalog({ initialCategory = "all", initialProducts }: ShopCa
     }
   }, [searchParams])
 
+  // Sync activeTab when initialCategory prop changes (e.g. navigating from /pen-sets to /shop)
+  // or when URL category/tab query parameter is provided
+  useEffect(() => {
+    const urlCategory = searchParams?.get("category") || searchParams?.get("tab")
+    if (urlCategory === "all" || urlCategory === "pen-sets" || urlCategory === "refills" || urlCategory === "vials") {
+      setActiveTab(urlCategory)
+    } else if (initialCategory) {
+      setActiveTab(initialCategory)
+    }
+  }, [initialCategory, searchParams])
+
   // Dismiss suggestions on outside click, Escape key, or scroll
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent | TouchEvent) => {
