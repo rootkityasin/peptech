@@ -50,26 +50,10 @@ function cleanBatchQuery(input: string): string {
 }
 
 const VERIFIED_EXACT_BATCHES = new Set([
-  "RT-2609A",
-  "TR-2609B",
-  "SM-2609A",
-  "CU-2608C",
-  "BPC-2608A",
-  "TB-2608B",
-  "TSM-2609A",
-  "PT-2608D",
-  "TRZ-2026-08B",
-  "SMG-2026-04A",
-  "TIR-2026-01",
-  "SEMA-2026-02",
-  "BPC-157-09A",
-  "TB-500-11C",
-  "GHK-CU-05B",
+  "PT-26-000184",
 ])
 
-const PENDING_BATCHES = new Set([
-  "CGL-2609X",
-])
+const PENDING_BATCHES = new Set<string>()
 
 function VerifyContent() {
   const searchParams = useSearchParams()
@@ -180,7 +164,7 @@ function VerifyContent() {
                 type="text"
                 value={batchInput}
                 onChange={(e) => setBatchInput(e.target.value)}
-                placeholder="Enter Batch ID (e.g. RT-2609A)..."
+                placeholder="Enter Batch ID..."
                 className="w-full h-full bg-transparent border-none outline-hidden text-[#0b1f3a] text-[15px] placeholder-[#94a3b8] font-normal"
               />
               {batchInput && (
@@ -328,7 +312,7 @@ function VerifyContent() {
                       Batch Lot Number
                     </p>
                     <p className="font-bold text-[#0b1f3a] text-[15px] tracking-[0.5px]">
-                      {activeBatch || "RT-2609A"}
+                      {activeBatch || "PT-26-000184"}
                     </p>
                   </div>
                 </div>
@@ -356,7 +340,7 @@ function VerifyContent() {
                       Device Passport / Serial
                     </p>
                     <p className="font-bold text-[#0b1f3a] text-[15px] tracking-[0.5px]">
-                      PT-984128
+                      {activeBatch || "PT-26-000184"}
                     </p>
                   </div>
                 </div>
@@ -493,7 +477,7 @@ function VerifyContent() {
             {/* Bottom Actions Link */}
             <div className="flex items-center justify-between w-full max-w-[656px] pt-2 text-xs">
               <Link
-                href={`/lab-reports?batch=${encodeURIComponent(activeBatch || "RT-2609A")}`}
+                href={`/lab-reports?batch=${encodeURIComponent(activeBatch || "PT-26-000184")}`}
                 className="text-[#16a6a3] hover:text-[#0b1f3a] font-semibold transition-colors flex items-center gap-1.5"
               >
                 <span>View Full HPLC / Mass Spec Certificate of Analysis</span>

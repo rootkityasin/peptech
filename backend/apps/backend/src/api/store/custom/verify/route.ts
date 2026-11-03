@@ -45,26 +45,10 @@ export async function OPTIONS(req: MedusaRequest, res: MedusaResponse) {
 
 // Known peptide lab batch exact identifiers
 const VERIFIED_EXACT_BATCHES = new Set([
-  "RT-2609A",
-  "TR-2609B",
-  "SM-2609A",
-  "CU-2608C",
-  "BPC-2608A",
-  "TB-2608B",
-  "TSM-2609A",
-  "PT-2608D",
-  "TRZ-2026-08B",
-  "SMG-2026-04A",
-  "TIR-2026-01",
-  "SEMA-2026-02",
-  "BPC-157-09A",
-  "TB-500-11C",
-  "GHK-CU-05B",
+  "PT-26-000184",
 ])
 
-const PENDING_BATCHES = new Set([
-  "CGL-2609X",
-])
+const PENDING_BATCHES = new Set<string>()
 
 // GET /store/custom/verify?code=RT-2609A
 export async function GET(req: MedusaRequest, res: MedusaResponse) {
@@ -107,7 +91,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
         verified: true,
         pending: false,
         type: "batch_lot",
-        serial_number: "N/A (Laboratory Batch)",
+        serial_number: upper === "PT-26-000184" ? "PT-26-000184" : upper,
         product_name: "PEPTECH® High-Purity Research Peptide",
         batch_number: upper,
         status: "Authentic & Safe",

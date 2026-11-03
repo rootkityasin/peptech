@@ -202,7 +202,12 @@ export async function POST(req: NextRequest) {
     const hashedCountry = hashField(uData.country || "gb", "text")
     if (hashedCountry) hashedUserData.country = [hashedCountry]
 
-    if (uData.fbp) hashedUserData.fbp = uData.fbp
+    if (uData.fbp) {
+      hashedUserData.fbp = uData.fbp
+    } else {
+      // Ensure a valid client identifier for initial hits or localhost testing to avoid Meta 2804050
+      hashedUserData.fbp = `fb.1.${Date.now()}.${Math.floor(Math.random() * 1000000000)}`
+    }
     if (uData.fbc) hashedUserData.fbc = uData.fbc
 
     const isProd = process.env.NODE_ENV === "production" || /^(?:sk|rk)_live_/.test(process.env.STRIPE_API_KEY || "")
