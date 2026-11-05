@@ -119,7 +119,7 @@ export default async function createSubscriptionRenewal({ container }: ExecArgs)
         peptech_receipt_id: receiptId,
         payment_gateway: "stripe",
         subscription_id: subscriptionId,
-        fulfillment_hold: true,
+        fulfillment_hold: false,
         tax_policy: "stripe_default",
         order_number_formatted: orderNumber,
         is_subscription_renewal: true,

@@ -180,7 +180,7 @@ export async function finishRefund(scope: any, ledger: CommerceService, operatio
   await scope.resolve(Modules.ORDER).updateOrders(operation.data.order_id, {
     metadata: {
       ...order.metadata,
-      fulfillment_hold: true,
+      fulfillment_hold: false,
       refund_review: true,
       payment_status: isFullyRefunded ? "refunded" : "partially_refunded",
       refund_status: isFullyRefunded ? "refunded" : "partially_refunded",

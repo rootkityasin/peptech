@@ -202,7 +202,7 @@ export default async function buyCartridgeSubscription({
       peptech_attempt: attemptId,
       payment_gateway: "stripe",
       subscription_id: subscriptionId,
-      fulfillment_hold: true,
+      fulfillment_hold: false,
       tax_policy: "stripe_default",
       order_number_formatted: orderNumber,
       tags: ["Sub-Order", "28-Day Subscription"],

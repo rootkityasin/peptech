@@ -332,14 +332,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
       return res.status(404).json({ message: `Order '${orderId}' not found` });
     }
 
-    // Gate 1: Check Fulfillment Hold Status
-    if (order.metadata?.fulfillment_hold === true || (order.metadata?.peptech_receipt_id && order.metadata?.fulfillment_hold !== false)) {
-      return res.status(400).json({
-        message: "Order is currently on fulfillment hold (RUO allocation / compliance review pending). Release the hold before dispatch.",
-      });
-    }
-
-    // Gate 2: Check Payment Status (supports Medusa 2.0 captured, authorized, completed, summary paid total, collections, and metadata)
+    // Check Payment Status (supports Medusa 2.0 captured, authorized, completed, summary paid total, collections, and metadata)
     const isPaid = isOrderPaymentSuccessful(order);
 
     if (!isPaid) {

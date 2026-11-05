@@ -18,11 +18,6 @@ import {
 import {
   CreditCard,
   ArrowPath,
-  CheckCircle,
-  Clock,
-  InformationCircle,
-  DocumentText,
-  ExclamationCircle,
 } from "@medusajs/icons"
 import { useEffect, useState, useMemo } from "react"
 
@@ -36,14 +31,6 @@ interface CommerceRecord {
   created_at?: string
   updated_at?: string
   data?: any
-}
-
-interface OrderAllocation {
-  line_id: string
-  name?: string
-  quantity: number
-  batch_id: string
-  coa_reference: string
 }
 
 async function apiRequest(path: string, body?: unknown) {
@@ -92,8 +79,7 @@ const CommercePage = () => {
   // Records data
   const [subscriptions, setSubscriptions] = useState<CommerceRecord[]>([])
   const [receipts, setReceipts] = useState<CommerceRecord[]>([])
-  const [attempts, setAttempts] = useState<CommerceRecord[]>([])
-  const [allRecords, setAllRecords] = useState<CommerceRecord[]>([])
+  const [, setAttempts] = useState<CommerceRecord[]>([])
   const [diagnosticsKind, setDiagnosticsKind] = useState("event")
   const [diagnosticsRecords, setDiagnosticsRecords] = useState<CommerceRecord[]>([])
 
@@ -111,11 +97,6 @@ const CommercePage = () => {
     note: string
   } | null>(null)
   const [modalAlert, setModalAlert] = useState<{ type: "success" | "error" | "info"; text: string } | null>(null)
-
-  // Batch Release state
-  const [releaseOrderId, setReleaseOrderId] = useState("")
-  const [releaseLines, setReleaseLines] = useState<OrderAllocation[]>([])
-  const [isLoadingOrder, setIsLoadingOrder] = useState(false)
 
   // Settings & Stripe config state
   const [stripeConfig, setStripeConfig] = useState<{
@@ -286,64 +267,6 @@ const CommercePage = () => {
     }
   }
 
-  // Fetch Order for Batch Release
-  const handleFetchOrderForRelease = async () => {
-    if (!releaseOrderId.trim()) return
-    setIsLoadingOrder(true)
-    try {
-      const data = await apiRequest(`/admin/commerce/release?order_id=${encodeURIComponent(releaseOrderId.trim())}`)
-      const order = data?.order
-      if (!order || !Array.isArray(order.items) || order.items.length === 0) {
-        throw new Error("Order not found or has no order lines.")
-      }
-      const initialLines: OrderAllocation[] = order.items.map((item: any) => ({
-        line_id: item.id,
-        name: item.title || item.product_title || "Peptide Item",
-        quantity: item.quantity,
-        batch_id: "",
-        coa_reference: "",
-      }))
-      setReleaseLines(initialLines)
-      showNotification("info", `Loaded ${initialLines.length} line item(s) for ${order.id}. Enter batch details below.`)
-    } catch (e: any) {
-      showNotification("error", e?.message || "Failed to load order details")
-    } finally {
-      setIsLoadingOrder(false)
-    }
-  }
-
-  // Submit Batch Release
-  const handleSubmitBatchRelease = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!releaseOrderId || releaseLines.length === 0) return
-    for (const line of releaseLines) {
-      if (!line.batch_id.trim() || !line.coa_reference.trim()) {
-        showNotification("error", `Please provide both Batch Number and COA Reference for all lines.`)
-        return
-      }
-    }
-    setBusy(true)
-    try {
-      const payload = {
-        order_id: releaseOrderId.trim(),
-        allocations: releaseLines.map((l) => ({
-          line_id: l.line_id,
-          quantity: l.quantity,
-          batch_id: l.batch_id.trim(),
-          coa_reference: l.coa_reference.trim(),
-        })),
-      }
-      await apiRequest("/admin/commerce/release", payload)
-      showNotification("success", `Order ${releaseOrderId} successfully verified and released for packing!`)
-      setReleaseOrderId("")
-      setReleaseLines([])
-    } catch (e: any) {
-      showNotification("error", e?.message || "Failed to release order")
-    } finally {
-      setBusy(false)
-    }
-  }
-
   // Persist commerce settings. The shipping option and destination list come
   // from Medusa, so they are never guessed from hardcoded identifiers.
   const saveSettings = async (overrides: Record<string, unknown> = {}) => {
@@ -437,7 +360,7 @@ const CommercePage = () => {
               Payments & Subscriptions
             </Heading>
             <Text className="text-sm text-ui-fg-subtle mt-0.5">
-              Manage 28-day customer subscriptions, Stripe transactions, refunds, and RUO batch verification.
+              Manage 28-day customer subscriptions, Stripe transactions, and gateway settings.
             </Text>
           </div>
           <div className="flex items-center gap-2">
@@ -529,9 +452,6 @@ const CommercePage = () => {
           <Tabs.Trigger value="transactions" className="flex items-center gap-2">
             <span>Transactions & Refunds</span>
             <Badge size="small">{receipts.length}</Badge>
-          </Tabs.Trigger>
-          <Tabs.Trigger value="release" className="flex items-center gap-2">
-            <span>Batch Release & Fulfillment</span>
           </Tabs.Trigger>
           <Tabs.Trigger value="settings" className="flex items-center gap-2">
             <span>Gateway & Shipping Settings</span>
@@ -773,111 +693,7 @@ const CommercePage = () => {
         </Tabs.Content>
 
         {/* ========================================================================= */}
-        {/* TAB 3: RUO BATCH RELEASE & FULFILLMENT                                    */}
-        {/* ========================================================================= */}
-        <Tabs.Content value="release" className="mt-6 flex flex-col gap-4">
-          <div className="rounded-xl border border-ui-border-base bg-ui-bg-subtle p-5">
-            <Heading level="h2" className="text-base font-semibold text-ui-fg-base mb-1">
-              RUO Quality &amp; Batch Allocation
-            </Heading>
-            <Text className="text-sm text-ui-fg-muted mb-4">
-              Attach certified laboratory Batch Numbers and COA references to paid order line items before releasing to warehouse fulfillment.
-            </Text>
-
-            {/* Order lookup input */}
-            <div className="flex items-end gap-3 max-w-md mb-6">
-              <div className="flex-1">
-                <Label>Order Reference / ID</Label>
-                <Input
-                  placeholder="e.g. order_ac0819b48585..."
-                  value={releaseOrderId}
-                  onChange={(e) => setReleaseOrderId(e.target.value)}
-                />
-              </div>
-              <Button
-                variant="secondary"
-                disabled={isLoadingOrder || !releaseOrderId.trim()}
-                onClick={handleFetchOrderForRelease}
-              >
-                {isLoadingOrder ? "Loading..." : "Fetch Order Items"}
-              </Button>
-            </div>
-
-            {/* Form for line item allocations */}
-            {releaseLines.length > 0 && (
-              <form onSubmit={handleSubmitBatchRelease} className="flex flex-col gap-4 mt-4 pt-4 border-t border-ui-border-base">
-                <Heading level="h3" className="text-sm font-semibold text-ui-fg-base">
-                  Order Line Items ({releaseLines.length})
-                </Heading>
-
-                <div className="flex flex-col gap-3">
-                  {releaseLines.map((line, idx) => (
-                    <div
-                      key={line.line_id}
-                      className="rounded-lg border border-ui-border-base bg-ui-bg-base p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4 justify-between"
-                    >
-                      <div className="min-w-[200px]">
-                        <Text className="font-semibold text-sm text-ui-fg-base">{line.name}</Text>
-                        <Text size="small" className="text-ui-fg-muted">
-                          Qty: {line.quantity} · Line ID: {line.line_id.slice(0, 12)}...
-                        </Text>
-                      </div>
-
-                      <div className="flex flex-1 flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                        <div className="flex-1">
-                          <Label>Batch Number</Label>
-                          <Input
-                            required
-                            placeholder="e.g. BPC-2026-09A"
-                            value={line.batch_id}
-                            onChange={(e) => {
-                              const updated = [...releaseLines]
-                              updated[idx].batch_id = e.target.value
-                              setReleaseLines(updated)
-                            }}
-                          />
-                        </div>
-
-                        <div className="flex-1">
-                          <Label>COA Lab Reference</Label>
-                          <Input
-                            required
-                            placeholder="e.g. COA-JAN-8849"
-                            value={line.coa_reference}
-                            onChange={(e) => {
-                              const updated = [...releaseLines]
-                              updated[idx].coa_reference = e.target.value
-                              setReleaseLines(updated)
-                            }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="flex items-center gap-3 pt-3">
-                  <Button disabled={busy} variant="primary">
-                    {busy ? "Releasing..." : "Verify & Release for Packing"}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={() => {
-                      setReleaseOrderId("")
-                      setReleaseLines([])
-                    }}
-                  >
-                    Clear
-                  </Button>
-                </div>
-              </form>
-            )}
-          </div>
-        </Tabs.Content>
-
-        {/* ========================================================================= */}
-        {/* TAB 4: GATEWAY & BANK SETTINGS                                            */}
+        {/* TAB 3: GATEWAY & BANK SETTINGS                                            */}
         {/* ========================================================================= */}
         <Tabs.Content value="settings" className="mt-6 flex flex-col gap-6">
           {/* Stripe Status Card */}

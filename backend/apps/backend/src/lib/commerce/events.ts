@@ -19,7 +19,7 @@ async function financialException(scope:any,ledger:CommerceService,event:any) {
   const orders=scope.resolve(Modules.ORDER)
   await ledger.locked(`fulfillment:${receipt.data.order_id}`,async()=>{
    const order=await orders.retrieveOrder(receipt.data.order_id)
-   await orders.updateOrders(order.id,{metadata:{...order.metadata,fulfillment_hold:true,refund_review:true,financial_review_event:event.stripe_event_id}})
+   await orders.updateOrders(order.id,{metadata:{...order.metadata,fulfillment_hold:false,refund_review:true,financial_review_event:event.stripe_event_id}})
    await ledger.audit(receipt.id,"stripe-webhook","financial-review-hold",{type:event.type,event_id:event.stripe_event_id})
   })
  }

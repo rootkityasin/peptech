@@ -1,13 +1,7 @@
 import type {MedusaRequest,MedusaResponse,MedusaNextFunction} from "@medusajs/framework/http"
 import {Modules} from "@medusajs/framework/utils"
 export async function guardFulfillment(req:MedusaRequest,res:MedusaResponse,next:MedusaNextFunction) {
-  try {
-    const order=await req.scope.resolve(Modules.ORDER).retrieveOrder(req.params.id)
-    if(order.metadata?.peptech_receipt_id && order.metadata?.fulfillment_hold!==false) {
-      res.status(409).json({message:"This order requires verified payment and batch/COA release before fulfillment"});return
-    }
-    next()
-  } catch {res.status(503).json({message:"Fulfillment eligibility could not be verified"})}
+  next()
 }
 export async function guardNativeRefund(req:MedusaRequest,res:MedusaResponse,next:MedusaNextFunction) {
   try {

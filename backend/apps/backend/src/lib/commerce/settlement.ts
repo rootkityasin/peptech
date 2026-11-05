@@ -107,7 +107,7 @@ export async function settleReceipt(
           payment_gateway: evidence.source || "stripe",
           subscription_id: attempt.data.subscription_id || null,
           is_subscription_renewal: Boolean(renewal),
-          fulfillment_hold: true,
+          fulfillment_hold: false,
           tax_policy: q.tax_policy,
           order_number_formatted: orderId,
           order_id: orderId,
