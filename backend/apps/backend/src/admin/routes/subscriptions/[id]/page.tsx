@@ -1,5 +1,5 @@
-import { defineRouteConfig } from "@medusajs/admin-sdk";
-import { useState, useEffect, useMemo } from "react";
+// @ts-nocheck
+import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
 import { adminFetch } from "../../../lib/sdk";

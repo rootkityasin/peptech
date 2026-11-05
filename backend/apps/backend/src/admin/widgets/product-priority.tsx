@@ -73,9 +73,9 @@ const ProductPriorityWidget = ({ data: product }: ProductWidgetProps) => {
   }
 
   return (
-    <Container className="p-4 rounded-lg border border-ui-border-base bg-ui-bg-base shadow-sm">
+    <Container className="divide-y p-0">
       <Toaster />
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between px-6 py-4 gap-4">
         <div className="flex items-start gap-3">
           <div className="size-9 rounded-md bg-ui-bg-subtle flex items-center justify-center border border-ui-border-base shrink-0 mt-0.5">
             <ListBullet className="size-4 text-ui-fg-muted" />

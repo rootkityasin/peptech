@@ -1,5 +1,15 @@
 import { defineRouteConfig } from "@medusajs/admin-sdk";
 import { ArrowPath } from "@medusajs/icons";
+import {
+  Container,
+  Heading,
+  Text,
+  Table,
+  Input,
+  Button,
+  Badge,
+  StatusBadge,
+} from "@medusajs/ui";
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { adminFetch } from "../../lib/sdk";
@@ -29,7 +39,7 @@ const SubscriptionsPage = () => {
     fetchSubscriptions();
   }, []);
 
-  const handleAction = async (sub: any, action: any) => {
+  const handleAction = async (sub: any, action: string) => {
     try {
       await adminFetch("/admin/custom/subscriptions", {
         method: "PUT",
@@ -59,127 +69,168 @@ const SubscriptionsPage = () => {
   });
 
   return (
-    <div className="p-6 space-y-6 orders-theme-root min-h-screen bg-[#f6f6f7]">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-[#202223]">28-Day Subscriptions</h1>
-          <p className="text-xs text-[#5c5f62] mt-0.5">
-            Manage recurring peptide refill subscriptions, pause/resume, and schedule renewal cycles.
-          </p>
+    <div className="flex flex-col gap-y-3 p-6">
+      <Container className="divide-y p-0">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4">
+          <div className="flex flex-col gap-y-1">
+            <div className="flex items-center gap-x-2">
+              <Heading level="h1">28-Day Subscriptions</Heading>
+              <Badge color="green" size="small">
+                10% Subscribe &amp; Save
+              </Badge>
+            </div>
+            <Text size="small" leading="compact" className="text-ui-fg-subtle">
+              Manage recurring peptide refill subscriptions, pause/resume, and schedule renewal cycles.
+            </Text>
+          </div>
+          <Button
+            size="small"
+            variant="secondary"
+            onClick={fetchSubscriptions}
+            disabled={isLoading}
+          >
+            <ArrowPath className={`size-3.5 ${isLoading ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
         </div>
-        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">
-          10% Subscribe & Save Active
-        </span>
-      </div>
 
-      <div className="flex items-center gap-3">
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search by customer, email, or subscription ID..."
-          className="w-80 px-3 py-1.5 text-xs rounded-md border border-[#c9cccf] bg-white text-[#202223]"
-        />
-        <div className="flex gap-1 text-xs">
-          {["all", "active", "paused", "canceled"].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setFilterState(tab)}
-              className={"px-3 py-1 rounded capitalize font-medium " + (
-                filterState === tab
-                  ? "bg-[#00C5A0] text-white"
-                  : "bg-white border border-[#c9cccf] text-[#5c5f62] hover:text-[#202223]"
-              )}
-            >
-              {tab}
-            </button>
-          ))}
+        {/* Toolbar & Filters */}
+        <div className="flex items-center justify-between px-6 py-4 bg-ui-bg-subtle gap-4">
+          <div className="w-80">
+            <Input
+              size="small"
+              type="search"
+              placeholder="Search by customer, email, or ID..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <div className="flex items-center gap-x-1">
+            {(["all", "active", "paused", "canceled"] as const).map((tab) => (
+              <Button
+                key={tab}
+                size="small"
+                variant={filterState === tab ? "primary" : "secondary"}
+                onClick={() => setFilterState(tab)}
+                className="capitalize"
+              >
+                {tab}
+              </Button>
+            ))}
+          </div>
         </div>
-      </div>
 
-      <div className="rounded-lg border border-[#e1e3e5] bg-white overflow-hidden shadow-xs">
-        <table className="w-full text-left text-xs">
-          <thead className="border-b border-[#e1e3e5] bg-[#fafbfb] text-[#5c5f62] uppercase text-[10px] tracking-wider font-semibold">
-            <tr>
-              <th className="p-3">Subscription</th>
-              <th className="p-3">Customer</th>
-              <th className="p-3">Frequency</th>
-              <th className="p-3">Discount</th>
-              <th className="p-3">Next Renewal</th>
-              <th className="p-3">Status</th>
-              <th className="p-3 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[#e1e3e5] text-[#202223]">
+        {/* Subscriptions Table */}
+        <Table>
+          <Table.Header>
+            <Table.Row>
+              <Table.HeaderCell>Subscription</Table.HeaderCell>
+              <Table.HeaderCell>Customer</Table.HeaderCell>
+              <Table.HeaderCell>Frequency</Table.HeaderCell>
+              <Table.HeaderCell>Discount</Table.HeaderCell>
+              <Table.HeaderCell>Next Renewal</Table.HeaderCell>
+              <Table.HeaderCell>Status</Table.HeaderCell>
+              <Table.HeaderCell className="text-right">Actions</Table.HeaderCell>
+            </Table.Row>
+          </Table.Header>
+          <Table.Body>
             {isLoading ? (
-              <tr>
-                <td colSpan={7} className="p-6 text-center text-[#8c9196]">
+              <Table.Row>
+                <Table.Cell {...({ colSpan: 7 } as any)} className="text-center py-8 text-ui-fg-muted">
                   Loading subscriptions...
-                </td>
-              </tr>
+                </Table.Cell>
+              </Table.Row>
             ) : filtered.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="p-6 text-center text-[#8c9196]">
+              <Table.Row>
+                <Table.Cell {...({ colSpan: 7 } as any)} className="text-center py-8 text-ui-fg-muted">
                   No subscriptions found.
-                </td>
-              </tr>
+                </Table.Cell>
+              </Table.Row>
             ) : (
-              filtered.map((sub) => (
-                <tr key={sub.id} className="hover:bg-[#f6f6f7]">
-                  <td className="p-3 font-semibold text-[#00C5A0]">
-                    <Link to={"/subscriptions/" + sub.id} className="hover:underline">
-                      {sub.sub_display_id || sub.id}
-                    </Link>
-                  </td>
-                  <td className="p-3">
-                    <div className="font-medium">{sub.customer_name || sub.email || "Customer unavailable"}</div>
-                    {sub.email && <div className="text-[11px] text-[#5c5f62]">{sub.email}</div>}
-                  </td>
-                  <td className="p-3 font-medium">{sub.frequency || `Every ${sub.cadence_days || 28} Days`}</td>
-                  <td className="p-3 font-semibold text-emerald-600">10% OFF</td>
-                  <td className="p-3 text-[#5c5f62]">{sub.next_renewal_date || sub.nextBillingDate || "-"}</td>
-                  <td className="p-3">
-                    <span
-                      className={"px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase " + (
-                        sub.status === "active"
-                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                          : sub.status === "paused"
-                          ? "bg-amber-50 text-amber-700 border border-amber-200"
-                          : "bg-rose-50 text-rose-700 border border-rose-200"
-                      )}
-                    >
-                      {sub.status || "active"}
-                    </span>
-                  </td>
-                  <td className="p-3 text-right space-x-2">
-                    {sub.status === "paused" ? (
-                      <button
-                        onClick={() => handleAction(sub, "resume")}
-                        className="px-2.5 py-1 text-[11px] font-semibold rounded bg-emerald-600 text-white hover:bg-emerald-700"
+              filtered.map((sub) => {
+                const statusColor =
+                  sub.status === "active"
+                    ? "green"
+                    : sub.status === "paused"
+                    ? "orange"
+                    : "red";
+
+                return (
+                  <Table.Row key={sub.id}>
+                    <Table.Cell>
+                      <Link
+                        to={`/subscriptions/${sub.id}`}
+                        className="font-medium text-ui-fg-interactive hover:text-ui-fg-interactive-hover font-mono text-xs"
                       >
-                        Resume
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => handleAction(sub, "pause")}
-                        className="px-2.5 py-1 text-[11px] font-medium rounded border border-[#c9cccf] bg-white hover:bg-[#f6f6f7]"
-                      >
-                        Pause
-                      </button>
-                    )}
-                    <Link
-                      to={"/subscriptions/" + sub.id}
-                      className="px-2.5 py-1 text-[11px] font-semibold rounded bg-[#00C5A0] text-white hover:bg-[#16A6A3]"
-                    >
-                      View
-                    </Link>
-                  </td>
-                </tr>
-              ))
+                        {sub.sub_display_id || sub.id}
+                      </Link>
+                    </Table.Cell>
+                    <Table.Cell>
+                      <div className="flex flex-col">
+                        <Text size="small" leading="compact" weight="plus">
+                          {sub.customer_name || sub.email || "Customer unavailable"}
+                        </Text>
+                        {sub.email && (
+                          <Text size="small" leading="compact" className="text-ui-fg-subtle text-xs">
+                            {sub.email}
+                          </Text>
+                        )}
+                      </div>
+                    </Table.Cell>
+                    <Table.Cell>
+                      <Text size="small" leading="compact">
+                        {sub.frequency || `Every ${sub.cadence_days || 28} Days`}
+                      </Text>
+                    </Table.Cell>
+                    <Table.Cell>
+                      <Badge color="green" size="small">
+                        10% OFF
+                      </Badge>
+                    </Table.Cell>
+                    <Table.Cell>
+                      <Text size="small" leading="compact" className="text-ui-fg-subtle">
+                        {sub.next_renewal_date || sub.nextBillingDate || "—"}
+                      </Text>
+                    </Table.Cell>
+                    <Table.Cell>
+                      <StatusBadge color={statusColor} className="capitalize">
+                        {sub.status || "active"}
+                      </StatusBadge>
+                    </Table.Cell>
+                    <Table.Cell className="text-right">
+                      <div className="flex items-center justify-end gap-x-2">
+                        {sub.status === "paused" ? (
+                          <Button
+                            size="small"
+                            variant="secondary"
+                            onClick={() => handleAction(sub, "resume")}
+                          >
+                            Resume
+                          </Button>
+                        ) : (
+                          <Button
+                            size="small"
+                            variant="secondary"
+                            onClick={() => handleAction(sub, "pause")}
+                          >
+                            Pause
+                          </Button>
+                        )}
+                        <Button size="small" variant="secondary" asChild>
+                          <Link to={`/subscriptions/${sub.id}`}>
+                            View
+                          </Link>
+                        </Button>
+                      </div>
+                    </Table.Cell>
+                  </Table.Row>
+                );
+              })
             )}
-          </tbody>
-        </table>
-      </div>
+          </Table.Body>
+        </Table>
+      </Container>
     </div>
   );
 };

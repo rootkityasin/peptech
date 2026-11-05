@@ -98,12 +98,10 @@ const ProductTechnicalSpecsWidget = ({ data: product }: ProductWidgetProps) => {
   const queryClient = useQueryClient()
   const [rows, setRows] = useState<SpecRow[]>([])
   const [isSaving, setIsSaving] = useState(false)
-  const [hasLoaded, setHasLoaded] = useState(false)
 
   useEffect(() => {
     if (product) {
       setRows(parseInitialSpecs(product))
-      setHasLoaded(true)
     }
   }, [product?.id, product?.metadata])
 
@@ -290,14 +288,14 @@ const ProductTechnicalSpecsWidget = ({ data: product }: ProductWidgetProps) => {
   }
 
   return (
-    <Container className="p-0 overflow-hidden rounded-lg border border-ui-border-base bg-ui-bg-base shadow-sm">
+    <Container className="divide-y p-0">
       <Toaster />
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-ui-bg-subtle border-b border-ui-border-base gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between px-6 py-4 gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <Heading level="h2" className="text-sm font-semibold text-ui-fg-base">
+            <Heading level="h2">
               Technical Specifications
             </Heading>
             <Badge size="small" color={rows.length > 0 ? "green" : "grey"}>
@@ -332,7 +330,7 @@ const ProductTechnicalSpecsWidget = ({ data: product }: ProductWidgetProps) => {
       </div>
 
       {/* Rows Container */}
-      <div className="p-4 space-y-3">
+      <div className="px-6 py-4 flex flex-col gap-y-3">
         {rows.length === 0 ? (
           <div className="py-8 text-center text-ui-fg-muted flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-ui-border-base bg-ui-bg-subtle/40 p-6">
             <Text size="small" leading="compact" weight="plus" className="text-ui-fg-base">

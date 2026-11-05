@@ -93,10 +93,10 @@ const ProductImageOptimizerWidget = ({ data: product }: ProductWidgetProps) => {
   const totalDisplay = (totalBytes / (1024 * 1024)).toFixed(2)
 
   return (
-    <Container className="p-0 overflow-hidden border border-ui-border-base rounded-xl shadow-xs">
+    <Container className="divide-y p-0">
       <Toaster />
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-6 border-b border-ui-border-base bg-ui-bg-subtle">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-6 py-4">
         <div className="flex items-center gap-3">
           <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-ui-bg-base border border-ui-border-base text-ui-fg-subtle shrink-0">
             <CloudSolid className="w-5 h-5 text-ui-fg-muted" />
@@ -159,7 +159,7 @@ const ProductImageOptimizerWidget = ({ data: product }: ProductWidgetProps) => {
       )}
 
       {/* Content Body */}
-      <div className="p-6 space-y-4">
+      <div className="px-6 py-4 flex flex-col gap-y-4">
         {images.length === 0 ? (
           <div className="py-8 text-center text-ui-fg-muted">
             <Text className="text-xs">

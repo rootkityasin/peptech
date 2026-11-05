@@ -132,7 +132,7 @@ const LocationShippingConfigurationWidget = () => {
   }
 
   return (
-    <Container className="p-0 overflow-hidden divide-y divide-ui-border-base mt-4">
+    <Container className="divide-y p-0">
       {/* Header */}
       <div className="px-6 py-4 flex items-center justify-between">
         <div>

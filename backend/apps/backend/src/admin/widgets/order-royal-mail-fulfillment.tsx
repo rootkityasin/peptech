@@ -1,6 +1,19 @@
 import { defineWidgetConfig } from "@medusajs/admin-sdk";
-import { adminFetch, adminFetch as fetch } from "../lib/sdk";
-import { Container, Heading, Text, Button, Badge, Input, Label, toast, Toaster } from "@medusajs/ui";
+import { adminFetch } from "../lib/sdk";
+import {
+  Container,
+  Heading,
+  Text,
+  Button,
+  Badge,
+  StatusBadge,
+  Input,
+  Label,
+  Drawer,
+  Checkbox,
+  toast,
+  Toaster,
+} from "@medusajs/ui";
 import { useState, useMemo, useEffect } from "react";
 
 interface OrderWidgetProps {
@@ -191,15 +204,10 @@ const OrderRoyalMailFulfillmentWidget = ({ data: order }: OrderWidgetProps) => {
 
   // Payment Status check
   const isPaid = isOrderPaymentSuccessful(order);
-  const paymentStatus = order?.payment_status || order?.metadata?.payment_status || (isPaid ? "paid" : (order?.status || "unpaid"));
 
   // Packaging Profiles State
   const [profiles, setProfiles] = useState<PackagingProfile[]>(DEFAULT_PACKAGING_PROFILES);
   const [selectedProfileId, setSelectedProfileId] = useState<string>("");
-  const [showProfileManager, setShowProfileManager] = useState(false);
-  const [isSavingProfile, setIsSavingProfile] = useState(false);
-  const [profileManagerMsg, setProfileManagerMsg] = useState("");
-  const [editingProfileId, setEditingProfileId] = useState<string | null>(null);
 
   // Form State (Default to pen set specifications, but unselected profile)
   const [serviceCode, setServiceCode] = useState("AUTO");
@@ -209,14 +217,6 @@ const OrderRoyalMailFulfillmentWidget = ({ data: order }: OrderWidgetProps) => {
   const [dimWidth, setDimWidth] = useState(160);
   const [dimDepth, setDimDepth] = useState(220);
   const [includeLabel, setIncludeLabel] = useState(true);
-
-  // Profile Form State
-  const [newProfileName, setNewProfileName] = useState("");
-  const [newProfileFormat, setNewProfileFormat] = useState("smallParcel");
-  const [newProfileWeight, setNewProfileWeight] = useState(240);
-  const [newProfileH, setNewProfileH] = useState(80);
-  const [newProfileW, setNewProfileW] = useState(160);
-  const [newProfileD, setNewProfileD] = useState(220);
 
   // Fetch packaging profiles from backend API with localStorage fallback
   const fetchProfiles = async () => {
@@ -263,130 +263,6 @@ const OrderRoyalMailFulfillmentWidget = ({ data: order }: OrderWidgetProps) => {
     }
   };
 
-  // Pre-fill "Create New Profile" with current values in form
-  const copyCurrentFormValues = () => {
-    setNewProfileFormat(packageFormat);
-    setNewProfileWeight(weightInGrams);
-    setNewProfileH(dimHeight);
-    setNewProfileW(dimWidth);
-    setNewProfileD(dimDepth);
-    setProfileManagerMsg("Copied current weight and dimensions.");
-    setTimeout(() => setProfileManagerMsg(""), 3000);
-  };
-
-  // Start editing an existing profile in the manager
-  const startEditProfile = (p: PackagingProfile) => {
-    setEditingProfileId(p.id);
-    setNewProfileName(p.name);
-    setNewProfileFormat(p.packageFormatIdentifier);
-    setNewProfileWeight(p.weightInGrams);
-    setNewProfileH(p.dimensions.heightInMms);
-    setNewProfileW(p.dimensions.widthInMms);
-    setNewProfileD(p.dimensions.depthInMms);
-    setProfileManagerMsg(`Editing "${p.name}". Make adjustments and click "Update Profile".`);
-  };
-
-  const cancelEditProfile = () => {
-    setEditingProfileId(null);
-    setNewProfileName("");
-    setProfileManagerMsg("");
-  };
-
-  // Save or update packaging profile
-  const handleSaveProfile = async () => {
-    if (!newProfileName.trim()) {
-      setProfileManagerMsg("Please provide a name for this packaging profile.");
-      return;
-    }
-    setIsSavingProfile(true);
-    setProfileManagerMsg("");
-
-    try {
-      const payload: any = {
-        name: newProfileName.trim(),
-        packageFormatIdentifier: newProfileFormat,
-        weightInGrams: Number(newProfileWeight) || 240,
-        dimensions: {
-          heightInMms: Number(newProfileH) || 80,
-          widthInMms: Number(newProfileW) || 160,
-          depthInMms: Number(newProfileD) || 220,
-        },
-      };
-
-      if (editingProfileId) {
-        payload.id = editingProfileId;
-      }
-
-      const res = await adminFetch("/admin/custom/packaging-profiles", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(payload),
-      });
-
-      const resData = await res.json();
-      if (!res.ok) {
-        throw new Error(resData.message || "Failed to save profile");
-      }
-
-      if (Array.isArray(resData.profiles)) {
-        setProfiles(resData.profiles);
-        try {
-          localStorage.setItem("peptech_packaging_profiles", JSON.stringify(resData.profiles));
-        } catch {}
-      }
-
-      const targetId = editingProfileId || resData.profile?.id;
-      if (targetId) {
-        setSelectedProfileId(targetId);
-        setWeightInGrams(payload.weightInGrams);
-        setPackageFormat(payload.packageFormatIdentifier);
-        setDimHeight(payload.dimensions.heightInMms);
-        setDimWidth(payload.dimensions.widthInMms);
-        setDimDepth(payload.dimensions.depthInMms);
-      }
-
-      setEditingProfileId(null);
-      setNewProfileName("");
-      setShowProfileManager(false);
-      if (toast) {
-        toast.success(editingProfileId ? "Profile Updated" : "Packaging Profile Saved", {
-          description: `Saved "${payload.name}" profile.`,
-        });
-      }
-    } catch (err: any) {
-      setProfileManagerMsg(err.message || "Could not save profile.");
-    } finally {
-      setIsSavingProfile(false);
-    }
-  };
-
-  // Delete profile
-  const handleDeleteProfile = async (id: string, name: string) => {
-    if (!confirm(`Delete packaging profile "${name}"?`)) return;
-    try {
-      const res = await adminFetch(`/admin/custom/packaging-profiles?id=${encodeURIComponent(id)}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-      const data = await res.json();
-      if (res.ok && Array.isArray(data.profiles)) {
-        setProfiles(data.profiles);
-        try {
-          localStorage.setItem("peptech_packaging_profiles", JSON.stringify(data.profiles));
-        } catch {}
-        if (selectedProfileId === id) {
-          setSelectedProfileId("");
-        }
-        if (editingProfileId === id) {
-          cancelEditProfile();
-        }
-      }
-    } catch (err: any) {
-      alert("Error deleting profile: " + err.message);
-    }
-  };
-
   // Local state for instant UI update after label creation
   const [localFulfillments, setLocalFulfillments] = useState<any[]>([]);
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
@@ -422,11 +298,9 @@ const OrderRoyalMailFulfillmentWidget = ({ data: order }: OrderWidgetProps) => {
 
       setLocalFulfillments((prev) => prev.filter((f) => f.id !== ful.id && f.tracking_number !== ful.tracking_number));
 
-      if (toast) {
-        toast.success("Shipment Cancelled & Deleted", {
-          description: "Removed from Royal Mail Click & Drop and Medusa.",
-        });
-      }
+      toast.success("Shipment Cancelled & Deleted", {
+        description: "Removed from Royal Mail Click & Drop and Medusa.",
+      });
 
       setTimeout(() => {
         window.location.reload();
@@ -506,11 +380,9 @@ const OrderRoyalMailFulfillmentWidget = ({ data: order }: OrderWidgetProps) => {
         downloadPdf(resData.labelBase64, `Royal-Mail-Label-${order?.display_id || order?.id}.pdf`);
       }
 
-      if (toast) {
-        toast.success("Shipment Created", {
-          description: `Royal Mail tracking: ${resData.trackingNumber}`,
-        });
-      }
+      toast.success("Shipment Created", {
+        description: `Royal Mail tracking: ${resData.trackingNumber}`,
+      });
 
       setTimeout(() => {
         window.location.reload();
@@ -523,122 +395,129 @@ const OrderRoyalMailFulfillmentWidget = ({ data: order }: OrderWidgetProps) => {
   };
 
   return (
-    <Container className="divide-y p-0 overflow-hidden rounded-lg border shadow-sm">
+    <Container className="divide-y p-0">
       <Toaster />
       {/* Header Bar */}
-      <div className="flex items-center justify-between p-4 bg-ui-bg-subtle">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-8 h-8 rounded-md bg-[#0B1F3A] text-[#00C5A0] font-bold text-xs">
-            RM
+      <div className="flex items-center justify-between px-6 py-4">
+        <div className="flex flex-col gap-y-1">
+          <div className="flex items-center gap-x-2">
+            <Heading level="h2">Royal Mail Fulfillment</Heading>
+            <StatusBadge color={fulfillments.length > 0 ? "green" : isPaid ? "blue" : "orange"}>
+              {fulfillments.length > 0 ? "Fulfilled" : isPaid ? "Ready to Fulfill" : "Payment Pending"}
+            </StatusBadge>
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <Heading level="h2" className="text-sm font-semibold text-ui-fg-base">
-                Royal Mail Click & Drop Fulfillment
-              </Heading>
-              <Badge color={fulfillments.length > 0 ? "green" : isPaid ? "blue" : "orange"} size="small">
-                {fulfillments.length > 0 ? "Fulfilled" : isPaid ? "Ready to Fulfill" : "Payment Pending"}
-              </Badge>
-            </div>
-            <Text size="small" className="text-ui-fg-subtle">
-              Official carrier integration for domestic & international peptide dispatch
-            </Text>
-          </div>
+          <Text size="small" leading="compact" className="text-ui-fg-subtle">
+            Official carrier integration for domestic &amp; international peptide dispatch
+          </Text>
         </div>
 
-        <div>
-          <Button
-            size="small"
-            variant="secondary"
-            onClick={() => {
-              setErrorMessage("");
-              setShowModal(true);
-            }}
-          >
-            Fulfill Items with Royal Mail
-          </Button>
-        </div>
+        <Button
+          size="small"
+          variant="secondary"
+          onClick={() => {
+            setErrorMessage("");
+            setShowModal(true);
+          }}
+        >
+          Create Shipment
+        </Button>
       </div>
 
       {/* Payment Notice if Unpaid */}
       {!isPaid && (
-        <div className="p-3 bg-amber-50 border-l-4 border-amber-500 text-xs text-amber-900 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold">Payment Notice:</span>
-            <span>Order is currently unpaid. Mark as paid before generating Royal Mail postage labels.</span>
+        <div className="px-6 py-3 bg-ui-bg-subtle flex items-center justify-between">
+          <div className="flex items-center gap-x-2">
+            <Text size="small" leading="compact" weight="plus" className="text-ui-fg-warning">
+              Payment Notice:
+            </Text>
+            <Text size="small" leading="compact" className="text-ui-fg-subtle">
+              Order is currently unpaid. Mark as paid before generating Royal Mail postage labels.
+            </Text>
           </div>
-          <Badge color="orange" size="small">Unpaid</Badge>
+          <StatusBadge color="orange">Unpaid</StatusBadge>
         </div>
       )}
 
       {/* Active Fulfillments List */}
-      <div className="p-4 space-y-3">
+      <div className="px-6 py-4 flex flex-col gap-y-3">
         {fulfillments.length === 0 ? (
-          <div className="py-6 text-center text-xs text-ui-fg-muted">
-            <Text size="small" className="text-ui-fg-muted">No Royal Mail shipments created for this order yet.</Text>
+          <div className="py-8 text-center flex flex-col items-center justify-center gap-y-2">
+            <Text size="small" leading="compact" className="text-ui-fg-subtle">
+              No Royal Mail shipments created for this order yet.
+            </Text>
             {isPaid && (
-              <div className="mt-3">
-                <Button size="small" variant="primary" onClick={() => setShowModal(true)}>
-                  Fulfill Items with Royal Mail
-                </Button>
-              </div>
+              <Button size="small" variant="secondary" onClick={() => setShowModal(true)}>
+                Create Shipment
+              </Button>
             )}
           </div>
         ) : (
           fulfillments.map((ful, idx) => {
             const labelPdf = ful.shipping_label_pdf || order?.metadata?.shipping_label_pdf;
             return (
-              <div key={ful.id || idx} className="p-4 rounded-lg border bg-ui-bg-base space-y-3">
+              <div
+                key={ful.id || idx}
+                className="shadow-elevation-card-rest bg-ui-bg-component rounded-md p-4 flex flex-col gap-y-4 transition-colors"
+              >
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-sm text-ui-fg-base">#{ful.id || `RM-PKG-${idx + 1}`}</span>
-                    <Badge color={ful.is_official_carrier_label !== false ? "green" : "orange"} size="small">
+                  <div className="flex items-center gap-x-2">
+                    <Text size="small" leading="compact" weight="plus">
+                      #{ful.id || `RM-PKG-${idx + 1}`}
+                    </Text>
+                    <StatusBadge color={ful.is_official_carrier_label !== false ? "green" : "orange"}>
                       {ful.is_official_carrier_label !== false ? "Ready to Dispatch" : "Saved to Click & Drop"}
-                    </Badge>
-                    {ful.service_code && <Badge color="grey" size="small">{ful.service_code}</Badge>}
+                    </StatusBadge>
+                    {ful.service_code && <Badge size="small">{ful.service_code}</Badge>}
                   </div>
-                  <Text size="small" className="text-ui-fg-subtle">
+                  <Text size="small" leading="compact" className="text-ui-fg-subtle">
                     {ful.shipped_at ? new Date(ful.shipped_at).toLocaleDateString("en-GB") : "Recently created"}
                   </Text>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-                  <div>
-                    <div className="text-ui-fg-muted text-[11px]">Carrier & Service</div>
-                    <div className="font-semibold text-ui-fg-base mt-0.5">{ful.carrier || "Royal Mail"}</div>
-                    <div className="text-[11px] text-ui-fg-subtle mt-0.5">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="flex flex-col gap-y-1">
+                    <Text size="small" leading="compact" className="text-ui-fg-subtle">
+                      Carrier &amp; Service
+                    </Text>
+                    <Text size="small" leading="compact" weight="plus">
+                      {ful.carrier || "Royal Mail"}
+                    </Text>
+                    <Text size="small" leading="compact" className="text-ui-fg-muted">
                       Format: {ful.package_format || "smallParcel"} ({ful.weight_in_grams || 240}g)
-                    </div>
+                    </Text>
                   </div>
 
-                  <div>
-                    <div className="text-ui-fg-muted text-[11px]">Tracking Reference</div>
-                    <div className="font-mono font-semibold text-ui-fg-interactive mt-0.5">
+                  <div className="flex flex-col gap-y-1">
+                    <Text size="small" leading="compact" className="text-ui-fg-subtle">
+                      Tracking Reference
+                    </Text>
+                    <Text size="small" leading="compact" weight="plus" className="font-mono">
                       {ful.tracking_number || "Generated"}
-                    </div>
+                    </Text>
                     {ful.order_identifier && (
-                      <div className="text-[11px] text-ui-fg-subtle mt-0.5 font-mono">
-                        C&D Order #{ful.order_identifier}
-                      </div>
+                      <Text size="small" leading="compact" className="text-ui-fg-subtle font-mono">
+                        C&amp;D Order #{ful.order_identifier}
+                      </Text>
                     )}
                   </div>
 
-                  <div>
-                    <div className="text-ui-fg-muted text-[11px]">Destination</div>
-                    <div className="font-medium text-ui-fg-base mt-0.5">
+                  <div className="flex flex-col gap-y-1">
+                    <Text size="small" leading="compact" className="text-ui-fg-subtle">
+                      Destination
+                    </Text>
+                    <Text size="small" leading="compact" weight="plus">
                       {shipping.city ? `${shipping.city}, ` : ""}{countryCode} {isUk ? "(UK)" : "(International)"}
-                    </div>
+                    </Text>
                   </div>
                 </div>
 
                 {/* Print & Download Action Buttons */}
-                <div className="pt-3 border-t flex items-center justify-between">
-                  <div className="flex items-center gap-2">
+                <div className="pt-3 border-t border-ui-border-base flex items-center justify-between">
+                  <div className="flex items-center gap-x-2">
                     <Button
                       size="small"
                       variant="secondary"
                       onClick={() => openPdfPrintWindow(labelPdf, ful.order_identifier)}
-                      className="font-medium"
                     >
                       {ful.is_official_carrier_label ? "Print Label" : "View Dispatch Slip"}
                     </Button>
@@ -654,7 +533,6 @@ const OrderRoyalMailFulfillmentWidget = ({ data: order }: OrderWidgetProps) => {
                       variant="danger"
                       disabled={isDeletingId === (ful.id || ful.tracking_number)}
                       onClick={() => handleDeleteFulfillment(ful)}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50 font-medium"
                     >
                       {isDeletingId === (ful.id || ful.tracking_number) ? "Deleting..." : "Delete"}
                     </Button>
@@ -665,7 +543,7 @@ const OrderRoyalMailFulfillmentWidget = ({ data: order }: OrderWidgetProps) => {
                       href={ful.tracking_url || `https://www.royalmail.com/track-your-item#/tracking-results/${ful.tracking_number}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-xs font-semibold text-ui-fg-interactive hover:underline inline-flex items-center gap-1"
+                      className="text-xs font-medium text-ui-fg-interactive hover:text-ui-fg-interactive-hover inline-flex items-center gap-x-1"
                     >
                       Track on Royal Mail &rarr;
                     </a>
@@ -677,46 +555,41 @@ const OrderRoyalMailFulfillmentWidget = ({ data: order }: OrderWidgetProps) => {
         )}
       </div>
 
-      {/* Shipment Creation Modal / Dialog */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
-          <div className="bg-ui-bg-base rounded-xl shadow-2xl border max-w-lg w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b pb-3">
-              <div>
-                <Heading level="h2" className="text-base font-semibold text-ui-fg-base">
-                  Royal Mail Click & Drop Fulfillment
-                </Heading>
-                <Text size="small" className="text-ui-fg-subtle">
-                  Order #{order?.display_id || order?.id} • Destination: {[shipping.city, countryCode].filter(Boolean).join(", ")}
+      {/* Shipment Creation Drawer */}
+      <Drawer open={showModal} onOpenChange={setShowModal}>
+        <Drawer.Content className="flex flex-col">
+          <Drawer.Header>
+            <Drawer.Title asChild>
+              <Heading>Royal Mail Click &amp; Drop Fulfillment</Heading>
+            </Drawer.Title>
+            <Drawer.Description asChild>
+              <Text size="small" className="text-ui-fg-subtle">
+                Order #{order?.display_id || order?.id} • Destination: {[shipping.city, countryCode].filter(Boolean).join(", ")}
+              </Text>
+            </Drawer.Description>
+          </Drawer.Header>
+
+          <div className="flex flex-1 flex-col justify-between overflow-y-auto">
+            <Drawer.Body className="flex flex-1 flex-col gap-y-4 p-6 overflow-y-auto">
+              {/* Recipient Summary */}
+              <div className="shadow-elevation-card-rest bg-ui-bg-subtle rounded-md p-3 flex flex-col gap-y-1">
+                <Text size="small" leading="compact" weight="plus">
+                  {shipping.first_name || ""} {shipping.last_name || ""} {shipping.company ? `(${shipping.company})` : ""}
+                </Text>
+                <Text size="small" leading="compact" className="text-ui-fg-subtle">
+                  {[shipping.address_1, shipping.city, shipping.postal_code, countryCode].filter(Boolean).join(", ")}
                 </Text>
               </div>
-              <button
-                onClick={() => setShowModal(false)}
-                className="text-ui-fg-muted hover:text-ui-fg-base text-sm font-semibold p-1 cursor-pointer"
-              >
-                Close
-              </button>
-            </div>
 
-            {/* Recipient Summary */}
-            <div className="p-3 bg-ui-bg-subtle rounded-lg border text-xs space-y-1">
-              <div className="font-semibold text-ui-fg-base">
-                {shipping.first_name || ""} {shipping.last_name || ""} {shipping.company ? `(${shipping.company})` : ""}
-              </div>
-              <div className="text-ui-fg-subtle">
-                {[shipping.address_1, shipping.city, shipping.postal_code, countryCode].filter(Boolean).join(", ")}
-              </div>
-            </div>
-
-            {/* Form Fields */}
-            <div className="space-y-3">
               {/* Service Code */}
-              <div>
-                <Label className="text-xs font-medium text-ui-fg-base mb-1 block">Royal Mail Service</Label>
+              <div className="flex flex-col gap-y-2">
+                <Label weight="plus" size="small">
+                  Royal Mail Service
+                </Label>
                 <select
                   value={serviceCode}
                   onChange={(e) => setServiceCode(e.target.value)}
-                  className="w-full border rounded-md p-2 text-xs bg-ui-bg-base text-ui-fg-base font-medium"
+                  className="w-full h-8 px-2 text-xs rounded-md border border-ui-border-base bg-ui-bg-field text-ui-fg-base focus:border-ui-border-interactive focus:outline-none"
                 >
                   <option value="AUTO">AUTO — Default Account Rules (Recommended)</option>
                   <option value="OLP1">OLP1 — Royal Mail 24 (Online Postage)</option>
@@ -726,18 +599,20 @@ const OrderRoyalMailFulfillmentWidget = ({ data: order }: OrderWidgetProps) => {
                   <option value="TRM">TRM — Royal Mail Tracked 24 with Signature (OBA)</option>
                   <option value="SD1">SD1 — Special Delivery Guaranteed by 1pm</option>
                   <option value="OTA">OTA — Royal Mail International Tracked (OBA)</option>
-                  <option value="OTC">OTC — Royal Mail International Tracked & Signed (OBA)</option>
+                  <option value="OTC">OTC — Royal Mail International Tracked &amp; Signed (OBA)</option>
                   <option value="OLS">OLS — Royal Mail International Signed (OBA)</option>
                 </select>
               </div>
 
-              {/* Packaging Profile Dropdown */}
-              <div>
-                <Label className="text-xs font-medium text-ui-fg-base mb-1 block">Packaging Profile</Label>
+              {/* Packaging Profile */}
+              <div className="flex flex-col gap-y-2">
+                <Label weight="plus" size="small">
+                  Packaging Profile
+                </Label>
                 <select
                   value={selectedProfileId}
                   onChange={(e) => handleProfileChange(e.target.value)}
-                  className="w-full border rounded-md p-2 text-xs bg-ui-bg-base text-ui-fg-base font-medium"
+                  className="w-full h-8 px-2 text-xs rounded-md border border-ui-border-base bg-ui-bg-field text-ui-fg-base focus:border-ui-border-interactive focus:outline-none"
                 >
                   <option value="">-- Standard Package --</option>
                   {profiles.map((p) => (
@@ -751,9 +626,10 @@ const OrderRoyalMailFulfillmentWidget = ({ data: order }: OrderWidgetProps) => {
 
               {/* Weight & Format */}
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-xs font-medium text-ui-fg-base mb-1 block">Gross Weight (grams)</Label>
+                <div className="flex flex-col gap-y-2">
+                  <Label weight="plus" size="small">Gross Weight (grams)</Label>
                   <Input
+                    size="small"
                     type="number"
                     value={weightInGrams}
                     onChange={(e) => {
@@ -763,15 +639,15 @@ const OrderRoyalMailFulfillmentWidget = ({ data: order }: OrderWidgetProps) => {
                     placeholder="240"
                   />
                 </div>
-                <div>
-                  <Label className="text-xs font-medium text-ui-fg-base mb-1 block">Package Format</Label>
+                <div className="flex flex-col gap-y-2">
+                  <Label weight="plus" size="small">Package Format</Label>
                   <select
                     value={packageFormat}
                     onChange={(e) => {
                       setPackageFormat(e.target.value);
                       setSelectedProfileId("custom");
                     }}
-                    className="w-full border rounded-md p-2 text-xs bg-ui-bg-base text-ui-fg-base"
+                    className="w-full h-8 px-2 text-xs rounded-md border border-ui-border-base bg-ui-bg-field text-ui-fg-base focus:border-ui-border-interactive focus:outline-none"
                   >
                     <option value="smallParcel">Small Parcel (Cold-Chain Box)</option>
                     <option value="mediumParcel">Medium Parcel</option>
@@ -783,12 +659,13 @@ const OrderRoyalMailFulfillmentWidget = ({ data: order }: OrderWidgetProps) => {
               </div>
 
               {/* Dimensions */}
-              <div>
-                <Label className="text-xs font-medium text-ui-fg-base mb-1 block">Outer Dimensions (mm)</Label>
+              <div className="flex flex-col gap-y-2">
+                <Label weight="plus" size="small">Outer Dimensions (H × W × D mm)</Label>
                 <div className="grid grid-cols-3 gap-2">
                   <div>
-                    <span className="text-[10px] text-ui-fg-muted block">Height (H)</span>
+                    <span className="text-[11px] text-ui-fg-muted mb-1 block">Height (H)</span>
                     <Input
+                      size="small"
                       type="number"
                       value={dimHeight}
                       onChange={(e) => {
@@ -799,8 +676,9 @@ const OrderRoyalMailFulfillmentWidget = ({ data: order }: OrderWidgetProps) => {
                     />
                   </div>
                   <div>
-                    <span className="text-[10px] text-ui-fg-muted block">Width (W)</span>
+                    <span className="text-[11px] text-ui-fg-muted mb-1 block">Width (W)</span>
                     <Input
+                      size="small"
                       type="number"
                       value={dimWidth}
                       onChange={(e) => {
@@ -811,8 +689,9 @@ const OrderRoyalMailFulfillmentWidget = ({ data: order }: OrderWidgetProps) => {
                     />
                   </div>
                   <div>
-                    <span className="text-[10px] text-ui-fg-muted block">Depth (D)</span>
+                    <span className="text-[11px] text-ui-fg-muted mb-1 block">Depth (D)</span>
                     <Input
+                      size="small"
                       type="number"
                       value={dimDepth}
                       onChange={(e) => {
@@ -826,51 +705,54 @@ const OrderRoyalMailFulfillmentWidget = ({ data: order }: OrderWidgetProps) => {
               </div>
 
               {/* Include Label Checkbox */}
-              <label className="flex items-center gap-2 text-xs text-ui-fg-base cursor-pointer pt-1">
-                <input
-                  type="checkbox"
+              <div className="flex items-center gap-x-2 pt-1">
+                <Checkbox
+                  id="include-label-check"
                   checked={includeLabel}
-                  onChange={(e) => setIncludeLabel(e.target.checked)}
-                  className="rounded text-ui-fg-interactive"
+                  onCheckedChange={(checked) => setIncludeLabel(Boolean(checked))}
                 />
-                <span>Generate 6x4 thermal PDF label in API response</span>
-              </label>
+                <Label htmlFor="include-label-check" size="small" className="cursor-pointer">
+                  Generate 6x4 thermal PDF label in API response
+                </Label>
+              </div>
 
               {errorMessage && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-xs">
+                <div className="p-3 bg-ui-bg-subtle border border-ui-border-error rounded-md text-ui-fg-error text-xs">
                   <strong>Error: </strong> {errorMessage}
                 </div>
               )}
-            </div>
+            </Drawer.Body>
 
-            {/* Footer Buttons */}
-            <div className="flex items-center justify-end gap-2 pt-3 border-t">
-              <Button size="small" variant="secondary" onClick={() => setShowModal(false)}>
-                Cancel
-              </Button>
+            <Drawer.Footer>
+              <Drawer.Close asChild>
+                <Button size="small" variant="secondary" type="button">
+                  Cancel
+                </Button>
+              </Drawer.Close>
               <Button
                 size="small"
                 variant="primary"
                 disabled={isSubmitting || !isPaid}
+                isLoading={isSubmitting}
                 onClick={handleCreateFulfillment}
               >
                 {isSubmitting
                   ? includeLabel
-                    ? "Generating Label in Click & Drop..."
-                    : "Creating Shipment in Click & Drop..."
+                    ? "Generating Label..."
+                    : "Creating Shipment..."
                   : includeLabel
                     ? "Confirm & Generate Label"
                     : "Confirm"}
               </Button>
-            </div>
+            </Drawer.Footer>
           </div>
-        </div>
-      )}
+        </Drawer.Content>
+      </Drawer>
     </Container>
   );
-}
+};
 
-export default OrderRoyalMailFulfillmentWidget
+export default OrderRoyalMailFulfillmentWidget;
 
 export const config = defineWidgetConfig({
   zone: "order.details.before",
