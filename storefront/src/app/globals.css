@@ -359,6 +359,63 @@ body {
 }
 
 /* =========================================================================
+   Product Reviews Bento Staggered Glide & Dynamic Bleed Animations
+   ========================================================================= */
+
+@keyframes review-card-glide {
+  0% {
+    opacity: 0;
+    transform: translateY(32px) scale(0.96);
+    filter: blur(6px);
+  }
+  60% {
+    opacity: 0.95;
+    filter: blur(0.5px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes review-button-glow {
+  0%, 100% {
+    box-shadow: 0 4px 18px -2px rgba(22, 166, 163, 0.22), 0 0 0 1px rgba(226, 232, 240, 0.9);
+  }
+  50% {
+    box-shadow: 0 10px 30px -2px rgba(22, 166, 163, 0.42), 0 0 0 1.5px rgba(22, 166, 163, 0.7);
+  }
+}
+
+@keyframes review-shimmer-sweep {
+  0% {
+    transform: translateX(-150%) skewX(-15deg);
+    opacity: 0;
+  }
+  25% {
+    opacity: 0.7;
+  }
+  100% {
+    transform: translateX(250%) skewX(-15deg);
+    opacity: 0;
+  }
+}
+
+.animate-review-glide {
+  animation: review-card-glide 750ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-review-button-glow {
+  animation: review-button-glow 3.2s ease-in-out infinite;
+}
+
+.animate-review-shimmer {
+  animation: review-shimmer-sweep 2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+
+/* =========================================================================
    Empty Cart Entrance Micro-Interactions & Classic Icon Animation
    ========================================================================= */
 

@@ -11,6 +11,7 @@ import { resolveProductImage } from "@/lib/product-images"
 import { sortProductsByPriority } from "@/lib/medusa"
 import { CatalogProduct } from "@/data/catalog"
 import { HeroScrollingPhrases } from "./HeroScrollingPhrases"
+import { LabQualitySection } from "./LabQualitySection"
 
 // ---------------------------------------------------------------------------
 // Suspense Skeleton Fallbacks
@@ -598,6 +599,9 @@ export function HomeContent({
           </div>
         </div>
       </section>
+
+      {/* 04B. LABORATORY QUALITY & CLEANROOM SYNTHESIS VIDEO SECTION */}
+      <LabQualitySection />
 
       {/* 05. ONE PEN ARCHITECTURE SECTION - Figma Node 2:29527 */}
       <section className="bg-white py-[40px] flex items-center justify-center">

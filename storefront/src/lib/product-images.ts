@@ -1,4 +1,3 @@
-import { getCatalogRevision } from "./catalog-version"
 /**
  * PEPTECH® Product Image Resolver
  * 
@@ -23,10 +22,10 @@ export interface ProductLike {
   description?: string
   product_description?: string
   options?: Array<{ label?: string; value?: string }>
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 }
 
-const COMPOUND_SLUGS = [
+export const COMPOUND_SLUGS = [
   "ghk-cu",
   "tesamorelin",
   "tirzepatide",
@@ -140,7 +139,7 @@ export function resolveItemCategory(item?: ProductLike | string): ProductCategor
   }
 
   // Check explicit category or format
-  const format = (item.format || item.category || item.metadata?.format || item.metadata?.category || "").toLowerCase()
+  const format = String(item.format || item.category || item.metadata?.format || item.metadata?.category || "").toLowerCase()
   if (format === "vials" || format === "freeze-dried-vial" || format === "vial") return "vials"
   if (format === "refills" || format === "refill-cartridge" || format === "cartridge" || format === "refill") return "refills"
   if (format === "pen-sets" || format === "complete-pen-set" || format === "pen-set") return "pen-sets"
@@ -191,9 +190,9 @@ export function resolveCompoundSlug(item?: ProductLike | string): CompoundSlug {
       item.variant_title,
       item.description,
       item.product_description,
-      item.metadata?.compound,
-      item.metadata?.compound_name,
-      item.metadata?.cartridge_name,
+      typeof item.metadata?.compound === "string" ? item.metadata.compound : "",
+      typeof item.metadata?.compound_name === "string" ? item.metadata.compound_name : "",
+      typeof item.metadata?.cartridge_name === "string" ? item.metadata.cartridge_name : "",
       optionValues,
     ]
       .filter(Boolean)
@@ -242,39 +241,13 @@ export function getProductImagePath(category: ProductCategory, slug: CompoundSlu
 }
 
 /**
- * Appends the active catalog revision to product image URLs.
- * Bypasses Next.js Image Optimizer and browser immutable caches whenever an image is updated or deleted.
+ * Normalizes product image URLs for consistent, deterministic SSR and client hydration.
+ * Returns clean, canonical image paths without dynamic server-only query parameters,
+ * permanently eliminating React SSR hydration attribute mismatches.
  */
 export function appendRevision(url?: string | null): string {
   if (!url || typeof url !== "string") return "/images/placeholder.svg"
-  if (
-    url === "/images/placeholder.svg" ||
-    url.endsWith(".svg") ||
-    url.startsWith("/images/figma/") ||
-    url.startsWith("/images/payment/") ||
-    url.startsWith("/images/badges/") ||
-    url.startsWith("/favicon")
-  ) {
-    return url
-  }
-  try {
-    const isAbsolute = /^https?:\/\//i.test(url)
-    const base = isAbsolute ? undefined : "https://peptech.bio"
-    const parsed = new URL(url, base)
-
-    // If the URL already contains a version parameter 'v', preserve it.
-    // Overwriting it with a different timestamp on client hydration causes React SSR mismatches.
-    if (parsed.searchParams.has("v")) {
-      return url
-    }
-
-    const rev = getCatalogRevision()
-    if (!rev) return url
-    parsed.searchParams.set("v", String(rev))
-    return isAbsolute ? parsed.toString() : `${parsed.pathname}${parsed.search}`
-  } catch {
-    return url
-  }
+  return url
 }
 
 /**
@@ -306,7 +279,16 @@ export function resolveProductImage(item?: ProductLike | string | null): string 
   if (existingThumb) return appendRevision(existingThumb)
 
   // 2. Try nested Medusa variant/product thumbnail if available
-  const itemAny = item as any
+  const itemAny = item as {
+    variant?: {
+      product?: {
+        thumbnail?: string | null
+        images?: Array<{ url?: string | null }>
+      }
+      thumbnail?: string | null
+      images?: Array<{ url?: string | null }>
+    }
+  }
   const variantThumb = cleanExistingUrl(itemAny.variant?.product?.thumbnail || itemAny.variant?.thumbnail)
   if (variantThumb) return appendRevision(variantThumb)
 
