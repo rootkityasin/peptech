@@ -4,6 +4,7 @@ import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
 import CommerceService, { recordId } from "../../modules/peptech-commerce/service"
 import { assertEligibility, assertProduct, discounted, fail, toMinor } from "./policy"
 import { resolveShippingOption, calculateDynamicShipping, listLocationServiceZones, type ShippingOptionQuote } from "./shipping"
+import { isCardGatewayActive } from "./gateways/registry"
 
 export type QuoteLine = {
   variant_id: string
@@ -80,7 +81,7 @@ export async function buildQuote(
     input.address.country_code,
     input.shipping_option_id
   )
-  const useStripe = policy.tax_policy === "stripe_default"
+  const useStripe = policy.tax_policy === "stripe_default" && input.payment_method !== "bank_transfer" && isCardGatewayActive()
   const context = useStripe ? stripeContext() : null
   const defaults = context ? await stripeTaxDefaults(context.stripe, context.mode) : null
   const tax = defaults ? { rate: 0, inclusive: defaults.inclusive, registered: defaults.enabled } : taxPolicy(policy, input.address.country_code)

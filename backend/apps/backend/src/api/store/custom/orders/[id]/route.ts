@@ -1,9 +1,72 @@
 import type { AuthenticatedMedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { Modules } from "@medusajs/framework/utils"
-import { actor, endpoint } from "../../../../../lib/commerce/http"
-import { fail } from "../../../../../lib/commerce/policy"
+import { actor, commerce, endpoint } from "../../../../../lib/commerce/http"
+import { fail, sanitizeStoreOrderMetadata } from "../../../../../lib/commerce/policy"
+
+function mapPendingAttemptToOrder(attempt: any, liveBankInstructions: any) {
+  const q = attempt.data?.quote || {}
+  const lines = Array.isArray(q.lines) ? q.lines : []
+  const items = lines.map((l: any, idx: number) => {
+    const unitPrice = (Number(l.unit_minor) || 0) / 100
+    const qty = Number(l.quantity) || 1
+    return {
+      id: l.line_id || `${attempt.id}_li_${idx}`,
+      variant_id: l.variant_id,
+      title: l.name,
+      variant_sku: l.sku,
+      quantity: qty,
+      unit_price: unitPrice,
+      subtotal: unitPrice * qty,
+      total: unitPrice * qty,
+      metadata: l.metadata || {},
+    }
+  })
+  const itemsSubtotal = items.reduce((sum: number, it: any) => sum + it.subtotal, 0)
+  const shippingTotal = (Number(q.shipping_minor) || 0) / 100
+  const total = typeof q.total_minor === "number" ? q.total_minor / 100 : itemsSubtotal + shippingTotal
+  const transferRef = attempt.data?.transfer_reference || attempt.data?.order_number || attempt.id
+  return {
+    id: transferRef,
+    custom_display_id: transferRef,
+    display_id: transferRef,
+    status: "pending",
+    fulfillment_status: "not_fulfilled",
+    payment_status: "awaiting",
+    email: q.email || null,
+    created_at: attempt.created_at || new Date().toISOString(),
+    updated_at: attempt.updated_at || attempt.created_at || new Date().toISOString(),
+    currency_code: q.currency || "gbp",
+    total,
+    subtotal: itemsSubtotal,
+    tax_total: (Number(q.tax_minor) || 0) / 100,
+    discount_total: (Number(q.promo?.discount_minor) || 0) / 100,
+    shipping_total: shippingTotal,
+    summary: {
+      total,
+      original_order_total: total,
+      paid_total: 0,
+      subtotal: itemsSubtotal,
+      shipping_total: shippingTotal,
+    },
+    items,
+    shipping_address: q.address || null,
+    billing_address: q.billing_address || q.address || null,
+    shipping_methods: q.shipping_option_name
+      ? [{ name: q.shipping_option_name, amount: shippingTotal, shipping_option_id: q.shipping_option_id }]
+      : [],
+    metadata: {
+      payment_gateway: "bank_transfer",
+      payment_method: "UK Faster Payments (Bank Transfer)",
+      transfer_reference: transferRef,
+      attempt_id: attempt.id,
+      awaiting_transfer: true,
+      bank_instructions: liveBankInstructions || attempt.data?.bank_instructions || null,
+    },
+  }
+}
 
 export async function GET(req: AuthenticatedMedusaRequest, res: MedusaResponse) {
+  res.setHeader("Cache-Control", "no-store")
   return endpoint(res, async () => {
     const customerId = actor(req)
     const rawId = req.params.id
@@ -105,6 +168,36 @@ export async function GET(req: AuthenticatedMedusaRequest, res: MedusaResponse) 
       } catch {}
     }
 
+    // Fallback: match customer-owned Bank Transfer attempt (pending or resolved to order_id)
+    if (!order) {
+      const ledger = commerce(req)
+      const attempts = await ledger.list("attempt", { owner: customerId, limit: 100 }).catch(() => [])
+      const cleanRaw = rawId.toUpperCase()
+      const cleanNoPep = rawId.replace(/^PEP-?/i, "").toUpperCase()
+      const matchedAttempt = attempts.find((a: any) => {
+        const ref = String(a.data?.transfer_reference || a.data?.order_number || "").toUpperCase()
+        return (
+          a.id === rawId ||
+          ref === cleanRaw ||
+          (cleanNoPep && ref === `PEP-${cleanNoPep}`)
+        )
+      })
+      if (matchedAttempt?.data?.order_id) {
+        try {
+          const { data: [settledOrder] = [] } = await orderQuery.graph({
+            entity: "order",
+            fields: orderFields,
+            filters: { id: matchedAttempt.data.order_id },
+          })
+          order = settledOrder || null
+        } catch {}
+      } else if (matchedAttempt && matchedAttempt.state === "awaiting_transfer") {
+        const settingsRecord = await ledger.get("commerce_settings").catch(() => null)
+        const liveBankInstructions = settingsRecord?.data?.bank_instructions || null
+        return { order: mapPendingAttemptToOrder(matchedAttempt, liveBankInstructions) }
+      }
+    }
+
     if (order) {
       let customerEmail: string | null = null
       try {
@@ -160,6 +253,7 @@ export async function GET(req: AuthenticatedMedusaRequest, res: MedusaResponse) 
       return {
         order: {
           ...order,
+          metadata: sanitizeStoreOrderMetadata(order.metadata),
           total,
           summary: {
             ...order.summary,

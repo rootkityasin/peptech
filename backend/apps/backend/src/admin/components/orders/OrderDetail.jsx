@@ -1295,7 +1295,7 @@ function StandardOrderDetail({ id }) {
                               _jsx("span", { children: "Payment Gateway" }),
                               _jsx("span", {
                                 className: "font-medium text-[#202223]",
-                                children: meta.payment_method || (meta.payment_gateway === "stripe" ? "Stripe (Card / SCA)" : "Bank Transfer"),
+                                children: meta.payment_method || (meta.payment_gateway === "bank_transfer" ? "UK Faster Payments (Bank Transfer)" : "Card Payment (3-D Secure)"),
                               }),
                             ],
                           }),
@@ -1303,7 +1303,7 @@ function StandardOrderDetail({ id }) {
                             _jsxs("div", {
                               className: "flex justify-between pt-0.5 text-[10px] text-[#5c5f62] font-mono",
                               children: [
-                                _jsx("span", { children: "Stripe Intent ID" }),
+                                _jsx("span", { children: "Gateway Transaction ID" }),
                                 _jsx("span", { className: "text-[#2c6ecb]", children: meta.stripe_payment_intent_id }),
                               ],
                             }),

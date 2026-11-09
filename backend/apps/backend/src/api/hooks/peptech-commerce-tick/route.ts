@@ -1,7 +1,6 @@
 import crypto from "node:crypto"
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { commerceTick } from "../../../lib/commerce/worker"
-import { getStripeConfig } from "../../../lib/stripe-config"
 
 /**
  * Dedicated endpoint to wake up Hostinger Node.js processes and execute
@@ -43,21 +42,6 @@ async function handleCronTick(req: MedusaRequest, res: MedusaResponse) {
   const startTime = Date.now()
 
   try {
-    let config: any = null
-    try {
-      config = getStripeConfig()
-    } catch {
-      config = null
-    }
-
-    if (!config) {
-      return res.status(200).json({
-        status: "skipped",
-        message: "Stripe configuration is not active or incomplete.",
-        duration_ms: Date.now() - startTime,
-      })
-    }
-
     await commerceTick(req.scope)
 
     return res.status(200).json({

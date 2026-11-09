@@ -210,7 +210,7 @@ export async function POST(req: NextRequest) {
     }
     if (uData.fbc) hashedUserData.fbc = uData.fbc
 
-    const isProd = process.env.NODE_ENV === "production" || /^(?:sk|rk)_live_/.test(process.env.STRIPE_API_KEY || "")
+    const isProd = process.env.NODE_ENV === "production"
     const testCode = isProd
       ? (process.env.META_TEST_EVENT_CODE || undefined)
       : (body.test_event_code || process.env.META_TEST_EVENT_CODE || undefined)

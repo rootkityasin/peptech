@@ -59,6 +59,7 @@ export function getStripeConfig(env: NodeJS.ProcessEnv = process.env) {
 
 export function stripeModules(env: NodeJS.ProcessEnv = process.env) {
   try {
+    if (env.COMMERCE_ENABLE_STRIPE_CHECKOUT !== "true") return []
     const config = getStripeConfig(env)
     if (!config) return []
     const rawSigningSecret = (env.STRIPE_COMMERCE_SIGNING_SECRET || "").trim()

@@ -47,8 +47,9 @@ export async function GET(req: AuthenticatedMedusaRequest, res: MedusaResponse) 
     const attemptId = String(req.query.attempt_id || "")
     let attempt = owned(await ledger.get(attemptId), actor(req))
     const sessionId = (req.query.session_id as string) || attempt.data?.session_id
+    const isBankTransfer = attempt.data?.payment_method === "bank_transfer" || attempt.state === "awaiting_transfer"
 
-    if (attempt && sessionId && !["confirmed", "held", "expired", "failed"].includes(attempt.state)) {
+    if (!isBankTransfer && attempt && sessionId && !["confirmed", "held", "expired", "failed"].includes(attempt.state)) {
       try {
         await reconcileSession(req.scope, ledger, sessionId)
         const refreshed = await ledger.get(attempt.id)
@@ -58,6 +59,8 @@ export async function GET(req: AuthenticatedMedusaRequest, res: MedusaResponse) 
       }
     }
 
-    return publicAttempt(attempt)
+    const settingsRecord = isBankTransfer ? await ledger.get("commerce_settings").catch(() => null) : null
+    const liveBankInstructions = isBankTransfer ? (settingsRecord?.data?.bank_instructions || null) : undefined
+    return publicAttempt(attempt, liveBankInstructions)
   })
 }

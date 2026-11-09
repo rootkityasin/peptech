@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { commerceRequest } from "@/lib/stripe-checkout"
+import { commerceRequest } from "@/lib/commerce-checkout"
 import { ScheduleConfigurationPanel } from "./ScheduleConfigurationPanel"
 import { CartridgeConcentrationModal } from "./CartridgeConcentrationModal"
 import { VisaBadge, MastercardBadge, AmexBadge, JcbBadge } from "@/components/ui/PaymentBadges"
@@ -265,8 +265,8 @@ export function SubscriptionDashboard({
           {/* ========================================================================= */}
           <div className="lg:col-span-8 space-y-6">
             {displayedSubs.map((sub) => {
-              const cardLast4 = sub.payment_method?.last4 || defaultCard?.last4 || "1234"
-              const cardBrand = sub.payment_method?.brand || defaultCard?.brand || "visa"
+              const cardLast4 = sub.payment_method?.last4 || defaultCard?.last4 || null
+              const cardBrand = sub.payment_method?.brand || defaultCard?.brand || null
               const isExpanded = expandedScheduleSubId === sub.id
 
               return (
@@ -330,7 +330,9 @@ export function SubscriptionDashboard({
                         <span>Next Cold-Chain Dispatch: {sub.nextDispatchDate || "Wednesday, 14 October 2026"}</span>
                       </div>
                       <span className="text-slate-600 font-normal text-[11.5px] sm:text-xs">
-                        Auto-billed to {cardBrand.toUpperCase()} ...{cardLast4} on {sub.autoBillDate || sub.nextBillingDate || "13 Oct"}
+                        {cardLast4 && cardBrand
+                          ? `Auto-billed to ${cardBrand.toUpperCase()} ...${cardLast4} on ${sub.autoBillDate || sub.nextBillingDate || "scheduled date"}`
+                          : `Next billing date: ${sub.autoBillDate || sub.nextBillingDate || "scheduled date"}`}
                       </span>
                     </div>
 
@@ -500,7 +502,10 @@ export function SubscriptionDashboard({
               </div>
               <div className="text-xs text-slate-600 space-y-1">
                 <p className="font-bold text-[#0B1F3A]">
-                  {primarySub?.recipient_name || `${defaultAddress?.first_name || "Dr. Alexander"} ${defaultAddress?.last_name || "Wright"}`}
+                  {primarySub?.recipient_name ||
+                    (defaultAddress?.first_name || defaultAddress?.last_name
+                      ? `${defaultAddress?.first_name || ""} ${defaultAddress?.last_name || ""}`.trim()
+                      : customerName || "Authorized Researcher")}
                 </p>
                 <p className="text-slate-500">
                   {primarySub?.recipient_facility || defaultAddress?.company || "Authorized Laboratory Facility"}
@@ -530,20 +535,28 @@ export function SubscriptionDashboard({
               <div className="flex items-center justify-between">
                 <h4 className="font-bold text-sm text-[#0B1F3A]">Payment & Billing</h4>
                 <span className="text-[10px] font-bold text-[#16A6A3] bg-[#E6FFFA] px-2 py-0.5 rounded-full border border-[#16A6A3]/30">
-                  ACTIVE
+                  {defaultCard ? "ACTIVE" : "STANDBY"}
                 </span>
               </div>
-              <div className="flex items-center gap-3 py-1">
-                <CardBrandBadge brand={defaultCard?.brand || "visa"} />
-                <div className="text-xs">
-                  <p className="font-bold text-[#0B1F3A] capitalize">
-                    {defaultCard?.brand || "Visa"} ending in ...{defaultCard?.last4 || "1234"}
-                  </p>
-                  <p className="text-slate-400 text-[11px]">
-                    Expires: {defaultCard?.exp_month ? `${String(defaultCard.exp_month).padStart(2, "0")}/${defaultCard.exp_year}` : "08/2028"}
-                  </p>
+              {defaultCard ? (
+                <div className="flex items-center gap-3 py-1">
+                  <CardBrandBadge brand={defaultCard.brand || "visa"} />
+                  <div className="text-xs">
+                    <p className="font-bold text-[#0B1F3A] capitalize">
+                      {defaultCard.brand || "Card"} ending in ...{defaultCard.last4}
+                    </p>
+                    {defaultCard.exp_month && defaultCard.exp_year && (
+                      <p className="text-slate-400 text-[11px]">
+                        Expires: {`${String(defaultCard.exp_month).padStart(2, "0")}/${defaultCard.exp_year}`}
+                      </p>
+                    )}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <p className="text-xs text-slate-600 leading-relaxed py-1">
+                  No saved card on file. One-time purchases currently settle via UK Faster Payments (Bank Transfer).
+                </p>
+              )}
               <div className="pt-2 border-t border-slate-100">
                 <button
                   type="button"

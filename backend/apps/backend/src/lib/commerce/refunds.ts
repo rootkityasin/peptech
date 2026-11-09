@@ -39,8 +39,11 @@ export async function refundOrder(scope: any, ledger: CommerceService, admin: st
   return ledger.locked(`refund:${input.order_id}`, async () => {
     const order = await scope.resolve(Modules.ORDER).retrieveOrder(input.order_id)
     const receipt = await ledger.get(order.metadata?.peptech_receipt_id)
+    if (receipt && (receipt.data?.source === "bank_transfer" || receipt.profile === "bank_transfer:v1")) {
+      fail("Bank transfer refunds must be remitted manually via BACS / Faster Payments and recorded in order notes.", 409)
+    }
     if (!receipt || receipt.profile !== context.profile || !receipt.data.payment_intent_id || !receipt.data.payment_id) {
-      fail("No verified Stripe payment is linked to this order", 409)
+      fail("No verified card payment is linked to this order", 409)
     }
 
     const chargedMinor = receipt.data.amount || receipt.data.amount_minor || 0
@@ -102,7 +105,7 @@ export async function refundOrder(scope: any, ledger: CommerceService, admin: st
         await ledger.save(operation)
       } catch (stripeErr: any) {
         operation.state = "failed"
-        operation.data.last_error = stripeErr?.message || "Stripe refund failed"
+        operation.data.last_error = stripeErr?.message || "Gateway refund failed"
         await ledger.save(operation)
         await ledger.audit(receipt.id, admin, "refund-failed", {
           error: stripeErr?.message,
@@ -164,6 +167,7 @@ export async function finishRefund(scope: any, ledger: CommerceService, operatio
     refund_status: isFullyRefunded ? "refunded" : "partially_refunded",
     refunded_minor: totalRefundedMinor,
     refunded_amount_gbp: (totalRefundedMinor / 100).toFixed(2),
+    refund_reference: refund.id,
     stripe_refund_id: refund.id,
     refunded_at: new Date().toISOString(),
     refund_note: operation.data.note,
@@ -187,6 +191,7 @@ export async function finishRefund(scope: any, ledger: CommerceService, operatio
       refunded_amount_minor: totalRefundedMinor,
       refunded_amount_gbp: (totalRefundedMinor / 100).toFixed(2),
       refunded_at: new Date().toISOString(),
+      refund_reference: refund.id,
       stripe_refund_id: refund.id,
     },
   })

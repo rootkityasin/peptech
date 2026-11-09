@@ -2,7 +2,7 @@
 
 import { AccountBilling } from "@/components/checkout/AccountBilling"
 import { SubscriptionDashboard } from "@/components/account/SubscriptionDashboard"
-import { commerceRequest } from "@/lib/stripe-checkout"
+import { commerceRequest } from "@/lib/commerce-checkout"
 
 import React, { useState, useEffect, Suspense, useRef } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
@@ -130,12 +130,16 @@ function formatMedusaOrder(mo: any, customer?: any) {
     mo.metadata?.payment_status === "refunded" ||
     mo.payment_status === "refunded" ||
     mo.status === "refunded" ||
-    Boolean(mo.metadata?.stripe_refund_id) ||
+    Boolean(mo.metadata?.refund_reference) ||
     (typeof mo.summary?.refunded_total === "number" && mo.summary.refunded_total > 0) ||
     (mo.metadata?.refunded_amount_minor && mo.metadata.refunded_amount_minor > 0)
   const isPartiallyRefunded =
     !isRefunded &&
     (mo.metadata?.refund_status === "partially_refunded" || mo.metadata?.payment_status === "partially_refunded")
+  const isAwaitingTransfer = Boolean(mo.metadata?.awaiting_transfer || mo.payment_status === "awaiting")
+  const transferReference =
+    mo.metadata?.transfer_reference ||
+    (typeof mo.custom_display_id === "string" && /^PEP-/i.test(mo.custom_display_id) ? mo.custom_display_id : undefined)
   const refundStatus = isRefunded ? "Refunded" : isPartiallyRefunded ? "Partially Refunded" : null
   const refundedAmount = mo.metadata?.refunded_amount_gbp
     ? parseFloat(mo.metadata.refunded_amount_gbp)
@@ -154,6 +158,8 @@ function formatMedusaOrder(mo: any, customer?: any) {
     id: actualOrderId,
     internalId: mo.id,
     displayId: actualOrderId,
+    custom_display_id: mo.custom_display_id || undefined,
+    transferReference,
     date: mo.created_at || new Date().toISOString(),
     displayDate,
     total: displayTotal,
@@ -164,25 +170,32 @@ function formatMedusaOrder(mo: any, customer?: any) {
       ? "Refunded"
       : isPartiallyRefunded
       ? "Partially Refunded"
+      : isAwaitingTransfer
+      ? "Awaiting Bank Transfer"
       : mo.fulfillment_status === "delivered" || mo.status === "completed"
       ? "Delivered"
       : mo.fulfillment_status === "shipped" || mo.fulfillment_status === "fulfilled"
       ? "Dispatched"
       : "Cold-Chain Packing",
+    isAwaitingTransfer,
     isRefunded,
     isPartiallyRefunded,
     refundStatus,
     refundedAmount,
     refundedDate,
     metadata: mo.metadata,
-    trackingNumber:
-      mo.fulfillments?.[0]?.labels?.[0]?.tracking_number ||
-      mo.fulfillments?.[0]?.metadata?.tracking_number ||
-      mo.metadata?.tracking_number ||
-      mo.tracking_number ||
-      `GB-RM24-${actualOrderId.replace(/[^a-zA-Z0-9]/g, "").slice(-10).toUpperCase()}-CLD`,
-    paymentMethod: mo.metadata?.payment_method || "Stripe 256-Bit SSL Encrypted (Card / Link)",
-    stripeReceiptUrl: mo.metadata?.stripe_receipt_url || mo.metadata?.receipt_url || null,
+    trackingNumber: isAwaitingTransfer
+      ? "Pending Bank Settlement"
+      : mo.fulfillments?.[0]?.labels?.[0]?.tracking_number ||
+        mo.fulfillments?.[0]?.metadata?.tracking_number ||
+        mo.metadata?.tracking_number ||
+        mo.tracking_number ||
+        `GB-RM24-${actualOrderId.replace(/[^a-zA-Z0-9]/g, "").slice(-10).toUpperCase()}-CLD`,
+    paymentMethod:
+      isAwaitingTransfer || mo.metadata?.payment_gateway === "bank_transfer"
+        ? "UK Faster Payments (Bank Transfer)"
+        : mo.metadata?.payment_method || "Verified Card Payment",
+    receiptUrl: mo.metadata?.receipt_url || null,
     customerName: customer ? `${customer.first_name || ""} ${customer.last_name || ""}`.trim() || undefined : undefined,
     customerEmail: customer?.email || mo.email,
     shippingAddress: mo.shipping_address,
@@ -429,18 +442,26 @@ function AccountContent() {
           } catch {}
         }
 
-        // Merge offline bank transfer orders placed via UK Faster Payments
+        // Merge pending offline bank transfer orders placed via UK Faster Payments (deduplicated against server orders)
         try {
           const rawBank = localStorage.getItem("peptech_bank_orders")
           if (rawBank) {
             const parsedBank = JSON.parse(rawBank)
             if (Array.isArray(parsedBank)) {
+              const knownRefs = new Set(
+                loadedOrders
+                  .flatMap((o: any) => [o.id, o.transferReference, o.custom_display_id])
+                  .filter(Boolean)
+                  .map((v: any) => String(v).toUpperCase())
+              )
               const formattedBankOrders = parsedBank
                 .filter(
                   (bo: any) =>
-                    !bo.customer?.email ||
-                    !customer?.email ||
-                    bo.customer.email.toLowerCase() === customer.email.toLowerCase()
+                    bo.orderReference &&
+                    !knownRefs.has(String(bo.orderReference).toUpperCase()) &&
+                    (!bo.customer?.email ||
+                      !customer?.email ||
+                      bo.customer.email.toLowerCase() === customer.email.toLowerCase())
                 )
                 .map((bo: any) => {
                   const items = (bo.items || []).map((it: any) => ({
@@ -460,22 +481,28 @@ function AccountContent() {
                     id: bo.orderReference,
                     internalId: bo.orderReference,
                     displayId: bo.orderReference,
+                    transferReference: bo.orderReference,
                     date: bo.placedAt || new Date().toISOString(),
                     displayDate: formatFullReceiptDateTime(bo.placedAt || new Date().toISOString()),
                     total,
                     subtotal: itemsSum > 0 ? itemsSum : total - shippingTotal,
                     shippingTotal,
                     shippingMethodName: "Royal Mail Tracked 24",
-                    status: "Awaiting Bank Settlement",
+                    status: "Awaiting Bank Transfer",
+                    isAwaitingTransfer: true,
                     isRefunded: false,
                     isPartiallyRefunded: false,
                     refundStatus: null,
                     refundedAmount: 0,
                     refundedDate: null,
-                    metadata: { payment_method: "UK Faster Payments (Direct Bank Transfer)" },
-                    trackingNumber: "GB-RM24-SETTLEMENT-PENDING",
+                    metadata: {
+                      payment_method: "UK Faster Payments (Direct Bank Transfer)",
+                      awaiting_transfer: true,
+                      transfer_reference: bo.orderReference,
+                    },
+                    trackingNumber: "Pending Bank Settlement",
                     paymentMethod: "UK Faster Payments (Direct Bank Transfer)",
-                    stripeReceiptUrl: null,
+                    receiptUrl: null,
                     customerName: bo.customer?.name || `${customer.first_name || ""} ${customer.last_name || ""}`.trim() || undefined,
                     customerEmail: bo.customer?.email || customer.email,
                     shippingAddress: bo.address,
@@ -500,7 +527,7 @@ function AccountContent() {
       }
     })()
 
-    // Stream 2: Asynchronous Stripe Cloud Queries (Subscriptions & Payment Methods ~1.5s - 2.5s)
+    // Stream 2: Asynchronous Billing Queries (Subscriptions & Saved Payment Methods)
     void (async () => {
       try {
         const [subsResult, pmsResult] = await Promise.all([
@@ -524,33 +551,11 @@ function AccountContent() {
           })
           setPaymentCards(deduped)
         } else {
-          // Fallback: derive card from order history once orders are resolved
-          const freshOrders = await ordersPromise
-          if (!isSubscribed) return
-          const orderList = freshOrders && freshOrders.length > 0 ? freshOrders : orders
-          if (orderList.length > 0) {
-            const firstOrderWithPayment = orderList.find((o: any) => o.paymentMethod || o.stripeReceiptUrl)
-            if (firstOrderWithPayment) {
-              const pmStr = firstOrderWithPayment.paymentMethod || ""
-              const isMc = /mastercard/i.test(pmStr)
-              const isAmex = /amex|american express/i.test(pmStr)
-              const brand = isMc ? "mastercard" : isAmex ? "amex" : "visa"
-              const last4Match = pmStr.match(/\b\d{4}\b/)
-              const last4 = last4Match ? last4Match[0] : "4242"
-              setPaymentCards([{
-                id: "order_saved_card",
-                brand,
-                last4,
-                funding: "card",
-                title: `${isMc ? "Mastercard" : isAmex ? "American Express" : "Visa"} Corporate`,
-                expiry: "",
-                is_default: true,
-              }])
-            }
-          }
+          setPaymentCards([])
         }
+        await ordersPromise
       } catch (err) {
-        console.warn("[PEPTECH STRIPE] Error loading subscriptions/payment cards:", err)
+        console.warn("[PEPTECH BILLING] Error loading subscriptions/payment cards:", err)
       }
     })()
 
@@ -1558,6 +1563,10 @@ function AccountContent() {
                         <span className="bg-rose-50 border border-rose-200 px-3 py-1 rounded-full font-semibold text-rose-700 text-xs whitespace-nowrap">
                           Refunded
                         </span>
+                      ) : orders[0].isAwaitingTransfer ? (
+                        <span className="bg-amber-50 border border-amber-200 px-3 py-1 rounded-full font-semibold text-amber-800 text-xs whitespace-nowrap">
+                          Awaiting Bank Transfer
+                        </span>
                       ) : (
                         <span className="bg-[#e6fffa] border border-[#16a6a3]/30 px-3 py-1 rounded-full font-semibold text-[#16a6a3] text-xs whitespace-nowrap">
                           {orders[0].status || "Cold-Chain Packing"}
@@ -1566,7 +1575,7 @@ function AccountContent() {
                     </div>
                   </div>
 
-                  {/* 4-Step Progress Stepper OR Refund Banner */}
+                  {/* 4-Step Progress Stepper OR Refund / Awaiting Transfer Banner */}
                   {orders[0].isRefunded ? (
                     <div className="bg-rose-50/70 border border-rose-200/80 rounded-xl p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="flex items-center gap-2.5 min-w-0">
@@ -1575,7 +1584,7 @@ function AccountContent() {
                         </div>
                         <div className="flex flex-col min-w-0">
                           <span className="font-bold text-rose-900 text-xs sm:text-sm">
-                            Refund Processed via Stripe
+                            Refund Issued
                           </span>
                           <span className="text-rose-700 text-[11px] sm:text-xs">
                             Full refund of £{orders[0].total?.toFixed(2)} issued to your original payment method. Order is closed.
@@ -1584,6 +1593,21 @@ function AccountContent() {
                       </div>
                       <span className="text-xs font-semibold text-rose-800 bg-rose-100/80 px-2.5 py-1 rounded-md shrink-0 self-start sm:self-auto">
                         Refund Complete
+                      </span>
+                    </div>
+                  ) : orders[0].isAwaitingTransfer ? (
+                    <div className="bg-amber-50/80 border border-amber-200 rounded-xl p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex flex-col gap-0.5 min-w-0">
+                        <span className="font-bold text-amber-900 text-xs sm:text-sm">
+                          Awaiting UK Faster Payments Settlement
+                        </span>
+                        <span className="text-amber-800 text-[11px] sm:text-xs">
+                          Please complete your bank transfer of £{orders[0].total?.toFixed(2)} using reference{" "}
+                          <strong className="font-mono">{orders[0].transferReference || orders[0].id}</strong>. Cold-chain dispatch begins immediately upon clearance.
+                        </span>
+                      </div>
+                      <span className="text-xs font-semibold text-amber-900 bg-amber-100 px-2.5 py-1 rounded-md shrink-0 self-start sm:self-auto font-mono">
+                        {orders[0].transferReference || orders[0].id}
                       </span>
                     </div>
                   ) : (
@@ -1690,10 +1714,12 @@ function AccountContent() {
                   {/* Actions Row */}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
                     <div className="flex flex-wrap gap-2 items-center text-xs sm:text-[13px]">
-                      <span className="text-[#64748b]">{orders[0].isRefunded ? "Total Refunded:" : "Total Paid:"}</span>
+                      <span className="text-[#64748b]">
+                        {orders[0].isRefunded ? "Total Refunded:" : orders[0].isAwaitingTransfer ? "Total Due:" : "Total Paid:"}
+                      </span>
                       <span className="font-bold text-[#0b1f3a] text-sm sm:text-base font-mono">£{orders[0].total?.toFixed(2)}</span>
                       {orders[0].isRefunded ? (
-                        <span className="text-rose-600 font-semibold text-[11.5px]">(Refunded via Stripe)</span>
+                        <span className="text-rose-600 font-semibold text-[11.5px]">(Refunded)</span>
                       ) : orders[0].paymentMethod ? (
                         <span className="text-[#94a3b8] text-xs">({orders[0].paymentMethod})</span>
                       ) : null}
@@ -1705,7 +1731,7 @@ function AccountContent() {
                           onClick={() => handleTabChange("orders")}
                           className="bg-[#0b1f3a] hover:bg-[#162a45] text-white text-xs font-semibold px-4 py-2.5 rounded-lg transition-colors cursor-pointer text-center justify-center flex items-center shadow-2xs"
                         >
-                          Live Dispatch Tracker
+                          {orders[0].isAwaitingTransfer ? "View Transfer Status" : "Live Dispatch Tracker"}
                         </button>
                       )}
                       <Link
@@ -1968,7 +1994,7 @@ function AccountContent() {
                 ) : (
                   <div className="flex flex-col gap-1.5">
                     <p className="text-[#64748b] text-xs leading-relaxed">
-                      No saved payment methods on file. Cards can be securely saved during checkout.
+                      No saved card on file. Checkout supports UK Faster Payments (Direct Bank Transfer).
                     </p>
                   </div>
                 )}
@@ -2107,6 +2133,10 @@ function AccountContent() {
                             <span className="bg-rose-50 border border-rose-200 px-3 py-1 rounded-full font-semibold text-rose-700 text-xs whitespace-nowrap">
                               Refunded
                             </span>
+                          ) : order.isAwaitingTransfer ? (
+                            <span className="bg-amber-50 border border-amber-200 px-3 py-1 rounded-full font-semibold text-amber-800 text-xs whitespace-nowrap">
+                              Awaiting Bank Transfer
+                            </span>
                           ) : (
                             <span className="bg-[#e6fffa] border border-[#16a6a3]/30 px-3 py-1 rounded-full font-semibold text-[#16a6a3] text-xs whitespace-nowrap">
                               {order.status || "Cold-Chain Packing"}
@@ -2115,7 +2145,7 @@ function AccountContent() {
                         </div>
                       </div>
 
-                      {/* Stepper or Refund Notice */}
+                      {/* Stepper or Refund / Awaiting Bank Transfer Notice */}
                       {order.isRefunded ? (
                         <div className="bg-rose-50/70 border border-rose-200/80 rounded-xl p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                           <div className="flex items-center gap-2.5 min-w-0">
@@ -2124,7 +2154,7 @@ function AccountContent() {
                             </div>
                             <div className="flex flex-col min-w-0">
                               <span className="font-bold text-rose-900 text-xs sm:text-sm">
-                                Refund Processed via Stripe
+                                Refund Issued
                               </span>
                               <span className="text-rose-700 text-[11px] sm:text-xs">
                                 Full refund of £{order.total?.toFixed(2)} issued to your original payment method. Order is closed.
@@ -2133,6 +2163,21 @@ function AccountContent() {
                           </div>
                           <span className="text-xs font-semibold text-rose-800 bg-rose-100/80 px-2.5 py-1 rounded-md shrink-0 self-start sm:self-auto">
                             Refund Complete
+                          </span>
+                        </div>
+                      ) : order.isAwaitingTransfer ? (
+                        <div className="bg-amber-50/80 border border-amber-200 rounded-xl p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <div className="flex flex-col gap-0.5 min-w-0">
+                            <span className="font-bold text-amber-900 text-xs sm:text-sm">
+                              Awaiting UK Faster Payments Settlement
+                            </span>
+                            <span className="text-amber-800 text-[11px] sm:text-xs">
+                              Send £{order.total?.toFixed(2)} via bank transfer using reference{" "}
+                              <strong className="font-mono">{order.transferReference || order.id}</strong> to release order for cold-chain dispatch.
+                            </span>
+                          </div>
+                          <span className="text-xs font-semibold text-amber-900 bg-amber-100 px-2.5 py-1 rounded-md shrink-0 self-start sm:self-auto font-mono">
+                            {order.transferReference || order.id}
                           </span>
                         </div>
                       ) : (
@@ -2235,14 +2280,16 @@ function AccountContent() {
 
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
                         <div className="flex flex-wrap gap-2 items-center text-xs sm:text-[13px]">
-                          <span className="text-[#64748b]">{order.isRefunded ? "Total Refunded:" : "Total Paid:"}</span>
+                          <span className="text-[#64748b]">
+                            {order.isRefunded ? "Total Refunded:" : order.isAwaitingTransfer ? "Total Due:" : "Total Paid:"}
+                          </span>
                           <span className="font-bold text-[#0b1f3a] text-sm sm:text-base font-mono">£{order.total?.toFixed(2)}</span>
                           {order.isRefunded && (
-                            <span className="text-rose-600 font-semibold text-[11.5px]">(Refunded via Stripe)</span>
+                            <span className="text-rose-600 font-semibold text-[11.5px]">(Refunded)</span>
                           )}
                         </div>
                         <div className="flex flex-col sm:flex-row gap-2 sm:gap-2.5 items-stretch sm:items-center w-full sm:w-auto">
-                          {!order.isRefunded && (
+                          {!order.isRefunded && !order.isAwaitingTransfer && (
                             <a
                               href={`https://www.royalmail.com/track-your-item#/tracking-results/${order.trackingNumber || ""}`}
                               target="_blank"

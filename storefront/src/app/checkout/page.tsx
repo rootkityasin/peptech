@@ -5,10 +5,10 @@ import Link from "next/link";
 import { useCart, getItemSubtitle } from "@/components/cart/CartContext";
 import { useCustomer } from "@/context/CustomerContext";
 import {
-  prepareStripeCheckout,
-  type CheckoutSession,
-} from "@/lib/stripe-checkout";
-import { EmbeddedStripeCheckout } from "@/components/checkout/EmbeddedStripeCheckout";
+  fetchPaymentGateways,
+  prepareCheckout,
+  type PaymentGatewayOption,
+} from "@/lib/commerce-checkout";
 import { getCustomerOrders, getCustomerAddresses } from "@/lib/customer-api";
 import {
   findCountryByCode,
@@ -41,6 +41,7 @@ function CheckoutContent() {
     countryOptions,
     currency,
     removeItem,
+    convertSubscriptionsToOneTime,
     clearCart,
     shippingOptions,
     shippingOptionId,
@@ -85,11 +86,29 @@ function CheckoutContent() {
   const [recurring, setRecurring] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [embeddedSession, setEmbeddedSession] =
-    useState<CheckoutSession | null>(null);
+  const [availableGateways, setAvailableGateways] = useState<PaymentGatewayOption[]>([
+    { id: "bank_transfer", name: "UK Faster Payments (Bank Transfer)" },
+  ]);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>("bank_transfer");
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showRegPassword, setShowRegPassword] = useState(false);
   const [couponCode, setCouponCode] = useState("");
   const [couponError, setCouponError] = useState("");
   const [couponLoading, setCouponLoading] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    fetchPaymentGateways().then((res) => {
+      if (!active || !res.gateways.length) return;
+      setAvailableGateways(res.gateways);
+      setSelectedPaymentMethod((current) =>
+        res.gateways.some((g) => g.id === current) ? current : res.gateways[0].id
+      );
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // Keep coupon input in sync with applied promo code
   useEffect(() => {
@@ -440,10 +459,33 @@ function CheckoutContent() {
     }
   }
 
-  // Start Stripe Checkout Process
+  const isBankTransferSelected = selectedPaymentMethod === "bank_transfer";
+  const totalDue = finalSubtotal + (shippingAvailable ? shippingCost : 0);
+
+  // Start Order / Payment Checkout Process
   async function handleProceedToPayment(e: React.FormEvent) {
     e.preventDefault();
     if (busy || !token || !customer) return;
+
+    if (!items.length) {
+      setError("Your research basket is empty.");
+      return;
+    }
+    if (isBankTransferSelected && hasSubscription) {
+      setError(
+        "28-day recurring subscriptions require an active card payment method. Use the button above to convert items to a one-time purchase to pay via UK Faster Payments (Bank Transfer)."
+      );
+      return;
+    }
+    if (hasSubscription && !isBankTransferSelected && !recurring) {
+      setError("Please authorise the 28-day recurring refill consent checkbox before continuing.");
+      return;
+    }
+    if (!ruo) {
+      setError("Please accept the Terms of Sale, Privacy Policy, and 18+ Research Use Only conditions.");
+      return;
+    }
+
     setBusy(true);
     setError("");
 
@@ -514,27 +556,58 @@ function CheckoutContent() {
           format: it.format,
           subscription_type: it.isSubscription ? "28_day_subscription" : "one_time",
         })),
-        finalSubtotal + (shippingAvailable ? shippingCost : 0),
-        "stripe_card"
+        totalDue,
+        selectedPaymentMethod
       );
 
-      const session = await prepareStripeCheckout({
+      const session = await prepareCheckout({
         items,
         token,
         email: customer.email,
         countryCode: deliveryCountryCode,
         address: resolvedAddress.address_1 ? resolvedAddress : undefined,
         ruoAccepted: ruo,
-        recurringAccepted: recurring,
-        paymentMethod: "stripe",
-        uiMode: "embedded",
+        recurringAccepted: !isBankTransferSelected && recurring,
+        paymentMethod: selectedPaymentMethod,
+        uiMode: isBankTransferSelected ? "hosted_page" : "embedded",
         shippingOptionId,
         promoCode: appliedPromo?.code || undefined,
       });
 
-      if (session.clientSecret) {
-        setEmbeddedSession(session);
-        setBusy(false);
+      if (session.state === "awaiting_transfer") {
+        try {
+          const ref = session.transferReference || session.orderNumber || session.attemptId;
+          const existingRaw = localStorage.getItem("peptech_bank_orders");
+          const existing = existingRaw ? JSON.parse(existingRaw) : [];
+          const list = Array.isArray(existing) ? existing : [];
+          const filtered = list.filter((o: any) => o?.orderReference !== ref);
+          filtered.unshift({
+            orderReference: ref,
+            placedAt: new Date().toISOString(),
+            total: session.total,
+            currency: session.currency || "gbp",
+            customer: {
+              email: customer.email,
+              name: `${resolvedAddress.first_name || ""} ${resolvedAddress.last_name || ""}`.trim() || undefined,
+            },
+            address: resolvedAddress.address_1 ? resolvedAddress : undefined,
+            items: items.map((it) => ({
+              id: it.id,
+              title: it.title,
+              subtitle: it.strength || "Laboratory RUO Grade",
+              price: it.price,
+              quantity: it.quantity,
+              image: it.image,
+              options: it.options,
+            })),
+          });
+          localStorage.setItem("peptech_bank_orders", JSON.stringify(filtered.slice(0, 25)));
+          localStorage.removeItem("peptech_checkout_revision");
+        } catch {}
+
+        window.location.assign(
+          `/checkout/success?attempt_id=${encodeURIComponent(session.attemptId)}`,
+        );
       } else if (session.checkoutUrl) {
         window.location.assign(session.checkoutUrl);
       } else if (
@@ -558,48 +631,12 @@ function CheckoutContent() {
     }
   }
 
-  if (embeddedSession?.clientSecret) {
-    return (
-      <div className="min-h-screen bg-white text-[#0B1F3A] flex flex-col">
-        {/* Minimal Return Header */}
-        <header className="border-b border-slate-200 bg-white sticky top-0 z-30 px-4 py-3.5 sm:px-8 sm:py-4">
-          <div className="max-w-3xl mx-auto flex items-center justify-between">
-            <button
-              type="button"
-              onClick={() => setEmbeddedSession(null)}
-              className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-[#0B1F3A] transition-colors cursor-pointer"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              <span>Return</span>
-            </button>
-            <img
-              src="/images/figma/peptech-logo.png"
-              alt="PEPTECH®"
-              className="h-5 sm:h-6 w-auto object-contain block"
-            />
-          </div>
-        </header>
-
-        {/* Full-page Stripe Checkout */}
-        <main className="flex-1 w-full max-w-3xl mx-auto px-4 sm:px-8 py-6 sm:py-10 animate-in fade-in duration-200">
-          <EmbeddedStripeCheckout
-            clientSecret={embeddedSession.clientSecret}
-            publishableKey={embeddedSession.publishableKey}
-            onClose={() => setEmbeddedSession(null)}
-          />
-        </main>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-[#0B1F3A] text-slate-100 flex flex-col lg:flex-row">
       {/* ========================================================================= */}
       {/* LEFT COLUMN: Dark Navy Summary & Cart Items (#0B1F3A)                     */}
       {/* ========================================================================= */}
-      <div className="w-full lg:w-[48%] min-h-0 lg:min-h-screen bg-[#0B1F3A] p-6 sm:p-10 lg:p-14 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-slate-800">
+      <aside aria-label="Order Summary" className="w-full lg:w-[48%] min-h-0 lg:min-h-screen bg-[#0B1F3A] p-6 sm:p-10 lg:p-14 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-slate-800">
         <div className="max-w-xl mx-auto w-full flex flex-col gap-6">
           {/* Brand Header */}
           <div className="flex items-center justify-between">
@@ -747,15 +784,23 @@ function CheckoutContent() {
               </div>
             )}
             <div className="flex gap-2">
+              <label htmlFor="checkout-promo-code" className="sr-only">
+                Promo or coupon code
+              </label>
               <input
+                id="checkout-promo-code"
+                name="promo_code"
                 type="text"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck={false}
                 value={couponCode}
                 onChange={(e) => {
                   setCouponCode(e.target.value);
                   if (couponError) setCouponError("");
                 }}
                 placeholder="Add promo or coupon code"
-                className="flex-1 rounded-xl bg-slate-900/60 border border-slate-700/80 px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#16A6A3]"
+                className="flex-1 min-h-[48px] rounded-xl bg-slate-900/60 border border-slate-700/80 px-4 py-2.5 text-base sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#16A6A3] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#16A6A3]"
               />
               {appliedPromo &&
               (!couponCode.trim() ||
@@ -868,12 +913,12 @@ function CheckoutContent() {
             </div>
           </div>
         </div>
-      </div>
+      </aside>
 
       {/* ========================================================================= */}
-      {/* RIGHT COLUMN: White Background (#FFFFFF) & Inline Auth / Stripe Checkout  */}
+      {/* RIGHT COLUMN: White Background (#FFFFFF) & Inline Auth / Payment Checkout */}
       {/* ========================================================================= */}
-      <div className="w-full lg:w-[52%] min-h-0 lg:min-h-screen bg-white text-[#0B1F3A] p-6 sm:p-10 lg:p-14 flex flex-col justify-start lg:justify-center">
+      <main className="w-full lg:w-[52%] min-h-0 lg:min-h-screen bg-white text-[#0B1F3A] p-6 sm:p-10 lg:p-14 flex flex-col justify-start lg:justify-center">
         <div className="max-w-xl mx-auto w-full">
           {isAuthLoading ? (
             <div className="py-20 flex flex-col items-center justify-center gap-3">
@@ -946,35 +991,55 @@ function CheckoutContent() {
                   className="flex flex-col gap-4"
                 >
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-bold text-[#0B1F3A]">
+                    <label htmlFor="checkout-login-email" className="text-xs font-bold text-[#0B1F3A]">
                       Institutional Researcher Email
                     </label>
                     <input
+                      id="checkout-login-email"
+                      name="email"
                       type="email"
+                      autoComplete="email"
+                      autoCorrect="off"
+                      autoCapitalize="off"
+                      spellCheck={false}
                       required
                       value={loginEmail}
                       onChange={(e) => setLoginEmail(e.target.value)}
                       placeholder="researcher@biotech-institute.org"
-                      className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm text-[#0B1F3A] focus:border-[#16A6A3] focus:ring-1 focus:ring-[#16A6A3] outline-none"
+                      className="w-full min-h-[48px] border border-slate-300 rounded-xl px-4 py-3 text-base sm:text-sm text-[#0B1F3A] focus:border-[#16A6A3] focus:ring-1 focus:ring-[#16A6A3] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#16A6A3] outline-none"
                     />
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-bold text-[#0B1F3A]">
-                      Account Password
-                    </label>
+                    <div className="flex items-center justify-between gap-2">
+                      <label htmlFor="checkout-login-password" className="text-xs font-bold text-[#0B1F3A]">
+                        Account Password
+                      </label>
+                      <button
+                        type="button"
+                        aria-pressed={showLoginPassword}
+                        aria-label={showLoginPassword ? "Hide password" : "Show password"}
+                        onClick={() => setShowLoginPassword((prev) => !prev)}
+                        className="text-xs font-semibold text-[#16A6A3] hover:underline cursor-pointer"
+                      >
+                        {showLoginPassword ? "Hide" : "Show"}
+                      </button>
+                    </div>
                     <input
-                      type="password"
+                      id="checkout-login-password"
+                      name="password"
+                      type={showLoginPassword ? "text" : "password"}
+                      autoComplete="current-password"
                       required
                       value={loginPassword}
                       onChange={(e) => setLoginPassword(e.target.value)}
                       placeholder="••••••••••••"
-                      className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm text-[#0B1F3A] focus:border-[#16A6A3] focus:ring-1 focus:ring-[#16A6A3] outline-none"
+                      className="w-full min-h-[48px] border border-slate-300 rounded-xl px-4 py-3 text-base sm:text-sm text-[#0B1F3A] focus:border-[#16A6A3] focus:ring-1 focus:ring-[#16A6A3] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#16A6A3] outline-none"
                     />
                   </div>
 
                   {lockedUntil && Date.now() < lockedUntil && (
-                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-2.5 text-xs text-amber-800">
+                    <div role="status" className="bg-amber-50 border border-amber-200 rounded-lg p-2.5 text-xs text-amber-800">
                       Security cooldown: Access paused for {lockCountdown}s
                     </div>
                   )}
@@ -985,7 +1050,7 @@ function CheckoutContent() {
                       authSubmitting ||
                       (!!lockedUntil && Date.now() < lockedUntil)
                     }
-                    className="mt-2 w-full rounded-xl bg-[#0B1F3A] hover:bg-[#162A45] text-white p-4 font-semibold text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer shadow-sm"
+                    className="mt-2 w-full min-h-[48px] rounded-xl bg-[#0B1F3A] hover:bg-[#162A45] text-white p-4 font-semibold text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#16A6A3]"
                   >
                     {authSubmitting ? (
                       <>
@@ -1005,7 +1070,7 @@ function CheckoutContent() {
                 >
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
                     <div className="flex flex-col gap-1">
-                      <label className="text-xs font-bold text-[#0B1F3A]">
+                      <label htmlFor="checkout-reg-title" className="text-xs font-bold text-[#0B1F3A]">
                         Title
                       </label>
                       <CustomSelect
@@ -1016,102 +1081,139 @@ function CheckoutContent() {
                       />
                     </div>
                     <div className="flex flex-col gap-1">
-                      <label className="text-xs font-bold text-[#0B1F3A]">
+                      <label htmlFor="checkout-reg-first" className="text-xs font-bold text-[#0B1F3A]">
                         First Name *
                       </label>
                       <input
+                        id="checkout-reg-first"
+                        name="first_name"
                         type="text"
+                        autoComplete="given-name"
                         required
                         value={regFirstName}
                         onChange={(e) => setRegFirstName(e.target.value)}
                         placeholder="Alexander"
-                        className="border border-slate-300 rounded-lg px-3 py-2.5 text-xs text-[#0B1F3A] outline-none"
+                        className="min-h-[48px] border border-slate-300 rounded-lg px-3 py-2.5 text-base sm:text-xs text-[#0B1F3A] outline-none focus:border-[#16A6A3] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#16A6A3]"
                       />
                     </div>
                     <div className="flex flex-col gap-1">
-                      <label className="text-xs font-bold text-[#0B1F3A]">
+                      <label htmlFor="checkout-reg-last" className="text-xs font-bold text-[#0B1F3A]">
                         Last Name *
                       </label>
                       <input
+                        id="checkout-reg-last"
+                        name="last_name"
                         type="text"
+                        autoComplete="family-name"
                         required
                         value={regLastName}
                         onChange={(e) => setRegLastName(e.target.value)}
                         placeholder="Wright"
-                        className="border border-slate-300 rounded-lg px-3 py-2.5 text-xs text-[#0B1F3A] outline-none"
+                        className="min-h-[48px] border border-slate-300 rounded-lg px-3 py-2.5 text-base sm:text-xs text-[#0B1F3A] outline-none focus:border-[#16A6A3] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#16A6A3]"
                       />
                     </div>
                   </div>
 
                   <div className="flex flex-col gap-1">
-                    <label className="text-xs font-bold text-[#0B1F3A]">
+                    <label htmlFor="checkout-reg-company" className="text-xs font-bold text-[#0B1F3A]">
                       Institution / Facility Name *
                     </label>
                     <input
+                      id="checkout-reg-company"
+                      name="company"
                       type="text"
+                      autoComplete="organization"
                       required
                       value={regCompany}
                       onChange={(e) => setRegCompany(e.target.value)}
                       placeholder="e.g. Cambridge Biomedical Research Centre"
-                      className="border border-slate-300 rounded-lg px-3 py-2.5 text-xs text-[#0B1F3A] outline-none"
+                      className="min-h-[48px] border border-slate-300 rounded-lg px-3 py-2.5 text-base sm:text-xs text-[#0B1F3A] outline-none focus:border-[#16A6A3] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#16A6A3]"
                     />
                   </div>
 
                   <div className="flex flex-col gap-1">
-                    <label className="text-xs font-bold text-[#0B1F3A]">
+                    <label htmlFor="checkout-reg-email" className="text-xs font-bold text-[#0B1F3A]">
                       Institutional Email *
                     </label>
                     <input
+                      id="checkout-reg-email"
+                      name="email"
                       type="email"
+                      autoComplete="email"
+                      autoCorrect="off"
+                      autoCapitalize="off"
+                      spellCheck={false}
                       required
                       value={regEmail}
                       onChange={(e) => setRegEmail(e.target.value)}
                       placeholder="alexander.wright@cambridge-biotech.ac.uk"
-                      className="border border-slate-300 rounded-lg px-3 py-2.5 text-xs text-[#0B1F3A] outline-none"
+                      className="min-h-[48px] border border-slate-300 rounded-lg px-3 py-2.5 text-base sm:text-xs text-[#0B1F3A] outline-none focus:border-[#16A6A3] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#16A6A3]"
                     />
                   </div>
 
                   <div className="flex flex-col gap-1">
-                    <label className="text-xs font-bold text-[#0B1F3A]">
+                    <label htmlFor="checkout-reg-phone" className="text-xs font-bold text-[#0B1F3A]">
                       Direct Phone / Lab Ext.{" "}
                       <span className="font-normal text-slate-400">
                         (optional)
                       </span>
                     </label>
                     <input
+                      id="checkout-reg-phone"
+                      name="phone"
                       type="tel"
+                      autoComplete="tel"
                       value={regPhone}
                       onChange={(e) => setRegPhone(e.target.value)}
                       placeholder="+44 1223 928 401"
-                      className="border border-slate-300 rounded-lg px-3 py-2.5 text-xs text-[#0B1F3A] outline-none"
+                      className="min-h-[48px] border border-slate-300 rounded-lg px-3 py-2.5 text-base sm:text-xs text-[#0B1F3A] outline-none focus:border-[#16A6A3] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#16A6A3]"
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
                     <div className="flex flex-col gap-1">
-                      <label className="text-xs font-bold text-[#0B1F3A]">
-                        Password *
-                      </label>
+                      <div className="flex items-center justify-between gap-1">
+                        <label htmlFor="checkout-reg-password" className="text-xs font-bold text-[#0B1F3A]">
+                          Password *
+                        </label>
+                        <button
+                          type="button"
+                          aria-pressed={showRegPassword}
+                          aria-label={showRegPassword ? "Hide passwords" : "Show passwords"}
+                          onClick={() => setShowRegPassword((prev) => !prev)}
+                          className="text-[11px] font-semibold text-[#16A6A3] hover:underline cursor-pointer"
+                        >
+                          {showRegPassword ? "Hide" : "Show"}
+                        </button>
+                      </div>
                       <input
-                        type="password"
+                        id="checkout-reg-password"
+                        name="password"
+                        type={showRegPassword ? "text" : "password"}
+                        autoComplete="new-password"
+                        minLength={8}
                         required
                         value={regPassword}
                         onChange={(e) => setRegPassword(e.target.value)}
                         placeholder="Min. 8 chars"
-                        className="border border-slate-300 rounded-lg px-3 py-2.5 text-xs text-[#0B1F3A] outline-none"
+                        className="min-h-[48px] border border-slate-300 rounded-lg px-3 py-2.5 text-base sm:text-xs text-[#0B1F3A] outline-none focus:border-[#16A6A3] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#16A6A3]"
                       />
                     </div>
                     <div className="flex flex-col gap-1">
-                      <label className="text-xs font-bold text-[#0B1F3A]">
+                      <label htmlFor="checkout-reg-confirm-password" className="text-xs font-bold text-[#0B1F3A]">
                         Confirm *
                       </label>
                       <input
-                        type="password"
+                        id="checkout-reg-confirm-password"
+                        name="confirm_password"
+                        type={showRegPassword ? "text" : "password"}
+                        autoComplete="new-password"
+                        minLength={8}
                         required
                         value={regConfirmPassword}
                         onChange={(e) => setRegConfirmPassword(e.target.value)}
                         placeholder="Re-enter"
-                        className="border border-slate-300 rounded-lg px-3 py-2.5 text-xs text-[#0B1F3A] outline-none"
+                        className="min-h-[48px] border border-slate-300 rounded-lg px-3 py-2.5 text-base sm:text-xs text-[#0B1F3A] outline-none focus:border-[#16A6A3] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#16A6A3]"
                       />
                     </div>
                   </div>
@@ -1154,12 +1256,16 @@ function CheckoutContent() {
             </div>
           ) : (
             /* ===================================================================== */
-            /* STATE B: AUTHENTICATED CHECKOUT (AUTO-FILLED FIELDS & STRIPE MOUNT)   */
+            /* STATE B: AUTHENTICATED CHECKOUT (DELIVERY & PAYMENT METHOD SELECTION) */
             /* ===================================================================== */
             <form
               onSubmit={handleProceedToPayment}
               className="flex flex-col gap-5 animate-in fade-in duration-200"
             >
+              <h1 className="text-xl sm:text-2xl font-extrabold text-[#0B1F3A] tracking-tight">
+                Delivery &amp; Payment Checkout
+              </h1>
+
               {/* Authenticated Researcher Badge */}
               <div className="rounded-xl bg-slate-50 border border-slate-200 p-4 flex items-center justify-between">
                 <div>
@@ -1205,103 +1311,124 @@ function CheckoutContent() {
                   <div className="mt-2.5 flex items-center gap-2 p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600">
                     <span className="text-[#16A6A3] font-bold">ℹ</span>
                     <span>
-                      International orders are processed securely in{" "}
-                      <strong>GBP (£)</strong>. Your card provider will convert
-                      automatically at live interbank exchange rates.
+                      {isBankTransferSelected ? (
+                        <>
+                          International orders are priced in{" "}
+                          <strong>GBP (£)</strong>. Please ensure international wire transfers settle in full in GBP.
+                        </>
+                      ) : (
+                        <>
+                          International orders are processed securely in{" "}
+                          <strong>GBP (£)</strong>. Your card provider will convert automatically at live exchange rates.
+                        </>
+                      )}
                     </span>
                   </div>
                 )}
               </label>
 
               {/* Shipping Method Selection */}
-              <div className="block text-xs font-bold text-[#0B1F3A]">
-                Shipping Method
+              <fieldset className="block text-xs font-bold text-[#0B1F3A] border-0 p-0 m-0">
+                <legend className="text-xs font-bold text-[#0B1F3A] mb-1.5">
+                  Shipping Method
+                </legend>
                 {!shippingReady ? (
-                  <div className="mt-1.5 rounded-xl border border-slate-200 p-3.5 text-sm text-slate-500 animate-pulse">
+                  <div className="rounded-xl border border-slate-200 p-3.5 text-sm text-slate-500 animate-pulse">
                     Loading available shipping methods&hellip;
                   </div>
                 ) : shippingOptions.length === 0 ? (
-                  <div className="mt-1.5 rounded-xl border border-amber-300 bg-amber-50 p-3.5 text-sm text-amber-800 font-medium">
+                  <div className="rounded-xl border border-amber-300 bg-amber-50 p-3.5 text-sm text-amber-800 font-medium">
                     No shipping method is available for this destination. Choose
                     another country to continue.
                   </div>
                 ) : (
-                  <div className="mt-1.5 flex flex-col gap-2">
+                  <div className="flex flex-col gap-2">
                     {shippingOptions.map((option) => {
                       const active = option.id === shippingOptionId;
+                      const inputId = `shipping-option-${option.id}`;
                       return (
-                        <button
-                          key={option.id}
-                          type="button"
-                          disabled={busy}
-                          onClick={() => {
-                            setShippingOptionId(option.id);
-                            trackAddShippingInfo(
-                              items.map((it) => ({
-                                item_id: it.id,
-                                item_name: it.title,
-                                price: it.price,
-                                quantity: it.quantity,
-                                format: it.format,
-                                subscription_type: it.isSubscription ? "28_day_subscription" : "one_time",
-                              })),
-                              finalSubtotal,
-                              option.name
-                            );
-                          }}
-                          className={`flex items-center justify-between gap-3 rounded-xl border p-3.5 text-left transition-colors cursor-pointer ${
-                            active
-                              ? "border-[#16A6A3] bg-teal-50/60 ring-1 ring-[#16A6A3]"
-                              : "border-slate-300 bg-white hover:border-slate-400"
-                          }`}
-                        >
-                          <span className="flex items-center gap-3 min-w-0">
-                            <span
-                              className={`inline-block h-3.5 w-3.5 shrink-0 rounded-full border-2 ${
-                                active
-                                  ? "border-[#16A6A3] bg-[#16A6A3]"
-                                  : "border-slate-300"
-                              }`}
-                            />
-                            <span className="min-w-0">
-                              <span className="block text-sm font-bold text-[#0B1F3A] truncate">
-                                {option.name}
-                              </span>
-                              {option.description ? (
-                                <span className="block text-xs text-slate-500 truncate">
-                                  {option.description}
+                        <div key={option.id} className="relative">
+                          <input
+                            id={inputId}
+                            name="shipping_method"
+                            type="radio"
+                            value={option.id}
+                            checked={active}
+                            disabled={busy}
+                            onChange={() => {
+                              setShippingOptionId(option.id);
+                              trackAddShippingInfo(
+                                items.map((it) => ({
+                                  item_id: it.id,
+                                  item_name: it.title,
+                                  price: it.price,
+                                  quantity: it.quantity,
+                                  format: it.format,
+                                  subscription_type: it.isSubscription ? "28_day_subscription" : "one_time",
+                                })),
+                                finalSubtotal,
+                                option.name
+                              );
+                            }}
+                            className="sr-only peer"
+                          />
+                          <label
+                            htmlFor={inputId}
+                            className={`flex items-center justify-between gap-3 rounded-xl border p-3.5 min-h-[48px] text-left transition-colors cursor-pointer peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[#16A6A3] ${
+                              active
+                                ? "border-[#16A6A3] bg-teal-50/60 ring-1 ring-[#16A6A3]"
+                                : "border-slate-300 bg-white hover:border-slate-400"
+                            }`}
+                          >
+                            <span className="flex items-center gap-3 min-w-0">
+                              <span
+                                aria-hidden="true"
+                                className={`inline-block h-4 w-4 shrink-0 rounded-full border-2 ${
+                                  active
+                                    ? "border-[#16A6A3] bg-[#16A6A3]"
+                                    : "border-slate-300"
+                                }`}
+                              />
+                              <span className="min-w-0">
+                                <span className="block text-sm font-bold text-[#0B1F3A] truncate">
+                                  {option.name}
                                 </span>
-                              ) : null}
+                                {option.description ? (
+                                  <span className="block text-xs font-normal text-slate-500 truncate">
+                                    {option.description}
+                                  </span>
+                                ) : null}
+                              </span>
                             </span>
-                          </span>
-                          {(() => {
-                            const isFree = isOptionEligibleForFree(option);
-                            if (isFree) {
+                            {(() => {
+                              const isFree = isOptionEligibleForFree(option);
+                              if (isFree) {
+                                return (
+                                  <span className="text-sm font-bold text-[#00C5A0] shrink-0 flex items-center gap-1.5">
+                                    <span>FREE</span>
+                                    {option.amount > 0 && (
+                                      <span className="text-xs line-through text-slate-400 font-normal">
+                                        {money(option.amount)}
+                                      </span>
+                                    )}
+                                  </span>
+                                );
+                              }
                               return (
-                                <span className="text-sm font-bold text-[#00C5A0] shrink-0 flex items-center gap-1.5">
-                                  <span>FREE</span>
-                                  {option.amount > 0 && (
-                                    <span className="text-xs line-through text-slate-400 font-normal">
-                                      {money(option.amount)}
-                                    </span>
-                                  )}
+                                <span className="text-sm font-bold text-[#0B1F3A] shrink-0">
+                                  {option.amount === 0
+                                    ? "FREE"
+                                    : money(option.amount)}
                                 </span>
                               );
-                            }
-                            return (
-                              <span className="text-sm font-bold text-[#0B1F3A] shrink-0">
-                                {option.amount === 0
-                                  ? "FREE"
-                                  : money(option.amount)}
-                              </span>
-                            );
-                          })()}
-                        </button>
+                            })()}
+                          </label>
+                        </div>
                       );
                     })}
                   </div>
                 )}
-              </div>
+              </fieldset>
 
               {/* Auto-filled Delivery Address Details */}
               <div className="rounded-xl border border-slate-200 p-4 space-y-3 bg-white">
@@ -1402,7 +1529,7 @@ function CheckoutContent() {
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-2.5 pt-1">
+                  <div className="space-y-3 pt-1">
                     {availableAddresses.length > 0 && (
                       <div className="flex items-center justify-between pb-1">
                         <span className="text-[11.5px] text-slate-500 font-medium">
@@ -1417,68 +1544,196 @@ function CheckoutContent() {
                         </button>
                       </div>
                     )}
-                    <input
-                      type="text"
-                      placeholder="Street Address (Line 1)"
-                      value={customAddress.address_1}
-                      onChange={(e) =>
-                        setCustomAddress({
-                          ...customAddress,
-                          address_1: e.target.value,
-                        })
-                      }
-                      required
-                      className="w-full border border-slate-300 rounded-lg p-2.5 text-xs text-[#0B1F3A] outline-none focus:border-[#16A6A3]"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Suite / Lab Wing (Line 2)"
-                      value={customAddress.address_2}
-                      onChange={(e) =>
-                        setCustomAddress({
-                          ...customAddress,
-                          address_2: e.target.value,
-                        })
-                      }
-                      className="w-full border border-slate-300 rounded-lg p-2.5 text-xs text-[#0B1F3A] outline-none focus:border-[#16A6A3]"
-                    />
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="flex flex-col gap-1">
+                      <label htmlFor="checkout-address-1" className="text-[11px] font-semibold text-[#0B1F3A]">
+                        Street Address (Line 1) *
+                      </label>
                       <input
+                        id="checkout-address-1"
+                        name="address_1"
                         type="text"
-                        placeholder="City"
-                        value={customAddress.city}
+                        autoComplete="address-line1"
+                        placeholder="e.g. 10 Innovation Way"
+                        value={customAddress.address_1}
                         onChange={(e) =>
                           setCustomAddress({
                             ...customAddress,
-                            city: e.target.value,
+                            address_1: e.target.value,
                           })
                         }
                         required
-                        className="border border-slate-300 rounded-lg p-2.5 text-xs text-[#0B1F3A] outline-none focus:border-[#16A6A3]"
+                        className="w-full min-h-[48px] border border-slate-300 rounded-lg px-3 py-2.5 text-base sm:text-xs text-[#0B1F3A] outline-none focus:border-[#16A6A3] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#16A6A3]"
                       />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label htmlFor="checkout-address-2" className="text-[11px] font-semibold text-[#0B1F3A]">
+                        Suite / Lab Wing (Line 2)
+                      </label>
                       <input
+                        id="checkout-address-2"
+                        name="address_2"
                         type="text"
-                        placeholder="Postal Code"
-                        value={customAddress.postal_code}
+                        autoComplete="address-line2"
+                        placeholder="Optional building or laboratory suite"
+                        value={customAddress.address_2}
                         onChange={(e) =>
                           setCustomAddress({
                             ...customAddress,
-                            postal_code: e.target.value,
+                            address_2: e.target.value,
                           })
                         }
-                        required
-                        className="border border-slate-300 rounded-lg p-2.5 text-xs text-[#0B1F3A] outline-none focus:border-[#16A6A3]"
+                        className="w-full min-h-[48px] border border-slate-300 rounded-lg px-3 py-2.5 text-base sm:text-xs text-[#0B1F3A] outline-none focus:border-[#16A6A3] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#16A6A3]"
                       />
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      <div className="flex flex-col gap-1">
+                        <label htmlFor="checkout-city" className="text-[11px] font-semibold text-[#0B1F3A]">
+                          City *
+                        </label>
+                        <input
+                          id="checkout-city"
+                          name="city"
+                          type="text"
+                          autoComplete="address-level2"
+                          placeholder="City"
+                          value={customAddress.city}
+                          onChange={(e) =>
+                            setCustomAddress({
+                              ...customAddress,
+                              city: e.target.value,
+                            })
+                          }
+                          required
+                          className="min-h-[48px] border border-slate-300 rounded-lg px-3 py-2.5 text-base sm:text-xs text-[#0B1F3A] outline-none focus:border-[#16A6A3] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#16A6A3]"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label htmlFor="checkout-postal-code" className="text-[11px] font-semibold text-[#0B1F3A]">
+                          Postal Code *
+                        </label>
+                        <input
+                          id="checkout-postal-code"
+                          name="postal_code"
+                          type="text"
+                          autoComplete="postal-code"
+                          autoCorrect="off"
+                          autoCapitalize="characters"
+                          spellCheck={false}
+                          placeholder="Postal Code"
+                          value={customAddress.postal_code}
+                          onChange={(e) =>
+                            setCustomAddress({
+                              ...customAddress,
+                              postal_code: e.target.value,
+                            })
+                          }
+                          required
+                          className="min-h-[48px] border border-slate-300 rounded-lg px-3 py-2.5 text-base sm:text-xs text-[#0B1F3A] outline-none focus:border-[#16A6A3] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#16A6A3]"
+                        />
+                      </div>
                     </div>
                   </div>
                 )}
               </div>
-              {/* 28-day Subscription Consent Checkbox */}
-              {hasSubscription && (
+
+              {/* Payment Method Selection */}
+              <fieldset className="block border-0 p-0 m-0">
+                <legend className="text-xs font-bold text-[#0B1F3A] mb-1.5">
+                  Payment Method
+                </legend>
+                <div className="flex flex-col gap-2">
+                  {availableGateways.map((gw) => {
+                    const active = selectedPaymentMethod === gw.id;
+                    const inputId = `payment-gateway-${gw.id}`;
+                    const isBank = gw.id === "bank_transfer";
+                    return (
+                      <div key={gw.id} className="relative">
+                        <input
+                          id={inputId}
+                          name="payment_method"
+                          type="radio"
+                          value={gw.id}
+                          checked={active}
+                          disabled={busy}
+                          onChange={() => {
+                            setSelectedPaymentMethod(gw.id);
+                            setError("");
+                          }}
+                          className="sr-only peer"
+                        />
+                        <label
+                          htmlFor={inputId}
+                          className={`flex items-start justify-between gap-3 rounded-xl border p-3.5 min-h-[48px] text-left transition-colors cursor-pointer peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[#16A6A3] ${
+                            active
+                              ? "border-[#16A6A3] bg-teal-50/60 ring-1 ring-[#16A6A3]"
+                              : "border-slate-300 bg-white hover:border-slate-400"
+                          }`}
+                        >
+                          <span className="flex items-start gap-3 min-w-0">
+                            <span
+                              aria-hidden="true"
+                              className={`mt-0.5 inline-block h-4 w-4 shrink-0 rounded-full border-2 ${
+                                active
+                                  ? "border-[#16A6A3] bg-[#16A6A3]"
+                                  : "border-slate-300"
+                              }`}
+                            />
+                            <span className="min-w-0">
+                              <span className="block text-sm font-bold text-[#0B1F3A]">
+                                {gw.name}
+                              </span>
+                              <span className="block text-xs font-normal text-slate-500 mt-0.5 leading-snug">
+                                {isBank
+                                  ? "Reserve your PEP-XXXXXX order reference now and settle via UK bank transfer. Dispatched upon clearance."
+                                  : "Authenticated 3-D Secure checkout supporting one-time purchases and 28-day Subscribe & Save refills."}
+                              </span>
+                            </span>
+                          </span>
+                          {isBank && (
+                            <span className="shrink-0 text-[10.5px] font-bold text-[#0B1F3A] bg-white border border-slate-200 px-2 py-0.5 rounded-full">
+                              Direct BACS
+                            </span>
+                          )}
+                        </label>
+                      </div>
+                    );
+                  })}
+                </div>
+              </fieldset>
+
+              {/* Subscription-vs-Bank-Transfer Guard Notice */}
+              {hasSubscription && isBankTransferSelected && (
+                <div
+                  role="status"
+                  className="rounded-xl border border-amber-300 bg-amber-50 p-4 space-y-2.5 text-xs text-amber-950"
+                >
+                  <p className="font-bold text-amber-900">
+                    One-Time Purchase Required for UK Faster Payments
+                  </p>
+                  <p className="leading-relaxed text-amber-900/90">
+                    28-day automated Subscribe &amp; Save plans require an active tokenised card rail. Convert the recurring items in your basket to a one-time order to complete checkout via UK Faster Payments (Bank Transfer).
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      convertSubscriptionsToOneTime();
+                      setRecurring(false);
+                      setError("");
+                    }}
+                    className="min-h-[48px] px-4 py-2.5 rounded-lg bg-[#0B1F3A] hover:bg-[#162A45] text-white font-semibold text-xs transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#16A6A3]"
+                  >
+                    Convert All Items to One-Time Purchase
+                  </button>
+                </div>
+              )}
+
+              {/* 28-day Subscription Consent Checkbox (when card gateway + recurring items active) */}
+              {hasSubscription && !isBankTransferSelected && (
                 <label className="flex gap-3 text-xs text-slate-700 bg-teal-50/60 border border-teal-200/80 p-3.5 rounded-xl cursor-pointer">
                   <input
+                    id="checkout-recurring-consent"
+                    name="recurring_accepted"
                     type="checkbox"
-                    required
                     checked={recurring}
                     onChange={(e) => setRecurring(e.target.checked)}
                     className="mt-0.5 rounded border-slate-300 text-[#16A6A3] focus:ring-[#16A6A3]"
@@ -1492,10 +1747,16 @@ function CheckoutContent() {
               {/* RUO Conditions Checkbox */}
               <label className="flex gap-3 text-xs text-slate-700 cursor-pointer">
                 <input
+                  id="checkout-ruo-consent"
+                  name="ruo_accepted"
                   type="checkbox"
-                  required
                   checked={ruo}
-                  onChange={(e) => setRuo(e.target.checked)}
+                  onChange={(e) => {
+                    setRuo(e.target.checked);
+                    if (e.target.checked && error.includes("Research Use Only")) {
+                      setError("");
+                    }
+                  }}
                   className="mt-0.5 rounded border-slate-300 text-[#16A6A3] focus:ring-[#16A6A3]"
                 />
                 <span className="leading-snug">
@@ -1521,7 +1782,7 @@ function CheckoutContent() {
               {error && (
                 <p
                   role="alert"
-                  className="text-xs text-red-600 bg-red-50 p-3 rounded-lg border border-red-200"
+                  className="text-xs text-red-700 bg-red-50 p-3.5 rounded-lg border border-red-200 font-medium"
                 >
                   {error}
                 </p>
@@ -1531,21 +1792,28 @@ function CheckoutContent() {
               <button
                 disabled={
                   busy ||
-                  !ruo ||
-                  (hasSubscription && !recurring) ||
+                  !items.length ||
                   !shippingReady ||
                   !shippingAvailable
                 }
                 type="submit"
-                className="w-full rounded-xl bg-[#0B1F3A] hover:bg-[#162A45] p-4 font-bold text-sm text-white disabled:opacity-50 transition-colors shadow-sm cursor-pointer flex items-center justify-center gap-2"
+                className="w-full min-h-[52px] rounded-xl bg-[#0B1F3A] hover:bg-[#162A45] p-4 font-bold text-sm text-white disabled:opacity-50 transition-colors shadow-sm cursor-pointer flex items-center justify-center gap-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#16A6A3]"
               >
                 {busy ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Connecting to Secure Card Gateway…</span>
+                    <span>
+                      {isBankTransferSelected
+                        ? "Reserving Order Reference…"
+                        : "Opening Secure Payment Session…"}
+                    </span>
                   </>
                 ) : (
-                  <span>Continue to Secure Card Payment</span>
+                  <span>
+                    {isBankTransferSelected
+                      ? `Place Order & View Bank Details · ${money(totalDue)}`
+                      : `Continue to Card Payment · ${money(totalDue)}`}
+                  </span>
                 )}
               </button>
 
@@ -1560,13 +1828,14 @@ function CheckoutContent() {
               )}
 
               <p className="text-center text-xs text-slate-500">
-                Payment fields will automatically pre-populate with your
-                verified researcher details.
+                {isBankTransferSelected
+                  ? "Your PEP-XXXXXX transfer reference and bank settlement instructions are displayed immediately after submission."
+                  : "Payment details will automatically pre-populate with your verified researcher account."}
               </p>
             </form>
           )}
         </div>
-      </div>
+      </main>
     </div>
   );
 }

@@ -68,7 +68,7 @@ export const checkoutSchema = z.object({
   items: z.array(checkoutItemSchema).min(1).max(30),
   ruo_accepted: z.literal(true),
   recurring_accepted: z.boolean(),
-  payment_method: z.literal("stripe").default("stripe"),
+  payment_method: z.enum(["bank_transfer", "card", "stripe", "truevo", "nmi", "authorizenet"]).default("bank_transfer"),
   shipping_option_id: z.string().trim().min(3).max(100).optional(),
   ui_mode: z.enum(["embedded", "hosted", "embedded_page", "hosted_page"]).default("embedded").optional(),
   promo_code: z.string().trim().max(50).optional().nullable(),
@@ -116,5 +116,34 @@ export function publicError(error: any) {
     return { status: 400, message: `Invalid request. Check required fields: ${details}` }
   }
   console.error("[PEPTECH Commerce Error]:", error)
-  return { status: error.status || 503, message: error.message || "This operation could not finish. Retry the same request or contact support." }
+  const rawMessage = String(error?.message || "This operation could not finish. Retry the same request or contact support.")
+  const message = /\bstripe\b/i.test(rawMessage)
+    ? "Card payment gateway is currently unavailable. Please complete your order via UK Faster Payments (Bank Transfer)."
+    : rawMessage
+  return { status: error.status || 503, message }
+}
+
+export function sanitizeStoreOrderMetadata(meta: any): Record<string, any> {
+  if (!meta || typeof meta !== "object") return {}
+  const cleaned: Record<string, any> = { ...meta }
+  const rawReceiptUrl = cleaned.receipt_url || cleaned.stripe_receipt_url || null
+  const receiptUrl = rawReceiptUrl && !/stripe/i.test(String(rawReceiptUrl)) ? rawReceiptUrl : null
+  const refundRef = cleaned.refund_reference || cleaned.stripe_refund_id || null
+  if (receiptUrl) {
+    cleaned.receipt_url = receiptUrl
+  } else {
+    delete cleaned.receipt_url
+  }
+  if (refundRef) cleaned.refund_reference = refundRef
+  if (cleaned.payment_gateway === "stripe") cleaned.payment_gateway = "card"
+  if (typeof cleaned.payment_method === "string" && /\bstripe\b/i.test(cleaned.payment_method)) {
+    cleaned.payment_method = cleaned.payment_method.replace(/stripe/gi, "Card").replace(/\s+/g, " ").trim()
+  }
+  delete cleaned.stripe_id
+  delete cleaned.stripe_customer_id
+  delete cleaned.stripe_payment_intent_id
+  delete cleaned.stripe_receipt_url
+  delete cleaned.stripe_refund_id
+  delete cleaned.stripe_session_id
+  return cleaned
 }

@@ -6,6 +6,27 @@ if (!publishableKey && typeof window !== "undefined") {
   console.warn("[PEPTECH WARNING] Missing NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY environment variable.")
 }
 
+export type BankInstructions = {
+  account_name?: string
+  bank_name?: string
+  sort_code?: string
+  account_number?: string
+  iban?: string
+  bic?: string
+  instructions?: string
+} | null
+
+export type PaymentGatewayOption = {
+  id: string
+  name: string
+}
+
+export type PaymentGatewaysResponse = {
+  gateways: PaymentGatewayOption[]
+  card_gateway_active: boolean
+  bank_transfer_configured: boolean
+}
+
 export type CheckoutSession = {
   attemptId: string
   checkoutUrl?: string
@@ -14,9 +35,10 @@ export type CheckoutSession = {
   state: string
   orderId?: string
   orderNumber?: string
-  stripeReceiptUrl?: string | null
+  transferReference?: string | null
+  bankInstructions?: BankInstructions
+  receiptUrl?: string | null
   revision: string
-  taxStatus?: string
   tax: number
   taxInclusive: boolean
   total: number
@@ -28,7 +50,7 @@ export type CheckoutSession = {
   paymentMethod: string
   reference: string
   items: { name: string; quantity: number; recurring: boolean; unitPrice: number }[]
-  subscriptionId?: string
+  subscriptionId?: string | null
   promoDiscount?: number
   promoCode?: string
   subtotal?: number
@@ -84,7 +106,27 @@ export async function commerceRequest(path: string, token?: string | null, body?
   return data
 }
 
-export async function prepareStripeCheckout(input: {
+export async function fetchPaymentGateways(): Promise<PaymentGatewaysResponse> {
+  try {
+    const res = await commerceRequest("/store/custom/payment-gateways")
+    const gateways = Array.isArray(res?.gateways) && res.gateways.length > 0
+      ? res.gateways
+      : [{ id: "bank_transfer", name: "UK Faster Payments (Bank Transfer)" }]
+    return {
+      gateways,
+      card_gateway_active: Boolean(res?.card_gateway_active),
+      bank_transfer_configured: Boolean(res?.bank_transfer_configured),
+    }
+  } catch {
+    return {
+      gateways: [{ id: "bank_transfer", name: "UK Faster Payments (Bank Transfer)" }],
+      card_gateway_active: false,
+      bank_transfer_configured: false,
+    }
+  }
+}
+
+export async function prepareCheckout(input: {
   items: CartItem[]
   address?: CheckoutAddress
   countryCode?: string
@@ -92,7 +134,7 @@ export async function prepareStripeCheckout(input: {
   token: string
   ruoAccepted: boolean
   recurringAccepted?: boolean
-  paymentMethod?: "stripe"
+  paymentMethod?: string
   uiMode?: "embedded" | "hosted_page"
   shippingOptionId?: string
   promoCode?: string
@@ -161,9 +203,8 @@ export async function prepareStripeCheckout(input: {
     country_code: resolvedCountry,
     ruo_accepted: input.ruoAccepted,
     recurring_accepted: input.recurringAccepted === true,
-    payment_method: input.paymentMethod || "stripe",
+    payment_method: input.paymentMethod || "bank_transfer",
     ...(input.shippingOptionId ? { shipping_option_id: input.shippingOptionId } : {}),
-    ...(input.promoCode ? { promo_code: input.promoCode } : {}),
     ui_mode: input.uiMode || "embedded",
     ...(input.promoCode ? { promo_code: input.promoCode } : {}),
   }
@@ -187,7 +228,6 @@ export async function prepareStripeCheckout(input: {
       errorMsg.includes("Basket changed") ||
       errorMsg.startsWith("Checkout has expired")
     ) {
-      // Rotate revision and retry once after a brief 500ms backoff
       await new Promise((resolve) => setTimeout(resolve, 500))
       const freshRevision = crypto.randomUUID()
       localStorage.setItem("peptech_checkout_revision", JSON.stringify({ fingerprint, revision: freshRevision }))
@@ -216,7 +256,7 @@ export async function checkoutStatus(attemptId: string, token: string): Promise<
   return commerceRequest(`/store/custom/checkout?attempt_id=${encodeURIComponent(attemptId)}`, token)
 }
 
-export async function completeStripeCheckout(cartId: string, token: string) {
+export async function completeOrderCheckout(cartId: string, token: string) {
   const result = await commerceRequest(`/store/carts/${encodeURIComponent(cartId)}/complete`, token, {})
   if (result.type !== "order") throw new Error("Payment confirmation is pending. Do not start another payment.")
   return result.order
@@ -267,3 +307,4 @@ export async function validatePromoCode(
     }
   }
 }
+

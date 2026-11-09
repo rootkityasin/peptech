@@ -2,6 +2,7 @@ import type { AuthenticatedMedusaRequest, MedusaResponse } from "@medusajs/frame
 import { z } from "zod"
 import { operator, commerce, endpoint } from "../../../../lib/commerce/http"
 import { getStripeConfig } from "../../../../lib/stripe-config"
+import { isCardGatewayActive } from "../../../../lib/commerce/gateways/registry"
 import { fail, shippingRatesSchema, serviceZoneRateTierSchema } from "../../../../lib/commerce/policy"
 
 const schema = z.object({
@@ -50,6 +51,7 @@ export async function GET(req: AuthenticatedMedusaRequest, res: MedusaResponse) 
     return {
       settings,
       stripe: stripeInfo,
+      card_gateway_active: isCardGatewayActive(),
     }
   })
 }
@@ -59,8 +61,8 @@ export async function POST(req: AuthenticatedMedusaRequest, res: MedusaResponse)
     const admin = operator(req)
     const input = schema.parse(req.body)
     const ledger = commerce(req)
-    if (input.enabled && getStripeConfig()?.mode === "live" && !input.stripe_scope_evidence_ref) {
-      fail("Written Stripe scope evidence is required for live release", 409)
+    if (input.enabled && isCardGatewayActive() && getStripeConfig()?.mode === "live" && !input.stripe_scope_evidence_ref) {
+      fail("Written card gateway scope evidence is required for live card checkout release", 409)
     }
     return ledger.locked("commerce_settings", async () => {
       const record = await ledger.create({

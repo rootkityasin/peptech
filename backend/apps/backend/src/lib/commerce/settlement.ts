@@ -31,16 +31,20 @@ export async function settleReceipt(
   },
   quote?: Quote
 ) {
-  const context = stripeContext()
+  const isBankTransfer = evidence.source === "bank_transfer"
+  const context = isBankTransfer ? null : stripeContext()
+  const activeProfile = isBankTransfer ? (attempt.profile || "bank_transfer:v1") : context!.profile
   const q = quote || (attempt.data.quote as Quote)
   const renewal = !!quote && quote.lines[0]?.line_id !== attempt.data.quote.lines[0]?.line_id
-  if (attempt.profile !== context.profile || evidence.currency !== q.currency || evidence.amount !== q.total_minor) {
+  if (attempt.profile !== activeProfile || evidence.currency !== q.currency || evidence.amount !== q.total_minor) {
     fail("Payment amount or account requires reconciliation", 409)
   }
-  const id = recordId("receipt", context.profile, evidence.reference)
+  const id = recordId("receipt", activeProfile, evidence.reference)
   const orderId = recordId("order", id)
-  const orderNumber = orderId
-  const stripeReceiptUrl = evidence.receipt_url || null
+  const orderNumber = isBankTransfer
+    ? (attempt.data?.transfer_reference || generateOrderNumber(attempt.id))
+    : orderId
+  const receiptUrl = evidence.receipt_url || null
   return ledger.locked(id, async () => {
     if (!renewal) {
       await ledger.locked(attempt.id, async () => {
@@ -48,13 +52,13 @@ export async function settleReceipt(
         if (latest?.data.initial_receipt_id && latest.data.initial_receipt_id !== id) {
           fail("This checkout already has a different settlement reference", 409)
         }
-        await ledger.patch(attempt.id, { initial_receipt_id: id, order_id: orderId, order_number: orderId })
+        await ledger.patch(attempt.id, { initial_receipt_id: id, order_id: orderId, order_number: orderNumber })
       })
     }
     const receipt = await ledger.create({
       id,
       kind: "receipt",
-      profile: context.profile,
+      profile: activeProfile,
       owner_id: attempt.owner_id,
       state: "paid",
       data: {
@@ -62,9 +66,10 @@ export async function settleReceipt(
         attempt_id: attempt.id,
         quote: q,
         order_id: orderId,
-        order_number: orderId,
-        display_id: orderId,
-        stripe_receipt_url: stripeReceiptUrl,
+        order_number: orderNumber,
+        display_id: orderNumber,
+        receipt_url: receiptUrl,
+        stripe_receipt_url: receiptUrl,
       },
     })
     if (receipt.data.attempt_id !== attempt.id) fail("Payment reference is already allocated to another order", 409)
@@ -91,7 +96,7 @@ export async function settleReceipt(
       }
       const input: any = {
         id: orderId,
-        custom_display_id: orderId,
+        custom_display_id: orderNumber,
         customer_id: q.customer_id,
         email: q.email,
         currency_code: q.currency,
@@ -104,14 +109,18 @@ export async function settleReceipt(
         metadata: {
           peptech_receipt_id: id,
           peptech_attempt: attempt.id,
-          payment_gateway: evidence.source || "stripe",
+          payment_gateway: isBankTransfer ? "bank_transfer" : "card",
+          payment_method: isBankTransfer ? "UK Faster Payments (Bank Transfer)" : "Card Payment (3-D Secure)",
+          ...(isBankTransfer ? { transfer_reference: orderNumber, bank_reference: evidence.reference } : {}),
+          ...(evidence.verified_by ? { verified_by: evidence.verified_by } : {}),
           subscription_id: attempt.data.subscription_id || null,
           is_subscription_renewal: Boolean(renewal),
           fulfillment_hold: false,
           tax_policy: q.tax_policy,
-          order_number_formatted: orderId,
+          order_number_formatted: orderNumber,
           order_id: orderId,
-          stripe_receipt_url: stripeReceiptUrl,
+          receipt_url: receiptUrl,
+          stripe_receipt_url: receiptUrl,
           tags: attempt.data.subscription_id ? ["Sub-Order"] : [],
           auto_savings: q.lines.some((l) => l.recurring)
             ? {
@@ -179,7 +188,7 @@ export async function settleReceipt(
           }
         } catch {}
       }
-      if (q.customer_id && attempt.data?.stripe_customer_id) {
+      if (!isBankTransfer && context && q.customer_id && attempt.data?.stripe_customer_id) {
         try {
           const custKey = recordId("customer", context.profile, q.customer_id)
           await ledger
@@ -227,7 +236,7 @@ export async function settleReceipt(
         fields: ["id", "total", "payment_collections.*"],
         filters: { id: orderId },
       })
-      if (Math.round(Number(order.total) * 100) !== evidence.amount) fail("Medusa order total differs from Stripe", 409)
+      if (Math.round(Number(order.total) * 100) !== evidence.amount) fail("Medusa order total differs from settled payment amount", 409)
       const collection =
         order.payment_collections?.[0] ||
         (
@@ -244,9 +253,26 @@ export async function settleReceipt(
       relations: ["payment_sessions", "payments", "payments.captures"],
     })
     let paymentRecord: any
-    if (evidence.source === "bank_transfer") {
-      fail("Offline bank transfer rail is disabled. All settlements require tokenized Stripe SCA.", 410)
+    if (isBankTransfer) {
+      paymentRecord = collection.payments?.[0]
+      if (!paymentRecord && collection.status !== "completed" && collection.status !== "authorized") {
+        await markPaymentCollectionAsPaid(scope).run({
+          input: {
+            order_id: orderId,
+            payment_collection_id: collectionId,
+            captured_by: evidence.verified_by || "Admin Faster Payments Settlement",
+          },
+        })
+        const refreshedCollection = await payment.retrievePaymentCollection(collectionId, {
+          relations: ["payment_sessions", "payments", "payments.captures"],
+        })
+        paymentRecord = refreshedCollection.payments?.[0] || { id: `bank_${collectionId}` }
+      }
+      if (!paymentRecord) {
+        paymentRecord = { id: `bank_${collectionId}` }
+      }
     } else {
+      if (!context) fail("Payment gateway context unavailable", 503)
       let session = collection.payment_sessions?.[0]
       if (!session) {
         const data: any = {
@@ -277,7 +303,8 @@ export async function settleReceipt(
     receipt.data.order_id = orderId
     receipt.data.order_number = orderNumber
     receipt.data.display_id = orderNumber
-    receipt.data.stripe_receipt_url = stripeReceiptUrl
+    receipt.data.receipt_url = receiptUrl
+    receipt.data.stripe_receipt_url = receiptUrl
     receipt.data.payment_id = paymentRecord.id
     await ledger.save(receipt)
     if (!renewal) {
@@ -288,7 +315,8 @@ export async function settleReceipt(
           latest.data.order_id = orderId
           latest.data.order_number = orderNumber
           latest.data.display_id = orderNumber
-          latest.data.stripe_receipt_url = stripeReceiptUrl
+          latest.data.receipt_url = receiptUrl
+          latest.data.stripe_receipt_url = receiptUrl
           await ledger.save(latest)
         }
       })
@@ -328,7 +356,7 @@ export async function settleReceipt(
     await ledger.create({
       id: recordId("operation", id, "receipt-email"),
       kind: "operation",
-      profile: context.profile,
+      profile: activeProfile,
       owner_id: q.customer_id,
       state: "pending",
       data: {

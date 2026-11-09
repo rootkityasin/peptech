@@ -2,11 +2,15 @@ import type { AuthenticatedMedusaRequest, MedusaResponse } from "@medusajs/frame
 import { Modules } from "@medusajs/framework/utils"
 import { actor, commerce, endpoint, resolveStorefrontOrigin } from "../../../../lib/commerce/http"
 import { stripeContext } from "../../../../lib/commerce/stripe"
+import { isCardGatewayActive } from "../../../../lib/commerce/gateways/registry"
 import { recordId } from "../../../../modules/peptech-commerce/service"
 import { fail } from "../../../../lib/commerce/policy"
 
 export async function POST(req: AuthenticatedMedusaRequest, res: MedusaResponse) {
   return endpoint(res, async () => {
+    if (!isCardGatewayActive()) {
+      fail("Card billing portal is unavailable while card payments are on standby. Manage your subscriptions directly in your account.", 409)
+    }
     const context = stripeContext()
     const customer = actor(req)
     const ledger = commerce(req)

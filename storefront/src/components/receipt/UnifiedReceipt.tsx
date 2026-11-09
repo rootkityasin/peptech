@@ -25,16 +25,17 @@ export interface ReceiptData {
   shippingTotal?: number
   taxTotal?: number
   status?: string
+  isAwaitingTransfer?: boolean
   isRefunded?: boolean
   refundStatus?: string
   refundedAmount?: number
-  stripeRefundId?: string
+  refundReference?: string
   trackingNumber?: string
   shippingMethodName?: string
   paymentMethod?: string
   customerName?: string
   customerEmail?: string
-  stripeReceiptUrl?: string | null
+  receiptUrl?: string | null
   shippingAddress?: {
     first_name?: string
     last_name?: string
@@ -305,10 +306,19 @@ export function UnifiedReceipt({
                 {receipt.isRefunded ? (
                   <span className="inline-flex items-center gap-1 font-semibold text-rose-700">
                     <span className="w-1.5 h-1.5 rounded-full bg-rose-600" />
-                    Refunded via Stripe {receipt.stripeRefundId ? `(${receipt.stripeRefundId.slice(0, 14)}...)` : ""}
+                    Refunded {receipt.refundReference ? `(${receipt.refundReference.slice(0, 14)}...)` : ""}
+                  </span>
+                ) : receipt.isAwaitingTransfer || /awaiting/i.test(receipt.status || "") ? (
+                  <span className="inline-flex items-center gap-1 font-semibold text-amber-700">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                    Awaiting UK Bank Transfer ({receipt.paymentMethod || "UK Faster Payments"})
                   </span>
                 ) : (
-                  <span className="text-slate-700">Stripe Verified (Paid in Full)</span>
+                  <span className="text-slate-700">
+                    {receipt.paymentMethod
+                      ? `${receipt.paymentMethod} — Verified (Paid in Full)`
+                      : "Payment Verified (Paid in Full)"}
+                  </span>
                 )}
               </div>
             </div>
@@ -427,12 +437,18 @@ export function UnifiedReceipt({
           )}
           {receipt.isRefunded && (
             <div className="flex justify-between w-full max-w-xs text-rose-600 font-semibold border-t border-slate-100 pt-1.5">
-              <span>Refunded via Stripe:</span>
+              <span>Refunded:</span>
               <span className="font-mono">-£{(receipt.refundedAmount || total).toFixed(2)}</span>
             </div>
           )}
           <div className="flex justify-between w-full max-w-xs font-bold text-sm text-[#0b1f3a] border-t border-slate-200 pt-2 mt-1">
-            <span>{receipt.isRefunded ? "Original Total Paid (Refunded):" : "Total Paid in Full:"}</span>
+            <span>
+              {receipt.isRefunded
+                ? "Original Total Paid (Refunded):"
+                : receipt.isAwaitingTransfer || /awaiting/i.test(receipt.status || "")
+                ? "Total Due via Bank Transfer:"
+                : "Total Paid in Full:"}
+            </span>
             <span className="font-mono text-base">£{total.toFixed(2)}</span>
           </div>
         </div>

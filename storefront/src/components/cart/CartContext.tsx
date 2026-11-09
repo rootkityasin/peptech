@@ -292,6 +292,7 @@ interface CartContextType {
     newItem: Omit<CartItem, "quantity">,
     quantity?: number
   ) => void
+  convertSubscriptionsToOneTime: () => void
   removeItem: (id: string, isSubscription: boolean) => void
   updateQuantity: (id: string, isSubscription: boolean, delta: number) => void
   clearCart: () => void
@@ -584,7 +585,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const countryCode = selectedCountry?.code || "GB"
   const regionId = selectedCountry?.regionId || null
   const currency = (selectedCountry?.currencyCode || "GBP") as "GBP" | "USD" | "EUR"
-  const itemPricingKey = items.map((item) => item.variantId || item.id).join("|")
+  const itemPricingKey = items.map((item) => `${item.variantId || item.id}:${item.isSubscription ? "sub" : "once"}`).join("|")
 
   useEffect(() => {
     if (!loaded || !regionId || items.length === 0) return
@@ -675,6 +676,58 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       return [...filtered, { ...newItem, quantity }]
     })
     setIsDrawerOpen(true)
+  }
+
+  const convertSubscriptionsToOneTime = () => {
+    setItems((prev) => {
+      const next: CartItem[] = []
+      for (const item of prev) {
+        if (!item.isSubscription) {
+          const existing = next.find((x) => x.id === item.id && !x.isSubscription)
+          if (existing) {
+            existing.quantity += item.quantity
+          } else {
+            next.push({ ...item })
+          }
+          continue
+        }
+
+        const discountPct =
+          item.discountPercent ||
+          (autoSavings.discountType === "percentage" ? autoSavings.discountValue : 10)
+        const restoredPrice =
+          discountPct > 0 && discountPct < 100
+            ? Number((item.price / (1 - discountPct / 100)).toFixed(2))
+            : item.price
+        const convertedId = item.id.replace(/-subscription\b/i, "-one-time")
+        const updatedOptions = item.options?.map((opt) =>
+          opt.label?.toLowerCase() === "purchase type"
+            ? { ...opt, value: "One-Time Order" }
+            : opt
+        )
+        const convertedItem: CartItem = {
+          ...item,
+          id: convertedId,
+          price: restoredPrice,
+          isSubscription: false,
+          subscriptionIntervalDays: undefined,
+          ...(updatedOptions ? { options: updatedOptions } : {}),
+        }
+
+        const existing = next.find(
+          (x) =>
+            !x.isSubscription &&
+            (x.id === convertedItem.id ||
+              (x.variantId && convertedItem.variantId && x.variantId === convertedItem.variantId))
+        )
+        if (existing) {
+          existing.quantity += convertedItem.quantity
+        } else {
+          next.push(convertedItem)
+        }
+      }
+      return next
+    })
   }
 
   const removeItem = (id: string, isSubscription: boolean) => {
@@ -904,6 +957,7 @@ function getItemFormat(item: CartItem): "pen_set" | "refill" | "vial" {
         addItem,
         checkCartConflict,
         switchItemSubscription,
+        convertSubscriptionsToOneTime,
         removeItem,
         updateQuantity,
         clearCart,

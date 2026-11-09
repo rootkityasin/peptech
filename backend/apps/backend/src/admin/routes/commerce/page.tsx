@@ -79,7 +79,7 @@ const CommercePage = () => {
   // Records data
   const [subscriptions, setSubscriptions] = useState<CommerceRecord[]>([])
   const [receipts, setReceipts] = useState<CommerceRecord[]>([])
-  const [, setAttempts] = useState<CommerceRecord[]>([])
+  const [attempts, setAttempts] = useState<CommerceRecord[]>([])
   const [diagnosticsKind, setDiagnosticsKind] = useState("event")
   const [diagnosticsRecords, setDiagnosticsRecords] = useState<CommerceRecord[]>([])
 
@@ -87,7 +87,7 @@ const CommercePage = () => {
   const [subscriptionSearch, setSubscriptionSearch] = useState("")
   const [receiptSearch, setReceiptSearch] = useState("")
 
-  // Refund Modal state
+  // Refund & Bank Transfer Modal state
   const [activeRefund, setActiveRefund] = useState<{
     order_id: string
     receipt_id: string
@@ -96,15 +96,30 @@ const CommercePage = () => {
     amount: string
     note: string
   } | null>(null)
+  const [activeBankConfirm, setActiveBankConfirm] = useState<{
+    attempt_id: string
+    transfer_reference: string
+    customer_email: string
+    customer_name: string
+    amount: string
+    bank_transaction_id: string
+    statement_reference: string
+  } | null>(null)
   const [modalAlert, setModalAlert] = useState<{ type: "success" | "error" | "info"; text: string } | null>(null)
 
-  // Settings & Stripe config state
-  const [stripeConfig, setStripeConfig] = useState<{
+  // Settings & Gateway config state
+  const [cardGatewayActive, setCardGatewayActive] = useState(false)
+  const [gatewayConfig, setGatewayConfig] = useState<{
     mode?: string
     publishableKey?: string
     accountId?: string
     configured?: boolean
   } | null>(null)
+  const [bankInstructions, setBankInstructions] = useState({
+    account_name: "",
+    sort_code: "",
+    account_number: "",
+  })
   const [shippingOptions, setShippingOptions] = useState<any[]>([])
   const [shippingDefaults, setShippingDefaults] = useState({
     shipping_option_id: "",
@@ -144,12 +159,21 @@ const CommercePage = () => {
     }
   }
 
-  // Load settings & Stripe configuration
+  // Load settings & gateway configuration
   const loadSettings = async () => {
     try {
       const data = await apiRequest("/admin/commerce/settings")
+      setCardGatewayActive(Boolean(data?.card_gateway_active))
       if (data?.stripe) {
-        setStripeConfig(data.stripe)
+        setGatewayConfig(data.stripe)
+      }
+      const bank = data?.settings?.data?.bank_instructions
+      if (bank) {
+        setBankInstructions({
+          account_name: bank.account_name || "",
+          sort_code: bank.sort_code || "",
+          account_number: bank.account_number || "",
+        })
       }
     } catch (e: any) {
       console.error("Failed to load settings:", e)
@@ -250,7 +274,7 @@ const CommercePage = () => {
       })
       setModalAlert({
         type: "success",
-        text: `Refund of £${amountGbp.toFixed(2)} processed successfully via Stripe!`,
+        text: `Refund of £${amountGbp.toFixed(2)} processed successfully!`,
       })
       await loadReceipts()
       setTimeout(() => {
@@ -260,8 +284,76 @@ const CommercePage = () => {
     } catch (e: any) {
       setModalAlert({
         type: "error",
-        text: e?.message || "Failed to process Stripe refund",
+        text: e?.message || "Failed to process refund",
       })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  // Handle manual UK Faster Payments confirmation in modal
+  const handleBankConfirmSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!activeBankConfirm) return
+    setBusy(true)
+    setModalAlert(null)
+    try {
+      const bankTx = activeBankConfirm.bank_transaction_id.trim()
+      const stmtRef = activeBankConfirm.statement_reference.trim()
+      if (!bankTx || !stmtRef) {
+        throw new Error("Bank statement transaction ID and reference are required.")
+      }
+      await apiRequest("/admin/commerce/bank-transfer", {
+        attempt_id: activeBankConfirm.attempt_id,
+        bank_transaction_id: bankTx,
+        statement_reference: stmtRef,
+        amount: activeBankConfirm.amount,
+      })
+      setModalAlert({
+        type: "success",
+        text: `Transfer verified (${activeBankConfirm.transfer_reference}). Order created and marked paid.`,
+      })
+      await Promise.all([loadAttempts(), loadReceipts()])
+      setTimeout(() => {
+        setActiveBankConfirm(null)
+        setModalAlert(null)
+      }, 1400)
+    } catch (e: any) {
+      setModalAlert({
+        type: "error",
+        text: e?.message || "Failed to confirm bank transfer settlement",
+      })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  // Save UK Faster Payments destination bank instructions to commerce_settings
+  const handleSaveBankSettings = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setBusy(true)
+    try {
+      const accountName = bankInstructions.account_name.trim()
+      const sortCode = bankInstructions.sort_code.trim()
+      const accountNumber = bankInstructions.account_number.trim()
+      if (!accountName) throw new Error("Account holder name is required.")
+      if (!/^\d{2}-?\d{2}-?\d{2}$/.test(sortCode)) {
+        throw new Error("Sort code must be 6 digits (e.g. 00-00-00).")
+      }
+      if (!/^\d{8}$/.test(accountNumber)) {
+        throw new Error("Account number must be exactly 8 digits.")
+      }
+      await saveSettings({
+        bank_instructions: {
+          account_name: accountName,
+          sort_code: sortCode,
+          account_number: accountNumber,
+        },
+      })
+      showNotification("success", "UK Faster Payments bank details updated.")
+      await loadSettings()
+    } catch (e: any) {
+      showNotification("error", e?.message || "Failed to save bank instructions")
     } finally {
       setBusy(false)
     }
@@ -334,6 +426,11 @@ const CommercePage = () => {
     })
   }, [subscriptions, subscriptionSearch])
 
+  // Pending Bank Transfer attempts awaiting confirmation
+  const pendingBankTransfers = useMemo(() => {
+    return attempts.filter((a) => a.state === "awaiting_transfer" && !a.data?.order_id)
+  }, [attempts])
+
   // Filtered Receipts
   const filteredReceipts = useMemo(() => {
     return receipts.filter((rec) => {
@@ -360,7 +457,7 @@ const CommercePage = () => {
               Payments & Subscriptions
             </Heading>
             <Text className="text-sm text-ui-fg-subtle mt-0.5">
-              Manage 28-day customer subscriptions, Stripe transactions, and gateway settings.
+              Manage 28-day customer subscriptions, UK bank transfer settlements, refunds, and gateway settings.
             </Text>
           </div>
           <div className="flex items-center gap-2">
@@ -417,23 +514,33 @@ const CommercePage = () => {
           <div className="rounded-xl border border-ui-border-base bg-ui-bg-subtle p-3.5 flex items-center justify-between">
             <div>
               <Text size="small" className="text-ui-fg-muted font-medium">
-                Settled Stripe Transactions
+                Settled Orders
               </Text>
               <Heading level="h2" className="text-lg font-bold text-ui-fg-base mt-1">
                 {receipts.length}
               </Heading>
+              {pendingBankTransfers.length > 0 && (
+                <Text size="small" className="text-xs text-ui-fg-muted mt-0.5">
+                  {pendingBankTransfers.length} awaiting bank transfer
+                </Text>
+              )}
             </div>
-            <Badge color="blue">GBP (£)</Badge>
+            <Badge color={pendingBankTransfers.length > 0 ? "orange" : "blue"}>GBP (£)</Badge>
           </div>
 
           <div className="rounded-xl border border-ui-border-base bg-ui-bg-subtle p-3.5 flex items-center justify-between">
             <div>
               <Text size="small" className="text-ui-fg-muted font-medium">
-                Stripe Gateway Status
+                Payment Gateway Status
               </Text>
-              <div className="flex items-center gap-1.5 mt-1">
-                <StatusBadge color={stripeConfig?.mode === "live" ? "green" : "blue"}>
-                  {stripeConfig?.mode === "live" ? "Live Production" : "Test Mode"}
+              <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                <StatusBadge color="green">UK Bank Transfer Active</StatusBadge>
+                <StatusBadge color={cardGatewayActive ? (gatewayConfig?.mode === "live" ? "green" : "blue") : "grey"}>
+                  {cardGatewayActive
+                    ? gatewayConfig?.mode === "live"
+                      ? "Card: Live"
+                      : "Card: Test"
+                    : "Card: Standby"}
                 </StatusBadge>
               </div>
             </div>
@@ -451,7 +558,7 @@ const CommercePage = () => {
           </Tabs.Trigger>
           <Tabs.Trigger value="transactions" className="flex items-center gap-2">
             <span>Transactions & Refunds</span>
-            <Badge size="small">{receipts.length}</Badge>
+            <Badge size="small">{receipts.length + pendingBankTransfers.length}</Badge>
           </Tabs.Trigger>
           <Tabs.Trigger value="settings" className="flex items-center gap-2">
             <span>Gateway & Shipping Settings</span>
@@ -584,18 +691,109 @@ const CommercePage = () => {
         {/* ========================================================================= */}
         {/* TAB 2: TRANSACTIONS & REFUNDS                                             */}
         {/* ========================================================================= */}
-        <Tabs.Content value="transactions" className="mt-6 flex flex-col gap-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <Tabs.Content value="transactions" className="mt-6 flex flex-col gap-6">
+          {/* Pending UK Faster Payments Bank Transfers */}
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <Heading level="h2" className="text-base font-semibold text-ui-fg-base">
+                  Pending UK Faster Payments Transfers
+                </Heading>
+                <Text size="small" className="text-ui-fg-muted">
+                  Verify cleared incoming bank transfers against your bank statement to issue official orders.
+                </Text>
+              </div>
+              <Badge size="small" color={pendingBankTransfers.length > 0 ? "orange" : "grey"}>
+                {pendingBankTransfers.length} Pending
+              </Badge>
+            </div>
+
+            <div className="rounded-lg border border-ui-border-base overflow-hidden">
+              <Table>
+                <Table.Header>
+                  <Table.Row>
+                    <Table.HeaderCell>Transfer Reference</Table.HeaderCell>
+                    <Table.HeaderCell>Customer / Researcher</Table.HeaderCell>
+                    <Table.HeaderCell>Submitted Date</Table.HeaderCell>
+                    <Table.HeaderCell>Amount Due</Table.HeaderCell>
+                    <Table.HeaderCell>Status</Table.HeaderCell>
+                    <Table.HeaderCell className="text-right">Action</Table.HeaderCell>
+                  </Table.Row>
+                </Table.Header>
+                <Table.Body>
+                  {pendingBankTransfers.map((att) => {
+                    const transferRef = att.data?.transfer_reference || att.data?.order_number || att.id
+                    const q = att.data?.quote || {}
+                    const email = q.email || "Unknown"
+                    const name = `${q.address?.first_name || ""} ${q.address?.last_name || ""}`.trim() || email
+                    const totalMinor = q.total_minor || 0
+
+                    return (
+                      <Table.Row key={att.id}>
+                        <Table.Cell>
+                          <div className="flex flex-col">
+                            <span className="font-semibold text-ui-fg-base text-sm font-mono">{transferRef}</span>
+                            <span className="text-xs text-ui-fg-muted font-mono">{att.id}</span>
+                          </div>
+                        </Table.Cell>
+                        <Table.Cell>
+                          <div className="flex flex-col">
+                            <span className="font-medium text-ui-fg-base text-sm">{name}</span>
+                            <span className="text-xs text-ui-fg-muted">{email}</span>
+                          </div>
+                        </Table.Cell>
+                        <Table.Cell className="text-sm">{formatDate(att.created_at)}</Table.Cell>
+                        <Table.Cell className="font-semibold text-sm">{formatGbp(totalMinor)}</Table.Cell>
+                        <Table.Cell>
+                          <StatusBadge color="orange">Awaiting Transfer</StatusBadge>
+                        </Table.Cell>
+                        <Table.Cell className="text-right">
+                          <Button
+                            size="small"
+                            variant="primary"
+                            disabled={busy}
+                            onClick={() => {
+                              setModalAlert(null)
+                              setActiveBankConfirm({
+                                attempt_id: att.id,
+                                transfer_reference: transferRef,
+                                customer_email: email,
+                                customer_name: name,
+                                amount: (totalMinor / 100).toFixed(2),
+                                bank_transaction_id: "",
+                                statement_reference: transferRef,
+                              })
+                            }}
+                          >
+                            Confirm Transfer Received
+                          </Button>
+                        </Table.Cell>
+                      </Table.Row>
+                    )
+                  })}
+                  {pendingBankTransfers.length === 0 && (
+                    <Table.Row>
+                      <Table.Cell {...({ colSpan: 6 } as any)} className="text-center py-6 text-ui-fg-muted text-sm">
+                        No pending UK bank transfers awaiting reconciliation.
+                      </Table.Cell>
+                    </Table.Row>
+                  )}
+                </Table.Body>
+              </Table>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-2 border-t border-ui-border-base">
             <div className="flex-1 max-w-sm">
               <Input
-                placeholder="Search by order ID, customer name, or email..."
+                placeholder="Search settled orders by ID, customer name, or email..."
                 value={receiptSearch}
                 onChange={(e) => setReceiptSearch(e.target.value)}
                 size="small"
               />
             </div>
             <Text size="small" className="text-ui-fg-muted">
-              Settled payments processed via Stripe with automated SCA &amp; fraud verification.
+              Confirmed payments settled via UK Faster Payments and verified card gateways.
             </Text>
           </div>
 
@@ -615,11 +813,13 @@ const CommercePage = () => {
               <Table.Body>
                 {filteredReceipts.map((rec) => {
                   const orderId = rec.data?.order_id || rec.id
+                  const displayOrder = rec.data?.order_number || orderId
                   const email = rec.data?.quote?.email || "Unknown"
                   const name = `${rec.data?.quote?.address?.first_name || ""} ${rec.data?.quote?.address?.last_name || ""}`.trim() || email
-                  const amount = rec.data?.amount_minor || rec.data?.quote?.total_minor || 0
+                  const amount = rec.data?.amount || rec.data?.amount_minor || rec.data?.quote?.total_minor || 0
                   const date = rec.created_at || rec.updated_at
-                  const method = rec.data?.source === "bank_transfer" ? "Bank Transfer" : "Stripe Card / Digital Wallet"
+                  const isBank = rec.data?.source === "bank_transfer" || rec.profile === "bank_transfer:v1"
+                  const method = isBank ? "UK Bank Transfer" : "Card / Digital Wallet"
                   const isRefunded = rec.state === "refunded" || rec.data?.refund_status === "refunded" || (rec.data?.refunded_minor && rec.data?.refunded_minor >= amount)
                   const isPartiallyRefunded = !isRefunded && (rec.state === "partially_refunded" || rec.data?.refund_status === "partially_refunded")
                   const refundedMinor = rec.data?.refunded_minor || (isRefunded ? amount : 0)
@@ -628,7 +828,12 @@ const CommercePage = () => {
                   return (
                     <Table.Row key={rec.id}>
                       <Table.Cell>
-                        <span className="font-semibold text-ui-fg-base text-sm font-mono">{orderId}</span>
+                        <div className="flex flex-col">
+                          <span className="font-semibold text-ui-fg-base text-sm font-mono">{displayOrder}</span>
+                          {displayOrder !== orderId && (
+                            <span className="text-xs text-ui-fg-muted font-mono">{orderId}</span>
+                          )}
+                        </div>
                       </Table.Cell>
                       <Table.Cell>
                         <div className="flex flex-col">
@@ -657,6 +862,8 @@ const CommercePage = () => {
                               Refunded ({formatGbp(refundedMinor)})
                             </Badge>
                           </div>
+                        ) : isBank ? (
+                          <Badge size="small">Manual BACS Refund</Badge>
                         ) : (
                           <Button
                             size="small"
@@ -696,56 +903,95 @@ const CommercePage = () => {
         {/* TAB 3: GATEWAY & BANK SETTINGS                                            */}
         {/* ========================================================================= */}
         <Tabs.Content value="settings" className="mt-6 flex flex-col gap-6">
-          {/* Stripe Status Card */}
+          {/* UK Faster Payments Bank Transfer Configuration */}
           <div className="rounded-xl border border-ui-border-base bg-ui-bg-subtle p-5">
             <div className="flex items-center justify-between pb-3 border-b border-ui-border-base mb-4">
               <div>
                 <Heading level="h2" className="text-base font-semibold text-ui-fg-base">
-                  Stripe Gateway Status
+                  UK Faster Payments (Bank Transfer)
                 </Heading>
                 <Text className="text-sm text-ui-fg-muted">
-                  Primary payment processor for tokenized 28-day subscriptions and card payments.
+                  Destination GBP sort code and account number shown to customers on UK Bank Transfer confirmation pages.
                 </Text>
               </div>
-              <StatusBadge color={stripeConfig?.mode === "live" ? "green" : "blue"}>
-                {stripeConfig?.mode === "live" ? "Live Connected" : "Test Environment"}
+              <StatusBadge color={bankInstructions.sort_code && bankInstructions.account_number ? "green" : "orange"}>
+                {bankInstructions.sort_code && bankInstructions.account_number ? "Configured" : "Details Needed"}
               </StatusBadge>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+            <form onSubmit={handleSaveBankSettings} className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl">
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="bank-account-name">Account Name</Label>
+                <Input
+                  id="bank-account-name"
+                  value={bankInstructions.account_name}
+                  onChange={(e) => setBankInstructions({ ...bankInstructions, account_name: e.target.value })}
+                  placeholder="Account holder name"
+                  disabled={busy}
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="bank-sort-code">UK Sort Code</Label>
+                <Input
+                  id="bank-sort-code"
+                  value={bankInstructions.sort_code}
+                  onChange={(e) => setBankInstructions({ ...bankInstructions, sort_code: e.target.value })}
+                  placeholder="00-00-00"
+                  disabled={busy}
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="bank-account-number">Account Number</Label>
+                <Input
+                  id="bank-account-number"
+                  value={bankInstructions.account_number}
+                  onChange={(e) => setBankInstructions({ ...bankInstructions, account_number: e.target.value })}
+                  placeholder="8-digit account number"
+                  disabled={busy}
+                />
+              </div>
+              <div className="sm:col-span-3 pt-1">
+                <Button disabled={busy} variant="primary">
+                  {busy ? "Saving..." : "Save Bank Transfer Instructions"}
+                </Button>
+              </div>
+            </form>
+          </div>
+
+          {/* Card Gateway Status Card */}
+          <div className="rounded-xl border border-ui-border-base bg-ui-bg-subtle p-5">
+            <div className="flex items-center justify-between pb-3 border-b border-ui-border-base mb-4">
               <div>
-                <Label>Environment Mode</Label>
-                <Text className="font-semibold text-ui-fg-base capitalize">
-                  {stripeConfig?.mode || "Test (Sandbox)"}
+                <Heading level="h2" className="text-base font-semibold text-ui-fg-base">
+                  Card Payment Gateway
+                </Heading>
+                <Text className="text-sm text-ui-fg-muted">
+                  Modular card and 28-day recurring billing adapter for approved high-risk acquirers.
                 </Text>
               </div>
-              <div>
-                <Label>Publishable Key</Label>
-                <Text className="font-mono text-xs text-ui-fg-base truncate">
-                  {stripeConfig?.publishableKey || "pk_test_..."}
-                </Text>
-              </div>
-              <div>
-                <Label>Tax Calculation Policy</Label>
-                <Text className="font-semibold text-ui-fg-base">Stripe Automatic Tax</Text>
-              </div>
-              <div>
-                <Label>Recurring Interval</Label>
-                <Text className="font-semibold text-ui-fg-base">28 Days (Refill &amp; Vial subscriptions)</Text>
-              </div>
+              <StatusBadge color={cardGatewayActive ? (gatewayConfig?.mode === "live" ? "green" : "blue") : "orange"}>
+                {cardGatewayActive ? (gatewayConfig?.mode === "live" ? "Live Connected" : "Test Mode Active") : "Standby (Inactive)"}
+              </StatusBadge>
             </div>
 
-            <div className="mt-4 pt-3 border-t border-ui-border-base">
-              <a
-                href="https://dashboard.stripe.com/settings/tax"
-                target="_blank"
-                rel="noreferrer"
-                className="text-xs font-semibold text-ui-fg-interactive hover:underline inline-flex items-center gap-1"
-              >
-                <span>Open Stripe Dashboard Tax Settings</span>
-                <span>↗</span>
-              </a>
-            </div>
+            {!cardGatewayActive ? (
+              <Text size="small" className="text-ui-fg-muted">
+                Storefront card checkout is currently hidden (on standby) while underwriting completes. All live orders settle via UK Faster Payments (Bank Transfer).
+              </Text>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <Label>Environment Mode</Label>
+                  <Text className="font-semibold text-ui-fg-base capitalize">
+                    {gatewayConfig?.mode || "Test (Sandbox)"}
+                  </Text>
+                </div>
+                <div>
+                  <Label>Recurring Interval</Label>
+                  <Text className="font-semibold text-ui-fg-base">28 Days (Refill &amp; Vial subscriptions)</Text>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Shipping Options Card */}
@@ -926,6 +1172,132 @@ const CommercePage = () => {
       </Tabs>
 
       {/* ========================================================================= */}
+      {/* CONFIRM BANK TRANSFER MODAL OVERLAY                                       */}
+      {/* ========================================================================= */}
+      {activeBankConfirm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto animate-in fade-in duration-150"
+          onClick={() => {
+            if (!busy) {
+              setActiveBankConfirm(null)
+              setModalAlert(null)
+            }
+          }}
+        >
+          <div
+            className="relative w-full max-w-lg rounded-2xl bg-ui-bg-base border border-ui-border-base shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-6 py-4 border-b border-ui-border-base bg-ui-bg-subtle">
+              <div className="flex flex-col">
+                <Heading level="h2" className="text-base font-semibold text-ui-fg-base">
+                  Confirm UK Bank Transfer
+                </Heading>
+                <Text size="small" className="text-ui-fg-muted font-mono text-xs mt-0.5">
+                  Ref: {activeBankConfirm.transfer_reference}
+                </Text>
+              </div>
+              <Button
+                size="small"
+                variant="secondary"
+                disabled={busy}
+                onClick={() => {
+                  setActiveBankConfirm(null)
+                  setModalAlert(null)
+                }}
+              >
+                Close
+              </Button>
+            </div>
+
+            <form onSubmit={handleBankConfirmSubmit}>
+              <div className="p-6 flex flex-col gap-4">
+                {modalAlert && (
+                  <Alert
+                    variant={
+                      modalAlert.type === "error"
+                        ? "error"
+                        : modalAlert.type === "success"
+                        ? "success"
+                        : "info"
+                    }
+                  >
+                    {modalAlert.text}
+                  </Alert>
+                )}
+
+                <div className="rounded-lg border border-ui-border-base bg-ui-bg-subtle p-3.5 flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-ui-fg-muted">Customer:</span>
+                    <span className="font-semibold text-ui-fg-base">{activeBankConfirm.customer_name} ({activeBankConfirm.customer_email})</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-ui-fg-muted">Expected Amount:</span>
+                    <span className="font-semibold text-ui-fg-base">£{activeBankConfirm.amount}</span>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="bank-tx-id">Bank Statement Transaction ID</Label>
+                  <Input
+                    id="bank-tx-id"
+                    required
+                    value={activeBankConfirm.bank_transaction_id}
+                    onChange={(e) => setActiveBankConfirm({ ...activeBankConfirm, bank_transaction_id: e.target.value })}
+                    placeholder="e.g. FPS-20261109-88412"
+                    disabled={busy || modalAlert?.type === "success"}
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="bank-stmt-ref">Statement Payment Reference</Label>
+                  <Input
+                    id="bank-stmt-ref"
+                    required
+                    value={activeBankConfirm.statement_reference}
+                    onChange={(e) => setActiveBankConfirm({ ...activeBankConfirm, statement_reference: e.target.value })}
+                    disabled={busy || modalAlert?.type === "success"}
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="bank-amount">Cleared Amount (GBP £)</Label>
+                  <Input
+                    id="bank-amount"
+                    required
+                    value={activeBankConfirm.amount}
+                    onChange={(e) => setActiveBankConfirm({ ...activeBankConfirm, amount: e.target.value })}
+                    disabled={busy || modalAlert?.type === "success"}
+                  />
+                </div>
+              </div>
+
+              <div className="px-6 py-4 bg-ui-bg-subtle border-t border-ui-border-base flex items-center justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={busy}
+                  onClick={() => {
+                    setActiveBankConfirm(null)
+                    setModalAlert(null)
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  disabled={busy || modalAlert?.type === "success"}
+                >
+                  {busy ? "Settling..." : "Verify & Create Order"}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
       {/* ISSUE REFUND MODAL OVERLAY (Centered dialog with in-modal alert)           */}
       {/* ========================================================================= */}
       {activeRefund && (
@@ -946,7 +1318,7 @@ const CommercePage = () => {
             <div className="flex items-center justify-between px-6 py-4 border-b border-ui-border-base bg-ui-bg-subtle">
               <div className="flex flex-col">
                 <Heading level="h2" className="text-base font-semibold text-ui-fg-base">
-                  Issue Stripe Refund
+                  Issue Refund
                 </Heading>
                 <Text size="small" className="text-ui-fg-muted font-mono text-xs mt-0.5">
                   Order: {activeRefund.order_id}
@@ -1027,7 +1399,7 @@ const CommercePage = () => {
                     disabled={busy || modalAlert?.type === "success"}
                   />
                   <Text size="small" className="text-ui-fg-muted text-xs">
-                    This note will be permanently recorded in the Stripe ledger audit trail.
+                    This note will be permanently recorded in the payment ledger audit trail.
                   </Text>
                 </div>
               </div>
@@ -1050,7 +1422,7 @@ const CommercePage = () => {
                   variant="danger"
                   disabled={busy || modalAlert?.type === "success"}
                 >
-                  {busy ? "Processing..." : "Process Stripe Refund"}
+                  {busy ? "Processing..." : "Process Refund"}
                 </Button>
               </div>
             </form>

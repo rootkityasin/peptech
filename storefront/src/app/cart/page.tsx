@@ -410,7 +410,7 @@ function CartContent() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-emerald-600 font-bold">✓</span>
-                    <span>High-risk 3-D Secure card encryption</span>
+                    <span>UK Faster Payments &amp; encrypted checkout</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-emerald-600 font-bold">✓</span>

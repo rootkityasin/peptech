@@ -1,12 +1,10 @@
 import type {MedusaContainer} from "@medusajs/framework/types"
-import {getStripeConfig} from "../lib/stripe-config"
 import {commerceTick} from "../lib/commerce/worker"
 export default async function commerceJob(container:MedusaContainer) {
   try {
-    if(!getStripeConfig()) return
     await commerceTick(container)
   } catch {
-    // If Stripe is not configured or throws, gracefully skip
+    // Gracefully skip recovery tick errors on cold or offline environments
   }
 }
 export const config={name:"peptech-commerce-recovery",schedule:"0 3 * * *"}

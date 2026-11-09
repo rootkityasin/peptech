@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useEffect, useState, useCallback } from "react"
-import { commerceRequest } from "@/lib/stripe-checkout"
+import { commerceRequest, fetchPaymentGateways } from "@/lib/commerce-checkout"
 import { VisaBadge, MastercardBadge, AmexBadge, JcbBadge } from "@/components/ui/PaymentBadges"
 import { SubscriptionDashboard } from "@/components/account/SubscriptionDashboard"
 import { useCustomDialog } from "@/components/ui/CustomDialog"
@@ -46,6 +46,7 @@ export function AccountBilling({
   const { showConfirm } = useCustomDialog()
   const [subscriptions, setSubscriptions] = useState<any[]>(() => initialSubscriptions || [])
   const [paymentMethods, setPaymentMethods] = useState<any[]>(() => initialPaymentMethods || [])
+  const [cardGatewayActive, setCardGatewayActive] = useState<boolean>(false)
   const [isLoadingPaymentMethods, setIsLoadingPaymentMethods] = useState(() => !initialPaymentMethods)
   const [isLoadingSubscriptions, setIsLoadingSubscriptions] = useState(() => !initialSubscriptions)
   const [error, setError] = useState("")
@@ -77,6 +78,7 @@ export function AccountBilling({
 
     try {
       const res = await commerceRequest(`/store/custom/payment-methods${queryStr}`, activeToken)
+      setCardGatewayActive(Boolean(res?.card_gateway_active))
       if (Array.isArray(res?.payment_methods)) {
         const seen = new Set<string>()
         const deduped = res.payment_methods.filter((pm: any) => {
@@ -118,7 +120,13 @@ export function AccountBilling({
     if (subscriptionsOnly) {
       if (initialSubscriptions === undefined) fetchSubscriptions()
     } else {
-      if (initialPaymentMethods === undefined) fetchPaymentMethods()
+      if (initialPaymentMethods === undefined) {
+        fetchPaymentMethods()
+      } else {
+        fetchPaymentGateways()
+          .then((gw) => setCardGatewayActive(Boolean(gw.card_gateway_active)))
+          .catch(() => {})
+      }
       if (initialSubscriptions === undefined) fetchSubscriptions()
     }
   }, [token, subscriptionsOnly, initialSubscriptions, initialPaymentMethods, fetchSubscriptions, fetchPaymentMethods])
@@ -225,29 +233,33 @@ export function AccountBilling({
             Saved Payment Methods
           </h2>
           <p className="font-normal text-[#64748b] text-[13px] mt-0.5">
-            Manage saved cards, default billing methods, and payment preferences.
+            {cardGatewayActive
+              ? "Manage saved cards, default billing methods, and payment preferences."
+              : "Review accepted payment rails and UK Faster Payments bank transfer billing details."}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={portal}
-          disabled={!!busy}
-          className="bg-[#0b1f3a] hover:bg-[#162a45] text-white font-semibold text-[13px] px-[16px] py-[10px] rounded-[6px] transition-colors cursor-pointer shrink-0 disabled:opacity-50 inline-flex items-center gap-2 shadow-xs"
-        >
-          <svg className="w-4 h-4 text-[#16a6a3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-          </svg>
-          <span>{busy === "portal" ? "Redirecting..." : "Manage in Stripe Portal ↗"}</span>
-        </button>
+        {cardGatewayActive && (
+          <button
+            type="button"
+            onClick={portal}
+            disabled={!!busy}
+            className="bg-[#0b1f3a] hover:bg-[#162a45] text-white font-semibold text-[13px] px-[16px] py-[10px] rounded-[6px] transition-colors cursor-pointer shrink-0 disabled:opacity-50 inline-flex items-center gap-2 shadow-xs"
+          >
+            <svg className="w-4 h-4 text-[#16a6a3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+            <span>{busy === "portal" ? "Redirecting..." : "Manage Billing Portal ↗"}</span>
+          </button>
+        )}
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 text-xs font-semibold p-3.5 rounded-[10px]">
+        <div role="alert" className="bg-red-50 border border-red-200 text-red-700 text-xs font-semibold p-3.5 rounded-[10px]">
           {error}
         </div>
       )}
       {successMsg && (
-        <div className="bg-[#e6fffa] border border-[#16a6a3] text-[#0b1f3a] text-xs font-semibold p-3.5 rounded-[10px]">
+        <div role="status" className="bg-[#e6fffa] border border-[#16a6a3] text-[#0b1f3a] text-xs font-semibold p-3.5 rounded-[10px]">
           ✓ {successMsg}
         </div>
       )}
@@ -255,7 +267,7 @@ export function AccountBilling({
       {/* Payment Methods List */}
       {isLoadingPaymentMethods ? (
         <div className="bg-white rounded-[16px] p-8 border border-slate-100 flex items-center justify-center text-[#64748b] text-sm">
-          Loading payment cards...
+          Loading payment preferences...
         </div>
       ) : paymentMethods.length === 0 ? (
         <div className="bg-white rounded-[16px] p-8 border border-slate-100 flex flex-col items-center justify-center text-center gap-3">
@@ -264,18 +276,40 @@ export function AccountBilling({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
             </svg>
           </div>
-          <h3 className="font-bold text-[#0b1f3a] text-[16px]">No Saved Cards Found</h3>
-          <p className="text-[#64748b] text-[13px] max-w-[480px]">
-            Payment cards used during checkout are automatically saved and tokenised for seamless reorders and subscriptions. You can also securely add a payment method via the customer billing portal.
-          </p>
-          <button
-            type="button"
-            onClick={portal}
-            disabled={!!busy}
-            className="mt-2 bg-[#0b1f3a] hover:bg-[#162a45] text-white text-[13px] font-semibold px-5 py-2.5 rounded-[8px] transition-colors cursor-pointer inline-flex items-center gap-2"
-          >
-            <span>Add Card via Secure Portal ↗</span>
-          </button>
+          {cardGatewayActive ? (
+            <>
+              <h3 className="font-bold text-[#0b1f3a] text-[16px]">No Saved Cards Found</h3>
+              <p className="text-[#64748b] text-[13px] max-w-[480px]">
+                Payment cards used during checkout are automatically saved and tokenised for seamless reorders and subscriptions. You can also securely add a payment method via the customer billing portal.
+              </p>
+              <button
+                type="button"
+                onClick={portal}
+                disabled={!!busy}
+                className="mt-2 bg-[#0b1f3a] hover:bg-[#162a45] text-white text-[13px] font-semibold px-5 py-2.5 rounded-[8px] transition-colors cursor-pointer inline-flex items-center gap-2"
+              >
+                <span>Add Card via Secure Portal ↗</span>
+              </button>
+            </>
+          ) : (
+            <>
+              <span className="inline-flex items-center gap-1.5 bg-[#e6fffa] border border-[#16a6a3]/40 text-[#0b1f3a] text-[11px] font-bold px-3 py-1 rounded-full">
+                UK Faster Payments Active
+              </span>
+              <h3 className="font-bold text-[#0b1f3a] text-[16px]">
+                Direct Bank Transfer Checkout Enabled
+              </h3>
+              <p className="text-[#64748b] text-[13px] max-w-[500px] leading-relaxed">
+                All one-time research orders currently settle via <strong className="text-[#0b1f3a]">UK Faster Payments (Bank Transfer)</strong> using a unique order transfer reference generated at checkout. Saved card management will appear here automatically once card processing is activated.
+              </p>
+              <Link
+                href="/shop"
+                className="mt-2 bg-[#0b1f3a] hover:bg-[#162a45] text-white text-[13px] font-semibold px-5 py-2.5 rounded-[8px] transition-colors cursor-pointer inline-flex items-center gap-2"
+              >
+                <span>Browse Research Catalog →</span>
+              </Link>
+            </>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -322,14 +356,18 @@ export function AccountBilling({
               </div>
 
               <div className="flex items-center justify-between pt-1">
-                <button
-                  type="button"
-                  onClick={portal}
-                  disabled={!!busy}
-                  className="text-[12px] font-semibold text-[#0b1f3a] hover:text-[#16a6a3] transition-colors cursor-pointer"
-                >
-                  Edit Billing Details ↗
-                </button>
+                {cardGatewayActive ? (
+                  <button
+                    type="button"
+                    onClick={portal}
+                    disabled={!!busy}
+                    className="text-[12px] font-semibold text-[#0b1f3a] hover:text-[#16a6a3] transition-colors cursor-pointer"
+                  >
+                    Edit Billing Details ↗
+                  </button>
+                ) : (
+                  <span className="text-[11.5px] text-slate-500">Tokenised card record</span>
+                )}
                 <button
                   type="button"
                   onClick={() => removePaymentMethod(pm.id)}

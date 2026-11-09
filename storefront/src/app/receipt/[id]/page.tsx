@@ -111,9 +111,13 @@ function mapMedusaOrderToReceipt(mo: any, customerProfile?: any): ReceiptData {
     mo.metadata?.payment_status === "refunded" ||
     mo.payment_status === "refunded" ||
     mo.status === "refunded" ||
-    Boolean(mo.metadata?.stripe_refund_id) ||
+    Boolean(mo.metadata?.refund_reference) ||
     (typeof mo.summary?.refunded_total === "number" && mo.summary.refunded_total > 0) ||
     (mo.metadata?.refunded_amount_minor && mo.metadata.refunded_amount_minor > 0)
+
+  const isAwaitingTransfer = Boolean(
+    mo.metadata?.awaiting_transfer || mo.payment_status === "awaiting"
+  )
 
   const isPartiallyRefunded =
     !isRefunded &&
@@ -155,23 +159,30 @@ function mapMedusaOrderToReceipt(mo: any, customerProfile?: any): ReceiptData {
       ? "Refunded"
       : isPartiallyRefunded
       ? "Partially Refunded"
+      : isAwaitingTransfer
+      ? "Awaiting Bank Transfer"
       : mo.fulfillment_status === "delivered" || mo.status === "completed"
       ? "Delivered"
       : mo.fulfillment_status === "shipped" || mo.fulfillment_status === "fulfilled"
       ? "Dispatched"
       : "Cold-Chain Packing",
+    isAwaitingTransfer,
     isRefunded,
     refundStatus,
     refundedAmount,
-    stripeRefundId: mo.metadata?.stripe_refund_id,
-    trackingNumber:
-      mo.fulfillments?.[0]?.labels?.[0]?.tracking_number ||
-      mo.fulfillments?.[0]?.metadata?.tracking_number ||
-      mo.metadata?.tracking_number ||
-      mo.tracking_number ||
-      `GB-RM24-${actualOrderId.replace(/[^a-zA-Z0-9]/g, "").slice(-10).toUpperCase()}-CLD`,
-    paymentMethod: mo.metadata?.payment_method || "Stripe 256-Bit SSL Encrypted (Card / Link)",
-    stripeReceiptUrl: mo.metadata?.stripe_receipt_url || mo.metadata?.receipt_url || null,
+    refundReference: mo.metadata?.refund_reference || undefined,
+    trackingNumber: isAwaitingTransfer
+      ? "Pending Bank Settlement"
+      : mo.fulfillments?.[0]?.labels?.[0]?.tracking_number ||
+        mo.fulfillments?.[0]?.metadata?.tracking_number ||
+        mo.metadata?.tracking_number ||
+        mo.tracking_number ||
+        `GB-RM24-${actualOrderId.replace(/[^a-zA-Z0-9]/g, "").slice(-10).toUpperCase()}-CLD`,
+    paymentMethod:
+      isAwaitingTransfer || mo.metadata?.payment_gateway === "bank_transfer"
+        ? "UK Faster Payments (Direct Bank Transfer)"
+        : mo.metadata?.payment_method || "Verified Card Payment",
+    receiptUrl: mo.metadata?.receipt_url || null,
     customerName,
     customerEmail: customerProfile?.email || mo.email,
     shippingAddress: mo.shipping_address,
@@ -228,10 +239,15 @@ function OrderReceiptContent() {
             const found = cachedList.find((item: any) => {
               const itemIdClean = (item.id || "").toLowerCase().replace(/[^a-z0-9]/g, "")
               const itemIntClean = (item.internalId || "").toLowerCase().replace(/[^a-z0-9]/g, "")
+              const itemTransferClean = (item.transferReference || "").toLowerCase().replace(/[^a-z0-9]/g, "")
               return (
                 item.id === rawId ||
                 item.internalId === rawId ||
-                (cleanTarget.length >= 4 && (itemIdClean.includes(cleanTarget) || itemIntClean.includes(cleanTarget)))
+                item.transferReference === rawId ||
+                (cleanTarget.length >= 4 &&
+                  (itemIdClean.includes(cleanTarget) ||
+                    itemIntClean.includes(cleanTarget) ||
+                    itemTransferClean.includes(cleanTarget)))
               )
             })
             if (found && isMounted) {
@@ -290,12 +306,13 @@ function OrderReceiptContent() {
                     subtotal: itemsSum > 0 ? itemsSum : total - shippingTotal,
                     shippingTotal,
                     shippingMethodName: "Royal Mail Tracked 24",
-                    status: "Cold-Chain Packing",
+                    status: "Awaiting Bank Transfer",
+                    isAwaitingTransfer: true,
                     isRefunded: false,
                     refundedAmount: 0,
-                    trackingNumber: "GB-RM24-SETTLEMENT-PENDING",
+                    trackingNumber: "Pending Bank Settlement",
                     paymentMethod: "UK Faster Payments (Direct Bank Transfer)",
-                    stripeReceiptUrl: null,
+                    receiptUrl: null,
                     customerName: bo.customer?.name || (customerRef.current ? `${customerRef.current.first_name || ""} ${customerRef.current.last_name || ""}`.trim() : undefined),
                     customerEmail: bo.customer?.email || customerRef.current?.email,
                     shippingAddress: bo.address,

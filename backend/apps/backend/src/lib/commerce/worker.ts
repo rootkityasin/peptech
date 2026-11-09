@@ -71,58 +71,71 @@ async function processEmail(scope:any,ledger:CommerceService,record:LedgerRecord
 }
 export async function commerceTick(scope:any) {
   const ledger=scope.resolve("peptechCommerce") as CommerceService
-  const context=stripeContext()
   const logger=scope.resolve("logger")
+  let context: ReturnType<typeof stripeContext> | null = null
+  try {
+    context = stripeContext()
+  } catch {
+    context = null
+  }
   const safe=async(label:string,run:()=>Promise<unknown>)=>{try{await run()}catch(error:any){
     await ledger.patch(label,{last_retry_at:new Date().toISOString(),last_error:error.status?error.message:"Processing failed; inspect provider logs"})
     if(error.status!==409)logger.error(`Commerce ${label} needs retry; inspect the ledger operation. ${error.code||""}`)}}
-  for(const cycle of await ledger.list("cycle",{profile:context.profile,state:"skip_pending",limit:50,oldestFirst:true})){
-    await safe(cycle.id,()=>ledger.locked(cycle.data.subscription_id,()=>voidSkippedInvoice(scope,ledger,cycle)))
-  }
-  // Each queue is bounded. Retry jobs are processed separately so a bad event cannot starve new events.
-  for(const state of ["pending","retry"]) {
-    for(const event of await ledger.list("event",{profile:context.profile,state,limit:50,oldestFirst:true})) {
-      if(event.data.attempts>=10) {event.state="review";await ledger.save(event);continue}
-      await safe(event.id,()=>processEvent(scope,ledger,event.id))
+  if (context) {
+    for(const cycle of await ledger.list("cycle",{profile:context.profile,state:"skip_pending",limit:50,oldestFirst:true})){
+      await safe(cycle.id,()=>ledger.locked(cycle.data.subscription_id,()=>voidSkippedInvoice(scope,ledger,cycle)))
     }
-  }
-  for(const state of ["open","creating","processing"]) {
-    for(const attempt of await ledger.list("attempt",{profile:context.profile,state,limit:50,oldestFirst:true})) {
-      if(attempt.data.session_id) await safe(attempt.id,()=>reconcileSession(scope,ledger,attempt.data.session_id))
-      else if(attempt.data.expires_at<Date.now()/1000-60)await safe(attempt.id,async()=>{
-        const customer=await ledger.get(recordId("customer",context.profile,attempt.owner_id!))
-        const sessions=customer?await context.stripe.checkout.sessions.list({customer:customer.data.stripe_id,created:{gte:Math.floor(new Date(attempt.created_at).getTime()/1000)-60},limit:100}):{data:[],has_more:false}
-        if(sessions.has_more){await ledger.patch(attempt.id,{},"review");return}
-        const found=sessions.data.find((s:any)=>s.metadata?.peptech_attempt===attempt.id)
-        if(found){await reconcileSession(scope,ledger,found.id);return}
-        await ledger.patch(attempt.id,{},"expired");await releaseQuote(scope,attempt.id)
+    // Each queue is bounded. Retry jobs are processed separately so a bad event cannot starve new events.
+    for(const state of ["pending","retry"]) {
+      for(const event of await ledger.list("event",{profile:context.profile,state,limit:50,oldestFirst:true})) {
+        if(event.data.attempts>=10) {event.state="review";await ledger.save(event);continue}
+        await safe(event.id,()=>processEvent(scope,ledger,event.id))
+      }
+    }
+    for(const state of ["open","creating","processing"]) {
+      for(const attempt of await ledger.list("attempt",{profile:context.profile,state,limit:50,oldestFirst:true})) {
+        if(attempt.data.session_id) await safe(attempt.id,()=>reconcileSession(scope,ledger,attempt.data.session_id))
+        else if(attempt.data.expires_at<Date.now()/1000-60)await safe(attempt.id,async()=>{
+          const customer=await ledger.get(recordId("customer",context!.profile,attempt.owner_id!))
+          const sessions=customer?await context!.stripe.checkout.sessions.list({customer:customer.data.stripe_id,created:{gte:Math.floor(new Date(attempt.created_at).getTime()/1000)-60},limit:100}):{data:[],has_more:false}
+          if(sessions.has_more){await ledger.patch(attempt.id,{},"review");return}
+          const found=sessions.data.find((s:any)=>s.metadata?.peptech_attempt===attempt.id)
+          if(found){await reconcileSession(scope,ledger,found.id);return}
+          await ledger.patch(attempt.id,{},"expired");await releaseQuote(scope,attempt.id)
+        })
+        else if(Date.now()-new Date(attempt.created_at).getTime()>23*3600000) {
+          attempt.state="review";await ledger.save(attempt)
+          // Unknown outcome keeps reservations until an operator reconciles it.
+        }
+      }
+    }
+    for(const record of await ledger.list("subscription",{profile:context.profile,excludeStates:["canceled","incomplete_expired"],limit:100,oldestFirst:true})) {
+      if(["canceled","incomplete_expired"].includes(record.state))continue
+      await safe(record.id,async()=>{
+        const sub=await syncSubscription(ledger,record.data.stripe_id);if(!sub)return
+        const drafts=await context!.stripe.invoices.list({subscription:record.data.stripe_id,status:"draft",limit:10})
+        for(const invoice of drafts.data) if(invoice.billing_reason!=="subscription_create")await preflightInvoice(scope,ledger,sub,invoice)
+        const paid=await context!.stripe.invoices.list({subscription:record.data.stripe_id,status:"paid",limit:5})
+        for(const invoice of paid.data)await reconcileInvoice(scope,ledger,invoice.id)
+        const next=sub.data.next_billing_at
+        if(sub.data.control==="active"&&next&&next-Date.now()/1000<=3*86400&&next>Date.now()/1000&&!(sub.data.skip_until>next)) {
+          const id=recordId("operation",sub.id,"reminder",String(next))
+          await ledger.create({id,kind:"operation",profile:context!.profile,owner_id:sub.owner_id,state:"pending",data:{type:"email",
+            template:"subscription-renewal-reminder",to:sub.data.quote.email,reference:sub.id,renewal_at:next,total_minor:sub.data.quote.renewal_minor}})
+        }
       })
-      else if(Date.now()-new Date(attempt.created_at).getTime()>23*3600000) {
-        attempt.state="review";await ledger.save(attempt)
-        // Unknown Stripe outcome keeps reservations until an operator reconciles it.
-      }
+    }
+    for(const refund of await ledger.list("refund",{profile:context.profile,excludeStates:["done"],limit:50,oldestFirst:true})) {
+      if(refund.state!=="done" && refund.data.stripe_refund_id) await safe(refund.id,()=>ledger.locked(`refund:${refund.data.order_id}`,()=>finishRefund(scope,ledger,refund,refund.data.admin_id||"worker")))
     }
   }
-  for(const record of await ledger.list("subscription",{profile:context.profile,excludeStates:["canceled","incomplete_expired"],limit:100,oldestFirst:true})) {
-    if(["canceled","incomplete_expired"].includes(record.state))continue
-    await safe(record.id,async()=>{
-      const sub=await syncSubscription(ledger,record.data.stripe_id);if(!sub)return
-      const drafts=await context.stripe.invoices.list({subscription:record.data.stripe_id,status:"draft",limit:10})
-      for(const invoice of drafts.data) if(invoice.billing_reason!=="subscription_create")await preflightInvoice(scope,ledger,sub,invoice)
-      const paid=await context.stripe.invoices.list({subscription:record.data.stripe_id,status:"paid",limit:5})
-      for(const invoice of paid.data)await reconcileInvoice(scope,ledger,invoice.id)
-      const next=sub.data.next_billing_at
-      if(sub.data.control==="active"&&next&&next-Date.now()/1000<=3*86400&&next>Date.now()/1000&&!(sub.data.skip_until>next)) {
-        const id=recordId("operation",sub.id,"reminder",String(next))
-        await ledger.create({id,kind:"operation",profile:context.profile,owner_id:sub.owner_id,state:"pending",data:{type:"email",
-          template:"subscription-renewal-reminder",to:sub.data.quote.email,reference:sub.id,renewal_at:next,total_minor:sub.data.quote.renewal_minor}})
-      }
-    })
-  }
-  for(const refund of await ledger.list("refund",{profile:context.profile,excludeStates:["done"],limit:50,oldestFirst:true})) {
-    if(refund.state!=="done" && refund.data.stripe_refund_id) await safe(refund.id,()=>ledger.locked(`refund:${refund.data.order_id}`,()=>finishRefund(scope,ledger,refund,refund.data.admin_id||"worker")))
-  }
-  for(const operation of await ledger.list("operation",{profile:context.profile,state:"pending",data:{type:"email"},limit:50,oldestFirst:true})) {
-    if(operation.data.type==="email")await safe(operation.id,()=>processEmail(scope,ledger,operation))
+  const emailProfiles = Array.from(new Set(["bank_transfer:v1", ...(context ? [context.profile] : [])]))
+  const seenOps = new Set<string>()
+  for (const prof of emailProfiles) {
+    for(const operation of await ledger.list("operation",{profile:prof,state:"pending",data:{type:"email"},limit:50,oldestFirst:true})) {
+      if(seenOps.has(operation.id)) continue
+      seenOps.add(operation.id)
+      if(operation.data.type==="email")await safe(operation.id,()=>processEmail(scope,ledger,operation))
+    }
   }
 }

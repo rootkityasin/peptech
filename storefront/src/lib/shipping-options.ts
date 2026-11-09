@@ -1,4 +1,4 @@
-import { commerceRequest } from "./stripe-checkout"
+import { commerceRequest } from "./commerce-checkout"
 
 export type ShippingOption = {
   id: string

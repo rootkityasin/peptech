@@ -2,14 +2,24 @@ import type { AuthenticatedMedusaRequest, MedusaResponse } from "@medusajs/frame
 import { Modules } from "@medusajs/framework/utils"
 import { actor, commerce, endpoint } from "../../../../lib/commerce/http"
 import { stripeContext, objectId } from "../../../../lib/commerce/stripe"
+import { isCardGatewayActive } from "../../../../lib/commerce/gateways/registry"
+import { fail } from "../../../../lib/commerce/policy"
 import { recordId } from "../../../../modules/peptech-commerce/service"
 
 export async function GET(req: AuthenticatedMedusaRequest, res: MedusaResponse) {
   res.setHeader("Cache-Control", "no-store")
   return endpoint(res, async () => {
     const customerId = actor(req)
+    if (!isCardGatewayActive()) {
+      return { payment_methods: [], card_gateway_active: false }
+    }
 
-    const context = stripeContext()
+    let context: ReturnType<typeof stripeContext>
+    try {
+      context = stripeContext()
+    } catch {
+      return { payment_methods: [], card_gateway_active: false }
+    }
     const ledger = commerce(req)
     let stripeCustomerId: string | null = null
 
@@ -80,7 +90,7 @@ export async function GET(req: AuthenticatedMedusaRequest, res: MedusaResponse) 
     }
 
     if (!stripeCustomerId) {
-      return { payment_methods: [] }
+      return { payment_methods: [], card_gateway_active: true }
     }
 
     // 4. Retrieve payment methods from Stripe
@@ -155,13 +165,16 @@ export async function GET(req: AuthenticatedMedusaRequest, res: MedusaResponse) 
       } catch {}
     }
 
-    return { payment_methods: formatted }
+    return { payment_methods: formatted, card_gateway_active: true }
   })
 }
 
 export async function DELETE(req: AuthenticatedMedusaRequest, res: MedusaResponse) {
   return endpoint(res, async () => {
     const customerId = actor(req)
+    if (!isCardGatewayActive()) {
+      fail("Card payment gateway is currently on standby.", 409)
+    }
     const context = stripeContext()
     const ledger = commerce(req)
     const { payment_method_id } = (req.body as any) || (req.query as any) || {}

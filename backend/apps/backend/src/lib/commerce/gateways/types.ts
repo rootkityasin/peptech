@@ -36,8 +36,14 @@ export interface GatewayCheckoutResult {
   checkoutUrl?: string
   publishableKey?: string
   stripeCustomerId?: string
+  transferReference?: string
+  bankInstructions?: {
+    account_name: string
+    sort_code: string
+    account_number: string
+  } | null
   expiresAt: number
-  state: "open" | "processing" | "paid" | "expired" | "failed"
+  state: "open" | "processing" | "paid" | "awaiting_transfer" | "expired" | "failed"
 }
 
 export interface PaymentGatewayAdapter {
