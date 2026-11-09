@@ -21,7 +21,7 @@ const STEPS: StepItem[] = [
     number: 1,
     title: "Buy your Complete Pen Set once",
     subtitle: "Get everything you need to get started.",
-    detail: "Includes reusable applicator, 1x prefilled cartridge, 4x sterile needles & travel pouch.",
+    detail: "Includes reusable precision pen, 1x prefilled cartridge & Device Passport.",
     badge: "INITIAL SETUP",
     icon: "/images/figma/1b75e610f624c5efcb536e24301bfe76b23e33c8.svg",
     iconAlt: "Shopping cart",

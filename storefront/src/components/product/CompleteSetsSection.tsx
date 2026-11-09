@@ -22,8 +22,8 @@ const CORE_FEATURES = [
     icon: "/images/figma/f6d6196c0151d5b41eab63640c97bbd484ec530e.svg",
   },
   {
-    title: "Lab Verified",
-    desc: "99.8% Certified purity",
+    title: "Lab Assayed",
+    desc: "HPLC & MS protocols",
     icon: "/images/figma/8fb21197492107b68c5085ceacd58527740d74c5.svg",
   },
   {
@@ -146,11 +146,11 @@ export function CompleteSetsSection({
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-[#16a6a3] font-bold shrink-0">✓</span>
-                    <span className="font-medium truncate">31G 5mm Needles &amp; Alcohol Prep Pads</span>
+                    <span className="font-medium truncate">Device Passport &amp; Storage Case</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-[#16a6a3] font-bold shrink-0">✓</span>
-                    <span className="font-medium truncate">HPLC Certified Batch &amp; Device Passport</span>
+                    <span className="font-medium truncate">Batch Lot Traceability &amp; QR Verification</span>
                   </div>
                 </div>
               </div>
@@ -205,7 +205,7 @@ export function CompleteSetsSection({
                   </span>
                   <span className="text-emerald-700 text-[11px] font-bold flex items-center gap-1">
                     <span>✓</span>
-                    <span>≥99.0% HPLC Purity</span>
+                    <span>HPLC &amp; MS Assay Workflow</span>
                   </span>
                 </div>
                 <p className="font-bold text-[#0b1f3a] text-[13px] leading-[18px]">
@@ -222,8 +222,8 @@ export function CompleteSetsSection({
                     QA
                   </div>
                   <div className="flex flex-col leading-tight">
-                    <span className="font-bold text-[#0b1f3a] text-[11px]">Third-Party Certified</span>
-                    <span className="font-normal text-[#64748b] text-[10px]">Alliance Analytical UK</span>
+                    <span className="font-bold text-[#0b1f3a] text-[11px]">Third-Party Analytical Review</span>
+                    <span className="font-normal text-[#64748b] text-[10px]">Independent Partner Laboratories</span>
                   </div>
                 </div>
                 <Link
@@ -254,7 +254,7 @@ export function CompleteSetsSection({
                 One Pen.<br />Multiple Possibilities.
               </h3>
               <p className="font-normal text-[#64748b] text-[12px] leading-[18px]">
-                Engineered for precision.<br />Designed for a healthier tomorrow.
+                Engineered for precision.<br />Built for analytical laboratories.
               </p>
             </div>
           </div>

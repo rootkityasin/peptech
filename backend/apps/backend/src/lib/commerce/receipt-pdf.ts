@@ -80,7 +80,7 @@ export function generateReceiptPdfBuffer(data: ReceiptPdfData): Buffer {
 
   // White text in header
   content += `1 1 1 rg\n`
-  content += `BT\n/F2 20 Tf 40 802 Td (PEPTECH) Tj\nET\n`
+  content += `BT\n/F2 20 Tf 40 802 Td (PEPTECH LIMITED) Tj\nET\n`
   content += `BT\n/F1 9 Tf 40 788 Td (Quality. Safety. Precision.  |  peptech.bio) Tj\nET\n`
   content += `BT\n/F2 12 Tf 360 804 Td (OFFICIAL ORDER RECEIPT) Tj\nET\n`
   content += `BT\n/F1 9 Tf 360 790 Td (Reference: ${safeOrderId}) Tj\nET\n`
@@ -150,7 +150,7 @@ export function generateReceiptPdfBuffer(data: ReceiptPdfData): Buffer {
       content += `0.88 0.91 0.94 RG\n0.5 w\n`
       content += `40 ${curY} 515 0.5 re S\n`
       curY -= 22
-      if (curY < 200) break // Guard single page fit
+      if (curY < 220) break // Guard single page fit
     }
   }
 
@@ -167,6 +167,12 @@ export function generateReceiptPdfBuffer(data: ReceiptPdfData): Buffer {
   content += `0.1 0.15 0.2 rg\n`
   const shipText = shippingVal === 0 ? "FREE" : `GBP ${shippingVal.toFixed(2)}`
   content += `BT\n/F1 9 Tf 490 ${curY} Td (${shipText}) Tj\nET\n`
+
+  curY -= 16
+  content += `0.4 0.45 0.5 rg\n`
+  content += `BT\n/F1 9 Tf 340 ${curY} Td (Tax / Import Duties (local if applicable):) Tj\nET\n`
+  content += `0.1 0.15 0.2 rg\n`
+  content += `BT\n/F1 9 Tf 490 ${curY} Td (GBP 0.00) Tj\nET\n`
 
   curY -= 18
   content += `0.043 0.122 0.228 RG\n1.5 w\n`
@@ -190,8 +196,8 @@ export function generateReceiptPdfBuffer(data: ReceiptPdfData): Buffer {
 
   // Footer bar
   content += `0.5 0.55 0.6 rg\n`
-  content += `BT\n/F1 8 Tf 40 45 Td (PEPTECH Scientific Logistics - Royal Mail 24 Cold-Chain Fulfillment) Tj\nET\n`
-  content += `BT\n/F1 8 Tf 420 45 Td (Support: support@peptech.bio) Tj\nET\n`
+  content += `BT\n/F1 7.5 Tf 40 52 Td (PEPTECH LIMITED | HK Office: 807A, 8/F, Two Harbourfront, 22 Tak Fung St, Hung Hom, Kowloon, HK) Tj\nET\n`
+  content += `BT\n/F1 7.5 Tf 40 40 Td (UK Office: Office 17 Ips Innovate, Chartermark Way, Colburn Business Park, DL9 4QJ, UK | support@peptech.bio) Tj\nET\n`
 
   const streamLength = Buffer.byteLength(content)
 

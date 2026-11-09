@@ -43,14 +43,14 @@ export const CHEMICAL_PROFILES: Record<string, ChemicalProfile> = {
       "GHK-Cu is an analytical-grade copper(II) chelate of the endogenous tripeptide glycyl-L-histidyl-L-lysine, naturally isolated from biological plasma. Extensively investigated in peer-reviewed scientific literature for extracellular matrix remodeling, collagen and glycosaminoglycan synthesis regulation, and cellular protective signaling. Engineered for precision laboratory delivery in Type I borosilicate chambers. Exclusively for in-vitro scientific research and molecular analysis.",
     howItWorks: [
       "Copper(II) Chelation: Binds ionic copper with high picomolar affinity, serving as an analytical biological carrier complex.",
-      "Matrix Remodeling Signaling: Extensively evaluated for modulating metalloproteinase activity and collagen/elastin extracellular deposition.",
-      "Transcriptional Regulation: Investigated in genome-wide expression models for modulating thousands of human genetic pathways.",
+      "Matrix Remodeling Signaling: Evaluated in in-vitro assays for modulating metalloproteinase activity and extracellular matrix expression.",
+      "Transcriptional Profiling: Studied in in-vitro gene expression models across analytical cellular pathways.",
     ],
     keyFeatures: [
-      "≥ 99.0% Certified Purity by Independent HPLC Analysis",
+      "HPLC & Mass Spectrometry Batch Documentation via Lab Reports",
       "Type I Borosilicate Glass Cartridge for Zero Chemical Leaching",
       "Calibrated for PEPTECH® Reusable Precision Pen System",
-      "Independently Verified Batch Certificate of Analysis Included",
+      "Batch Reference Traceable via Online COA Repository",
     ],
   },
   "klow-stack": {
@@ -68,7 +68,7 @@ export const CHEMICAL_PROFILES: Record<string, ChemicalProfile> = {
     storage: "2°C – 8°C Refrigerated, protect from direct light",
     accentColor: "#8b5cf6",
     description:
-      "The KLOW multi-peptide research formulation combines GHK-Cu, BPC-157, TB-500, and KPV at a calibrated 5:1:1:1 analytical ratio (80 mg total active compound). Distinguished by the integration of KPV—an alpha-MSH tripeptide fragment documented for microvascular and anti-inflammatory cellular pathways—alongside matrix-remodeling peptides. Pre-loaded into borosilicate glass for high-precision laboratory investigations. Certified HPLC purity per synthesis lot.",
+      "The KLOW multi-peptide research formulation combines GHK-Cu, BPC-157, TB-500, and KPV at a calibrated 5:1:1:1 analytical ratio (80 mg total compound). Prepared in borosilicate glass cartridges for multi-pathway in-vitro biochemical investigation and chromatographic calibration.",
     howItWorks: [
       "Extracellular Remodeling: GHK-Cu investigated for tissue scaffolding, glycosaminoglycan, and collagen synthesis pathways.",
       "Vascular & Cellular Migration: BPC-157 and TB-500 studied in combination for cellular motility and angiogenic signaling.",
@@ -132,7 +132,7 @@ export const CHEMICAL_PROFILES: Record<string, ChemicalProfile> = {
     ],
     keyFeatures: [
       "Triple Multi-Target Formula (50mg GHK-Cu, 10mg BPC-157, 10mg TB-500)",
-      "Aseptic Fill in Class 100 Cleanroom Environment",
+      "Aseptic Fill Under Controlled Laminar Airflow",
       "Borosilicate Type I Chamber Designed for 60-Increment Precision Metering",
       "Independent HPLC and Mass Spectrometry Verification",
     ],
@@ -152,14 +152,14 @@ export const CHEMICAL_PROFILES: Record<string, ChemicalProfile> = {
     description:
       "Tesamorelin is a synthetic 44-amino-acid growth hormone-releasing factor (GHRH) analogue stabilized with a trans-3-hexenoyl N-terminal group. Extensively documented in endocrine pharmacology for selective binding at pituitary GHRH receptors, endogenous GH secretagogue pathways, and downstream IGF-1 cellular signaling. Standardized for precise laboratory evaluation with third-party analytical verification.",
     howItWorks: [
-      "Pituitary GHRH Receptor Agonism: Highly selective activation of GHRH receptors stimulating somatotrope cyclic AMP synthesis.",
-      "Pulsatile GH Cascade: Promotes natural, regulated secretion of endogenous growth hormone in biological models.",
-      "Adipose & Metabolic Signaling: Extensively evaluated in published clinical literature for visceral lipid mobilization and IGF-1 elevation.",
+      "Pituitary GHRH Receptor Binding: Selective in-vitro activation of GHRH receptors in somatotrope cyclic AMP assay models.",
+      "Signaling Cascade Analysis: Used as a reference ligand for downstream intracellular signaling assays.",
+      "Endocrine Receptor Profiling: Evaluated in published biochemical literature for GHRH receptor kinetics and ligand stability.",
     ],
     keyFeatures: [
       "N-Terminal Trans-3-Hexenoyl Chemical Stabilization",
       "Full 44-Amino-Acid Native GHRH Sequence Analogue",
-      "≥ 99% HPLC Purity with Minimal Deamidation Degradation",
+      "HPLC & Mass Spectrometry Batch Documentation via Lab Reports",
       "Cold-Chain Stored and Dispatched in Temperature-Controlled Packaging",
     ],
   },
@@ -178,9 +178,9 @@ export const CHEMICAL_PROFILES: Record<string, ChemicalProfile> = {
     description:
       "Tirzepatide (LY3298176) is a synthetic 39-amino-acid peptide engineered as a dual agonist at the glucose-dependent insulinotropic polypeptide (GIP) and glucagon-like peptide-1 (GLP-1) receptor systems. Recognized in modern metabolic and incretin signaling literature for its dual-pathway affinity profile. Provided in laboratory-calibrated delivery systems for in-vitro metabolic investigation.",
     howItWorks: [
-      "Dual Incretin Binding: Concurrently engages both GIP and GLP-1 receptor complexes with distinct pharmacological kinetics.",
-      "Glucose-Dependent Secretion: Researched for stimulating beta-cell insulin secretion while suppressing glucagon during hyperglycemia models.",
-      "Central Satiety Pathways: Extensively investigated in metabolic literature for modulating hypothalamic appetite circuits.",
+      "Dual Incretin Binding: Concurrently engages both GIP and GLP-1 receptor complexes in cell-based binding assays.",
+      "Receptor Second-Messenger Signaling: Researched in in-vitro cAMP and cellular signaling assays across incretin receptor panels.",
+      "Kinetics & Binding Affinity: Examined in analytical biochemistry for C20 diacid albumin-association dynamics.",
     ],
     keyFeatures: [
       "Dual Receptor Agonist with High Affinity at GIP and GLP-1 Sites",
@@ -204,14 +204,14 @@ export const CHEMICAL_PROFILES: Record<string, ChemicalProfile> = {
     description:
       "Retatrutide (LY3437943) is an advanced synthetic unimolecular triple agonist targeting the GIP, GLP-1, and glucagon (GCGR) receptor complexes. Characterized in receptor pharmacology studies for its multi-target activation kinetics and energy balance research profiles. Prepared in high-purity borosilicate delivery cartridges with full analytical batch traceability.",
     howItWorks: [
-      "Triple Receptor Synergism: Balanced co-agonism at GIP, GLP-1, and glucagon receptors optimizing metabolic signaling.",
-      "Glucagon Receptor Agonism: Differentiates from dual incretins by elevating hepatic energy expenditure and lipid oxidation pathways.",
-      "Insulinotropic Modulation: Glucose-dependent insulin regulation mediated through dual incretin receptor cooperativity.",
+      "Triple Receptor Binding: Balanced co-agonism at GIP, GLP-1, and GCGR receptor complexes in in-vitro binding assays.",
+      "Glucagon Receptor Signaling: Differentiates from dual incretins by activating GCGR-mediated cAMP signaling pathways.",
+      "Incretin Receptor Cooperativity: Studied in cellular assay panels investigating multi-receptor dose-response kinetics.",
     ],
     keyFeatures: [
-      "First-in-Class Triple Incretin Receptor Unimolecular Agonist",
+      "Triple Incretin Receptor Unimolecular Reference Standard",
       "Precision-Engineered 39-Residue Backbone with Fatty Diacid Acylation",
-      "Rigorous Third-Party HPLC Assayed Above 99.0% Purity",
+      "HPLC & Mass Spectrometry Batch Documentation via Lab Reports",
       "Hermetically Sealed Borosilicate Glass Chamber",
     ],
   },
@@ -289,8 +289,8 @@ export const CHEMICAL_PROFILES: Record<string, ChemicalProfile> = {
     ],
     keyFeatures: [
       "Native 16-Residue Mitochondrial-Derived Sequence",
-      "Active Investigational Tool for Cellular Bioenergetics and AMPK Cascades",
-      "High Chemical Purity Standard (≥ 99% HPLC)",
+      "In-Vitro Investigational Tool for Cellular Bioenergetics and AMPK Cascades",
+      "HPLC & Mass Spectrometry Analytical Batch Traceability",
       "Refrigerated Cold-Chain Storage Standard",
     ],
   },

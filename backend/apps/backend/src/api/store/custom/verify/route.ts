@@ -48,7 +48,26 @@ const VERIFIED_EXACT_BATCHES = new Set([
   "PT-26-000184",
 ])
 
-const PENDING_BATCHES = new Set<string>()
+const PENDING_BATCHES = new Set([
+  "RT-2609A",
+  "TR-2609B",
+  "CU-2608C",
+  "BPC-2608A",
+  "TB-2608B",
+  "CGL-2609X",
+  "TSM-2609A",
+  "PT-2608D",
+  "MT-2608E",
+])
+
+function findMatchingPendingBatch(upper: string): string | null {
+  if (PENDING_BATCHES.has(upper)) return upper
+  const compact = upper.replace(/[^A-Z0-9]/g, "")
+  for (const batch of PENDING_BATCHES) {
+    if (batch.replace(/[^A-Z0-9]/g, "") === compact) return batch
+  }
+  return null
+}
 
 // GET /store/custom/verify?code=RT-2609A
 export async function GET(req: MedusaRequest, res: MedusaResponse) {
@@ -73,30 +92,31 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
     const upper = trimmed.toUpperCase()
 
     // 1. Check Pending Batch Lots
-    if (PENDING_BATCHES.has(upper)) {
+    const matchedPending = findMatchingPendingBatch(upper)
+    if (matchedPending) {
       return res.status(200).json({
         verified: false,
         pending: true,
         type: "batch_lot",
-        product_name: "PEPTECH® High-Purity Research Peptide",
-        batch_number: upper,
+        product_name: "PEPTECH® Analytical Research Peptide",
+        batch_number: matchedPending,
         status: "Laboratory Testing Active / Report Pending",
-        message: `Synthesis complete for batch ${upper}; independent HPLC/MS analytical report is currently pending.`,
+        message: `Synthesis complete for batch ${matchedPending}; independent HPLC/MS analytical report is currently pending.`,
       })
     }
 
-    // 2. Check Verified Batch Lots
+    // 2. Check Verified Device Passport Serials
     if (VERIFIED_EXACT_BATCHES.has(upper)) {
       return res.status(200).json({
         verified: true,
         pending: false,
-        type: "batch_lot",
+        type: "device_passport",
         serial_number: upper === "PT-26-000184" ? "PT-26-000184" : upper,
-        product_name: "PEPTECH® High-Purity Research Peptide",
+        product_name: "PEPTECH® Reusable Precision Pen System",
         batch_number: upper,
-        status: "Authentic & Safe",
+        status: "Authentic Device Passport",
         state: "active",
-        security_seal: "LABORATORY-CERTIFIED",
+        security_seal: "DEVICE-PASSPORT-VERIFIED",
       })
     }
 

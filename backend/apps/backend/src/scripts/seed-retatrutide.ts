@@ -57,7 +57,7 @@ export default async function seedRetatrutide({
       formatLabel: "Complete Pen Set",
       category_ids: penSetCategory ? [penSetCategory.id] : [],
       description:
-        "PEPTECH® Complete Precision Pen System engineered for Retatrutide (LY3437943) triple incretin receptor research. First-time buyer comprehensive analytical package: Reusable precision pen, prefilled 1.5 mL Type I borosilicate cartridge, device passport/authenticity card, 31G 5mm sterile micro-needles, and alcohol preparation wipes. Research Use Only.",
+        "PEPTECH® Complete Precision Pen System engineered for Retatrutide (LY3437943) triple incretin receptor research. First-time buyer comprehensive analytical package: Reusable precision pen, prefilled 1.5 mL Type I borosilicate cartridge, and device passport/authenticity card. Research Use Only.",
       thumbnail: "/images/products/pen-sets/retatrutide.png",
       images: [
         { url: "/images/products/pen-sets/retatrutide.png" },
@@ -119,7 +119,7 @@ export default async function seedRetatrutide({
       formatLabel: "Freeze-Dried Vial",
       category_ids: vialCategory ? [vialCategory.id] : [],
       description:
-        "Lyophilised analytical reference standard Retatrutide (LY3437943) in laboratory-grade borosilicate glass vials with rubber butyl stopper and flip-off crimp seal. Batch-verified HPLC purity ≥ 99.0%. Research Use Only.",
+        "Lyophilised analytical reference standard Retatrutide (LY3437943) in laboratory-grade borosilicate glass vials with rubber butyl stopper and flip-off crimp seal. Supplied strictly for laboratory research. Research Use Only.",
       thumbnail: "/images/products/vials/retatrutide.png",
       images: [
         { url: "/images/products/vials/retatrutide.png" },
@@ -261,7 +261,7 @@ export default async function seedRetatrutide({
             canonical_name: item.title,
             canonical_sku: item.sku,
             format: item.format,
-            evidence_ref: "ISO-17025-BATCH-VERIFIED",
+            evidence_ref: "PEPT-BATCH-VERIFIED",
             destinations: ["gb", "us"],
             version: "v1",
           },

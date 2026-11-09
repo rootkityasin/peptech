@@ -488,7 +488,7 @@ export function mapMedusaToCatalogProduct(p: StoreProduct): CatalogProduct {
     ratio: findCustomSpec(/ratio/) || (metadata.ratio as string) || fallbackProfile?.ratio,
     totalContent: findCustomSpec(/total\s*content/) || (metadata.total_content as string) || fallbackProfile?.totalContent,
     volume: findCustomSpec(/volume/) || (metadata.volume as string) || "1.5 mL Precision Volume",
-    purity: findCustomSpec(/purity/) || (metadata.purity as string) || "≥ 99.0% HPLC",
+    purity: findCustomSpec(/purity/) || (metadata.purity as string) || "HPLC / MS Assayed",
     accentColor,
     colorName: (metadata.colorName as string) || (metadata.technicalSpecs as any)?.colorName || "Teal",
   }
@@ -499,7 +499,7 @@ export function mapMedusaToCatalogProduct(p: StoreProduct): CatalogProduct {
     adminDesc && !adminDesc.toLowerCase().includes("water quality")
       ? adminDesc
       : fallbackProfile?.description ||
-        "PEPTECH® analytical reference research peptide verified for laboratory and scientific research. Manufactured under ISO 9001 standards."
+        "PEPTECH® analytical reference research peptide supplied strictly for laboratory and scientific research."
 
   const howItWorks = (metadata.how_it_works as string[]) || fallbackProfile?.howItWorks
   const keyFeatures = (metadata.key_features as string[]) || fallbackProfile?.keyFeatures
@@ -601,7 +601,6 @@ export function getCanonicalProductKey(p?: CatalogProduct | null): string {
     if (clean.includes("ghk")) return "ghk-cu"
     if (clean.includes("retatrutide") || clean.includes("reta")) return "retatrutide"
     if (clean.includes("tirzepatide") || clean.includes("tirz")) return "tirzepatide"
-    if (clean.includes("semaglutide") || clean.includes("sema")) return "semaglutide"
     if (clean.includes("tesamorelin") || clean.includes("tesa")) return "tesamorelin"
     if (clean.includes("melanotan") || clean.includes("mt-2") || clean.includes("mt2")) return "melanotan-2"
     if (clean.includes("nad")) return "nad-plus"

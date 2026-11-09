@@ -145,7 +145,7 @@ export default async function createCartridge({
         canonical_name: title,
         canonical_sku: sku,
         format: "refill",
-        evidence_ref: "ISO-17025-BATCH-VERIFIED",
+        evidence_ref: "PEPT-BATCH-VERIFIED",
         destinations: ["gb", "us"],
         version: "v1",
       },

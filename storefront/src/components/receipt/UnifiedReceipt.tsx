@@ -138,13 +138,13 @@ export function getItemDisplayDetails(item: ReceiptItem): {
     specification === "Laboratory RUO Grade · ≥99% Purity"
   ) {
     if (isPenSystem) {
-      specification = "Complete Starter System (Reusable Pen + Pre-filled Cartridge + Needles & Passport)"
+      specification = "Complete Starter System (Reusable Pen + Pre-filled Cartridge + Device Passport)"
     } else if (isRefill) {
       specification = "1.5 mL Borosilicate Pre-filled Cartridge · RUO Grade"
     } else if (isVial) {
       specification = "Lyophilised Peptide Reagent Vial · RUO Grade"
     } else {
-      specification = "Laboratory RUO Grade · ≥99% Purity"
+      specification = "Laboratory RUO Grade · HPLC / MS Assayed"
     }
   }
 
@@ -280,10 +280,10 @@ export function UnifiedReceipt({
                 priority
               />
             </div>
-            <div className="mt-3 text-xs text-slate-500 space-y-0.5">
-              <p className="font-semibold text-slate-700">PEPTECH LTD</p>
-              <p>Office 17 Ips Innovate, Chartermark Way</p>
-              <p>Colburn Business Park, DL9 4QJ, Colburn, UK</p>
+            <div className="mt-3 text-xs text-slate-500 space-y-0.5 leading-relaxed">
+              <p className="font-semibold text-slate-700">PEPTECH LIMITED</p>
+              <p>HK Registered: 807A, 8/F, Two Harbourfront, 22 Tak Fung Street, Hung Hom, Kowloon, Hong Kong</p>
+              <p>UK Correspondence &amp; Returns: Office 17 Ips Innovate, Chartermark Way, DL9 4QJ, Colburn, UK</p>
               <p>support@peptech.bio</p>
             </div>
           </div>
@@ -429,11 +429,14 @@ export function UnifiedReceipt({
             <span>{shippingTitle}:</span>
             <span className="font-mono">{shipping === 0 ? "FREE" : `£${shipping.toFixed(2)}`}</span>
           </div>
-          {tax > 0 && (
-            <div className="flex justify-between w-full max-w-xs text-slate-600">
-              <span>UK VAT (20%):</span>
-              <span className="font-mono">£{tax.toFixed(2)}</span>
-            </div>
+          <div className="flex justify-between w-full max-w-xs text-slate-600">
+            <span>Tax / Import Duties:</span>
+            <span className="font-mono">£{tax.toFixed(2)}</span>
+          </div>
+          {tax === 0 && (
+            <p className="w-full max-w-xs text-right text-[10px] text-slate-400">
+              Local duties/VAT on import if applicable
+            </p>
           )}
           {receipt.isRefunded && (
             <div className="flex justify-between w-full max-w-xs text-rose-600 font-semibold border-t border-slate-100 pt-1.5">
@@ -459,13 +462,13 @@ export function UnifiedReceipt({
             Research Use Only (RUO) Notice
           </p>
           <p>
-            All products supplied by PEPTECH Bio Ltd are strictly designated for in-vitro laboratory research, scientific calibration, and analytical evaluation. Not for human, veterinary, medicinal, or diagnostic administration. Store lyophilised vials at -20°C; store reconstituted cartridges at 2°C–8°C.
+            All products supplied by PEPTECH LIMITED are strictly designated for in-vitro laboratory research, scientific calibration, and analytical evaluation. Not for human, veterinary, medicinal, or diagnostic administration. Store lyophilised vials at -20°C; store sealed pre-filled cartridges at 2°C–8°C.
           </p>
         </div>
 
         {/* Document Footer */}
         <div className="mt-8 pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between text-[11px] text-slate-400 gap-2">
-          <span>PEPTECH Bio Ltd · Registered in England &amp; Wales (No. 15829104)</span>
+          <span>PEPTECH LIMITED · peptech.bio</span>
           <span>Thank you for your order</span>
         </div>
       </div>

@@ -18,6 +18,7 @@ import {
 import { CheckoutSkeleton } from "@/components/ui/Skeletons";
 import { resolveProductImage } from "@/lib/product-images";
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { VisaBadge, MastercardBadge } from "@/components/ui/PaymentBadges";
 import { trackAddShippingInfo, trackAddPaymentInfo, trackBeginCheckout } from "@/lib/tracking";
 
 function CheckoutContent() {
@@ -901,9 +902,9 @@ function CheckoutContent() {
                     : money(shippingCost)}
               </span>
             </div>
-            <div className="flex justify-between text-slate-400 text-xs items-center">
-              <span>Tax ⓘ</span>
-              <span>Included (UK VAT Exempt for RUO)</span>
+            <div className="flex justify-between text-slate-400 text-xs items-center gap-4">
+              <span>Tax / Import Duties</span>
+              <span className="text-right">£0.00 (Local duties/VAT on import if applicable)</span>
             </div>
             <div className="flex justify-between text-base font-bold text-white pt-3 border-t border-slate-800/80">
               <span>Total due today</span>
@@ -1834,6 +1835,98 @@ function CheckoutContent() {
               </p>
             </form>
           )}
+
+          {/* Merchant Disclosure Card (Acquirer & Consumer Transparency) */}
+          <article className="mt-6 rounded-2xl border border-slate-200 bg-slate-50/90 p-4 sm:p-5 text-xs text-slate-600 space-y-3">
+            <header className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/80 pb-2.5">
+              <div>
+                <h2 className="text-[11px] font-bold uppercase tracking-wider text-[#0B1F3A]">
+                  Merchant &amp; Settlement Disclosure
+                </h2>
+                <p className="text-[11px] font-semibold text-slate-700 mt-0.5">
+                  PEPTECH LIMITED · Statement Descriptor:{" "}
+                  <span className="font-mono text-[#0B1F3A]">PEPTECH.BIO</span>
+                </p>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <VisaBadge />
+                <MastercardBadge />
+                <span className="text-[10px] font-bold text-[#0B1F3A] bg-white border border-[#CBD5E1] rounded-[3px] px-1.5 py-0.5">
+                  UK Faster Payments
+                </span>
+              </div>
+            </header>
+
+            <dl className="grid grid-cols-1 gap-1.5 text-[11px] leading-relaxed">
+              <div>
+                <dt className="inline font-semibold text-[#0B1F3A]">
+                  Hong Kong Registered Office:{" "}
+                </dt>
+                <dd className="inline">
+                  807A, 8/F, Two Harbourfront, 22 Tak Fung Street, Hung Hom, Kowloon, Hong Kong
+                </dd>
+              </div>
+              <div>
+                <dt className="inline font-semibold text-[#0B1F3A]">
+                  UK Correspondence &amp; Returns Office:{" "}
+                </dt>
+                <dd className="inline">
+                  Office 17 Ips Innovate, Chartermark Way, Colburn Business Park, DL9 4QJ, Colburn, United Kingdom
+                </dd>
+              </div>
+              <div>
+                <dt className="inline font-semibold text-[#0B1F3A]">
+                  Merchant Support:{" "}
+                </dt>
+                <dd className="inline">
+                  <a
+                    href="mailto:support@peptech.bio"
+                    className="text-[#16A6A3] font-semibold underline rounded-xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#16A6A3]"
+                  >
+                    support@peptech.bio
+                  </a>{" "}
+                  · Approved refunds settle in 5–10 business days to the original payment method.
+                </dd>
+              </div>
+            </dl>
+
+            <footer className="pt-2 border-t border-slate-200/80">
+              <ul className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-medium text-slate-600">
+                <li>
+                  <Link
+                    href="/terms-of-sale"
+                    className="underline hover:text-[#0B1F3A] rounded-xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#16A6A3]"
+                  >
+                    Terms of Sale
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/privacy-policy"
+                    className="underline hover:text-[#0B1F3A] rounded-xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#16A6A3]"
+                  >
+                    Privacy Policy
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/shipping-returns"
+                    className="underline hover:text-[#0B1F3A] rounded-xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#16A6A3]"
+                  >
+                    Shipping &amp; Returns
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/research-disclaimer"
+                    className="underline hover:text-[#0B1F3A] rounded-xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#16A6A3]"
+                  >
+                    RUO Disclaimer
+                  </Link>
+                </li>
+              </ul>
+            </footer>
+          </article>
         </div>
       </main>
     </div>

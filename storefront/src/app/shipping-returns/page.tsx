@@ -8,7 +8,7 @@ function LegalSidebar() {
   const pathname = usePathname()
   const links = [
     { href: "/terms-of-sale", label: "Terms of Sale & Subscriptions", badge: "Commercial" },
-    { href: "/privacy-policy", label: "Privacy & GDPR Policy", badge: "Data Protection" },
+    { href: "/privacy-policy", label: "Privacy & Data Policy", badge: "Data Protection" },
     { href: "/shipping-returns", label: "Shipping, Cold-Chain & Returns", badge: "Logistics" },
     { href: "/research-disclaimer", label: "Research Use Only (RUO)", badge: "18+ Statutory" },
   ]
@@ -47,13 +47,19 @@ function LegalSidebar() {
       {/* Logistics Dispatch Card */}
       <div className="bg-[#f8fafc] rounded-3xl border border-[#e2e8f0] p-6 shadow-xs space-y-3 text-xs">
         <span className="text-[10px] font-bold text-[#16a6a3] uppercase tracking-wider">
-          COLD-CHAIN DISPATCH HUB
+          OPERATIONS &amp; RETURNS HUB
         </span>
-        <h5 className="font-bold text-[#0b1f3a]">PEPTECH Fulfillment Center</h5>
-        <p className="text-[#64748b] leading-relaxed">
-          Royal Mail Tracked 24 Hub<br />
-          United Kingdom Distribution Hub, UK
-        </p>
+        <h5 className="font-bold text-[#0b1f3a]">PEPTECH LIMITED</h5>
+        <div className="space-y-2 text-[#64748b] leading-relaxed">
+          <p>
+            <strong className="block text-[10px] text-[#0b1f3a] uppercase">Hong Kong Registered Office</strong>
+            807A, 8/F, Two Harbourfront, 22 Tak Fung Street, Hung Hom, Kowloon, Hong Kong
+          </p>
+          <p>
+            <strong className="block text-[10px] text-[#0b1f3a] uppercase">UK Correspondence &amp; Returns Office</strong>
+            Office 17 Ips Innovate, Chartermark Way, Colburn Business Park, DL9 4QJ, Colburn, United Kingdom
+          </p>
+        </div>
         <div className="pt-2 border-t border-[#e2e8f0] flex justify-between items-center text-[11px]">
           <span className="text-[#64748b]">Same-day cutoff:</span>
           <span className="font-bold text-[#0b1f3a]">14:00 GMT</span>
@@ -191,10 +197,13 @@ export default function ShippingReturnsPage() {
                     </span>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] text-xs">
+                  <div className="p-3 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] text-xs space-y-1.5">
                     <strong className="text-[#0b1f3a] block font-bold">✓ Complete Pen Sets (14-Day Return Window)</strong>
-                    <span className="text-[#64748b] leading-relaxed">
-                      Unopened Complete Pen Sets with intact tamper-evident seals on the presentation box may be returned within 14 calendar days of delivery. Authorized returns should be addressed to: <em>PEPTECH LTD (Returns), Office 17 Ips Innovate, Chartermark Way, Colburn Business Park, DL9 4QJ, Colburn, United Kingdom</em>.
+                    <span className="text-[#64748b] leading-relaxed block">
+                      Unopened Complete Pen Sets with intact tamper-evident seals on the presentation box may be returned within 14 calendar days of delivery. Authorized returns should be addressed to: <em>PEPTECH LIMITED (Returns), Office 17 Ips Innovate, Chartermark Way, Colburn Business Park, DL9 4QJ, Colburn, United Kingdom</em>.
+                    </span>
+                    <span className="text-[#0b1f3a] font-medium leading-relaxed block">
+                      Approved refunds are processed within 5–10 business days to the original payment method.
                     </span>
                   </div>
 
@@ -214,7 +223,7 @@ export default function ShippingReturnsPage() {
                   International Customs &amp; Regulatory Duties
                 </h3>
                 <p>
-                  All shipments are cleared under UK export regulations. International customers are responsible for ensuring that research peptides may be lawfully imported into their country or territory, and are responsible for any applicable customs clearance fees, VAT, or import tariffs.
+                  All shipments are cleared under applicable export and courier regulations. International customers are responsible for ensuring that research peptides may be lawfully imported into their country or territory, and are responsible for any applicable customs clearance fees, VAT, or import tariffs.
                 </p>
               </section>
 

@@ -7,7 +7,7 @@ export const revalidate = false
 
 export const metadata = {
   title: "Complete Pen Sets | PEPTECH® Reusable System",
-  description: "First-time buyer laboratory packages: Reusable precision pen, prefilled cartridge, device passport, sterile needles, and alcohol prep pads.",
+  description: "First-time buyer laboratory packages: Reusable precision pen, prefilled cartridge, and serialized Device Passport.",
 }
 
 export default async function PenSetsPage() {

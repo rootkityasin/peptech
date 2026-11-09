@@ -1,21 +1,25 @@
 import React from "react"
-import Image from "next/image"
 
-export const TRUSTED_LOGOS = [
+export const ANALYTICAL_PILLARS = [
   {
-    name: "NSF Certified",
-    src: "/images/figma/logo-nsf.svg",
-    className: "h-[42px] sm:h-[46px] w-auto max-w-[48px] object-contain",
+    code: "RUO 18+",
+    title: "Research Use Only",
+    detail: "Supplied strictly for in-vitro laboratory and scientific analysis.",
   },
   {
-    name: "ISO 9001 Certified",
-    src: "/images/figma/logo-iso.svg",
-    className: "h-[40px] sm:h-[44px] w-auto max-w-[56px] object-contain",
+    code: "HPLC / MS",
+    title: "Chromatographic Verification",
+    detail: "Batch analytical identity and assay reporting published per lot.",
   },
   {
-    name: "AOAC International",
-    src: "/images/figma/logo-aoac-official.png",
-    className: "h-[42px] sm:h-[46px] w-auto max-w-[60px] object-contain",
+    code: "QR TRACE",
+    title: "Packaging & Serial Check",
+    detail: "Verify pen passports and reagent batch records online.",
+  },
+  {
+    code: "2°C–8°C",
+    title: "Monitored Cold-Chain",
+    detail: "Discreet unbranded outer cartons via Royal Mail Tracked.",
   },
 ]
 
@@ -30,93 +34,40 @@ export function TrustedBySection({
   showBorderTop = true,
   showBorderBottom = false,
 }: TrustedBySectionProps) {
-  // Repeat the set to ensure smooth continuous marquee looping across wide screens
-  const logoSet = [...TRUSTED_LOGOS, ...TRUSTED_LOGOS, ...TRUSTED_LOGOS]
-
   return (
     <section
-      className={`bg-white py-[40px] sm:py-[48px] flex flex-col items-center justify-center overflow-hidden ${
+      className={`bg-white py-[40px] sm:py-[48px] flex flex-col items-center justify-center ${
         showBorderTop ? "border-t border-[#e2e8f0]" : ""
       } ${showBorderBottom ? "border-b border-[#e2e8f0]" : ""} ${className}`}
       data-name="Trusted By Section"
     >
       <div className="w-full max-w-[1240px] mx-auto px-4 sm:px-6 flex flex-col gap-[24px] sm:gap-[32px] items-center">
-        {/* Heading & Subtitle */}
         <div className="flex flex-col gap-2 items-center text-center max-w-[800px]">
           <h2 className="text-2xl sm:text-[28px] font-bold text-[#0B1F3A] tracking-tight uppercase">
-            TRUSTED BY PROFESSIONALS
+            ANALYTICAL &amp; COMPLIANCE STANDARDS
           </h2>
           <p className="text-[14px] sm:text-[15px] text-[#64748B]">
-            Used by leading laboratories, industries and research institutions worldwide.
+            Engineered for academic institutions, analytical testing facilities, and qualified laboratories worldwide.
           </p>
         </div>
 
-        {/* 1 Single Row Continuous Marquee (Right-to-Left) */}
-        <div className="w-full relative overflow-hidden py-2">
-          {/* Subtle Left & Right Edge Vignette Fades */}
-          <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-12 sm:w-24 bg-gradient-to-r from-white to-transparent z-10" />
-          <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-12 sm:w-24 bg-gradient-to-l from-white to-transparent z-10" />
-
-          {/* Marquee Track: Moves right-to-left in 1 uninterrupted row */}
-          <div className="animate-marquee flex items-center flex-nowrap gap-10 sm:gap-14">
-            {/* First sequence (0% to 50%) */}
-            <div className="flex items-center flex-nowrap gap-10 sm:gap-14 shrink-0">
-              {logoSet.map((logo, index) => (
-                <div
-                  key={`logo-a-${index}`}
-                  className="h-[52px] w-[130px] sm:w-[145px] flex items-center justify-center shrink-0 grayscale hover:grayscale-0 opacity-85 hover:opacity-100 transition-all duration-300"
-                >
-                  {logo.src.endsWith(".svg") ? (
-                    <img
-                      src={logo.src}
-                      alt={logo.name}
-                      className={logo.className}
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  ) : (
-                    <Image
-                      src={logo.src}
-                      alt={logo.name}
-                      width={60}
-                      height={46}
-                      sizes="60px"
-                      className={logo.className}
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {/* Second identical sequence (50% to 100%) for seamless infinite loop */}
-            <div className="flex items-center flex-nowrap gap-10 sm:gap-14 shrink-0" aria-hidden="true">
-              {logoSet.map((logo, index) => (
-                <div
-                  key={`logo-b-${index}`}
-                  className="h-[52px] w-[130px] sm:w-[145px] flex items-center justify-center shrink-0 grayscale hover:grayscale-0 opacity-85 hover:opacity-100 transition-all duration-300"
-                >
-                  {logo.src.endsWith(".svg") ? (
-                    <img
-                      src={logo.src}
-                      alt={logo.name}
-                      className={logo.className}
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  ) : (
-                    <Image
-                      src={logo.src}
-                      alt={logo.name}
-                      width={60}
-                      height={46}
-                      sizes="60px"
-                      className={logo.className}
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
+        <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {ANALYTICAL_PILLARS.map((item) => (
+            <article
+              key={item.code}
+              className="rounded-2xl border border-[#e2e8f0] bg-[#f8fafc] p-5 flex flex-col gap-2 text-left"
+            >
+              <span className="inline-block w-fit text-[10px] font-extrabold tracking-wider uppercase px-2.5 py-1 rounded-md bg-[#0B1F3A] text-[#00C5A0]">
+                {item.code}
+              </span>
+              <h3 className="text-[15px] font-bold text-[#0B1F3A] leading-snug">
+                {item.title}
+              </h3>
+              <p className="text-[12.5px] text-[#64748B] leading-relaxed">
+                {item.detail}
+              </p>
+            </article>
+          ))}
         </div>
       </div>
     </section>

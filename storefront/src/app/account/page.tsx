@@ -867,7 +867,7 @@ function AccountContent() {
       URL.revokeObjectURL(url)
 
       showAlert(
-        "Your 2026 Annual Research Statement (CSV) has been compiled and downloaded with itemized order totals, VAT details, and logistics references for your laboratory records.",
+        "Your 2026 Annual Research Statement (CSV) has been compiled and downloaded with itemized order totals, tax and duty details, and logistics references for your laboratory records.",
         "2026 Annual Statement",
         "statement",
         "Done"
@@ -959,7 +959,7 @@ function AccountContent() {
     }
 
     if (!regCompany) {
-      setAuthError("Institution or facility name is required for clinical compliance.")
+      setAuthError("Institution or facility name is required for laboratory compliance.")
       return
     }
 
@@ -1423,7 +1423,7 @@ function AccountContent() {
                   </button>
                 </div>
                 <p className="font-normal text-[#64748b] text-[12px] sm:text-[13px] break-words">
-                  {customer.metadata?.role || "Verified Clinical Researcher"} · Member since {customer.created_at ? new Date(customer.created_at).toLocaleDateString("en-GB", { month: "short", year: "numeric" }) : (customer.metadata?.member_since || new Date().toLocaleDateString("en-GB", { month: "short", year: "numeric" }))} · Customer ID: {customer.metadata?.customer_id_code || (customer.id ? `#PEP-CUST-${customer.id.replace(/[^0-9]/g, "").slice(-4) || customer.id.slice(-4).toUpperCase()}` : "")}
+                  {customer.metadata?.role || "Verified Analytical Researcher"} · Member since {customer.created_at ? new Date(customer.created_at).toLocaleDateString("en-GB", { month: "short", year: "numeric" }) : (customer.metadata?.member_since || new Date().toLocaleDateString("en-GB", { month: "short", year: "numeric" }))} · Customer ID: {customer.metadata?.customer_id_code || (customer.id ? `#PEP-CUST-${customer.id.replace(/[^0-9]/g, "").slice(-4) || customer.id.slice(-4).toUpperCase()}` : "")}
                   {customer.company_name ? ` · ${customer.company_name}` : ""}
                 </p>
               </div>

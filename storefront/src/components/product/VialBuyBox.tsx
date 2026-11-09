@@ -121,7 +121,7 @@ export function VialBuyBox({ product }: VialBuyBoxProps) {
             ✓
           </span>
           <span className="font-semibold text-[#0b1f3a]">
-            {product.technicalSpecs?.purity || "≥ 99.0% Purity"} · HPLC Verified Batch
+            {product.technicalSpecs?.purity ? `${product.technicalSpecs.purity} · HPLC Assayed` : "HPLC & Mass Spectrometry Batch Assayed"}
           </span>
         </div>
         <Link
@@ -140,7 +140,7 @@ export function VialBuyBox({ product }: VialBuyBoxProps) {
         <div className="flex-1 text-[12px] text-[#0b1f3a]">
           <p className="font-semibold">Storage &amp; Handling Protocol</p>
           <p className="text-[#475569] mt-0.5">
-            Store lyophilised powder at -20°C for up to 24 months. Reconstitute with sterile bacteriostatic water for in-vitro analytical research.
+            Store sealed lyophilised powder at -20°C protected from direct light. Handle exclusively within controlled in-vitro analytical laboratory settings.
           </p>
         </div>
       </div>
@@ -335,7 +335,7 @@ export function VialBuyBox({ product }: VialBuyBoxProps) {
         <div className="flex flex-col gap-[3px] items-center text-center w-[135px]">
           <img src="/images/figma/5a5cf195bb5ca3a772d64cd94711197cd2748bd6.svg" alt="" className="size-[20px]" />
           <span className="font-bold text-[#0b1f3a] text-[12px]">Lab Tested</span>
-          <span className="font-normal text-[#64748b] text-[10px]">HPLC certified</span>
+          <span className="font-normal text-[#64748b] text-[10px]">HPLC &amp; MS assayed</span>
         </div>
         <div className="flex flex-col gap-[3px] items-center text-center w-[135px]">
           <img src="/images/figma/62bff5b65f283bcf5397c72f82c6a2b3ed8693c2.svg" alt="" className="size-[20px]" />

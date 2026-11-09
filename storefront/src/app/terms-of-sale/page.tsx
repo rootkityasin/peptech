@@ -8,7 +8,7 @@ function LegalSidebar() {
   const pathname = usePathname()
   const links = [
     { href: "/terms-of-sale", label: "Terms of Sale & Subscriptions", badge: "Commercial" },
-    { href: "/privacy-policy", label: "Privacy & GDPR Policy", badge: "Data Protection" },
+    { href: "/privacy-policy", label: "Privacy & Data Policy", badge: "Data Protection" },
     { href: "/shipping-returns", label: "Shipping, Cold-Chain & Returns", badge: "Logistics" },
     { href: "/research-disclaimer", label: "Research Use Only (RUO)", badge: "18+ Statutory" },
   ]
@@ -47,15 +47,19 @@ function LegalSidebar() {
       {/* Support & Legal Officer Card */}
       <div className="bg-[#f8fafc] rounded-3xl border border-[#e2e8f0] p-6 shadow-xs space-y-3 text-xs">
         <span className="text-[10px] font-bold text-[#16a6a3] uppercase tracking-wider">
-          REGISTERED TRADING ENTITY
+          TRADING ENTITY
         </span>
-        <h5 className="font-bold text-[#0b1f3a]">PEPTECH LTD</h5>
-        <p className="text-[11px] font-medium text-[#16a6a3]">Registered Company</p>
-        <p className="text-[#64748b] leading-relaxed">
-          Office 17 Ips Innovate, Chartermark Way<br />
-          Colburn Business Park, DL9 4QJ, Colburn<br />
-          United Kingdom
-        </p>
+        <h5 className="font-bold text-[#0b1f3a]">PEPTECH LIMITED</h5>
+        <div className="space-y-2 text-[#64748b] leading-relaxed">
+          <p>
+            <strong className="block text-[10px] text-[#0b1f3a] uppercase">Hong Kong Registered Office</strong>
+            807A, 8/F, Two Harbourfront, 22 Tak Fung Street, Hung Hom, Kowloon, Hong Kong
+          </p>
+          <p>
+            <strong className="block text-[10px] text-[#0b1f3a] uppercase">UK Correspondence &amp; Returns Office</strong>
+            Office 17 Ips Innovate, Chartermark Way, Colburn Business Park, DL9 4QJ, Colburn, United Kingdom
+          </p>
+        </div>
         <div className="pt-2 border-t border-[#e2e8f0]">
           <a
             href="mailto:support@peptech.bio"
@@ -114,11 +118,13 @@ export default function TermsOfSalePage() {
               {/* Mandatory RUO Alert Box */}
               <div className="p-5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-950 space-y-2">
                 <div className="flex items-center gap-2 font-bold text-sm text-amber-900">
-                  <span>⚠️</span>
+                  <svg className="w-4 h-4 shrink-0 text-amber-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" />
+                  </svg>
                   <span>18+ Research &amp; Scientific Purposes Only</span>
                 </div>
                 <p className="text-xs text-amber-900/90 leading-relaxed">
-                  All products sold on <code>peptech.bio</code> are intended exclusively for in-vitro laboratory research and scientific trials. By purchasing, you represent that you are at least 18 years of age and will not introduce these compounds into humans or animals.
+                  All products sold on <code>peptech.bio</code> are intended exclusively for in-vitro laboratory research and analytical protocols. By purchasing, you represent that you are at least 18 years of age and will not introduce these compounds into humans or animals.
                 </p>
               </div>
 
@@ -162,15 +168,15 @@ export default function TermsOfSalePage() {
               <section className="space-y-3 border-b border-[#f1f5f9] pb-6">
                 <h3 className="text-lg font-bold text-[#0b1f3a] flex items-center gap-2">
                   <span className="text-xs font-bold text-[#16a6a3] bg-[#16a6a3]/10 px-2 py-0.5 rounded-md">03</span>
-                  Payment Security &amp; High-Risk Gateway Compliance
+                  Payment Security &amp; Acquirer Compliance
                 </h3>
                 <p>
-                  All transactions are handled through certified payment acquirers specialized in research and analytical biochemical commerce:
+                  All transactions are processed by <strong>PEPTECH LIMITED</strong> through regulated payment acquirers and institutional settlement rails:
                 </p>
                 <ul className="list-disc list-inside space-y-1.5 pl-2 text-xs text-[#64748b]">
-                  <li><strong>Mandatory 3-D Secure (SCA)</strong>: Strong Customer Authentication (SCA) is enforced for all card settlements to eliminate fraudulent transactions.</li>
-                  <li><strong>Zero Raw Card Storage</strong>: PEPTECH never stores raw credit or debit card PAN numbers or CVV codes on our servers. Payment tokens are encrypted in PCI-DSS Level 1 vaults.</li>
-                  <li><strong>UK Faster Payments</strong>: Instant institutional bank transfer settlements are supported with automated remittance reconciliation.</li>
+                  <li><strong>Mandatory 3-D Secure (SCA)</strong>: Strong Customer Authentication (SCA) is enforced for eligible card settlements to prevent unauthorized transactions.</li>
+                  <li><strong>Zero Raw Card Storage</strong>: PEPTECH never stores raw credit or debit card PAN numbers or CVV codes on our servers. Payment credentials are handled exclusively by PCI-DSS Level 1 providers.</li>
+                  <li><strong>UK Faster Payments</strong>: Direct bank transfer settlement instructions are supported with manual remittance reconciliation.</li>
                 </ul>
               </section>
 
@@ -195,15 +201,16 @@ export default function TermsOfSalePage() {
               <section className="space-y-3 border-b border-[#f1f5f9] pb-6">
                 <h3 className="text-lg font-bold text-[#0b1f3a] flex items-center gap-2">
                   <span className="text-xs font-bold text-[#16a6a3] bg-[#16a6a3]/10 px-2 py-0.5 rounded-md">05</span>
-                  Returns, Warranties &amp; Tamper Seals
+                  Returns, Refunds &amp; Tamper Seals
                 </h3>
                 <p>
                   Due to the sterile, temperature-regulated, and chemically pure nature of peptide formulations:
                 </p>
                 <ul className="list-disc list-inside space-y-1.5 pl-2 text-xs text-[#64748b]">
                   <li><strong>Unopened Hardware</strong>: Complete Pen Sets with intact tamper-evident seals may be returned within 14 days of delivery for a full refund.</li>
+                  <li><strong>Refund Timeline</strong>: Approved refunds are processed within <strong>5–10 business days to the original payment method</strong> upon inspection at our returns office.</li>
                   <li><strong>Compromised Sterile Vials &amp; Cartridges</strong>: Items whose security seals, caps, or borosilicate membranes have been punctured or altered cannot be returned for safety and contamination reasons.</li>
-                  <li><strong>Damaged in Transit</strong>: If cold-chain packaging or glass arrives fractured, notify us within 48 hours of courier delivery with lot photos for an immediate replacement dispatch.</li>
+                  <li><strong>Damaged in Transit</strong>: If cold-chain packaging or glass arrives fractured, notify us within 48 hours of courier delivery with lot photos for an immediate replacement dispatch or refund.</li>
                 </ul>
               </section>
 
@@ -214,7 +221,7 @@ export default function TermsOfSalePage() {
                   Governing Law &amp; Jurisdiction
                 </h3>
                 <p>
-                  These Terms of Sale and any non-contractual obligations arising out of or in connection with them are governed by and construed in accordance with the laws of <strong>England and Wales</strong>. The courts of England shall have exclusive jurisdiction over any disputes.
+                  These Terms of Sale and any non-contractual obligations arising out of or in connection with them are governed by and construed in accordance with the laws of the <strong>Hong Kong Special Administrative Region (Hong Kong SAR)</strong>. The courts of Hong Kong SAR shall have non-exclusive jurisdiction over any disputes, without prejudice to any mandatory statutory consumer protections applicable to UK dispatches.
                 </p>
               </section>
 

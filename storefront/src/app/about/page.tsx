@@ -5,7 +5,7 @@ import { TrustedBySection } from "@/components/common/TrustedBySection"
 
 export const metadata = {
   title: "About Us | PEPTECH® Precision Peptide Systems",
-  description: "Learn about PEPTECH®, our UK research facilities, reusable precision pen architecture, and uncompromising analytical purity standards.",
+  description: "Learn about PEPTECH®, our laboratory research operations, reusable precision pen architecture, and transparent batch documentation.",
 }
 
 export default function AboutPage() {
@@ -35,7 +35,7 @@ export default function AboutPage() {
             </h1>
 
             <p className="text-xs sm:text-[14px] text-[#64748B] leading-[22px] max-w-2xl">
-              PEPTECH® was established in the United Kingdom with a singular scientific mission: elevating laboratory peptide research through durable reusable engineering, rigorous cold-chain integrity, and uncompromising analytical transparency.
+              PEPTECH® operates internationally with a singular scientific mission: elevating analytical peptide research through durable reusable engineering, monitored cold-chain integrity, and transparent batch documentation.
             </p>
 
             <div className="flex flex-wrap items-center gap-4 pt-2">
@@ -62,9 +62,9 @@ export default function AboutPage() {
         <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             <div className="space-y-1">
-              <div className="text-3xl sm:text-4xl font-extrabold text-[#0B1F3A] tracking-tight">≥99.2%</div>
-              <div className="text-[12px] font-bold text-[#16A6A3] tracking-[1.2px] uppercase">HPLC Purity Floor</div>
-              <p className="text-xs sm:text-[13px] text-[#64748B]">Every synthetic batch third-party verified.</p>
+              <div className="text-3xl sm:text-4xl font-extrabold text-[#0B1F3A] tracking-tight">HPLC / MS</div>
+              <div className="text-[12px] font-bold text-[#16A6A3] tracking-[1.2px] uppercase">Analytical Assay</div>
+              <p className="text-xs sm:text-[13px] text-[#64748B]">Independent batch reporting via Lab Reports.</p>
             </div>
 
             <div className="space-y-1">
@@ -118,7 +118,7 @@ export default function AboutPage() {
                 <div className="space-y-3">
                   <h4 className="text-xl font-bold text-[#0b1f3a]">1. Absolute Chemical Purity</h4>
                   <p className="text-xs sm:text-sm text-[#475569] leading-relaxed">
-                    We formulate each peptide through solid-phase peptide synthesis (SPPS), freeze-dried in vacuum-sealed borosilicate glass. Every single production run is submitted to independent ISO 17025 accredited laboratories in the UK for HPLC chromatogram and Mass Spectrometry validation.
+                    We formulate each peptide through solid-phase peptide synthesis (SPPS), freeze-dried in vacuum-sealed borosilicate glass. Production batches are submitted to independent third-party analytical partners for HPLC chromatogram and Mass Spectrometry verification, published in our COA repository as reports clear.
                   </p>
                 </div>
 
@@ -144,7 +144,7 @@ export default function AboutPage() {
                 <div className="space-y-3">
                   <h4 className="text-xl font-bold text-[#0b1f3a]">2. Reusable Aluminum Architecture</h4>
                   <p className="text-xs sm:text-sm text-[#475569] leading-relaxed">
-                    Traditional research relies on fragile plastic disposables that create thousands of tons of medical waste. The PEPTECH pen system uses a CNC-machined aluminum chassis engineered for repeated multi-year use. Researchers purchase the pen once, then simply snap in compatible prefilled refill cartridges.
+                    Traditional laboratory workflows often rely on fragile plastic disposables that generate substantial single-use laboratory plastic waste. The PEPTECH pen system uses a CNC-machined aluminum chassis engineered for repeated multi-year use. Researchers purchase the pen once, then simply snap in compatible prefilled refill cartridges.
                   </p>
                 </div>
 
@@ -183,26 +183,26 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* 05 Registered UK Operations & Standards */}
+      {/* 05 Operational & Laboratory Standards */}
       <section className="py-16 sm:py-24 bg-white border-b border-[#e2e8f0]">
         <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             <div className="lg:col-span-6 space-y-5">
               <span className="text-[12px] font-bold text-[#16A6A3] tracking-[1.2px] uppercase">
-                UK RESEARCH OPERATIONS
+                LABORATORY &amp; LOGISTICS OPERATIONS
               </span>
               <h2 className="text-2xl sm:text-[28px] font-bold text-[#0B1F3A]">
-                Operating with Rigorous UK Laboratory Standards
+                Operating with Rigorous Laboratory Standards
               </h2>
               <p className="text-[14px] text-[#64748B] leading-[22px]">
-                Operating from North Yorkshire, PEPTECH LTD works alongside leading analytical testing facilities, synthesis partners, and clinical researchers across the United Kingdom and internationally.
+                Operated by PEPTECH LIMITED from our Hong Kong headquarters and UK correspondence and fulfillment office, PEPTECH works alongside independent analytical testing partners, synthesis suppliers, and research laboratories internationally.
               </p>
               
               <div className="space-y-3 pt-2">
                 <div className="flex items-start gap-3">
                   <div className="w-5 h-5 rounded-full bg-[#16a6a3]/10 text-[#16a6a3] flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">✓</div>
                   <div className="text-xs sm:text-sm text-[#475569]">
-                    <strong className="text-[#0b1f3a]">Class 10,000 Cleanroom Packaging</strong>: Sterile automated cartridge filling under laminar flow cabinets.
+                    <strong className="text-[#0b1f3a]">Controlled Laminar-Flow Filling</strong>: Automated cartridge handling under controlled laboratory laminar flow hoods.
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
@@ -234,35 +234,41 @@ export default function AboutPage() {
                 <div className="flex items-center justify-between border-b border-[#e2e8f0] pb-4">
                   <div className="space-y-0.5">
                     <span className="text-[11px] font-bold text-[#64748b] uppercase tracking-wider">Corporate Entity</span>
-                    <h5 className="font-bold text-[#0b1f3a] text-sm">PEPTECH LTD</h5>
+                    <h5 className="font-bold text-[#0b1f3a] text-sm">PEPTECH LIMITED</h5>
                   </div>
                   <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200">
-                    UK Registered
+                    RUO 18+ Compliant
                   </span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 text-xs">
                   <div>
-                    <span className="text-[#64748b] block">Location</span>
-                    <span className="font-semibold text-[#0b1f3a]">Colburn, United Kingdom</span>
+                    <span className="text-[#64748b] block">Registered Office</span>
+                    <span className="font-semibold text-[#0b1f3a]">Hung Hom, Hong Kong</span>
                   </div>
                   <div>
-                    <span className="text-[#64748b] block">Inquiries</span>
-                    <span className="font-semibold text-[#0b1f3a]">support@peptech.bio</span>
+                    <span className="text-[#64748b] block">UK Returns &amp; Dispatch</span>
+                    <span className="font-semibold text-[#0b1f3a]">Colburn, United Kingdom</span>
                   </div>
                   <div>
                     <span className="text-[#64748b] block">Courier Logistics</span>
                     <span className="font-semibold text-[#0b1f3a]">Royal Mail Tracked</span>
                   </div>
                   <div>
-                    <span className="text-[#64748b] block">Compliance Standard</span>
-                    <span className="font-semibold text-[#0b1f3a]">RUO 18+ Certified</span>
+                    <span className="text-[#64748b] block">Inquiries</span>
+                    <span className="font-semibold text-[#0b1f3a]">support@peptech.bio</span>
                   </div>
                 </div>
 
-                <div className="p-4 rounded-xl bg-white border border-[#e2e8f0] text-xs text-[#64748b] space-y-1 leading-relaxed">
-                  <p className="font-semibold text-[#0b1f3a]">Registered Trading Address:</p>
-                  <p>PEPTECH LTD<br />Office 17 Ips Innovate, Chartermark Way<br />Colburn Business Park, DL9 4QJ, Colburn, United Kingdom</p>
+                <div className="p-4 rounded-xl bg-white border border-[#e2e8f0] text-xs text-[#64748b] space-y-2.5 leading-relaxed">
+                  <div>
+                    <p className="font-semibold text-[#0b1f3a]">Hong Kong Registered Office:</p>
+                    <p>PEPTECH LIMITED<br />807A, 8/F, Two Harbourfront, 22 Tak Fung Street, Hung Hom, Kowloon, Hong Kong</p>
+                  </div>
+                  <div className="pt-2 border-t border-[#f1f5f9]">
+                    <p className="font-semibold text-[#0b1f3a]">UK Correspondence &amp; Returns Office:</p>
+                    <p>Office 17 Ips Innovate, Chartermark Way, Colburn Business Park, DL9 4QJ, Colburn, United Kingdom</p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -279,7 +285,7 @@ export default function AboutPage() {
           <div className="space-y-2 max-w-2xl">
             <h4 className="text-xl font-bold">Research &amp; Laboratory Use Only (RUO)</h4>
             <p className="text-xs text-slate-300 leading-relaxed">
-              All PEPTECH® products and compounds are supplied exclusively for in-vitro scientific research, laboratory trials, and educational investigation. None of our compounds are sold or intended for human or veterinary administration.
+              All PEPTECH® products and compounds are supplied exclusively for in-vitro scientific research, laboratory protocols, and educational investigation. None of our compounds are sold or intended for human or veterinary administration.
             </p>
           </div>
 

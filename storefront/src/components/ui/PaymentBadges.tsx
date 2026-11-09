@@ -10,6 +10,7 @@ export function AppleLogo({ className = "w-4 h-4", fill = "currentColor" }: { cl
       className={className}
       fill={fill}
       xmlns="http://www.w3.org/2000/svg"
+      role="img"
       aria-label="Apple"
     >
       <path d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.5-164-39.5c-76.5 0-103.7 40.8-165.9 40.8s-105.6-57-155.5-127C46.7 790.7 0 663 0 541.8c0-194.4 126.4-297.5 250.8-297.5 66.1 0 121.2 43.4 162.7 43.4 39.5 0 101.1-46 176.3-46 28.5 0 130.9 2.6 198.3 99.2zm-234-181.5c31.1-36.9 53.1-88.1 53.1-139.3 0-7.1-.6-14.3-1.9-20.1-50.6 1.9-110.8 33.7-147.1 75.8-28.5 32.4-55.1 83.6-55.1 135.5 0 7.8 1.3 15.6 1.9 18.1 3.2.6 8.4 1.3 13.6 1.3 45.4 0 102.5-30.4 135.5-71.3z" />
@@ -22,7 +23,7 @@ export function AppleLogo({ className = "w-4 h-4", fill = "currentColor" }: { cl
  */
 export function GoogleLogo({ className = "w-4 h-4" }: { className?: string }) {
   return (
-    <svg viewBox="0 0 48 48" className={className} xmlns="http://www.w3.org/2000/svg" aria-label="Google">
+    <svg viewBox="0 0 48 48" className={className} xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Google">
       <path
         fill="#EA4335"
         d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
@@ -61,6 +62,7 @@ export function VisaBadge({
         viewBox="0 0 1000 324.68"
         className="w-full h-full max-h-[13px] object-contain"
         xmlns="http://www.w3.org/2000/svg"
+        role="img"
         aria-label="Visa"
       >
         <path
@@ -91,6 +93,7 @@ export function MastercardBadge({
           viewBox="0 0 1000 618"
           className="w-full h-full max-h-[14px] object-contain"
           xmlns="http://www.w3.org/2000/svg"
+          role="img"
           aria-label="Mastercard"
         >
           <circle cx="382" cy="309" r="309" fill="#0B1F3A" fillOpacity="0.85" />
@@ -108,6 +111,7 @@ export function MastercardBadge({
         viewBox="0 0 1000 618"
         className="w-full h-full max-h-[14px] object-contain"
         xmlns="http://www.w3.org/2000/svg"
+        role="img"
         aria-label="Mastercard"
       >
         <rect x="364" y="66.1" fill="#FF5A00" width="270.4" height="485.8" />
@@ -144,6 +148,7 @@ export function AmexBadge({
         viewBox="0 0 54 36"
         className="w-full h-full object-contain"
         xmlns="http://www.w3.org/2000/svg"
+        role="img"
         aria-label="American Express"
       >
         <rect width="54" height="36" fill={monochrome ? "#0B1F3A" : "#006FCF"} rx="3" />
@@ -195,6 +200,7 @@ export function JcbBadge({
           viewBox="0 0 45 28"
           className="w-full h-full object-contain"
           xmlns="http://www.w3.org/2000/svg"
+          role="img"
           aria-label="JCB"
         >
           <rect x="3" y="3" width="11" height="22" rx="3" fill="#0B1F3A" fillOpacity="0.9" />
@@ -222,6 +228,7 @@ export function JcbBadge({
         viewBox="0 0 45 28"
         className="w-full h-full object-contain"
         xmlns="http://www.w3.org/2000/svg"
+        role="img"
         aria-label="JCB"
       >
         <rect x="3" y="3" width="11" height="22" rx="3" fill="#0E7B35" />

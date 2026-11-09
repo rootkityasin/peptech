@@ -48,8 +48,11 @@ export function ProductAccordions({ product }: ProductAccordionsProps) {
       title: "Safety, Handling & Storage",
       content: (
         <div className="space-y-2 text-[12.5px] text-[#475569] leading-relaxed">
-          <div className="p-2.5 rounded-lg bg-amber-50/70 border border-amber-200/60 text-[#92400e] text-[11.5px] font-medium">
-            ⚠️ Strictly for In-Vitro Scientific Research &amp; Laboratory Analysis Only. Not for human or veterinary administration.
+          <div className="p-2.5 rounded-lg bg-amber-50/70 border border-amber-200/60 text-[#92400e] text-[11.5px] font-medium flex items-start gap-2">
+            <svg className="w-4 h-4 shrink-0 text-amber-700 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" />
+            </svg>
+            <span>Strictly for In-Vitro Scientific Research &amp; Laboratory Analysis Only. Not for human or veterinary administration.</span>
           </div>
           <div className="pt-1 space-y-1.5">
             <p>
@@ -79,7 +82,7 @@ export function ProductAccordions({ product }: ProductAccordionsProps) {
             <span className="text-[#475569]">Royal Mail International (£15.00 Flat Rate)</span>
           </div>
           <p className="text-[11.5px] text-[#64748b] pt-1">
-            📦 <strong>Discreet Packaging Guarantee:</strong> All orders are dispatched in robust, unbranded outer boxes with zero peptide terminology on the exterior.
+            <strong className="text-[#0b1f3a]">Discreet Packaging Guarantee:</strong> All orders are dispatched in robust, unbranded outer boxes with zero peptide terminology on the exterior.
           </p>
         </div>
       ),
@@ -90,9 +93,9 @@ export function ProductAccordions({ product }: ProductAccordionsProps) {
       content: (
         <div className="space-y-3 text-[12.5px] text-[#475569] leading-relaxed">
           <div>
-            <p className="font-bold text-[#0b1f3a]">Is this compound third-party tested?</p>
+            <p className="font-bold text-[#0b1f3a]">How is analytical quality documented?</p>
             <p className="text-[12px] text-[#64748b] mt-0.5">
-              Yes. Every synthesis batch is independently assayed by accredited testing laboratories using High-Performance Liquid Chromatography (HPLC) and Mass Spectrometry (MS).
+              Production batches undergo independent High-Performance Liquid Chromatography (HPLC) and Mass Spectrometry (MS) analytical evaluation; lot certificates are published in our Lab Reports repository as each report clears.
             </p>
           </div>
           <div>

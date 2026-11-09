@@ -8,7 +8,7 @@ function LegalSidebar() {
   const pathname = usePathname()
   const links = [
     { href: "/terms-of-sale", label: "Terms of Sale & Subscriptions", badge: "Commercial" },
-    { href: "/privacy-policy", label: "Privacy & GDPR Policy", badge: "Data Protection" },
+    { href: "/privacy-policy", label: "Privacy & Data Policy", badge: "Data Protection" },
     { href: "/shipping-returns", label: "Shipping, Cold-Chain & Returns", badge: "Logistics" },
     { href: "/research-disclaimer", label: "Research Use Only (RUO)", badge: "18+ Statutory" },
   ]
@@ -49,13 +49,17 @@ function LegalSidebar() {
         <span className="text-[10px] font-bold text-[#16a6a3] uppercase tracking-wider">
           DATA CONTROLLER &amp; DPO
         </span>
-        <h5 className="font-bold text-[#0b1f3a]">PEPTECH LTD</h5>
-        <p className="text-[11px] font-medium text-[#16a6a3]">Data Controller</p>
-        <p className="text-[#64748b] leading-relaxed">
-          Office 17 Ips Innovate, Chartermark Way<br />
-          Colburn Business Park, DL9 4QJ, Colburn<br />
-          United Kingdom
-        </p>
+        <h5 className="font-bold text-[#0b1f3a]">PEPTECH LIMITED</h5>
+        <div className="space-y-2 text-[#64748b] leading-relaxed">
+          <p>
+            <strong className="block text-[10px] text-[#0b1f3a] uppercase">Hong Kong Registered Office</strong>
+            807A, 8/F, Two Harbourfront, 22 Tak Fung Street, Hung Hom, Kowloon, Hong Kong
+          </p>
+          <p>
+            <strong className="block text-[10px] text-[#0b1f3a] uppercase">UK Correspondence &amp; Returns Office</strong>
+            Office 17 Ips Innovate, Chartermark Way, Colburn Business Park, DL9 4QJ, Colburn, United Kingdom
+          </p>
+        </div>
         <div className="pt-2 border-t border-[#e2e8f0]">
           <a
             href="mailto:support@peptech.bio"
@@ -93,7 +97,7 @@ export default function PrivacyPolicyPage() {
             Privacy &amp; Cookie Policy
           </h1>
           <p className="text-xs sm:text-[14px] text-[#64748B] leading-[22px] max-w-3xl">
-            PEPTECH BioSciences Ltd is committed to protecting your privacy and upholding the highest standards of data security in accordance with the UK General Data Protection Regulation (UK GDPR) and Data Protection Act 2018.
+            PEPTECH LIMITED is committed to protecting your privacy and upholding strict data security standards in accordance with the Hong Kong Personal Data (Privacy) Ordinance (Cap. 486) (PDPO) and, where applicable, the UK General Data Protection Regulation (UK GDPR) and Data Protection Act 2018.
           </p>
         </div>
       </section>
@@ -112,12 +116,18 @@ export default function PrivacyPolicyPage() {
             <div className="bg-white rounded-3xl border border-[#e2e8f0] p-6 sm:p-10 shadow-xs space-y-8 text-xs sm:text-sm text-[#475569] leading-relaxed">
               
               {/* Data Controller Notice */}
-              <div className="p-5 rounded-2xl bg-[#f8fafc] border border-[#e2e8f0] space-y-1 text-xs">
+              <div className="p-5 rounded-2xl bg-[#f8fafc] border border-[#e2e8f0] space-y-1.5 text-xs">
                 <span className="text-[10px] text-[#16a6a3] font-bold uppercase tracking-wider block">
-                  STATUTORY DATA CONTROLLER IDENTIFICATION
+                  DATA CONTROLLER IDENTIFICATION
                 </span>
                 <p className="text-[#0b1f3a] font-semibold">
-                  PEPTECH BioSciences Ltd, United Kingdom. Support: support@peptech.bio.
+                  PEPTECH LIMITED · Support: support@peptech.bio
+                </p>
+                <p className="text-[#64748b]">
+                  Hong Kong Registered Office: 807A, 8/F, Two Harbourfront, 22 Tak Fung Street, Hung Hom, Kowloon, Hong Kong
+                </p>
+                <p className="text-[#64748b]">
+                  UK Correspondence &amp; Returns Office: Office 17 Ips Innovate, Chartermark Way, Colburn Business Park, DL9 4QJ, Colburn, United Kingdom
                 </p>
               </div>
 
@@ -128,7 +138,7 @@ export default function PrivacyPolicyPage() {
                   Information We Collect &amp; Process
                 </h3>
                 <p>
-                  To fulfill orders, verify laboratory age requirements, and comply with UK commercial record-keeping laws, we process the following categories of personal data:
+                  To fulfill orders, verify laboratory age requirements, and comply with applicable commercial record-keeping laws, we process the following categories of personal data:
                 </p>
                 <ul className="list-disc list-inside space-y-1.5 pl-2 text-xs text-[#64748b]">
                   <li><strong>Contact &amp; Identification</strong>: Full name, title, academic/institutional affiliation, email address, and telephone number (used strictly for Royal Mail delivery alerts).</li>
@@ -146,7 +156,10 @@ export default function PrivacyPolicyPage() {
                 </h3>
                 <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 space-y-2 text-xs text-emerald-950">
                   <div className="font-bold flex items-center gap-1.5 text-emerald-900">
-                    <span>🛡️</span>
+                    <svg className="w-4 h-4 shrink-0 text-emerald-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="m9 12 2 2 4-4" />
+                    </svg>
                     <span>PCI-DSS Level 1 Encryption</span>
                   </div>
                   <p className="leading-relaxed">
@@ -182,8 +195,8 @@ export default function PrivacyPolicyPage() {
                 </p>
                 <ul className="list-disc list-inside space-y-1.5 pl-2 text-xs text-[#64748b]">
                   <li><strong>Logistics Partners</strong>: Royal Mail Click &amp; Drop API (recipient address and dispatch phone for tracking SMS).</li>
-                  <li><strong>Payment Acquirers</strong>: Regulated UK banking processors for card settlement and 3-D Secure authorization.</li>
-                  <li><strong>Regulatory Bodies</strong>: Only when strictly mandated by UK statutory law or court order.</li>
+                  <li><strong>Payment Acquirers</strong>: Regulated banking and payment card processors for settlement and 3-D Secure authorization.</li>
+                  <li><strong>Regulatory Bodies</strong>: Only when strictly mandated by applicable statutory law or court order.</li>
                 </ul>
               </section>
 
@@ -191,10 +204,10 @@ export default function PrivacyPolicyPage() {
               <section className="space-y-3 border-b border-[#f1f5f9] pb-6">
                 <h3 className="text-lg font-bold text-[#0b1f3a] flex items-center gap-2">
                   <span className="text-xs font-bold text-[#16a6a3] bg-[#16a6a3]/10 px-2 py-0.5 rounded-md">05</span>
-                  Your Rights Under UK GDPR
+                  Your Rights Under PDPO &amp; UK GDPR
                 </h3>
                 <p>
-                  As an individual researcher or institution, you hold full statutory rights under UK GDPR:
+                  Under the Hong Kong Personal Data (Privacy) Ordinance (PDPO) and, where applicable, UK GDPR, you hold statutory rights regarding your personal data:
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 text-xs">
                   <div className="p-3 rounded-xl bg-[#f8fafc] border border-[#e2e8f0]">
@@ -220,10 +233,10 @@ export default function PrivacyPolicyPage() {
               <section className="space-y-3">
                 <h3 className="text-lg font-bold text-[#0b1f3a] flex items-center gap-2">
                   <span className="text-xs font-bold text-[#16a6a3] bg-[#16a6a3]/10 px-2 py-0.5 rounded-md">06</span>
-                  Exercising Your Rights &amp; ICO Complaints
+                  Exercising Your Rights &amp; Regulatory Complaints
                 </h3>
                 <p>
-                  To make a Subject Access Request (SAR) or exercise any of your data rights, contact our Data Protection Officer at <a href="mailto:support@peptech.bio" className="text-[#16a6a3] underline font-semibold">support@peptech.bio</a>. You also have the right to lodge a complaint with the UK Information Commissioner’s Office (ICO) at <code>ico.org.uk</code>.
+                  To make a Data Access Request (DAR / SAR) or exercise any of your data rights, contact our Data Protection Officer at <a href="mailto:support@peptech.bio" className="text-[#16a6a3] underline font-semibold">support@peptech.bio</a>. Depending on your jurisdiction, you may lodge a complaint with the Office of the Privacy Commissioner for Personal Data, Hong Kong (PCPD) at <code>pcpd.org.hk</code> or the UK Information Commissioner’s Office (ICO) at <code>ico.org.uk</code>.
                 </p>
               </section>
 

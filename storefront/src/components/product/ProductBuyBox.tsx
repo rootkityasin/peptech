@@ -248,7 +248,7 @@ export function ProductBuyBox({
             ✓
           </span>
           <span className="font-semibold text-[#0b1f3a] truncate">
-            {product?.technicalSpecs?.purity || "≥ 99.0% Purity"} <span className="hidden min-[360px]:inline">· HPLC Verified</span>
+            {product?.technicalSpecs?.purity || "HPLC / MS Assayed"} <span className="hidden min-[360px]:inline">· Batch COA Repository</span>
           </span>
         </div>
         <Link

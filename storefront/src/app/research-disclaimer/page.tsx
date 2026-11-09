@@ -8,7 +8,7 @@ function LegalSidebar() {
   const pathname = usePathname()
   const links = [
     { href: "/terms-of-sale", label: "Terms of Sale & Subscriptions", badge: "Commercial" },
-    { href: "/privacy-policy", label: "Privacy & GDPR Policy", badge: "Data Protection" },
+    { href: "/privacy-policy", label: "Privacy & Data Policy", badge: "Data Protection" },
     { href: "/shipping-returns", label: "Shipping, Cold-Chain & Returns", badge: "Logistics" },
     { href: "/research-disclaimer", label: "Research Use Only (RUO)", badge: "18+ Statutory" },
   ]
@@ -49,13 +49,17 @@ function LegalSidebar() {
         <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">
           STATUTORY RUO OVERSIGHT
         </span>
-        <h5 className="font-bold text-[#0b1f3a]">PEPTECH LTD</h5>
-        <p className="text-[11px] font-medium text-[#16a6a3]">Regulatory Affairs Oversight</p>
-        <p className="text-[#64748b] leading-relaxed">
-          Office 17 Ips Innovate, Chartermark Way<br />
-          Colburn Business Park, DL9 4QJ, Colburn<br />
-          United Kingdom
-        </p>
+        <h5 className="font-bold text-[#0b1f3a]">PEPTECH LIMITED</h5>
+        <div className="space-y-2 text-[#64748b] leading-relaxed">
+          <p>
+            <strong className="block text-[10px] text-[#0b1f3a] uppercase">Hong Kong Registered Office</strong>
+            807A, 8/F, Two Harbourfront, 22 Tak Fung Street, Hung Hom, Kowloon, Hong Kong
+          </p>
+          <p>
+            <strong className="block text-[10px] text-[#0b1f3a] uppercase">UK Correspondence &amp; Returns Office</strong>
+            Office 17 Ips Innovate, Chartermark Way, Colburn Business Park, DL9 4QJ, Colburn, United Kingdom
+          </p>
+        </div>
         <div className="pt-2 border-t border-[#e2e8f0]">
           <Link
             href="/lab-reports"
@@ -114,7 +118,9 @@ export default function ResearchDisclaimerPage() {
               {/* Highlight Warning Box */}
               <div className="p-6 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-950 space-y-3">
                 <div className="flex items-center gap-2 font-extrabold text-sm text-amber-900 tracking-wide uppercase">
-                  <span>⚠️</span>
+                  <svg className="w-4 h-4 shrink-0 text-amber-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" />
+                  </svg>
                   <span>MANDATORY STATUTORY REGULATORY NOTICE</span>
                 </div>
                 <p className="text-xs sm:text-sm text-amber-950 leading-relaxed">
@@ -136,7 +142,7 @@ export default function ResearchDisclaimerPage() {
                 </p>
                 <ul className="list-disc list-inside space-y-1.5 pl-2 text-xs text-[#64748b]">
                   <li>They are an adult aged 18 or older with legal authority to enter commercial agreements.</li>
-                  <li>They represent a recognized academic institution, clinical research trial, or analytical testing laboratory, or possess verified competence in handling chemical research reagents.</li>
+                  <li>They represent a recognized academic institution, accredited institutional research facility, or analytical testing laboratory, or possess verified competence in handling chemical research reagents.</li>
                   <li>They operate appropriate chemical storage facilities including 2°C–8°C temperature monitoring and sterile containment equipment.</li>
                 </ul>
               </section>
@@ -192,7 +198,7 @@ export default function ResearchDisclaimerPage() {
                   Indemnification &amp; Limitation of Liability
                 </h3>
                 <p>
-                  The purchaser agrees to indemnify, defend, and hold harmless PEPTECH BioSciences Ltd, its directors, officers, chemists, and affiliates against any and all claims, liabilities, losses, damages, or legal expenses arising from or related to the handling, storage, misuse, resale, or disposal of any compounds purchased through this service.
+                  The purchaser agrees to indemnify, defend, and hold harmless PEPTECH LIMITED, its directors, officers, chemists, and affiliates against any and all claims, liabilities, losses, damages, or legal expenses arising from or related to the handling, storage, misuse, resale, or disposal of any compounds purchased through this service.
                 </p>
               </section>
 

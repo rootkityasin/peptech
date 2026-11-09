@@ -24,7 +24,7 @@ export const INQUIRY_TYPE_LABELS: Record<string, string> = {
   coa_batch: "Certificate of Analysis (COA) / Batch Verification",
   institutional_po: "Institutional Purchase Order (Net-30 PO)",
   hardware_specs: "Reusable Pen Hardware & Cartridge Specs",
-  bulk_trial: "Bulk Research Trial Procurement",
+  bulk_trial: "Bulk Institutional Laboratory Procurement",
   other: "General Scientific Support",
 }
 
@@ -313,7 +313,8 @@ export function buildCustomerConfirmationEmail(payload: ContactInquiryPayload, t
       <!-- Footer -->
       <div style="border-top: 1px solid #e2e8f0; padding-top: 18px; text-align: center; font-size: 11px; color: #94a3b8; line-height: 1.5;">
         <p style="margin: 0 0 4px 0; font-weight: 600; color: #64748b;">PEPTECH® · Quality. Safety. Precision.</p>
-        <p style="margin: 0 0 4px 0;">PEPTECH LTD · Office 17 Ips Innovate, Chartermark Way, Colburn Business Park, DL9 4QJ, UK</p>
+        <p style="margin: 0 0 4px 0;">PEPTECH LIMITED · Hong Kong Registered Office: 807A, 8/F, Two Harbourfront, 22 Tak Fung Street, Hung Hom, Kowloon, Hong Kong</p>
+        <p style="margin: 0 0 4px 0;">UK Correspondence &amp; Returns: Office 17 Ips Innovate, Chartermark Way, Colburn Business Park, DL9 4QJ, Colburn, UK</p>
         <p style="margin: 0;">In-Vitro Scientific &amp; Laboratory Research Peptide Logistics · <a href="mailto:support@peptech.bio" style="color: #16a6a3; text-decoration: none;">support@peptech.bio</a></p>
       </div>
     </div>

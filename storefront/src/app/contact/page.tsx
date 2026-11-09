@@ -219,7 +219,7 @@ export default function ContactPage() {
                           { value: "coa_batch", label: "Certificate of Analysis (COA) / Batch Verification" },
                           { value: "institutional_po", label: "Institutional Purchase Order (Net-30 PO)" },
                           { value: "hardware_specs", label: "Reusable Pen Hardware & Cartridge Specs" },
-                          { value: "bulk_trial", label: "Bulk Research Trial Procurement" },
+                          { value: "bulk_trial", label: "Bulk Institutional Laboratory Procurement" },
                           { value: "other", label: "General Scientific Support" },
                         ]}
                       />
@@ -246,7 +246,7 @@ export default function ContactPage() {
                     <textarea
                       required
                       rows={5}
-                      placeholder="Please specify your question, trial requirements, or order inquiry..."
+                      placeholder="Please specify your question, laboratory protocol requirements, or order inquiry..."
                       value={formData.message}
                       onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                       className="w-full px-4 py-2.5 rounded-xl border border-[#e2e8f0] text-xs focus:outline-hidden focus:border-[#16a6a3] focus:ring-1 focus:ring-[#16a6a3]"
@@ -301,7 +301,7 @@ export default function ContactPage() {
                     PEPTECH®
                   </h4>
                   <p className="text-xs text-slate-600">
-                    PEPTECH LTD
+                    PEPTECH LIMITED
                   </p>
                 </div>
 
@@ -344,13 +344,15 @@ export default function ContactPage() {
                         <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                       </svg>
                     </div>
-                    <div>
-                      <strong className="block text-black font-semibold">Registered Correspondence Address</strong>
-                      <address className="not-italic text-slate-600 leading-relaxed block mt-0.5">
-                        PEPTECH LTD<br />
-                        Office 17 Ips Innovate, Chartermark Way<br />
-                        Colburn Business Park, DL9 4QJ, Colburn<br />
-                        United Kingdom
+                    <div className="space-y-2">
+                      <strong className="block text-black font-semibold">Registered &amp; Correspondence Addresses</strong>
+                      <address className="not-italic text-slate-600 leading-relaxed block">
+                        <span className="block font-semibold text-black text-[11px] uppercase">PEPTECH LIMITED · Hong Kong Registered Office</span>
+                        807A, 8/F, Two Harbourfront, 22 Tak Fung Street, Hung Hom, Kowloon, Hong Kong
+                      </address>
+                      <address className="not-italic text-slate-600 leading-relaxed block">
+                        <span className="block font-semibold text-black text-[11px] uppercase">UK Correspondence &amp; Returns Office</span>
+                        Office 17 Ips Innovate, Chartermark Way, Colburn Business Park, DL9 4QJ, Colburn, United Kingdom
                       </address>
                     </div>
                   </div>
@@ -379,7 +381,7 @@ export default function ContactPage() {
               <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-3xl p-6 sm:p-8 space-y-3">
                 <h5 className="font-bold text-base text-black">Net-30 Purchase Orders</h5>
                 <p className="text-xs text-slate-600 leading-relaxed">
-                  We support accredited academic universities, clinical trial centres, and registered biopharma companies with institutional Net-30 purchase orders. Submit your formal PO with billing contact to <a href="mailto:support@peptech.bio" className="font-medium text-black underline hover:text-slate-800">support@peptech.bio</a>.
+                  We support accredited academic universities, institutional testing departments, and registered biopharma laboratories with Net-30 purchase orders. Submit your formal PO with billing contact to <a href="mailto:support@peptech.bio" className="font-medium text-black underline hover:text-slate-800">support@peptech.bio</a>.
                 </p>
               </div>
 

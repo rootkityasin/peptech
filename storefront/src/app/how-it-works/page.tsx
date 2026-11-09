@@ -8,11 +8,11 @@ import { TrustedBySection } from "@/components/common/TrustedBySection"
 const faqs = [
   {
     q: "What is the difference between Complete Pen Sets, Refill Cartridges, and Freeze-Dried Vials?",
-    a: "The Complete Pen Set is designed for first-time researchers who require the reusable precision CNC-machined aluminum pen hardware, an initial prefilled cartridge, 31G 5mm sterile needles, and an authenticated Device Passport. Refill Cartridges are prefilled replacement cartridges manufactured exclusively for that reusable pen body. Freeze-Dried Vials are traditional laboratory lyophilised glass vials for laboratories with existing reconstitution workflows."
+    a: "The Complete Pen Set is designed for first-time researchers who require the reusable precision CNC-machined aluminum pen hardware, an initial prefilled cartridge, and an authenticated Device Passport. Refill Cartridges are prefilled replacement cartridges manufactured exclusively for that reusable pen body. Freeze-Dried Vials are traditional laboratory lyophilised glass vials for standard in-vitro analytical workflows."
   },
   {
     q: "Are Complete Pen Sets available on recurring subscription?",
-    a: "No. Complete Pen Sets are strictly one-time purchases because the aluminum precision pen chassis is built for multi-year durability across thousands of trial cycles. When your cartridge is finished, you simply reorder Refill Cartridges, which ARE available on an automated 28-day Subscribe & Save schedule with a 10% discount."
+    a: "No. Complete Pen Sets are strictly one-time purchases because the aluminum precision pen chassis is built for multi-year durability across thousands of laboratory cycles. When your cartridge is finished, you simply reorder Refill Cartridges, which ARE available on an automated 28-day Subscribe & Save schedule with a 10% discount."
   },
   {
     q: "How does the 28-Day Subscribe & Save discount work?",
@@ -36,7 +36,7 @@ const faqs = [
   },
   {
     q: "Are these compounds approved for human consumption or medical therapy?",
-    a: "STRICTLY NO. All PEPTECH® compounds, cartridges, and materials are sold exclusively for in-vitro scientific research, laboratory trials, and educational investigation. Any human, veterinary, therapeutic, or bodybuilding administration is strictly prohibited under our terms of sale."
+    a: "STRICTLY NO. All PEPTECH® compounds, cartridges, and materials are sold exclusively for in-vitro scientific research, laboratory protocols, and educational investigation. Any human, veterinary, therapeutic, or bodybuilding administration is strictly prohibited under our terms of sale."
   }
 ]
 
@@ -100,7 +100,7 @@ export default function HowItWorksPage() {
                   Step 1: Order Your Complete Pen Set
                 </h4>
                 <p className="text-xs sm:text-sm text-[#64748b] leading-relaxed">
-                  First-time researchers order a Complete Pen Set. You receive the CNC-machined aluminum pen chassis, your chosen prefilled cartridge, 31G 5mm sterile needles, and your serialized Device Passport.
+                  First-time researchers order a Complete Pen Set. You receive the CNC-machined aluminum pen chassis, your chosen prefilled cartridge, protective storage case, and serialized Device Passport.
                 </p>
               </div>
               <div className="pt-4 border-t border-[#e2e8f0]">
@@ -123,7 +123,7 @@ export default function HowItWorksPage() {
                   Step 2: Keep The Reusable Pen Body
                 </h4>
                 <p className="text-xs sm:text-sm text-[#64748b] leading-relaxed">
-                  Never discard your metal pen chassis. Built from aviation-grade aluminum alloy with micro-stepping precision, the pen is calibrated for over 10,000 trial cycles. Simply unscrew the spent cartridge.
+                  Never discard your metal pen chassis. Built from aviation-grade aluminum alloy with micro-stepping precision, the pen is calibrated for over 10,000 laboratory cycles. Simply unscrew the spent cartridge.
                 </p>
               </div>
               <div className="pt-4 border-t border-[#e2e8f0]">
@@ -167,7 +167,7 @@ export default function HowItWorksPage() {
               HARDWARE ENGINEERING
             </span>
             <h2 className="text-2xl sm:text-[28px] font-bold text-[#0B1F3A]">
-              Engineered for Clinical Repeatability
+              Engineered for Analytical Repeatability
             </h2>
           </div>
 
@@ -205,7 +205,7 @@ export default function HowItWorksPage() {
               <div className="p-6 space-y-2 flex-1 flex flex-col justify-start">
                 <h5 className="font-bold text-base text-[#0b1f3a]">Anodized Alloy</h5>
                 <p className="text-xs text-[#475569] leading-relaxed">
-                  6061-T6 aviation aluminum with corrosion-resistant matte anodized finish, easily sterilized with alcohol wipes.
+                  6061-T6 aviation aluminum with corrosion-resistant matte anodized finish built for durable laboratory bench use.
                 </p>
               </div>
             </div>

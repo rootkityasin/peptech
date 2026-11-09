@@ -211,7 +211,6 @@ export function resolveCompoundSlug(item?: ProductLike | string): CompoundSlug {
   if (text.includes("melanotan") || text.includes("melatonin") || text.includes("mt-2") || text.includes("mt2") || text.includes("mt-ii") || text.includes("mt-")) return "melanotan-2"
   if (text.includes("glow") || text.includes("barbie")) return "glow-stack"
   if (text.includes("klow")) return "klow"
-  if (text.includes("semaglutide") || text.includes("smg-") || text.includes("sm-")) return "tirzepatide"
 
   return "ghk-cu"
 }

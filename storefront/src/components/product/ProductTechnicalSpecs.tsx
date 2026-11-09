@@ -90,24 +90,6 @@ export function ProductTechnicalSpecs({ product }: ProductTechnicalSpecsProps) {
                   </div>
                   <div className="flex items-start gap-3.5">
                     <div className="size-[22px] shrink-0 mt-0.5 flex items-center justify-center">
-                      <img src={KIT_ICONS.needle} alt="" className="size-full object-contain" />
-                    </div>
-                    <div className="space-y-0.5">
-                      <p className="font-bold text-[#0b1f3a] text-[13px] leading-snug">4× 31G 5mm Sterile Needles</p>
-                      <p className="text-[#64748b] text-[11.5px] leading-relaxed">Ultra-fine, individually blister-sealed laboratory needles</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3.5">
-                    <div className="size-[22px] shrink-0 mt-0.5 flex items-center justify-center">
-                      <img src={KIT_ICONS.prep} alt="" className="size-full object-contain" />
-                    </div>
-                    <div className="space-y-0.5">
-                      <p className="font-bold text-[#0b1f3a] text-[13px] leading-snug">4× Alcohol Prep Pads</p>
-                      <p className="text-[#64748b] text-[11.5px] leading-relaxed">70% Isopropyl USP grade laboratory surface prep pads</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3.5">
-                    <div className="size-[22px] shrink-0 mt-0.5 flex items-center justify-center">
                       <img src={KIT_ICONS.passport} alt="" className="size-full object-contain" />
                     </div>
                     <div className="space-y-0.5">
@@ -158,7 +140,7 @@ export function ProductTechnicalSpecs({ product }: ProductTechnicalSpecsProps) {
                     </div>
                     <div className="space-y-0.5">
                       <p className="font-bold text-[#0b1f3a] text-[13px] leading-snug">1.5 mL Precision Volume</p>
-                      <p className="text-[#64748b] text-[11.5px] leading-relaxed">Pre-filled under sterile ISO 5 laminar airflow environment</p>
+                      <p className="text-[#64748b] text-[11.5px] leading-relaxed">Pre-filled under controlled laboratory laminar airflow</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3.5 sm:gap-4">
@@ -176,7 +158,7 @@ export function ProductTechnicalSpecs({ product }: ProductTechnicalSpecsProps) {
                     </div>
                     <div className="space-y-0.5">
                       <p className="font-bold text-[#0b1f3a] text-[13px] leading-snug">Multi-Pierce Septum</p>
-                      <p className="text-[#64748b] text-[11.5px] leading-relaxed">Medical-grade bromobutyl rubber septum with reseal memory</p>
+                      <p className="text-[#64748b] text-[11.5px] leading-relaxed">Laboratory bromobutyl elastomer septum with reseal memory</p>
                     </div>
                   </div>
                 </div>
@@ -239,8 +221,8 @@ export function ProductTechnicalSpecs({ product }: ProductTechnicalSpecsProps) {
                       <img src={KIT_ICONS.prep} alt="" className="size-full object-contain" />
                     </div>
                     <div className="space-y-0.5">
-                      <p className="font-bold text-[#0b1f3a] text-[13px] leading-snug">Rapid Reconstitution</p>
-                      <p className="text-[#64748b] text-[11.5px] leading-relaxed">Dissolves clearly with standard bacteriostatic water USP</p>
+                      <p className="font-bold text-[#0b1f3a] text-[13px] leading-snug">Analytical Stability</p>
+                      <p className="text-[#64748b] text-[11.5px] leading-relaxed">Formulated for in-vitro solubility and buffer-assay workflows</p>
                     </div>
                   </div>
                 </div>
@@ -263,7 +245,7 @@ export function ProductTechnicalSpecs({ product }: ProductTechnicalSpecsProps) {
                   Technical Specifications
                 </h3>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-white text-[#0b1f3a] border border-[#cbd5e1]">
-                  {product.customSpecs?.find((s) => s.label.toLowerCase().includes("purity"))?.value || specs?.purity || "≥ 99.0% HPLC"}
+                  {product.customSpecs?.find((s) => s.label.toLowerCase().includes("purity"))?.value || specs?.purity || "HPLC / MS Assay"}
                 </span>
               </div>
               <p className="text-[12px] text-[#64748b] mt-1">
@@ -484,30 +466,19 @@ export function ProductTechnicalSpecs({ product }: ProductTechnicalSpecsProps) {
                 </div>
               </div>
 
-              {/* Official Figma Certification Logos Row */}
-              <div className="flex items-center justify-between w-full pt-8 sm:pt-10 mt-2">
-                <div className="h-[40px] w-[65px] flex items-center justify-center shrink-0">
-                  <img
-                    src="/images/figma/logo-iso.svg"
-                    alt="ISO 9001 Certified"
-                    className="h-[34px] w-auto max-w-[60px] object-contain"
-                  />
+              {/* Laboratory Compliance & Traceability Summary */}
+              <div className="grid grid-cols-3 gap-2 pt-8 sm:pt-10 mt-2 text-center">
+                <div className="rounded-lg bg-white border border-[#e2e8f0] py-2 px-2">
+                  <span className="block text-[10px] font-extrabold text-[#0b1f3a]">RUO 18+</span>
+                  <span className="block text-[10px] text-[#64748b]">In-Vitro Only</span>
                 </div>
-                <div className="w-px h-[28px] bg-[#d1e0ed]" />
-                <div className="h-[40px] w-[65px] flex items-center justify-center shrink-0">
-                  <img
-                    src="/images/figma/logo-nsf.svg"
-                    alt="NSF Certified"
-                    className="h-[34px] w-auto max-w-[50px] object-contain"
-                  />
+                <div className="rounded-lg bg-white border border-[#e2e8f0] py-2 px-2">
+                  <span className="block text-[10px] font-extrabold text-[#0b1f3a]">HPLC / MS</span>
+                  <span className="block text-[10px] text-[#64748b]">Batch COA</span>
                 </div>
-                <div className="w-px h-[28px] bg-[#d1e0ed]" />
-                <div className="h-[40px] w-[55px] flex items-center justify-center shrink-0">
-                  <img
-                    src="/images/figma/logo-ce.svg"
-                    alt="CE Mark"
-                    className="h-[32px] w-auto max-w-[50px] object-contain"
-                  />
+                <div className="rounded-lg bg-white border border-[#e2e8f0] py-2 px-2">
+                  <span className="block text-[10px] font-extrabold text-[#0b1f3a]">QR TRACK</span>
+                  <span className="block text-[10px] text-[#64748b]">Lot Traceable</span>
                 </div>
               </div>
             </div>

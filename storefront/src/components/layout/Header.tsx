@@ -734,10 +734,10 @@ export function Header() {
                       Try searching for{" "}
                       <button
                         type="button"
-                        onClick={() => setSearchQuery("Semaglutide")}
+                        onClick={() => setSearchQuery("Retatrutide")}
                         className="font-semibold text-[#16a6a3] hover:underline cursor-pointer"
                       >
-                        Semaglutide
+                        Retatrutide
                       </button>
                       {", "}
                       <button

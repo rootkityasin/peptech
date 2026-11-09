@@ -702,14 +702,14 @@ export function HomeContent({
               />
               <div className="absolute inset-0 flex flex-col gap-[14px] items-start pl-[32px] sm:pl-[48px] pr-[24px] sm:pr-[40px] py-[36px]">
                 <p className="font-bold text-[#93c5fd] text-[11px] tracking-[1.5px] uppercase">
-                  ADVANCING A HEALTHIER WORLD
+                  IN-VITRO ANALYTICAL STANDARDS
                 </p>
                 <div className="font-bold text-[28px] sm:text-[34px] text-white leading-[34px] sm:leading-[40px]">
-                  <p className="mb-0">Better Testing</p>
-                  <p>for a Safer Tomorrow</p>
+                  <p className="mb-0">Precision Peptides</p>
+                  <p>for Laboratory Research</p>
                 </div>
                 <p className="text-[#e2e8f0] text-[13px] leading-[22px] max-w-[520px]">
-                  Discover how PEPTECH® helps you achieve accurate, reliable and efficient testing — every day.
+                  Discover how PEPTECH® helps you achieve repeatable, traceable analytical research workflows — every day.
                 </p>
                 <div className="pt-1">
                   <Link

@@ -53,7 +53,26 @@ const VERIFIED_EXACT_BATCHES = new Set([
   "PT-26-000184",
 ])
 
-const PENDING_BATCHES = new Set<string>()
+const PENDING_BATCHES = new Set([
+  "RT-2609A",
+  "TR-2609B",
+  "CU-2608C",
+  "BPC-2608A",
+  "TB-2608B",
+  "CGL-2609X",
+  "TSM-2609A",
+  "PT-2608D",
+  "MT-2608E",
+])
+
+function isPendingBatch(upper: string): boolean {
+  if (PENDING_BATCHES.has(upper)) return true
+  const compact = upper.replace(/[^A-Z0-9]/g, "")
+  for (const batch of PENDING_BATCHES) {
+    if (batch.replace(/[^A-Z0-9]/g, "") === compact) return true
+  }
+  return false
+}
 
 function VerifyContent() {
   const searchParams = useSearchParams()
@@ -90,13 +109,13 @@ function VerifyContent() {
     }
 
     // 2. Check if known pending batch
-    if (PENDING_BATCHES.has(upper)) {
+    if (isPendingBatch(upper)) {
       setResultState("pending")
       setLoading(false)
       return
     }
 
-    // 2. Query backend verification API
+    // 3. Query backend verification API
     try {
       const backendUrl = getBackendUrl()
       const res = await fetch(`${backendUrl}/store/custom/verify?code=${encodeURIComponent(upper)}`, {
@@ -120,7 +139,7 @@ function VerifyContent() {
       // Offline fallback: strict exact registry check
       if (VERIFIED_EXACT_BATCHES.has(upper)) {
         setResultState("verified")
-      } else if (PENDING_BATCHES.has(upper)) {
+      } else if (isPendingBatch(upper)) {
         setResultState("pending")
       } else {
         setResultState("unverified")
@@ -159,15 +178,19 @@ function VerifyContent() {
         {/* Batch Search Form Container */}
         <div className="w-full max-w-[680px]">
           <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-[12px] items-stretch w-full">
+            <label htmlFor="batch-verify-input" className="sr-only">
+              Batch Lot Number or Device Passport Serial
+            </label>
             <div className="bg-white border border-[#cbd5e1] flex w-full sm:flex-1 shrink-0 gap-[12px] h-[52px] min-h-[52px] items-center px-[18px] rounded-[10px] shadow-2xs focus-within:border-[#16a6a3] focus-within:ring-2 focus-within:ring-[#16a6a3]/20 transition-all">
               <div className="relative shrink-0 w-[18px] h-[18px]">
                 <img
-                  alt="Search"
+                  alt=""
                   className="w-full h-full object-contain"
                   src="/images/figma/63b6dd3ef0dbb464db94297040331b79d05e0293.svg"
                 />
               </div>
               <input
+                id="batch-verify-input"
                 type="text"
                 value={batchInput}
                 onChange={(e) => setBatchInput(e.target.value)}
@@ -177,11 +200,12 @@ function VerifyContent() {
               {batchInput && (
                 <button
                   type="button"
+                  aria-label="Clear batch search"
                   onClick={() => {
                     setBatchInput("")
                     setResultState("none")
                   }}
-                  className="text-slate-400 hover:text-slate-600 text-xs px-1"
+                  className="text-slate-400 hover:text-slate-600 text-xs px-1 rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#16a6a3]"
                 >
                   ✕
                 </button>
@@ -190,7 +214,7 @@ function VerifyContent() {
             <button
               type="submit"
               disabled={loading}
-              className="bg-[#0b1f3a] hover:bg-[#162a45] active:scale-[0.99] disabled:opacity-70 transition-all flex h-[52px] items-center justify-center px-[32px] rounded-[10px] shrink-0 cursor-pointer shadow-xs"
+              className="bg-[#0b1f3a] hover:bg-[#162a45] active:scale-[0.99] disabled:opacity-70 transition-all flex h-[52px] items-center justify-center px-[32px] rounded-[10px] shrink-0 cursor-pointer shadow-xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#16a6a3]"
             >
               <span className="font-semibold text-[15px] text-center text-white whitespace-nowrap">
                 {loading ? "Verifying..." : "Verify"}
@@ -199,36 +223,36 @@ function VerifyContent() {
           </form>
         </div>
 
-        {/* VERIFIED RESULT CARD (Figma Node 71:16810) */}
+        {/* VERIFIED RESULT CARD */}
         {resultState === "verified" && (
-          <div className="w-full max-w-[720px] bg-white rounded-[20px] pb-[36px] pt-[40px] px-5 sm:px-[32px] shadow-sm flex flex-col gap-[24px] items-center animate-in fade-in zoom-in-95 duration-200">
+          <article className="w-full max-w-[720px] bg-white rounded-[20px] pb-[36px] pt-[40px] px-5 sm:px-[32px] shadow-sm flex flex-col gap-[24px] items-center animate-in fade-in zoom-in-95 duration-200">
             {/* Header Section */}
-            <div className="flex flex-col gap-[12px] items-center text-center">
+            <header className="flex flex-col gap-[12px] items-center text-center">
               {/* Success Icon Badge */}
               <div className="bg-[#10b981] overflow-hidden relative rounded-full shrink-0 w-[60px] h-[60px] flex items-center justify-center shadow-xs">
                 <img
-                  alt="Verified"
+                  alt=""
                   className="w-[60px] h-[60px]"
                   src="/images/figma/f60c66cfe85a7f97165d804e20ac4ca469fd45c0.svg"
                 />
               </div>
 
               {/* Title Block */}
-              <div className="flex flex-col gap-[2px] items-center text-center">
-                <p className="font-bold text-[#0b1f3a] text-[20px] sm:text-[22px] tracking-[2px]">
-                  AUTHENTIC PRODUCT
-                </p>
+              <hgroup className="flex flex-col gap-[2px] items-center text-center">
+                <h2 className="font-bold text-[#0b1f3a] text-[20px] sm:text-[22px] tracking-[2px]">
+                  AUTHENTIC HARDWARE
+                </h2>
                 <p className="font-extrabold text-[#10b981] text-[28px] sm:text-[32px] tracking-[3.5px]">
                   VERIFIED
                 </p>
-              </div>
+              </hgroup>
 
               {/* Subtitle */}
               <div className="font-medium text-[#64748b] text-[13px] sm:text-[13.5px] text-center leading-[20px]">
-                <p className="mb-0">Thank you for verifying your PEPTECH product.</p>
-                <p>This is a genuine product, manufactured to our highest standards.</p>
+                <p className="mb-0">Thank you for verifying your PEPTECH® precision pen hardware.</p>
+                <p>This is a genuine device registered in our laboratory hardware passport ledger.</p>
               </div>
-            </div>
+            </header>
 
             {/* 4 Trust Pillars Strip */}
             <div className="bg-[#f8fafc] w-full max-w-[656px] min-h-[76px] py-2 rounded-[12px] grid grid-cols-2 sm:grid-cols-4 items-center justify-between px-[10px] gap-2">
@@ -243,7 +267,7 @@ function VerifyContent() {
                 </div>
                 <div className="font-bold text-[#0b1f3a] text-[10px] text-center tracking-[0.5px] leading-[13px]">
                   <p className="mb-0">GENUINE</p>
-                  <p>PRODUCT</p>
+                  <p>HARDWARE</p>
                 </div>
               </div>
 
@@ -257,8 +281,8 @@ function VerifyContent() {
                   />
                 </div>
                 <div className="font-bold text-[#0b1f3a] text-[10px] text-center tracking-[0.5px] leading-[13px]">
-                  <p className="mb-0">LAB TESTED</p>
-                  <p>&amp; CERTIFIED</p>
+                  <p className="mb-0">DEVICE</p>
+                  <p>PASSPORT</p>
                 </div>
               </div>
 
@@ -287,8 +311,8 @@ function VerifyContent() {
                   />
                 </div>
                 <div className="font-bold text-[#0b1f3a] text-[10px] text-center tracking-[0.5px] leading-[13px]">
-                  <p className="mb-0">GLOBAL</p>
-                  <p>STANDARDS</p>
+                  <p className="mb-0">RESEARCH USE</p>
+                  <p>ONLY (18+)</p>
                 </div>
               </div>
             </div>
@@ -299,12 +323,12 @@ function VerifyContent() {
               <div className="flex gap-[16px] h-[20px] items-center justify-center w-full">
                 <div className="h-px flex-1 bg-[#e2e8f0]" />
                 <p className="font-bold text-[#0b1f3a] text-[11.5px] tracking-[2px] whitespace-nowrap">
-                  PRODUCT DETAILS
+                  DEVICE DETAILS
                 </p>
                 <div className="h-px flex-1 bg-[#e2e8f0]" />
               </div>
 
-              {/* Row - Batch Lot Number */}
+              {/* Row - Registry Reference */}
               <div className="flex h-[38px] items-center justify-between w-full">
                 <div className="flex gap-[14px] items-center">
                   <div className="w-[22px] h-[22px] relative shrink-0">
@@ -316,7 +340,7 @@ function VerifyContent() {
                   </div>
                   <div className="flex flex-col gap-[2px] items-start">
                     <p className="font-normal text-[#64748b] text-[11px]">
-                      Batch Lot Number
+                      Registry Reference
                     </p>
                     <p className="font-bold text-[#0b1f3a] text-[15px] tracking-[0.5px]">
                       {activeBatch || "PT-26-000184"}
@@ -360,7 +384,7 @@ function VerifyContent() {
 
               <div className="h-px w-full bg-[#e2e8f0]" />
 
-              {/* Row - Synthesis Specification */}
+              {/* Row - Hardware Authenticity */}
               <div className="flex h-[28px] items-center justify-between w-full">
                 <div className="flex gap-[14px] items-center">
                   <div className="w-[22px] h-[22px] relative shrink-0">
@@ -371,17 +395,17 @@ function VerifyContent() {
                     />
                   </div>
                   <p className="font-normal text-[#64748b] text-[13px]">
-                    Synthesis Verification
+                    Hardware Authenticity
                   </p>
                 </div>
                 <p className="font-semibold text-[#0b1f3a] text-[14px]">
-                  Verified Laboratory Lot
+                  Verified PEPTECH® Device
                 </p>
               </div>
 
               <div className="h-px w-full bg-[#e2e8f0]" />
 
-              {/* Row - Cold-Chain Specification */}
+              {/* Row - Storage Specification */}
               <div className="flex h-[28px] items-center justify-between w-full">
                 <div className="flex gap-[14px] items-center">
                   <div className="w-[22px] h-[22px] relative shrink-0">
@@ -396,7 +420,7 @@ function VerifyContent() {
                   </p>
                 </div>
                 <p className="font-semibold text-[#0b1f3a] text-[14px]">
-                  Cold-Chain 2°C - 8°C
+                  Cold-Chain 2°C - 8°C (Cartridge)
                 </p>
               </div>
 
@@ -413,11 +437,11 @@ function VerifyContent() {
                     />
                   </div>
                   <p className="font-normal text-[#64748b] text-[13px]">
-                    Product Status
+                    Device Status
                   </p>
                 </div>
                 <p className="font-bold text-[#059669] text-[14px]">
-                  Authentic &amp; Safe
+                  Authentic Device
                 </p>
               </div>
             </div>
@@ -459,36 +483,36 @@ function VerifyContent() {
               </div>
             </div>
 
-            {/* Your Safety Matters Callout */}
+            {/* Device Authentication Callout */}
             <div className="bg-[#f0fdf4] flex flex-col sm:flex-row gap-[16px] items-start sm:items-center px-[20px] py-[16px] rounded-[14px] w-full max-w-[656px]">
               <div className="bg-[#10b981] overflow-hidden rounded-full shrink-0 w-[38px] h-[38px] flex items-center justify-center">
                 <img
-                  alt="Security Check"
+                  alt=""
                   className="w-[38px] h-[38px]"
                   src="/images/figma/2f3d62df04c1949f14cdcdbfffe94d942390706c.svg"
                 />
               </div>
               <div className="flex flex-col gap-[3px] items-start">
                 <p className="font-bold text-[#065f46] text-[12px] tracking-[1.5px]">
-                  YOUR SAFETY MATTERS
+                  DEVICE &amp; SEAL AUTHENTICATION
                 </p>
                 <div className="font-normal text-[#475569] text-[11.5px] leading-[16px]">
                   <p className="mb-0">
-                    We use advanced QR and NFC technology to protect our customers from
+                    PEPTECH® uses QR and serial verification to authenticate genuine laboratory hardware and packaging.
                   </p>
-                  <p>counterfeit products. Always verify your product before use.</p>
+                  <p>Supplied strictly for laboratory and scientific Research Use Only (18+).</p>
                 </div>
               </div>
             </div>
 
             {/* Bottom Actions Link */}
-            <div className="flex items-center justify-between w-full max-w-[656px] pt-2 text-xs">
+            <footer className="flex items-center justify-between w-full max-w-[656px] pt-2 text-xs">
               <Link
-                href={`/lab-reports?batch=${encodeURIComponent(activeBatch || "PT-26-000184")}`}
-                className="text-[#16a6a3] hover:text-[#0b1f3a] font-semibold transition-colors flex items-center gap-1.5"
+                href="/lab-reports"
+                className="text-[#16a6a3] hover:text-[#0b1f3a] font-semibold transition-colors flex items-center gap-1.5 rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#16a6a3]"
               >
-                <span>View Full HPLC / Mass Spec Certificate of Analysis</span>
-                <span>→</span>
+                <span>View Batch Status in COA Library</span>
+                <span aria-hidden="true">→</span>
               </Link>
               <button
                 type="button"
@@ -496,19 +520,21 @@ function VerifyContent() {
                   setResultState("none")
                   setBatchInput("")
                 }}
-                className="text-slate-400 hover:text-slate-600 font-medium transition-colors"
+                className="text-slate-500 hover:text-slate-700 font-medium transition-colors rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#16a6a3]"
               >
                 Search Another Batch
               </button>
-            </div>
-          </div>
+            </footer>
+          </article>
         )}
 
         {/* PENDING LAB REPORT CARD (GEMINI.md Rule 7: Display 'Report Pending' without false certificates) */}
         {resultState === "pending" && (
-          <div className="w-full max-w-[680px] bg-white rounded-[20px] p-8 sm:p-10 shadow-sm border border-amber-300 flex flex-col items-center text-center gap-4 animate-in fade-in zoom-in-95 duration-200">
-            <div className="w-14 h-14 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center text-2xl font-bold">
-              ⏳
+          <article className="w-full max-w-[680px] bg-white rounded-[20px] p-8 sm:p-10 shadow-sm border border-amber-300 flex flex-col items-center text-center gap-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="w-14 h-14 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center" aria-hidden="true">
+              <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6l4 2m6-2a10 10 0 11-20 0 10 10 0 0120 0z" />
+              </svg>
             </div>
             <div>
               <span className="inline-block text-[11px] font-bold text-amber-700 tracking-[1.5px] uppercase bg-amber-100 px-3 py-1 rounded-full mb-2">
@@ -524,16 +550,19 @@ function VerifyContent() {
             </div>
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-amber-800 max-w-md text-left space-y-1">
               <p className="font-bold flex items-center gap-1.5 text-amber-900">
-                <span>ℹ️</span> Strict PEPTECH® RUO Compliance Notice
+                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M12 22a10 10 0 100-20 10 10 0 000 20z" />
+                </svg>
+                <span>Strict PEPTECH® RUO Compliance Notice</span>
               </p>
               <p>
-                In accordance with PEPTECH laboratory standards, analytical certificates are published strictly after third-party HPLC & MS verification is finalized. Uncertified purity percentages are never fabricated.
+                In accordance with PEPTECH laboratory standards, analytical certificates are published strictly after third-party HPLC &amp; MS verification is finalized. Uncertified purity percentages are never fabricated.
               </p>
             </div>
-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+            <footer className="flex flex-col sm:flex-row gap-3 pt-2">
               <Link
                 href={`/lab-reports?batch=${encodeURIComponent(activeBatch)}`}
-                className="px-5 py-2.5 rounded-xl bg-[#0b1f3a] hover:bg-[#162a45] text-white font-semibold text-xs transition-colors"
+                className="px-5 py-2.5 rounded-xl bg-[#0b1f3a] hover:bg-[#162a45] text-white font-semibold text-xs transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#16a6a3]"
               >
                 Track Status in COA Library →
               </Link>
@@ -543,19 +572,21 @@ function VerifyContent() {
                   setResultState("none")
                   setBatchInput("")
                 }}
-                className="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 font-semibold text-xs transition-colors"
+                className="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 font-semibold text-xs transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#16a6a3]"
               >
                 Verify Another Lot
               </button>
-            </div>
-          </div>
+            </footer>
+          </article>
         )}
 
         {/* UNVERIFIED BATCH STATE */}
         {resultState === "unverified" && (
-          <div className="w-full max-w-[680px] bg-white rounded-[20px] p-8 sm:p-10 shadow-sm border border-rose-200 flex flex-col items-center text-center gap-4 animate-in fade-in zoom-in-95 duration-200">
-            <div className="w-14 h-14 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center text-2xl font-bold">
-              ⚠️
+          <article className="w-full max-w-[680px] bg-white rounded-[20px] p-8 sm:p-10 shadow-sm border border-rose-200 flex flex-col items-center text-center gap-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="w-14 h-14 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center" aria-hidden="true">
+              <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86l-7.5 13A1 1 0 003.65 18.5h16.7a1 1 0 00.86-1.64l-7.5-13a1 1 0 00-1.72 0z" />
+              </svg>
             </div>
             <div>
               <h2 className="text-xl font-bold text-[#0b1f3a]">
@@ -566,25 +597,25 @@ function VerifyContent() {
                 synthesis registry. Please verify the code printed on the external seal or device passport.
               </p>
             </div>
-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+            <footer className="flex flex-col sm:flex-row gap-3 pt-2">
               <button
                 type="button"
                 onClick={() => {
                   setResultState("none")
                   setBatchInput("")
                 }}
-                className="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 font-semibold text-xs transition-colors"
+                className="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 font-semibold text-xs transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#16a6a3]"
               >
                 Try Another Lot Code
               </button>
               <a
                 href="mailto:support@peptech.bio?subject=Counterfeit%20or%20Unverified%20Batch%20Inquiry"
-                className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs transition-colors"
+                className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#16a6a3]"
               >
                 Report Potential Counterfeit
               </a>
-            </div>
-          </div>
+            </footer>
+          </article>
         )}
       </section>
     </div>

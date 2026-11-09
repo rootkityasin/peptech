@@ -48,7 +48,7 @@ export function Footer() {
               Quality. Safety. Precision.
             </div>
             <p className="text-[13px] text-[#64748B] leading-[22px] max-w-[320px]">
-              One system. A healthier world. PEPTECH® is committed to advancing global health and safety through innovative testing solutions.
+              One system. Analytical precision. PEPTECH® is committed to advancing laboratory peptide research through transparent batch documentation.
             </p>
             {/* Social Icons */}
             <div className="flex items-center gap-3 pt-1.5">
@@ -189,12 +189,19 @@ export function Footer() {
           </p>
         </div>
 
-        {/* UK Statutory Trading & Company Disclosure */}
-        <div className="pt-4 pb-2 text-[11px] text-[#94A3B8] leading-relaxed border-t border-[#F1F5F9] mt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-          <p>
-            PEPTECH® is operated by <strong className="text-[#64748B]">PEPTECH LTD</strong>. 
-            Registered address: Office 17 Ips Innovate, Chartermark Way, Colburn Business Park, DL9 4QJ, Colburn, United Kingdom.
-          </p>
+        {/* Statutory Trading & Company Disclosure */}
+        <div className="pt-4 pb-2 text-[11px] text-[#94A3B8] leading-relaxed border-t border-[#F1F5F9] mt-4 flex flex-col sm:flex-row items-start sm:items-end justify-between gap-3">
+          <div className="space-y-0.5">
+            <p>
+              PEPTECH® is operated by <strong className="text-[#64748B]">PEPTECH LIMITED</strong>.
+            </p>
+            <p>
+              Hong Kong Registered Office: 807A, 8/F, Two Harbourfront, 22 Tak Fung Street, Hung Hom, Kowloon, Hong Kong
+            </p>
+            <p>
+              UK Correspondence &amp; Returns Office: Office 17 Ips Innovate, Chartermark Way, Colburn Business Park, DL9 4QJ, Colburn, United Kingdom
+            </p>
+          </div>
           <p className="text-[10px] text-[#A0AEC0] sm:text-right shrink-0">
             For Laboratory &amp; Scientific Research Use Only (RUO). 18+ Age Restricted.
           </p>

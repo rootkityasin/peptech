@@ -185,8 +185,8 @@ export function getItemSubtitle(item: CartItem): string {
   }
 
   return item.strength
-    ? `${item.strength} • 99%+ HPLC Certified Lyophilised Vial`
-    : "99.8% HPLC Certified • Sterile Lyophilised Cake"
+    ? `${item.strength} • Lyophilised Research Vial`
+    : "Vacuum Freeze-Dried • Lyophilised Research Vial"
 }
 
 export interface CartConflict {

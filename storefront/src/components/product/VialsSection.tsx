@@ -39,7 +39,7 @@ export function VialsSection({
               Freeze-Dried Vials
             </h2>
             <p className="font-normal text-[#64748b] text-[13px]">
-              Laboratory research vials with third-party testing reports. Reconstitution diluent available separately.
+              Vacuum freeze-dried laboratory vials supplied strictly for in-vitro analytical and research workflows.
             </p>
           </div>
           <Link
