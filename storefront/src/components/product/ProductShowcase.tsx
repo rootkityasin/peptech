@@ -15,6 +15,7 @@ import { VialsSection } from "./VialsSection"
 import { TrustBadgesStrip } from "./TrustBadgesStrip"
 import { QualityAssuranceSection } from "./QualityAssuranceSection"
 import { ResourceCardsSection } from "./ResourceCardsSection"
+import { ProductReviewsSection } from "./ProductReviewsSection"
 
 interface ProductShowcaseProps {
   initialProduct: CatalogProduct
@@ -36,7 +37,9 @@ export function ProductShowcase({
 
   // Sync state if initialProduct changes (e.g. from server component revalidation)
   useEffect(() => {
-    setCurrentProduct(initialProduct)
+    queueMicrotask(() => {
+      setCurrentProduct(initialProduct)
+    })
   }, [initialProduct])
 
   // Automatically refresh server props when admin tabs back into the browser
@@ -171,6 +174,12 @@ export function ProductShowcase({
 
       {/* 5 Guarantee Badges Strip */}
       <TrustBadgesStrip />
+
+      {/* Verified Product Reviews Section with Multi-Step Animated Modal */}
+      <ProductReviewsSection
+        productHandle={currentProduct.handle}
+        productTitle={currentProduct.name}
+      />
 
       {/* Quality Assurance & Analytical Standards */}
       <QualityAssuranceSection />
