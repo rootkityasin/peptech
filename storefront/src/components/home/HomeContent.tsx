@@ -11,7 +11,7 @@ import { resolveProductImage } from "@/lib/product-images"
 import { sortProductsByPriority } from "@/lib/medusa"
 import { CatalogProduct } from "@/data/catalog"
 import { HeroScrollingPhrases } from "./HeroScrollingPhrases"
-import { LabQualitySection } from "./LabQualitySection"
+// import { LabQualitySection } from "./LabQualitySection"
 
 // ---------------------------------------------------------------------------
 // Suspense Skeleton Fallbacks
@@ -281,10 +281,8 @@ function CartridgesGrid({
 
 export function HomeContent({
   initialProducts = [],
-  showLabQualitySection = true,
 }: {
   initialProducts?: CatalogProduct[]
-  showLabQualitySection?: boolean
 }) {
   const { products, isLoading } = useLiveProducts(initialProducts)
   const { registerVideoElement, isMuted } = useSound()
@@ -602,8 +600,7 @@ export function HomeContent({
         </div>
       </section>
 
-      {/* 04B. LABORATORY QUALITY & CLEANROOM SYNTHESIS VIDEO SECTION */}
-      {showLabQualitySection && <LabQualitySection />}
+      {/* 04B. LABORATORY QUALITY & CLEANROOM VIDEO SECTION (Temporarily removed - awaiting new video upload) */}
 
       {/* 05. ONE PEN ARCHITECTURE SECTION - Figma Node 2:29527 */}
       <section className="bg-white py-[40px] flex items-center justify-center">
@@ -704,14 +701,14 @@ export function HomeContent({
               />
               <div className="absolute inset-0 flex flex-col gap-[14px] items-start pl-[32px] sm:pl-[48px] pr-[24px] sm:pr-[40px] py-[36px]">
                 <p className="font-bold text-[#93c5fd] text-[11px] tracking-[1.5px] uppercase">
-                  IN-VITRO ANALYTICAL STANDARDS
+                  ADVANCING A HEALTHIER WORLD
                 </p>
                 <div className="font-bold text-[28px] sm:text-[34px] text-white leading-[34px] sm:leading-[40px]">
-                  <p className="mb-0">Precision Peptides</p>
-                  <p>for Laboratory Research</p>
+                  <p className="mb-0">Better Testing</p>
+                  <p>for a Safer Tomorrow</p>
                 </div>
                 <p className="text-[#e2e8f0] text-[13px] leading-[22px] max-w-[520px]">
-                  Discover how PEPTECH® helps you achieve repeatable, traceable analytical research workflows — every day.
+                  Discover how PEPTECH® helps you achieve accurate, reliable and efficient testing — every day.
                 </p>
                 <div className="pt-1">
                   <Link
