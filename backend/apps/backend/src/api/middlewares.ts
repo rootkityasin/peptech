@@ -141,6 +141,7 @@ export default defineMiddlewares({
     { matcher: "/store*", middlewares: [handleStoreCors] },
     { matcher: "/auth*", middlewares: [handleStoreCors] },
     { matcher: "/store/custom/verify*", middlewares: [ensureVerifyPublishableKey] },
+    { matcher: "/store/custom/storefront-settings*", middlewares: [ensureVerifyPublishableKey] },
     ...validatePromoMiddlewares,
     { matcher: "/store/payment-collections/:id/payment-sessions", methods: ["POST"], middlewares: [retiredPaymentCreation] },
     { matcher: "/admin/orders/:id/fulfillments", methods: ["POST"], middlewares: [authenticate("user", ["session", "bearer"]), guardFulfillment] },
@@ -160,6 +161,7 @@ export default defineMiddlewares({
     { matcher: "/admin/commerce*", middlewares: [authenticate("user", ["session", "bearer"])] },
     { matcher: "/admin/custom/subscriptions", middlewares: [authenticate("user", ["session", "bearer"])] },
     { matcher: "/admin/custom/products*", middlewares: [authenticate("user", ["session", "bearer"])] },
+    { matcher: "/admin/custom/storefront-settings*", middlewares: [authenticate("user", ["session", "bearer"])] },
     { matcher: "/hooks/peptech-stripe", bodyParser: { preserveRawBody: true, sizeLimit: "1mb" } },
     {
       matcher: "/images/*",

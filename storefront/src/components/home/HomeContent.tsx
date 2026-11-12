@@ -281,8 +281,10 @@ function CartridgesGrid({
 
 export function HomeContent({
   initialProducts = [],
+  showLabQualitySection = true,
 }: {
   initialProducts?: CatalogProduct[]
+  showLabQualitySection?: boolean
 }) {
   const { products, isLoading } = useLiveProducts(initialProducts)
   const { registerVideoElement, isMuted } = useSound()
@@ -601,7 +603,7 @@ export function HomeContent({
       </section>
 
       {/* 04B. LABORATORY QUALITY & CLEANROOM SYNTHESIS VIDEO SECTION */}
-      <LabQualitySection />
+      {showLabQualitySection && <LabQualitySection />}
 
       {/* 05. ONE PEN ARCHITECTURE SECTION - Figma Node 2:29527 */}
       <section className="bg-white py-[40px] flex items-center justify-center">
