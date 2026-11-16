@@ -97,7 +97,9 @@ function ensureRuntimeBaseUrl() {
 // ==============================================================================
 let cachedStoreProducts: StoreProduct[] | null = null
 let cachedStoreProductsAt = 0
+let lastProductsFailureAt = 0
 const CATALOG_MEMORY_TTL_MS = 60000 // 60-second fallback freshness window
+const PRODUCTS_FAILURE_COOLDOWN_MS = 10000 // Avoid repeated ECONNREFUSED timeouts when backend is unreachable
 let cachedCatalogProducts: CatalogProduct[] | null = null
 let inFlightProductsPromise: Promise<StoreProduct[]> | null = null
 
@@ -112,6 +114,7 @@ export function invalidateProductsCache(): void {
   cachedStoreProducts = null
   cachedCatalogProducts = null
   cachedStoreProductsAt = 0
+  lastProductsFailureAt = 0
   productByHandleCache.clear()
   inFlightHandlePromises.clear()
   bumpCatalogRevision()
@@ -144,6 +147,17 @@ export async function getProducts(queryParams: Record<string, unknown> = {}, for
     return cachedStoreProducts!
   }
 
+  // Short-circuit repeated calls briefly if Medusa was just unreachable and no cached catalog exists
+  if (
+    !forceRefresh &&
+    isDefaultList &&
+    (!cachedStoreProducts || cachedStoreProducts.length === 0) &&
+    lastProductsFailureAt > 0 &&
+    Date.now() - lastProductsFailureAt < PRODUCTS_FAILURE_COOLDOWN_MS
+  ) {
+    return []
+  }
+
   const fetchPromise = (async () => {
     try {
       const response = await medusa.store.product.list({
@@ -155,6 +169,7 @@ export async function getProducts(queryParams: Record<string, unknown> = {}, for
       if (isDefaultList && products.length > 0) {
         cachedStoreProducts = products
         cachedStoreProductsAt = Date.now()
+        lastProductsFailureAt = 0
         cachedCatalogProducts = products.map(mapMedusaToCatalogProduct)
         // Prime handle cache with all retrieved products
         products.forEach((p) => {
@@ -164,6 +179,9 @@ export async function getProducts(queryParams: Record<string, unknown> = {}, for
       }
       return products
     } catch (error) {
+      if (isDefaultList) {
+        lastProductsFailureAt = Date.now()
+      }
       console.error("Failed to fetch products from Medusa:", error)
       return cachedStoreProducts || []
     } finally {
@@ -229,6 +247,15 @@ export async function getProduct(idOrHandle: string, forceRefresh = false): Prom
     // 3. Deduplicate in-flight single product requests
     if (inFlightHandlePromises.has(idOrHandle)) {
       return inFlightHandlePromises.get(idOrHandle)!
+    }
+
+    // 4. Short-circuit briefly if catalog fetch just failed due to unreachable backend
+    if (
+      (!cachedStoreProducts || cachedStoreProducts.length === 0) &&
+      lastProductsFailureAt > 0 &&
+      Date.now() - lastProductsFailureAt < PRODUCTS_FAILURE_COOLDOWN_MS
+    ) {
+      return null
     }
   }
 

@@ -1,6 +1,7 @@
 "use client"
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react"
+import { usePathname } from "next/navigation"
 import { getShippingOptionsWithConfig, type ShippingOption, type ShippingRatesConfig } from "@/lib/shipping-options"
 import { getBackendUrl, PUBLISHABLE_KEY } from "@/lib/customer-api"
 import { fetchCountryOptions, findCountryByName, type CountryOption } from "@/lib/regions"
@@ -339,9 +340,11 @@ const CartContext = createContext<CartContextType | undefined>(undefined)
 export const DEFAULT_CART_ITEMS: CartItem[] = []
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname()
   const [items, setItems] = useState<CartItem[]>([])
   const [loaded, setLoaded] = useState(false)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
+  const [idleReady, setIdleReady] = useState(false)
   const [country, setCountry] = useState<string>("United Kingdom")
   const [countryOptions, setCountryOptions] = useState<CountryOption[]>([])
   const [destination, setDestinationState] = useState<"UK" | "INTL">("UK")
@@ -379,7 +382,36 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setDestinationState(selected?.code === "GB" || newCountry === "United Kingdom" ? "UK" : "INTL")
   }, [countryOptions])
 
+  const shouldLoadCartMetadataImmediately = Boolean(
+    isDrawerOpen || pathname?.startsWith("/checkout") || pathname?.startsWith("/cart")
+  )
+  const cartMetaReady = shouldLoadCartMetadataImmediately || idleReady
+
   useEffect(() => {
+    if (cartMetaReady) return
+
+    let idleId: number | null = null
+    let timeoutId: ReturnType<typeof setTimeout> | null = null
+    const markReady = () => setIdleReady(true)
+
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      idleId = window.requestIdleCallback(markReady, { timeout: 1500 })
+    } else {
+      timeoutId = setTimeout(markReady, 1200)
+    }
+
+    return () => {
+      if (idleId !== null && typeof window !== "undefined" && "cancelIdleCallback" in window) {
+        window.cancelIdleCallback(idleId)
+      }
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId)
+      }
+    }
+  }, [cartMetaReady])
+
+  useEffect(() => {
+    if (!cartMetaReady) return
     let cancelled = false
     fetchCountryOptions()
       .then((options) => {
@@ -397,7 +429,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [cartMetaReady])
 
   // Load from local storage
   useEffect(() => {
@@ -440,8 +472,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setLoaded(true)
   }, [])
 
-  // Fetch dynamic automatic and manual promotions from backend
+  // Fetch dynamic automatic and manual promotions from backend after idle/cart interaction
   useEffect(() => {
+    if (!cartMetaReady) return
     let cancelled = false
     const fetchPromotions = async () => {
       try {
@@ -540,7 +573,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [cartMetaReady])
 
   // Save to local storage
   useEffect(() => {
@@ -555,14 +588,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   // Clear any applied promo if user clears the cart (handled in clearCart)
   // Preserving appliedPromo across empty carts allows visitors to click 'Apply Code' in the announcement bar before adding items
 
+  const resolvedShippingCountryCode = (
+    findCountryByName(countryOptions, country)?.code || "GB"
+  ).toLowerCase()
+
   // Resolve the shipping options Medusa serves for the chosen destination.
   useEffect(() => {
-    if (!loaded) return
+    if (!loaded || !cartMetaReady) return
     let cancelled = false
     setShippingLoaded(false)
-    const selectedCountry = findCountryByName(countryOptions, country)
-    const countryCode = (selectedCountry?.code || "GB").toLowerCase()
-    getShippingOptionsWithConfig(countryCode).then((res) => {
+    getShippingOptionsWithConfig(resolvedShippingCountryCode).then((res) => {
       if (cancelled) return
       setShippingOptions(res.options)
       if (res.shipping_rates) setShippingRatesConfig(res.shipping_rates)
@@ -579,7 +614,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true
     }
-  }, [country, countryOptions, loaded])
+  }, [resolvedShippingCountryCode, loaded, cartMetaReady])
 
   const selectedCountry = findCountryByName(countryOptions, country)
   const countryCode = selectedCountry?.code || "GB"

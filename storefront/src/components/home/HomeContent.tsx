@@ -351,9 +351,7 @@ export function HomeContent({
               muted={isMuted}
               loop
               playsInline
-              preload="auto"
-              // @ts-expect-error React 19 fetchPriority attribute on HTMLVideoElement
-              fetchPriority="high"
+              preload="metadata"
               className="w-full h-full object-cover object-center opacity-92 sm:opacity-95 transition-opacity duration-700"
             />
 

@@ -46,11 +46,13 @@ export async function GET(request: Request) {
         // Hostinger Cache Manager / LiteSpeed Reverse Proxy headers
         "Cache-Control": forceRefresh
           ? "no-cache, no-store, must-revalidate, max-age=0"
-          : "public, max-age=10, s-maxage=60, stale-while-revalidate=300",
-        "CDN-Cache-Control": forceRefresh ? "no-cache" : "public, s-maxage=60",
-        "X-LiteSpeed-Cache-Control": forceRefresh
+          : products.length === 0
+            ? "no-store"
+            : "public, max-age=60, s-maxage=604800, stale-while-revalidate=86400",
+        "CDN-Cache-Control": forceRefresh || products.length === 0 ? "no-cache" : "public, s-maxage=604800",
+        "X-LiteSpeed-Cache-Control": forceRefresh || products.length === 0
           ? "no-cache"
-          : "public, max-age=60, stale-while-revalidate=300",
+          : "public, max-age=60, stale-while-revalidate=86400",
         "X-Hostinger-Cache": "ENABLE",
         "X-Catalog-Revision": revision.toString(),
         "ETag": `W/"catalog-${revision}"`,

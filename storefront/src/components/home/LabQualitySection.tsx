@@ -38,16 +38,36 @@ const VIDEOS: VideoItem[] = [
 ]
 
 function VideoCard({ item }: { item: VideoItem }) {
+  const [shouldLoad, setShouldLoad] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
   const [isMuted, setIsMuted] = useState(true)
   const videoRef = useRef<HTMLVideoElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
+  // Defer poster and video metadata requests until card approaches the viewport
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el || shouldLoad) return
+
+    const loadObserver = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setShouldLoad(true)
+          loadObserver.disconnect()
+        }
+      },
+      { rootMargin: "350px 0px" }
+    )
+
+    loadObserver.observe(el)
+    return () => loadObserver.disconnect()
+  }, [shouldLoad])
+
   // Viewport-based lazy playback: only stream & play when scrolled near viewport
   useEffect(() => {
     const el = containerRef.current
     const video = videoRef.current
-    if (!el || !video) return
+    if (!el || !video || !shouldLoad) return
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -65,9 +85,13 @@ function VideoCard({ item }: { item: VideoItem }) {
 
     observer.observe(el)
     return () => observer.disconnect()
-  }, [])
+  }, [shouldLoad])
 
   const togglePlay = () => {
+    if (!shouldLoad) {
+      setShouldLoad(true)
+      return
+    }
     if (!videoRef.current) return
     if (isPlaying) {
       videoRef.current.pause()
@@ -91,12 +115,12 @@ function VideoCard({ item }: { item: VideoItem }) {
       onClick={togglePlay}
       className="group relative aspect-[9/16] w-full overflow-hidden rounded-xl sm:rounded-2xl bg-[#051329] border border-[#E2E8F0] shadow-sm cursor-pointer select-none"
     >
-      {/* Video Element with Lazy Preload and FastStart Streaming */}
+      {/* Video Element with Viewport-Gated Poster & FastStart Streaming */}
       <video
         ref={videoRef}
-        src={item.src}
-        poster={item.poster}
-        preload="metadata"
+        src={shouldLoad ? item.src : undefined}
+        poster={shouldLoad ? item.poster : undefined}
+        preload={shouldLoad ? "metadata" : "none"}
         playsInline
         loop
         muted={isMuted}

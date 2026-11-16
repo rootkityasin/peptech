@@ -25,6 +25,7 @@ export function Header() {
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [mounted, setMounted] = useState(false)
+  const { products: liveProducts, ensureFresh } = useLiveProducts()
 
   useEffect(() => {
     setMounted(true)
@@ -41,15 +42,18 @@ export function Header() {
     setMobileMenuOpen(false)
   }, [pathname])
 
-  // Focus input automatically when search opens
+  // Focus input automatically when search opens and ensure catalog products are loaded
   useEffect(() => {
     if (searchOpen) {
+      if (liveProducts.length === 0) {
+        void ensureFresh()
+      }
       const timer = setTimeout(() => {
         searchInputRef.current?.focus()
       }, 70)
       return () => clearTimeout(timer)
     }
-  }, [searchOpen])
+  }, [searchOpen, liveProducts.length, ensureFresh])
 
   // Dismiss search or mobile menu on Escape key
   useEffect(() => {
@@ -96,8 +100,6 @@ export function Header() {
       document.removeEventListener("touchstart", handleOutsideInteraction)
     }
   }, [mobileMenuOpen])
-
-  const { products: liveProducts } = useLiveProducts()
 
   // Live search suggestions from live Medusa products
   const searchSuggestions = useMemo(() => {

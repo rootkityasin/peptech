@@ -7,126 +7,187 @@ import { getProducts, mapMedusaToCatalogProduct, sortProductsByPriority } from "
 const CATALOG_CACHE_KEY = "peptech_catalog_cache"
 const CACHE_TIMESTAMP_KEY = "peptech_catalog_cache_timestamp"
 const CACHE_REVISION_KEY = "peptech_catalog_revision"
+const CATALOG_FRESH_MS = 60_000
+const MOUNT_REVALIDATE_DELAY_MS = 3000
+
+let sharedProducts: CatalogProduct[] | null = null
+let sharedFetchedAt = 0
+let sharedInFlight: Promise<void> | null = null
 
 /**
  * React Hook: SWR Live Product Hook for Client Components
- * Connects to Hostinger-cached /api/catalog and falls back to Medusa Store API.
- * Hydrates synchronously from localStorage for 0ms perceived load time,
- * and performs silent background revalidation on mount, window focus, and cross-tab sync.
+ * Connects to cached /api/catalog and deduplicates concurrent callers at module scope.
+ * Seeds immediately from SSR initialFallback or localStorage, then defers background revalidation.
  */
 export function useLiveProducts(initialFallback: CatalogProduct[] = []) {
   // Initial state mirrors SSR initialFallback identically on both server and client (0ms tick-0 hydration)
   const [products, setProducts] = useState<CatalogProduct[]>(initialFallback)
   const [isLoading, setIsLoading] = useState<boolean>(!(initialFallback && initialFallback.length > 0))
 
-  const inFlightRef = useRef(false)
   const isMountedRef = useRef(true)
 
   const revalidateCatalog = useCallback(async (force = false) => {
-    if (inFlightRef.current) return
-    inFlightRef.current = true
+    if (!force && sharedProducts && sharedProducts.length > 0 && Date.now() - sharedFetchedAt < CATALOG_FRESH_MS) {
+      if (isMountedRef.current) {
+        setProducts((prev) => (prev === sharedProducts ? prev : sharedProducts!))
+        setIsLoading(false)
+      }
+      return
+    }
 
-    try {
-      const url = force ? "/api/catalog?refresh=1" : "/api/catalog"
-      const res = await fetch(url, {
-        cache: force ? "no-store" : "no-cache",
-      })
+    if (sharedInFlight) {
+      await sharedInFlight
+      if (isMountedRef.current && sharedProducts && sharedProducts.length > 0) {
+        setProducts((prev) => (prev === sharedProducts ? prev : sharedProducts!))
+        setIsLoading(false)
+      }
+      return
+    }
 
-      if (res.ok) {
-        const serverRevision = res.headers.get("x-catalog-revision") || ""
-        const data = await res.json()
+    sharedInFlight = (async () => {
+      try {
+        const url = force ? "/api/catalog?refresh=1" : "/api/catalog"
+        const res = await fetch(url, {
+          cache: force ? "no-store" : "default",
+        })
 
-        if (Array.isArray(data) && data.length > 0) {
-          if (typeof window !== "undefined") {
-            const localRevision = localStorage.getItem(CACHE_REVISION_KEY) || ""
-            const currentCacheStr = localStorage.getItem(CATALOG_CACHE_KEY) || ""
-            const newCacheStr = JSON.stringify(data)
+        if (res.ok) {
+          const serverRevision = res.headers.get("x-catalog-revision") || ""
+          const data = await res.json()
 
-            // If revision changed or data contents differed, update state
-            if (force || serverRevision !== localRevision || currentCacheStr !== newCacheStr) {
-              if (isMountedRef.current) {
-                setProducts(data)
-              }
-              try {
-                localStorage.setItem(CATALOG_CACHE_KEY, newCacheStr)
-                localStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString())
-                if (serverRevision) {
-                  localStorage.setItem(CACHE_REVISION_KEY, serverRevision)
-                }
-                // Notify other tabs and components in real time
+          if (Array.isArray(data) && data.length > 0) {
+            sharedProducts = data
+            sharedFetchedAt = Date.now()
+
+            if (typeof window !== "undefined") {
+              const localRevision = localStorage.getItem(CACHE_REVISION_KEY) || ""
+              const currentCacheStr = localStorage.getItem(CATALOG_CACHE_KEY) || ""
+              const newCacheStr = JSON.stringify(data)
+
+              if (force || serverRevision !== localRevision || currentCacheStr !== newCacheStr) {
+                try {
+                  localStorage.setItem(CATALOG_CACHE_KEY, newCacheStr)
+                  localStorage.setItem(CACHE_TIMESTAMP_KEY, sharedFetchedAt.toString())
+                  if (serverRevision) {
+                    localStorage.setItem(CACHE_REVISION_KEY, serverRevision)
+                  }
+                } catch {}
                 window.dispatchEvent(
                   new CustomEvent("peptech_catalog_updated", { detail: data })
                 )
-              } catch {}
+              }
             }
+            return
           }
-          if (isMountedRef.current) setIsLoading(false)
-          return
-        }
-      }
-    } catch {
-      // Fallback directly to Medusa Store API if internal endpoint is unavailable
-    } finally {
-      inFlightRef.current = false
-    }
 
-    // Direct Medusa Store API Fallback
-    try {
-      const medusaProducts = await getProducts({ limit: 100 }, force)
-      if (isMountedRef.current) {
+          // Server answered cleanly with [] (e.g. backend unavailable); skip redundant client fallback unless forced
+          if (!force) {
+            sharedFetchedAt = Date.now()
+            return
+          }
+        }
+      } catch {
+        // Fallback directly to Medusa Store API if internal endpoint is unavailable
+      }
+
+      // Direct Medusa Store API Fallback
+      try {
+        const medusaProducts = await getProducts({ limit: 100 }, force)
         const mapped = sortProductsByPriority(medusaProducts.map(mapMedusaToCatalogProduct))
         if (mapped.length > 0) {
-          setProducts(mapped)
-          try {
-            localStorage.setItem(CATALOG_CACHE_KEY, JSON.stringify(mapped))
-            localStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString())
-          } catch {}
+          sharedProducts = mapped
+          sharedFetchedAt = Date.now()
+          if (typeof window !== "undefined") {
+            try {
+              localStorage.setItem(CATALOG_CACHE_KEY, JSON.stringify(mapped))
+              localStorage.setItem(CACHE_TIMESTAMP_KEY, sharedFetchedAt.toString())
+            } catch {}
+            window.dispatchEvent(
+              new CustomEvent("peptech_catalog_updated", { detail: mapped })
+            )
+          }
+        }
+      } catch (err) {
+        console.warn("[Medusa] Fallback product listing failed:", err)
+      }
+    })()
+
+    try {
+      await sharedInFlight
+    } finally {
+      sharedInFlight = null
+      if (isMountedRef.current) {
+        if (sharedProducts && sharedProducts.length > 0) {
+          setProducts((prev) => (prev === sharedProducts ? prev : sharedProducts!))
         }
         setIsLoading(false)
       }
-    } catch (err) {
-      console.warn("[Medusa] Fallback product listing failed:", err)
-      if (isMountedRef.current) setIsLoading(false)
-    } finally {
-      inFlightRef.current = false
     }
   }, [])
 
   useEffect(() => {
+    // Seed shared cache immediately whenever SSR supplies catalog products
+    if (!initialFallback || initialFallback.length === 0) return
+    if (sharedProducts === initialFallback) return
+
+    const now = Date.now()
+    sharedProducts = initialFallback
+    sharedFetchedAt = now
+    try {
+      localStorage.setItem(CATALOG_CACHE_KEY, JSON.stringify(initialFallback))
+      localStorage.setItem(CACHE_TIMESTAMP_KEY, now.toString())
+    } catch {}
+    window.dispatchEvent(
+      new CustomEvent("peptech_catalog_updated", { detail: initialFallback })
+    )
+  }, [initialFallback])
+
+  useEffect(() => {
     isMountedRef.current = true
 
-    // Persist or hydrate cache from localStorage after hydration without SSR mismatches
-    if (initialFallback && initialFallback.length > 0) {
-      try {
-        localStorage.setItem(CATALOG_CACHE_KEY, JSON.stringify(initialFallback))
-        localStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString())
-      } catch {}
-    } else {
+    // Hydrate client-only consumers (e.g. Header with [] fallback) from shared memory or localStorage
+    if (!sharedProducts || sharedProducts.length === 0) {
       try {
         const cached = localStorage.getItem(CATALOG_CACHE_KEY)
         if (cached) {
           const parsed = JSON.parse(cached)
           if (Array.isArray(parsed) && parsed.length > 0) {
-            setProducts(parsed)
-            setIsLoading(false)
+            const cachedAt = Number(localStorage.getItem(CACHE_TIMESTAMP_KEY) || "0")
+            sharedProducts = parsed
+            if (cachedAt > 0) {
+              sharedFetchedAt = cachedAt
+            }
           }
         }
       } catch {}
     }
 
-    // 1. Silent background revalidation on component mount
-    void revalidateCatalog(false)
+    if (sharedProducts && sharedProducts.length > 0) {
+      const snapshot = sharedProducts
+      queueMicrotask(() => {
+        if (!isMountedRef.current) return
+        setProducts((prev) => (prev === snapshot ? prev : snapshot))
+        setIsLoading(false)
+      })
+    }
 
-    // 2. Window focus revalidation: when admin switches back from Medusa Admin tab
+    // 1. Defer background revalidation so critical hydration, fonts & LCP complete uncontested
+    const revalidateTimer = window.setTimeout(() => {
+      if (isMountedRef.current) {
+        void revalidateCatalog(false)
+      }
+    }, MOUNT_REVALIDATE_DELAY_MS)
+
+    // 2. Window focus revalidation (shared 60s freshness guard prevents duplicate bursts)
     const handleFocus = () => {
       void revalidateCatalog(false)
     }
 
-    // 3. Multi-tab synchronization: when another tab updates the catalog
+    // 3. Multi-tab & same-page synchronization
     const handleCustomEvent = (e: Event) => {
       const customEvent = e as CustomEvent<CatalogProduct[]>
       if (Array.isArray(customEvent.detail) && customEvent.detail.length > 0) {
-        setProducts(customEvent.detail)
+        setProducts((prev) => (prev === customEvent.detail ? prev : customEvent.detail))
         setIsLoading(false)
       }
     }
@@ -136,6 +197,7 @@ export function useLiveProducts(initialFallback: CatalogProduct[] = []) {
         try {
           const parsed = JSON.parse(e.newValue)
           if (Array.isArray(parsed) && parsed.length > 0) {
+            sharedProducts = parsed
             setProducts(parsed)
             setIsLoading(false)
           }
@@ -149,15 +211,21 @@ export function useLiveProducts(initialFallback: CatalogProduct[] = []) {
 
     return () => {
       isMountedRef.current = false
+      window.clearTimeout(revalidateTimer)
       window.removeEventListener("focus", handleFocus)
       window.removeEventListener("peptech_catalog_updated", handleCustomEvent)
       window.removeEventListener("storage", handleStorageEvent)
     }
   }, [revalidateCatalog])
 
+  const ensureFresh = useCallback(async () => {
+    await revalidateCatalog(false)
+  }, [revalidateCatalog])
+
   return {
     products,
     isLoading,
+    ensureFresh,
     refresh: async () => {
       await revalidateCatalog(true)
     },

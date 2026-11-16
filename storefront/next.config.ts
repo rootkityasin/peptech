@@ -161,23 +161,6 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        source: "/api/catalog",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, max-age=0, must-revalidate, s-maxage=604800, stale-while-revalidate=86400",
-          },
-          {
-            key: "CDN-Cache-Control",
-            value: "public, s-maxage=604800",
-          },
-          {
-            key: "X-LiteSpeed-Cache-Control",
-            value: "public, max-age=604800, stale-while-revalidate=86400",
-          },
-        ],
-      },
-      {
         source: "/products/:path*",
         headers: [
           {
